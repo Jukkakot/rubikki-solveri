@@ -1,0 +1,36 @@
+schema: spec-driven
+
+context: |
+  Rubikki Solveri: Android app that scans a real 3x3 Rubik's Cube with the
+  camera and helps the user solve it - first the shortest solution move by
+  move, later a human method taught stage by stage. Runs fully on the phone.
+
+  Stack: Kotlin, Jetpack Compose, Material 3, Gradle (Kotlin DSL). Android only.
+  Planned modules: a pure Kotlin cube module (state, moves, validity, solvers;
+  no Android imports) and the app module (screens, camera, 3D view).
+
+  Always: English identifiers; UI text in Finnish and English (Android string
+  resources); light and dark theme; prefer established libraries over
+  hand-written plumbing; every move shown must be unmistakable for a beginner;
+  budget 0 EUR (no server, no paid API).
+
+  Knowledge base - start planning here, then verify against the code:
+  - docs/README.md: wiki front page
+  - openspec/context/product.md: product decisions and ideas
+  - openspec/context/roadmap.md: planned change order
+  An existing spec in openspec/specs wins over docs/ and context/ files.
+
+rules:
+  proposal:
+    - State which modules (cube, app) the change touches.
+  specs:
+    - Specs describe observable behaviour, never library or class names.
+  tasks:
+    - Each task group lands its own tests (cube logic as JVM unit tests; screens get a few Compose tests for key interactions).
+    - Cube logic goes to the cube module before any screen uses it.
+    - The last task group updates the docs/ pages the change affects and marks the roadmap item done.
+
+operations:
+  archive:
+    guidance:
+      - Before archiving, check that docs/ and roadmap.md reflect the change.
