@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The default language is Finnish (product.md); English lives in values-en. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="fi">
+    <string name="app_name" translatable="false">Rubikki Solveri</string>
+    <string name="home_tagline">Skannaa kuutio ja opettele ratkaisemaan se.</string>
+    <string name="home_scan">Skannaa kuutio</string>
+    <string name="home_manual">Syötä värit käsin</string>
+    <string name="coming_soon">Tulossa</string>
+    <string name="settings">Asetukset</string>
+    <string name="back">Takaisin</string>
+    <string name="settings_language">Kieli</string>
+    <string name="settings_theme">Teema</string>
+    <string name="theme_system">Seuraa puhelinta</string>
+    <string name="theme_light">Vaalea</string>
+    <string name="theme_dark">Tumma</string>
+    <string name="settings_diagnostics">Vianetsintä</string>
+    <string name="log_title">Loki</string>
+    <string name="log_open_summary">Sovelluksen tapahtumat ja virheet</string>
+    <string name="log_share">Jaa</string>
+    <string name="log_clear">Tyhjennä</string>
+    <string name="log_empty">Loki on tyhjä.</string>
+    <string name="log_share_chooser">Jaa loki</string>
+    <string name="crash_notice">Sovellus kaatui viime kerralla.</string>
+    <string name="crash_show_log">Näytä loki</string>
+    <string name="version_label">Versio %1$s</string>
+</resources>

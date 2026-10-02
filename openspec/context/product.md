@@ -41,3 +41,16 @@ method stage by stage so you learn to solve it yourself.
 - **Solver library:** min2phase (two-phase), used under its MIT licence option.
 - **Name:** "Rubik's Cube" is a trademark; fine for a personal app, but rethink the name before
   any public store release.
+
+## Decided (2026-10-02, second talk)
+
+- **No Google Play** (it needs a paid developer account). The app is installed straight onto the
+  phone: from Android Studio during development, later as a signed APK.
+- **The user's cube:** standard colour scheme (white/yellow, green/blue, red/orange), stickerless.
+- **Holding the cube:** the app decides and tells the user (white on top, green facing you).
+- **3D view:** drawn by the app itself with Compose (own projection), no 3D library; can change later.
+- **Debugging:** local logging is enough for now (Logcat plus an on-phone log the user can view and
+  share); the Axiom upload comes later.
+- **Beginner method:** any human-understandable layer-by-layer method that teaches real cube
+  knowledge.
+- **Minimum Android:** 12 (API 31), the first with Material You dynamic colour.

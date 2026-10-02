@@ -5,7 +5,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 
 | # | Change | Status | What |
 |---|---|---|---|
-| 0 | `app-setup` | planned | Empty Compose app that runs on the phone: Material 3 theme (light/dark), Finnish/English, navigation shell, unit tests, CI build of a debug APK |
+| 0 | `app-setup` | done | Empty Compose app that runs on the phone: Material 3 theme (light/dark), Finnish/English, navigation shell, unit tests, CI build of a debug APK |
 | 1 | `cube-model` | planned | Cube state, moves and notation, whole-cube rotations, validity check (colour counts, pieces, twist, flip, parity); pure Kotlin with many tests |
 | 2 | `cube-view` | planned | 3D cube that animates moves and can be turned by dragging; manual input by painting stickers |
 | 3 | `fast-solve` | planned | Solver library (two-phase), solution stepper: next/back, replay, progress |
@@ -15,4 +15,4 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 7 | `beginner-solver` | planned | Our own layer-by-layer solver that explains each stage |
 | 8 | `lessons` | planned | Teaching screens per stage and practice positions |
 | 9 | `progress` | planned | Timer, solve history and stats in a local database |
-| 10 | `release` | planned | Signed build, Google Play internal testing |
+| 10 | `release` | planned | Signed release APK installed directly on the phone (no Google Play) |
