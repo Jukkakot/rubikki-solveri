@@ -8,6 +8,9 @@ enum class Evt(val id: String) {
     SETTINGS_CHANGED("settings.changed"),
     LOG_SHARED("log.shared"),
     LOG_CLEARED("log.cleared"),
+    SOLVER_READY("solver.ready"),
+    SOLVE_DONE("solve.done"),
+    SOLVE_FAILED("solve.failed"),
 }
 
 enum class Level { DEBUG, INFO, WARN, ERROR }

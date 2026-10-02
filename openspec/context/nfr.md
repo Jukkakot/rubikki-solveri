@@ -49,7 +49,7 @@ Apply to every change. Designs and task lists must show how they are met.
 ## Legal and privacy
 - "Rubik's Cube" is a trademark: fine for a personal app; rethink the name before any public
   release. Never use its logo or box look.
-- Third-party code keeps its licence text (`app`/`cube` `LICENSES`, and the about section).
+- Third-party code keeps its licence text next to it (min2phase: `cube/src/main/java/cs/min2phase/LICENSE`, used under MIT).
 - No license for our own code: all rights reserved.
 
 ## Development workflow

@@ -12,6 +12,7 @@ import androidx.navigation.toRoute
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.ui.free.FreeCubeScreen
 import fi.jukkakot.rubikkisolveri.ui.manual.ManualInputScreen
+import fi.jukkakot.rubikkisolveri.ui.solve.SolveScreen
 import fi.jukkakot.rubikkisolveri.R
 import fi.jukkakot.rubikkisolveri.settings.AppLanguage
 import fi.jukkakot.rubikkisolveri.settings.ThemeMode
@@ -64,7 +65,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
         composable<ManualInputRoute> {
             ManualInputScreen(
                 onBack = { navController.popBackStack() },
-                onValid = { cube -> navController.navigate(FreeCubeRoute(cube.toColorString())) },
+                onValid = { cube -> navController.navigate(SolveRoute(cube.toColorString())) },
             )
         }
         composable<FreeCubeRoute> { entry ->
@@ -72,6 +73,14 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
             FreeCubeScreen(
                 start = route.cube?.let(Cube::fromColorString) ?: Cube.solved(),
                 onBack = { navController.popBackStack() },
+                onSolve = { cube -> navController.navigate(SolveRoute(cube.toColorString())) },
+            )
+        }
+        composable<SolveRoute> { entry ->
+            SolveScreen(
+                cube = Cube.fromColorString(entry.toRoute<SolveRoute>().cube),
+                onBack = { navController.popBackStack() },
+                onHome = { navController.popBackStack(HomeRoute, inclusive = false) },
             )
         }
         composable<LogRoute> {

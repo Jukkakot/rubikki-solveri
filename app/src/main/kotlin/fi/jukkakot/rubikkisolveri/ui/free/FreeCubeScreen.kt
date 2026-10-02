@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -49,7 +50,7 @@ private val turnButtons = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FreeCubeScreen(start: Cube, onBack: () -> Unit) {
+fun FreeCubeScreen(start: Cube, onBack: () -> Unit, onSolve: (Cube) -> Unit = {}) {
     val animator = rememberCubeAnimator(start)
     val viewState = remember { CubeViewState() }
     val history = remember { mutableStateListOf<Move>() }
@@ -122,6 +123,11 @@ fun FreeCubeScreen(start: Cube, onBack: () -> Unit) {
                     modifier = Modifier.weight(1f),
                 ) { Text(stringResource(R.string.free_reset)) }
             }
+            Button(
+                onClick = { onSolve(animator.target) },
+                enabled = !animator.target.isSolved,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(stringResource(R.string.free_solve)) }
         }
     }
 }

@@ -32,6 +32,14 @@ into `cube`, so it is tested by plain JVM unit tests.
   indices are included for highlighting. `CubeCheck.pieces` gives the corner/edge view
   (`Corner`, `Edge`, `Pieces`) with two-phase orientation conventions.
 
+## Solver — Implemented
+
+- `cs.min2phase` (in `cube/src/main/java`): the two-phase solver, vendored unmodified under its
+  MIT licence option (`LICENSE` there names the upstream commit).
+- `solve/TwoPhaseSolver`: checks validity, then `Search().solution(facelets, 21, 100 000 probes,
+  1000 min probes)`: ≤ 21 moves, about 19 on average, ~25 ms on a desktop. `warmUp()` builds the
+  tables (called from `RubikkiApp` on a background thread). `randomStateScramble()` for practice.
+
 ## App structure — Implemented
 
 - `RubikkiApp` (Application): sets up the log and the crash handler, logs `app.start`.
@@ -66,13 +74,13 @@ into `cube`, so it is tested by plain JVM unit tests.
 | Route | Screen | Notes |
 |---|---|---|
 | `HomeRoute` | Home | entries: scan (coming), manual input, free cube |
-| `ManualInputRoute` | Manual input | face-by-face painting with `CubeEditor`, check with `CubeCheck` |
-| `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset |
+| `ManualInputRoute` | Manual input | face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution |
+| `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
+| `SolveRoute(cube)` | Solution | background solve, then a stepper: show / done / previous, moves in words |
 | `SettingsRoute`, `LogRoute` | Settings, log | |
 
 ## Planned
 
-- Two-phase
-  solver and solution stepper (`fast-solve`), camera scan (`camera-scan`), move guide
+- Camera scan (`camera-scan`), move guide
   (`move-guide`), camera follow-along (`camera-follow`), beginner solver (`beginner-solver`),
   lessons (`lessons`), timer and history (`progress`), signed APK (`release`).

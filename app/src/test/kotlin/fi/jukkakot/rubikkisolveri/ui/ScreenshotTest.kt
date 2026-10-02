@@ -6,7 +6,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onRoot
+import fi.jukkakot.rubikkisolveri.ui.solve.SolveScreen
 import androidx.compose.material3.Surface
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeEditor
@@ -36,9 +38,12 @@ class ScreenshotTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private fun shot(name: String, dark: Boolean = false, content: @Composable () -> Unit) {
+    private fun shot(name: String, dark: Boolean = false, waitForText: String? = null, content: @Composable () -> Unit) {
         compose.setContent {
             RubikkiTheme(systemDark = dark, dynamicColor = false) { Surface(Modifier.fillMaxSize()) { content() } }
+        }
+        if (waitForText != null) {
+            compose.waitUntil(10_000) { compose.onAllNodesWithText(waitForText, substring = true).fetchSemanticsNodes().isNotEmpty() }
         }
         compose.mainClock.advanceTimeBy(2000)
         val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
@@ -56,6 +61,11 @@ class ScreenshotTest {
 
     @Test
     fun manualInputDark() = shot("manual-input-dark", dark = true) { ManualInputScreen(onBack = {}, onValid = {}) }
+
+    @Test
+    fun solve() = shot("solve", waitForText = "Siirto 1/") {
+        SolveScreen(Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {})
+    }
 
     @Test
     fun midTurn() = shot("mid-turn") {

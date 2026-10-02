@@ -108,7 +108,9 @@ object CubeScene {
      */
     fun project(quads: List<Quad>, view: Quat, width: Float, height: Float): List<ProjectedQuad> {
         val camera = V3(0f, 0f, CAMERA_DISTANCE)
-        val scale = minOf(width, height) / 2f * 0.86f * (CAMERA_DISTANCE - 2.6f) / 2.6f
+        // The farthest any cube point can project from the centre is 0.302·scale (a point at the
+        // cube's corner radius 2.6, seen at the worst angle); this keeps it inside 85 % of the half size.
+        val scale = minOf(width, height) / 2f * 0.85f / 0.302f
         val cx = width / 2f
         val cy = height / 2f
         val visible = ArrayList<Triple<Float, Int, ProjectedQuad>>(quads.size)

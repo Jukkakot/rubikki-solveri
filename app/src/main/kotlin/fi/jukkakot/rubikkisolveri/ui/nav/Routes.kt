@@ -17,3 +17,7 @@ data object ManualInputRoute
 /** [cube] is a colour string (see Cube.toColorString), or null for a solved cube. */
 @Serializable
 data class FreeCubeRoute(val cube: String? = null)
+
+/** [cube] is a colour string (see Cube.toColorString). */
+@Serializable
+data class SolveRoute(val cube: String)

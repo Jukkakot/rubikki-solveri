@@ -2,6 +2,7 @@ package fi.jukkakot.rubikkisolveri
 
 import android.app.Application
 import android.os.Build
+import fi.jukkakot.rubikkisolveri.cube.solve.TwoPhaseSolver
 import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.CrashHandler
 import fi.jukkakot.rubikkisolveri.log.Evt
@@ -26,6 +27,11 @@ class RubikkiApp : Application() {
             "ver" to BuildConfig.VERSION_NAME, "sdk" to Build.VERSION.SDK_INT, "device" to Build.MODEL,
             "crashedLastTime" to crashedLastTime,
         )
+        Thread({
+            val start = System.nanoTime()
+            TwoPhaseSolver.warmUp()
+            logger.info(Evt.SOLVER_READY, null, "ms" to (System.nanoTime() - start) / 1_000_000)
+        }, "solver-warm-up").apply { isDaemon = true }.start()
     }
 
     fun crashNoticeShown() {

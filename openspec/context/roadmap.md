@@ -8,7 +8,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 0 | `app-setup` | done | Empty Compose app that runs on the phone: Material 3 theme (light/dark), Finnish/English, navigation shell, unit tests, CI build of a debug APK |
 | 1 | `cube-model` | done | Cube state, moves and notation, whole-cube rotations, validity check (colour counts, pieces, twist, flip, parity); pure Kotlin with many tests |
 | 2 | `cube-view` | done | 3D cube that animates moves and can be turned by dragging; manual input by painting stickers |
-| 3 | `fast-solve` | planned | Solver library (two-phase), solution stepper: next/back, replay, progress |
+| 3 | `fast-solve` | done | Solver library (two-phase), solution stepper: next/back, replay, progress |
 | 4 | `camera-scan` | planned | Guided six-face scan with live grid, colour classification against the centres, tap to fix, validity feedback |
 | 5 | `move-guide` | planned | The clear move presentation: cube follows how you hold it, highlighted layer, arrows, haptics |
 | 6 | `camera-follow` | planned | Follow-along with the camera: arrow drawn on the real cube, move detected from colours, auto-advance |
