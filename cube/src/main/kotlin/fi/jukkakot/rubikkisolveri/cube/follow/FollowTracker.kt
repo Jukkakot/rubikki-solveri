@@ -88,12 +88,17 @@ class FollowTracker(private val stableFrames: Int = STABLE_FRAMES) {
         val expectedBefore = front(before)
         val after = before.apply(move)
         val expectedAfter = front(after)
+        val scoreBefore = score(read, expectedBefore)
+        val scoreAfter = score(read, expectedAfter)
+        // A whole-cube turn changes the front centre: matching the front after it means done.
+        if (move.isRotation && expectedBefore != expectedAfter && scoreAfter >= MATCH && scoreAfter > scoreBefore) {
+            calibration.learn(samples, expectedAfter)
+            return if (stable("done")) FollowEvent.Done else FollowEvent.Waiting
+        }
         if (read[4] != expectedBefore[4]) {
             reset()
             return FollowEvent.HoldFront(read[4])
         }
-        val scoreBefore = score(read, expectedBefore)
-        val scoreAfter = score(read, expectedAfter)
         // A frame that is clearly one known front (a move changes at least three cells) teaches the
         // calibration every cell, including the ones it misread.
         if (scoreBefore >= LEARN && scoreBefore > scoreAfter) calibration.learn(samples, expectedBefore)

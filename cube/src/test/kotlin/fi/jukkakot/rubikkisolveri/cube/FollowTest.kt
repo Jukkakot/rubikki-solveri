@@ -104,6 +104,14 @@ class FollowTrackerTest {
     }
 
     @Test
+    fun wholeCubeTurn() {
+        val tracker = FollowTracker(stableFrames = 2)
+        val y = Notation.parseMove("y")!!
+        tracker.onFrame(before, y, seen(before.apply("y")))
+        assertEquals(FollowEvent.Done, tracker.onFrame(before, y, seen(before.apply("y"))))
+    }
+
+    @Test
     fun backTurn() {
         val tracker = FollowTracker()
         assertEquals(FollowEvent.NotVisible, tracker.onFrame(before, Notation.parseMove("B")!!, seen(before)))

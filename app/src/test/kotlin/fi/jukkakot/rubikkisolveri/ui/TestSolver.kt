@@ -1,8 +1,7 @@
 package fi.jukkakot.rubikkisolveri.ui
 
-import fi.jukkakot.rubikkisolveri.cube.Cube
-import fi.jukkakot.rubikkisolveri.cube.solve.SolveResult
-import fi.jukkakot.rubikkisolveri.cube.solve.TwoPhaseSolver
+import fi.jukkakot.rubikkisolveri.ui.solve.Planner
+import fi.jukkakot.rubikkisolveri.ui.solve.plan
 
-/** Solves on the calling thread, so screen tests do not depend on background threads. */
-val INLINE_SOLVER: suspend (Cube) -> SolveResult = { TwoPhaseSolver.solve(it) }
+/** Plans on the calling thread, so screen tests do not depend on background threads. */
+val INLINE_PLANNER: Planner = { cube, method -> plan(cube, method) }

@@ -12,7 +12,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 4 | `camera-scan` | done | Guided six-face scan with live grid, colour classification against the centres, tap to fix, validity feedback |
 | 5 | `move-guide` | done | The clear move presentation: cube follows how you hold it, highlighted layer, arrows, haptics |
 | 6 | `camera-follow` | done | Follow-along with the camera: arrow drawn on the real cube, move detected from colours, auto-advance |
-| 7 | `beginner-solver` | planned | Our own layer-by-layer solver that explains each stage |
+| 7 | `beginner-solver` | done | Our own layer-by-layer solver that explains each stage |
 | 8 | `lessons` | planned | Teaching screens per stage and practice positions |
 | 9 | `progress` | planned | Timer, solve history and stats in a local database |
 | 10 | `release` | planned | Signed release APK installed directly on the phone (no Google Play) |

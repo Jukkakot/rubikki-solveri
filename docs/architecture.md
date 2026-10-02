@@ -59,6 +59,24 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
 5. `ScanOutcome`: valid and no uncertain sticker → solution; otherwise manual input with
    `fromScan`, the scanned colours and the doubtful/problem stickers marked.
 
+## Beginner solver — Implemented
+
+`cube/beginner`: a layer-by-layer method for people, in seven stages (`Stage`): white cross, white
+corners (white on top, the app's hold), then the cube is turned over (z2) and: middle layer,
+yellow cross, yellow edges, yellow corners into place, yellow corners turned.
+
+- Cross: per edge, IDA* over face turns tracking only the white stickers of the target and the
+  placed edges, bounded by a per-sticker distance table.
+- Other stages: `MacroSearch` — breadth-first over macros (whole-cube turn y^r, setup turn of
+  U/D, a classic algorithm repeated n times) to the next sub-goal without breaking earlier stages.
+  Algorithms: trigger R' D' R D (white corners and the last stage), U R U' R' U' F' U F and its
+  mirror, F R U R' U' F', R U R' U R U2 R' U, U R U' L' U R' U' L.
+- Each `Step` has a `StepNote` (data); the app words it (`ui/common/StepTexts`). About 160 moves,
+  < 60 ms on a desktop.
+- The solution screen offers "shortest" or "learn step by step" (`SolveMethod`); learning shows a
+  stage card (stage n/7, the idea on the stage's first step, the step's note). Whole-cube turns
+  are worded by the resulting front and top centres, and the hold line updates as the cube turns.
+
 ## App structure — Implemented
 
 - `RubikkiApp` (Application): sets up the log and the crash handler, logs `app.start`.
@@ -129,5 +147,5 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 
 ## Planned
 
-- Beginner solver (`beginner-solver`), lessons (`lessons`),
+- Lessons (`lessons`),
   timer and history (`progress`), signed APK (`release`).

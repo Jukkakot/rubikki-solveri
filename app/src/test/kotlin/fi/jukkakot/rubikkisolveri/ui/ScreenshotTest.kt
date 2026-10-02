@@ -70,17 +70,17 @@ class ScreenshotTest {
 
     @Test
     fun solve() = shot("solve", waitForText = "Siirto 1/") {
-        SolveScreen(Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {}, solver = INLINE_SOLVER)
+        SolveScreen(Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {}, planner = INLINE_PLANNER)
     }
 
     @Test
     fun guideBack() = shot("guide-back", waitForText = "Siirto 1/") {
-        SolveScreen(Cube.solved().apply("B'"), onBack = {}, onHome = {}, showNotation = true, solver = INLINE_SOLVER)
+        SolveScreen(Cube.solved().apply("B'"), onBack = {}, onHome = {}, showNotation = true, planner = INLINE_PLANNER)
     }
 
     @Test
     fun guideRightDark() = shot("guide-right-dark", dark = true, waitForText = "Siirto 1/") {
-        SolveScreen(Cube.solved().apply("R2 U' R"), onBack = {}, onHome = {}, solver = INLINE_SOLVER)
+        SolveScreen(Cube.solved().apply("R2 U' R"), onBack = {}, onHome = {}, planner = INLINE_PLANNER)
     }
 
     @Test
@@ -95,6 +95,14 @@ class ScreenshotTest {
                 androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530))))
             }
         }
+    }
+
+    @Test
+    fun learn() = shot("learn", waitForText = "Vaihe ") {
+        SolveScreen(
+            Cube.solved().apply("R U F' L2 D B R2"), onBack = {}, onHome = {}, planner = INLINE_PLANNER,
+            initialMethod = fi.jukkakot.rubikkisolveri.ui.solve.SolveMethod.LEARN,
+        )
     }
 
     @Test

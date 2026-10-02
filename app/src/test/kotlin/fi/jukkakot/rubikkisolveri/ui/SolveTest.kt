@@ -30,7 +30,7 @@ class MoveWordsTest {
         val base = ApplicationProvider.getApplicationContext<Context>()
         val config = Configuration(base.resources.configuration).apply { setLocale(Locale.forLanguageTag(language)) }
         val context = base.createConfigurationContext(config)
-        return MoveWords.describe(Notation.parseMove(move)!!) { id, args -> context.getString(id, *args) }
+        return MoveWords.describe(Notation.parseMove(move)!!, { id, args -> context.getString(id, *args) })
     }
 
     @Test
@@ -61,7 +61,7 @@ class SolveTest {
 
     private fun solve(cube: Cube) {
         compose.setContent {
-            RubikkiTheme(dynamicColor = false) { SolveScreen(cube, onBack = {}, onHome = { home = true }, solver = INLINE_SOLVER) }
+            RubikkiTheme(dynamicColor = false) { SolveScreen(cube, onBack = {}, onHome = { home = true }, planner = INLINE_PLANNER) }
         }
     }
 

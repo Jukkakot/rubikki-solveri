@@ -48,7 +48,7 @@ fun MoveWordsText(state: StepperState, showNotation: Boolean) {
     val move = state.current ?: return
     Column {
         Text(
-            moveDescription(move),
+            moveDescription(move, state.cubeAt(state.index + 1)),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.heightIn(min = 72.dp),
