@@ -113,6 +113,5 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
 
 ## Planned
 
-- Move guide
-  (`move-guide`), camera follow-along (`camera-follow`), beginner solver (`beginner-solver`),
-  lessons (`lessons`), timer and history (`progress`), signed APK (`release`).
+- Camera follow-along (`camera-follow`), beginner solver (`beginner-solver`), lessons (`lessons`),
+  timer and history (`progress`), signed APK (`release`).
