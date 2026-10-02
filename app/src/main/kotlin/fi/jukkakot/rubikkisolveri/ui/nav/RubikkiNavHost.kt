@@ -15,6 +15,15 @@ import fi.jukkakot.rubikkisolveri.ui.scan.ScanScreen
 import fi.jukkakot.rubikkisolveri.ui.free.FreeCubeScreen
 import fi.jukkakot.rubikkisolveri.ui.manual.ManualInputScreen
 import fi.jukkakot.rubikkisolveri.ui.solve.SolveScreen
+import fi.jukkakot.rubikkisolveri.ui.solve.SolveMethod
+import fi.jukkakot.rubikkisolveri.ui.solve.SolvePlan
+import fi.jukkakot.rubikkisolveri.ui.lessons.LessonScreen
+import fi.jukkakot.rubikkisolveri.ui.lessons.LessonsScreen
+import fi.jukkakot.rubikkisolveri.ui.common.stageName
+import fi.jukkakot.rubikkisolveri.cube.beginner.Practice
+import fi.jukkakot.rubikkisolveri.cube.beginner.Stage
+import androidx.compose.ui.res.stringResource
+import kotlin.random.Random
 import fi.jukkakot.rubikkisolveri.R
 import fi.jukkakot.rubikkisolveri.settings.AppLanguage
 import fi.jukkakot.rubikkisolveri.settings.ThemeMode
@@ -47,6 +56,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 entries = listOf(
                     HomeEntry(R.string.home_scan, onOpen = { navController.navigate(ScanRoute) }),
                     HomeEntry(R.string.home_manual, onOpen = { navController.navigate(ManualInputRoute()) }),
+                    HomeEntry(R.string.home_learn, onOpen = { navController.navigate(LessonsRoute) }),
                     HomeEntry(R.string.home_free_cube, onOpen = { navController.navigate(FreeCubeRoute()) }),
                 ),
                 onOpenSettings = { navController.navigate(SettingsRoute) },
@@ -109,6 +119,38 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 onBack = { navController.popBackStack() },
                 onHome = { navController.popBackStack(HomeRoute, inclusive = false) },
                 showNotation = actions.showNotation,
+            )
+        }
+        composable<LessonsRoute> {
+            LessonsScreen(onOpen = { navController.navigate(LessonRoute(it)) }, onBack = { navController.popBackStack() })
+        }
+        composable<LessonRoute> { entry ->
+            LessonScreen(
+                index = entry.toRoute<LessonRoute>().index,
+                onBack = { navController.popBackStack() },
+                onPractice = { stage -> navController.navigate(PracticeRoute(stage.ordinal, System.currentTimeMillis())) },
+                onFreeCube = { navController.navigate(FreeCubeRoute()) },
+            )
+        }
+        composable<PracticeRoute> { entry ->
+            val route = entry.toRoute<PracticeRoute>()
+            val stage = Stage.entries[route.stage]
+            val exercise = remember(route) { Practice.exercise(stage, Random(route.seed)) }
+            SolveScreen(
+                cube = exercise.position,
+                onBack = { navController.popBackStack() },
+                onHome = {
+                    navController.navigate(PracticeRoute(route.stage, route.seed + 1)) {
+                        popUpTo<PracticeRoute> { inclusive = true }
+                    }
+                },
+                showNotation = actions.showNotation,
+                planner = { _, _ -> SolvePlan.Ready(exercise.steps.flatMap { it.moves }, exercise.steps) },
+                initialMethod = SolveMethod.LEARN,
+                title = stringResource(R.string.practice_title, stringResource(stageName(stage))),
+                practice = true,
+                finishedText = stringResource(R.string.practice_done),
+                homeLabel = stringResource(R.string.practice_new),
             )
         }
         composable<LogRoute> {

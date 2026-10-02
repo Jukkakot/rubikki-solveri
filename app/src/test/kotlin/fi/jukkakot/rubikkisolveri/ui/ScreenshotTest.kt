@@ -106,6 +106,11 @@ class ScreenshotTest {
     }
 
     @Test
+    fun lesson() = shot("lesson") {
+        fi.jukkakot.rubikkisolveri.ui.lessons.LessonScreen(2, onBack = {}, onPractice = {}, onFreeCube = {})
+    }
+
+    @Test
     fun scan() = shot("scan") {
         val frames = kotlinx.coroutines.flow.MutableStateFlow(
             listOf(

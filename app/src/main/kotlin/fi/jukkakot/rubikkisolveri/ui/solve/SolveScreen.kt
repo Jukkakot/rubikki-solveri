@@ -126,6 +126,10 @@ fun SolveScreen(
     followPanel: @Composable (StepperState) -> Unit = { DefaultFollowPanel(it) },
     planner: Planner = BACKGROUND_PLANNER,
     initialMethod: SolveMethod = SolveMethod.FAST,
+    title: String? = null,
+    practice: Boolean = false,
+    finishedText: String? = null,
+    homeLabel: String? = null,
 ) {
     var follow by rememberSaveable { mutableStateOf(false) }
     var method by rememberSaveable { mutableStateOf(initialMethod) }
@@ -136,7 +140,7 @@ fun SolveScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.solve_title)) },
+                title = { Text(title ?: stringResource(R.string.solve_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
@@ -153,7 +157,7 @@ fun SolveScreen(
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            if (!cube.isSolved) {
+            if (!cube.isSolved && !practice) {
                 MethodChoice(method, onChoose = { method = it }, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             }
             Box(Modifier.fillMaxSize()) {
@@ -169,7 +173,7 @@ fun SolveScreen(
                             Message(stringResource(R.string.solve_already), stringResource(R.string.solve_home), onHome)
                         } else {
                             key(method) {
-                                Stepper(cube, r, showNotation, onHome, follow, { follow = false }, followPanel)
+                                Stepper(cube, r, showNotation, onHome, follow, { follow = false }, followPanel, finishedText, homeLabel)
                             }
                         }
                 }
@@ -210,6 +214,8 @@ private fun Stepper(
     follow: Boolean,
     onStopFollowing: () -> Unit,
     followPanel: @Composable (StepperState) -> Unit,
+    finishedText: String?,
+    homeLabel: String?,
 ) {
     val moves = plan.moves
     val haptics = LocalHapticFeedback.current
@@ -242,7 +248,7 @@ private fun Stepper(
             Text(stringResource(R.string.solve_step, index + 1, moves.size), style = MaterialTheme.typography.labelLarge)
             MoveWordsText(state, showNotation)
         } else {
-            Text(stringResource(R.string.solve_finished), style = MaterialTheme.typography.headlineSmall)
+            Text(finishedText ?: stringResource(R.string.solve_finished), style = MaterialTheme.typography.headlineSmall)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedButton(onClick = state::back, enabled = index > 0, modifier = Modifier.weight(1f)) {
@@ -258,7 +264,7 @@ private fun Stepper(
                     modifier = Modifier.weight(1.3f).heightIn(min = 56.dp),
                 ) { Text(stringResource(R.string.solve_done_move)) }
             } else {
-                Button(onClick = onHome, modifier = Modifier.weight(1.3f)) { Text(stringResource(R.string.solve_home)) }
+                Button(onClick = onHome, modifier = Modifier.weight(1.3f)) { Text(homeLabel ?: stringResource(R.string.solve_home)) }
             }
         }
     }

@@ -77,6 +77,16 @@ yellow cross, yellow edges, yellow corners into place, yellow corners turned.
   stage card (stage n/7, the idea on the stage's first step, the step's note). Whole-cube turns
   are worded by the resulting front and top centres, and the hold line updates as the cube turns.
 
+## Lessons — Implemented
+
+- `ui/lessons/LessonCatalog`: basics + one lesson per beginner stage; text in string resources
+  (what / how / tip), algorithms from `BeginnerSolver`.
+- `AlgorithmCard`: name, notation, moves in words and a 3D demo from the solved cube with the
+  algorithm's inverse applied, so playing it solves the cube; it snaps back after 1.2 s.
+- Practice: `Practice.exercise(stage, random)` (cube) scrambles, beginner-solves, applies the
+  earlier stages; `PracticeRoute(stage, seed)` opens `SolveScreen` in practice mode with only that
+  stage's steps; "new position" replaces the route with seed + 1.
+
 ## App structure — Implemented
 
 - `RubikkiApp` (Application): sets up the log and the crash handler, logs `app.start`.
@@ -138,7 +148,9 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 
 | Route | Screen | Notes |
 |---|---|---|
-| `HomeRoute` | Home | entries: scan, manual input, free cube |
+| `HomeRoute` | Home | entries: scan, manual input, learn, free cube |
+| `LessonsRoute`, `LessonRoute(index)` | Lessons | basics + 7 stages, algorithm demos |
+| `PracticeRoute(stage, seed)` | Practice | the solution screen limited to one stage |
 | `ScanRoute` | Scan | camera permission, grid, live dots, auto-capture; result → solve or check |
 | `ManualInputRoute(cube?, marked?, fromScan)` | Manual input / check a scan | face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution |
 | `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
@@ -147,5 +159,4 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 
 ## Planned
 
-- Lessons (`lessons`),
-  timer and history (`progress`), signed APK (`release`).
+- Timer and history (`progress`), signed APK (`release`).

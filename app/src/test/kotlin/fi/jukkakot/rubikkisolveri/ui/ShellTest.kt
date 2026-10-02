@@ -21,6 +21,7 @@ import fi.jukkakot.rubikkisolveri.ui.nav.LogRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.ManualInputRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.SolveRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.ScanRoute
+import fi.jukkakot.rubikkisolveri.ui.nav.LessonsRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.RubikkiNavHost
 import fi.jukkakot.rubikkisolveri.ui.nav.SettingsRoute
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
@@ -81,6 +82,13 @@ class ShellTest {
         start()
         compose.onNodeWithText("Rubikki Solveri").assertIsDisplayed()
         assertTrue(isOn(HomeRoute))
+    }
+
+    @Test
+    fun openLessons() {
+        start()
+        compose.onNodeWithText("Opettele ratkaisemaan").performClick()
+        assertTrue(isOn(LessonsRoute))
     }
 
     @Test

@@ -28,3 +28,14 @@ data class FreeCubeRoute(val cube: String? = null)
 /** [cube] is a colour string (see Cube.toColorString). */
 @Serializable
 data class SolveRoute(val cube: String)
+
+@Serializable
+data object LessonsRoute
+
+/** [index] 0 = basics, 1..7 = the beginner stages. */
+@Serializable
+data class LessonRoute(val index: Int)
+
+/** Practise beginner stage [stage] (its ordinal) on the position made from [seed]. */
+@Serializable
+data class PracticeRoute(val stage: Int, val seed: Long)
