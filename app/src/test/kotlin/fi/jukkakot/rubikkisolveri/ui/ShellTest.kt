@@ -18,6 +18,7 @@ import fi.jukkakot.rubikkisolveri.settings.ThemeMode
 import fi.jukkakot.rubikkisolveri.ui.nav.AppActions
 import fi.jukkakot.rubikkisolveri.ui.nav.HomeRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.LogRoute
+import fi.jukkakot.rubikkisolveri.ui.nav.ManualInputRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.RubikkiNavHost
 import fi.jukkakot.rubikkisolveri.ui.nav.SettingsRoute
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
@@ -82,6 +83,14 @@ class ShellTest {
     fun unbuiltFeature() {
         start()
         compose.onNodeWithText("Skannaa kuutio · Tulossa").assertIsNotEnabled()
+    }
+
+    @Test
+    fun openManualInput() {
+        start()
+        compose.onNodeWithText("Syötä värit käsin").performClick()
+        assertTrue(isOn(ManualInputRoute))
+        compose.onNodeWithText("Etupuoli (1/6)").assertIsDisplayed()
     }
 
     @Test

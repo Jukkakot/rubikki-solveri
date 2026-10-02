@@ -8,6 +8,10 @@ import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
+import fi.jukkakot.rubikkisolveri.cube.Cube
+import fi.jukkakot.rubikkisolveri.ui.free.FreeCubeScreen
+import fi.jukkakot.rubikkisolveri.ui.manual.ManualInputScreen
 import fi.jukkakot.rubikkisolveri.R
 import fi.jukkakot.rubikkisolveri.settings.AppLanguage
 import fi.jukkakot.rubikkisolveri.settings.ThemeMode
@@ -37,7 +41,8 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
             HomeScreen(
                 entries = listOf(
                     HomeEntry(R.string.home_scan, onOpen = null),
-                    HomeEntry(R.string.home_manual, onOpen = null),
+                    HomeEntry(R.string.home_manual, onOpen = { navController.navigate(ManualInputRoute) }),
+                    HomeEntry(R.string.home_free_cube, onOpen = { navController.navigate(FreeCubeRoute()) }),
                 ),
                 onOpenSettings = { navController.navigate(SettingsRoute) },
                 crashedLastTime = actions.crashedLastTime,
@@ -53,6 +58,19 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 onLanguage = actions.onLanguage,
                 onThemeMode = actions.onThemeMode,
                 onOpenLog = { navController.navigate(LogRoute) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable<ManualInputRoute> {
+            ManualInputScreen(
+                onBack = { navController.popBackStack() },
+                onValid = { cube -> navController.navigate(FreeCubeRoute(cube.toColorString())) },
+            )
+        }
+        composable<FreeCubeRoute> { entry ->
+            val route = entry.toRoute<FreeCubeRoute>()
+            FreeCubeScreen(
+                start = route.cube?.let(Cube::fromColorString) ?: Cube.solved(),
                 onBack = { navController.popBackStack() },
             )
         }

@@ -33,6 +33,12 @@ Run before every commit (CI runs the same):
 | Screens | Compose UI tests on Robolectric: key interactions only | Implemented |
 | On the phone | Manual, listed under "How to check" in each change summary | — |
 
+## Screenshots without a phone — Implemented
+
+`./gradlew :app:testDebugUnitTest --tests '*ScreenshotTest*'` renders key screens with
+Robolectric's native graphics into `app/build/screenshots/*.png` (Galaxy S24-sized, light and
+dark). It only fails when rendering crashes; look at the images to check layout and the 3D cube.
+
 ## Debugging — Implemented
 
 - **Log:** every event is one line in Logcat (tag `Rubikki`) and in the app's log file. In

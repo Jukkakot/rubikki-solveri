@@ -47,9 +47,32 @@ into `cube`, so it is tested by plain JVM unit tests.
   `Evt` (event catalogue), `CrashHandler` (writes `app.crash` synchronously and leaves a marker
   for the next start).
 
+## 3D cube view — Implemented
+
+- `ui/cube3d/CubeScene` (plain Kotlin, unit-tested): 26 cubies of size 1, each a dark body and its
+  stickers as quads; a move in progress rotates the turned cubies about the move axis; the view is a
+  quaternion; perspective projection, back-face culling, painter's order by cubie distance, hit
+  test for taps.
+- `Cube3D` draws the projected quads on a Compose `Canvas`; drag turns the view (`CubeViewState`),
+  tap returns a sticker index, `marked` stickers get a red outline. Colours are fixed real-cube
+  colours (`StickerColors`), not themed.
+- `CubeAnimator` queues moves and animates them (300 ms quarter, 450 ms half, scaled by the phone's
+  animator scale; instant when animations are off).
+- Hold orientations per face (`FaceView` in `cube`) drive the manual input's preview and later
+  the scanner's guidance.
+
+## Screens — Implemented
+
+| Route | Screen | Notes |
+|---|---|---|
+| `HomeRoute` | Home | entries: scan (coming), manual input, free cube |
+| `ManualInputRoute` | Manual input | face-by-face painting with `CubeEditor`, check with `CubeCheck` |
+| `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset |
+| `SettingsRoute`, `LogRoute` | Settings, log | |
+
 ## Planned
 
-- 3D cube view and manual input (`cube-view`), two-phase
+- Two-phase
   solver and solution stepper (`fast-solve`), camera scan (`camera-scan`), move guide
   (`move-guide`), camera follow-along (`camera-follow`), beginner solver (`beginner-solver`),
   lessons (`lessons`), timer and history (`progress`), signed APK (`release`).
