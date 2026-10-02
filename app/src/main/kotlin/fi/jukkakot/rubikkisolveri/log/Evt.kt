@@ -11,6 +11,10 @@ enum class Evt(val id: String) {
     SOLVER_READY("solver.ready"),
     SOLVE_DONE("solve.done"),
     SOLVE_FAILED("solve.failed"),
+    SCAN_FACE("scan.face"),
+    SCAN_DONE("scan.done"),
+    SCAN_PERMISSION("scan.permission"),
+    SCAN_ERROR("scan.error"),
 }
 
 enum class Level { DEBUG, INFO, WARN, ERROR }

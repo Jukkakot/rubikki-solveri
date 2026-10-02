@@ -57,9 +57,4 @@ fun validityMessage(validity: Validity): String = when (validity) {
 }
 
 /** The stickers a validity problem is about, for marking. */
-fun markedStickers(validity: Validity?): Set<Int> = when (validity) {
-    is Validity.BadCentres -> validity.stickers.toSet()
-    is Validity.ImpossiblePiece -> validity.stickers.toSet()
-    is Validity.DuplicatePiece -> validity.stickers.toSet()
-    else -> emptySet()
-}
+fun markedStickers(validity: Validity?): Set<Int> = validity?.markedStickers ?: emptySet()

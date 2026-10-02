@@ -11,8 +11,15 @@ data object SettingsRoute
 @Serializable
 data object LogRoute
 
+/**
+ * Manual input, empty or prefilled: [cube] is a `CubeEditor.encode()` string, [marked] comma-separated
+ * sticker indices to mark, [fromScan] when a scan hands over its result for checking.
+ */
 @Serializable
-data object ManualInputRoute
+data class ManualInputRoute(val cube: String? = null, val marked: String? = null, val fromScan: Boolean = false)
+
+@Serializable
+data object ScanRoute
 
 /** [cube] is a colour string (see Cube.toColorString), or null for a solved cube. */
 @Serializable

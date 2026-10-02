@@ -77,11 +77,17 @@ fun ManualInputScreen(
     onBack: () -> Unit,
     onValid: (Cube) -> Unit,
     initial: CubeEditor = CubeEditor.empty(),
+    initialMarked: Set<Int> = emptySet(),
     title: Int = R.string.manual_title,
+    note: Int? = null,
 ) {
     var encoded by rememberSaveable { mutableStateOf(initial.encode()) }
     val editor = CubeEditor.decode(encoded) ?: CubeEditor.empty()
-    var faceIndex by rememberSaveable { mutableIntStateOf(0) }
+    // Marks handed over by a scan; they stay until the user changes the cube.
+    var handedMarks by rememberSaveable { mutableStateOf(initialMarked.joinToString(",")) }
+    var faceIndex by rememberSaveable {
+        mutableIntStateOf(initialMarked.minOrNull()?.let { FaceView.of(Face.entries[it / 9]).ordinal } ?: 0)
+    }
     val view = FaceView.entries[faceIndex]
     var colorIndex by rememberSaveable { mutableIntStateOf(CubeColor.WHITE.ordinal) }
     val selectedColor = CubeColor.entries[colorIndex]
@@ -93,9 +99,10 @@ fun ManualInputScreen(
     fun update(next: CubeEditor) {
         encoded = next.encode()
         validity = null
+        handedMarks = ""
     }
 
-    val marked = markedStickers(validity)
+    val marked = markedStickers(validity) + handedMarks.split(',').mapNotNull { it.toIntOrNull() }
 
     Scaffold(
         topBar = {
@@ -134,6 +141,14 @@ fun ManualInputScreen(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (note != null && handedMarks.isNotEmpty()) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(note), modifier = Modifier.padding(16.dp))
+                }
+            }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MiniNet(editor, view, marked, onSelect = { faceIndex = it.ordinal })
                 Cube3D(

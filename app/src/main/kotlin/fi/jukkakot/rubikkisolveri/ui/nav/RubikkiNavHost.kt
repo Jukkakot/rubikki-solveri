@@ -10,6 +10,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import fi.jukkakot.rubikkisolveri.cube.Cube
+import fi.jukkakot.rubikkisolveri.cube.CubeEditor
+import fi.jukkakot.rubikkisolveri.ui.scan.ScanScreen
 import fi.jukkakot.rubikkisolveri.ui.free.FreeCubeScreen
 import fi.jukkakot.rubikkisolveri.ui.manual.ManualInputScreen
 import fi.jukkakot.rubikkisolveri.ui.solve.SolveScreen
@@ -41,8 +43,8 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
         composable<HomeRoute> {
             HomeScreen(
                 entries = listOf(
-                    HomeEntry(R.string.home_scan, onOpen = null),
-                    HomeEntry(R.string.home_manual, onOpen = { navController.navigate(ManualInputRoute) }),
+                    HomeEntry(R.string.home_scan, onOpen = { navController.navigate(ScanRoute) }),
+                    HomeEntry(R.string.home_manual, onOpen = { navController.navigate(ManualInputRoute()) }),
                     HomeEntry(R.string.home_free_cube, onOpen = { navController.navigate(FreeCubeRoute()) }),
                 ),
                 onOpenSettings = { navController.navigate(SettingsRoute) },
@@ -62,10 +64,31 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 onBack = { navController.popBackStack() },
             )
         }
-        composable<ManualInputRoute> {
+        composable<ManualInputRoute> { entry ->
+            val route = entry.toRoute<ManualInputRoute>()
             ManualInputScreen(
                 onBack = { navController.popBackStack() },
                 onValid = { cube -> navController.navigate(SolveRoute(cube.toColorString())) },
+                initial = route.cube?.let(CubeEditor::decode) ?: CubeEditor.empty(),
+                initialMarked = route.marked?.split(',')?.mapNotNull { it.toIntOrNull() }?.toSet().orEmpty(),
+                title = if (route.fromScan) R.string.check_title else R.string.manual_title,
+                note = if (route.fromScan) R.string.check_note else null,
+            )
+        }
+        composable<ScanRoute> {
+            ScanScreen(
+                onBack = { navController.popBackStack() },
+                onManual = {
+                    navController.navigate(ManualInputRoute()) { popUpTo(ScanRoute) { inclusive = true } }
+                },
+                onResult = { outcome ->
+                    val next: Any = if (outcome.isConfident) {
+                        SolveRoute(outcome.editor.toCube()!!.toColorString())
+                    } else {
+                        ManualInputRoute(outcome.editor.encode(), outcome.marked.joinToString(","), fromScan = true)
+                    }
+                    navController.navigate(next) { popUpTo(ScanRoute) { inclusive = true } }
+                },
             )
         }
         composable<FreeCubeRoute> { entry ->

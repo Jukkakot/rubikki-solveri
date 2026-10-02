@@ -26,6 +26,15 @@ sealed interface Validity {
     data object SwappedPieces : Validity
 
     val isValid: Boolean get() = this == Valid
+
+    /** The stickers this result is about (for marking), if any. */
+    val markedStickers: Set<Int>
+        get() = when (this) {
+            is BadCentres -> stickers.toSet()
+            is ImpossiblePiece -> stickers.toSet()
+            is DuplicatePiece -> stickers.toSet()
+            else -> emptySet()
+        }
 }
 
 object CubeCheck {

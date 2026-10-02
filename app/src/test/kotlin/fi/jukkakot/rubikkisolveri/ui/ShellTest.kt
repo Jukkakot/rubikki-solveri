@@ -20,6 +20,7 @@ import fi.jukkakot.rubikkisolveri.ui.nav.HomeRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.LogRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.ManualInputRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.SolveRoute
+import fi.jukkakot.rubikkisolveri.ui.nav.ScanRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.RubikkiNavHost
 import fi.jukkakot.rubikkisolveri.ui.nav.SettingsRoute
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
@@ -81,16 +82,17 @@ class ShellTest {
     }
 
     @Test
-    fun unbuiltFeature() {
+    fun openTheScan() {
         start()
-        compose.onNodeWithText("Skannaa kuutio · Tulossa").assertIsNotEnabled()
+        compose.onNodeWithText("Skannaa kuutio").performClick()
+        assertTrue(isOn(ScanRoute))
     }
 
     @Test
     fun openManualInput() {
         start()
         compose.onNodeWithText("Syötä värit käsin").performClick()
-        assertTrue(isOn(ManualInputRoute))
+        assertTrue(isOn(ManualInputRoute()))
         compose.onNodeWithText("Etupuoli (1/6)").assertIsDisplayed()
     }
 
@@ -197,6 +199,6 @@ class EnglishTextsTest {
                 )
             }
         }
-        compose.onNodeWithText("Scan the cube · Coming soon").assertIsDisplayed()
+        compose.onNodeWithText("Scan the cube").assertIsDisplayed()
     }
 }

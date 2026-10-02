@@ -49,6 +49,19 @@ Android Studio device menu → **Pair Devices Using Wi-Fi** and scan the QR code
 - The file keeps about the last 512 kB.
 - With the phone connected, Android Studio's Logcat shows the same lines live (`tag:Rubikki`).
 
+## Tuning the camera scan — Implemented
+
+The scan logs numbers, never pictures:
+
+- `scan.face face=F rgb=…,…` — the nine captured readings of a face (hex RGB, row by row as seen),
+  and `live=` the quick per-cell reading.
+- `scan.done valid=… validity=… uncertain=N cube=…` — the result (`cube` is the 54 colour letters,
+  `.` for unknown).
+
+If the scan misreads colours: scan once, Settings → Log → Share, and give the log to Claude. The
+readings are enough to replay the classification in a unit test and adjust
+`ColorClassifier.DEFAULT_PALETTE` (live dots and the centre check) or `UNCERTAIN_BELOW`.
+
 ## Release — Planned (`release`)
 
 A signed release APK installed directly on the phone; no Google Play.

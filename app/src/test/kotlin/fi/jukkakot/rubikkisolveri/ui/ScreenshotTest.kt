@@ -1,6 +1,7 @@
 package fi.jukkakot.rubikkisolveri.ui
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -43,7 +44,12 @@ class ScreenshotTest {
             RubikkiTheme(systemDark = dark, dynamicColor = false) { Surface(Modifier.fillMaxSize()) { content() } }
         }
         if (waitForText != null) {
-            compose.waitUntil(10_000) { compose.onAllNodesWithText(waitForText, substring = true).fetchSemanticsNodes().isNotEmpty() }
+            // Background work (the solver) runs on real threads: poll in real time.
+            var tries = 0
+            while (tries++ < 100 && compose.onAllNodesWithText(waitForText, substring = true).fetchSemanticsNodes().isEmpty()) {
+                Thread.sleep(100)
+                compose.mainClock.advanceTimeBy(100)
+            }
         }
         compose.mainClock.advanceTimeBy(2000)
         val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
@@ -65,6 +71,23 @@ class ScreenshotTest {
     @Test
     fun solve() = shot("solve", waitForText = "Siirto 1/") {
         SolveScreen(Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {})
+    }
+
+    @Test
+    fun scan() = shot("scan") {
+        val frames = kotlinx.coroutines.flow.MutableStateFlow(
+            listOf(
+                fi.jukkakot.rubikkisolveri.cube.CubeColor.RED, fi.jukkakot.rubikkisolveri.cube.CubeColor.GREEN,
+                fi.jukkakot.rubikkisolveri.cube.CubeColor.WHITE, fi.jukkakot.rubikkisolveri.cube.CubeColor.BLUE,
+                fi.jukkakot.rubikkisolveri.cube.CubeColor.GREEN, fi.jukkakot.rubikkisolveri.cube.CubeColor.YELLOW,
+                fi.jukkakot.rubikkisolveri.cube.CubeColor.ORANGE, fi.jukkakot.rubikkisolveri.cube.CubeColor.GREEN,
+                fi.jukkakot.rubikkisolveri.cube.CubeColor.RED,
+            ).map { fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier.DEFAULT_PALETTE.getValue(it) },
+        )
+        fi.jukkakot.rubikkisolveri.ui.scan.ScanContent(
+            frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {},
+            preview = { androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530)))) },
+        )
     }
 
     @Test

@@ -40,6 +40,25 @@ into `cube`, so it is tested by plain JVM unit tests.
   1000 min probes)`: ≤ 21 moves, about 19 on average, ~25 ms on a desktop. `warmUp()` builds the
   tables (called from `RubikkiApp` on a background thread). `randomStateScramble()` for practice.
 
+## Camera scan — Implemented
+
+Pipeline, all but the first step pure Kotlin in `cube/scan`:
+
+1. `CameraPreview` (app): CameraX `LifecycleCameraController` + `PreviewView`, analysis in
+   RGBA_8888 at ~640×480, keep-only-latest. The controller aligns analysis with the visible preview,
+   so the frame's crop rect is what the user sees.
+2. `FrameSampler`: the grid is a centred square, 72 % of the visible area's shorter side, on
+   screen and in the frame; each cell's middle 40 % is read (every 2nd pixel, per-channel median),
+   mapped through the frame rotation.
+3. `ScanSession`: live reading per cell against `ColorClassifier.DEFAULT_PALETTE` (dots, centre
+   check); 6 identical frames with the right centre → capture the per-cell median; redo; capture
+   button.
+4. `ColorClassifier.classify`: CIE Lab (lightness weight 0.5), balanced assignment (Hungarian,
+   every colour exactly nine times) seeded by the six centres, refined twice; confidence per
+   sticker; below 0.12 is uncertain.
+5. `ScanOutcome`: valid and no uncertain sticker → solution; otherwise manual input with
+   `fromScan`, the scanned colours and the doubtful/problem stickers marked.
+
 ## App structure — Implemented
 
 - `RubikkiApp` (Application): sets up the log and the crash handler, logs `app.start`.
@@ -73,14 +92,15 @@ into `cube`, so it is tested by plain JVM unit tests.
 
 | Route | Screen | Notes |
 |---|---|---|
-| `HomeRoute` | Home | entries: scan (coming), manual input, free cube |
-| `ManualInputRoute` | Manual input | face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution |
+| `HomeRoute` | Home | entries: scan, manual input, free cube |
+| `ScanRoute` | Scan | camera permission, grid, live dots, auto-capture; result → solve or check |
+| `ManualInputRoute(cube?, marked?, fromScan)` | Manual input / check a scan | face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution |
 | `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
 | `SolveRoute(cube)` | Solution | background solve, then a stepper: show / done / previous, moves in words |
 | `SettingsRoute`, `LogRoute` | Settings, log | |
 
 ## Planned
 
-- Camera scan (`camera-scan`), move guide
+- Move guide
   (`move-guide`), camera follow-along (`camera-follow`), beginner solver (`beginner-solver`),
   lessons (`lessons`), timer and history (`progress`), signed APK (`release`).
