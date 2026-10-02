@@ -38,7 +38,7 @@ class FollowTest {
     private fun solve() {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                SolveScreen(cube, onBack = {}, onHome = {}, followPanel = { FollowPanel(it, frames, preview = {}) })
+                SolveScreen(cube, onBack = {}, onHome = {}, followPanel = { FollowPanel(it, frames, preview = {}) }, solver = INLINE_SOLVER)
             }
         }
         compose.waitUntil(10_000) {

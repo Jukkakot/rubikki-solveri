@@ -61,7 +61,7 @@ class SolveTest {
 
     private fun solve(cube: Cube) {
         compose.setContent {
-            RubikkiTheme(dynamicColor = false) { SolveScreen(cube, onBack = {}, onHome = { home = true }) }
+            RubikkiTheme(dynamicColor = false) { SolveScreen(cube, onBack = {}, onHome = { home = true }, solver = INLINE_SOLVER) }
         }
     }
 

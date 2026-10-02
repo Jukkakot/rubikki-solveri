@@ -67,7 +67,7 @@ class MoveGuideTest {
     fun notationOn() {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                SolveScreen(Cube.solved().apply("R"), onBack = {}, onHome = {}, showNotation = true)
+                SolveScreen(Cube.solved().apply("R"), onBack = {}, onHome = {}, showNotation = true, solver = INLINE_SOLVER)
             }
         }
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Siirto 1/1").fetchSemanticsNodes().isNotEmpty() }

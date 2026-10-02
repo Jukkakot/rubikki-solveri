@@ -68,10 +68,11 @@ fun SolveScreen(
     onHome: () -> Unit,
     showNotation: Boolean = false,
     followPanel: @Composable (StepperState) -> Unit = { DefaultFollowPanel(it) },
+    solver: suspend (Cube) -> SolveResult = { withContext(Dispatchers.Default) { TwoPhaseSolver.solve(it) } },
 ) {
     var follow by rememberSaveable { mutableStateOf(false) }
     val result by produceState<SolveResult?>(null, cube) {
-        value = withContext(Dispatchers.Default) { TwoPhaseSolver.solve(cube) }.also { r ->
+        value = solver(cube).also { r ->
             when (r) {
                 is SolveResult.Solved -> AppLog.info(Evt.SOLVE_DONE, null, "moves" to r.moves.size, "ms" to r.millis)
                 is SolveResult.Invalid -> AppLog.info(Evt.SOLVE_FAILED, null, "reason" to r.reason.toString())

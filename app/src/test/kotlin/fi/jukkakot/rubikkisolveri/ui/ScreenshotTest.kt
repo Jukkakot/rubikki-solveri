@@ -70,17 +70,17 @@ class ScreenshotTest {
 
     @Test
     fun solve() = shot("solve", waitForText = "Siirto 1/") {
-        SolveScreen(Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {})
+        SolveScreen(Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {}, solver = INLINE_SOLVER)
     }
 
     @Test
     fun guideBack() = shot("guide-back", waitForText = "Siirto 1/") {
-        SolveScreen(Cube.solved().apply("B'"), onBack = {}, onHome = {}, showNotation = true)
+        SolveScreen(Cube.solved().apply("B'"), onBack = {}, onHome = {}, showNotation = true, solver = INLINE_SOLVER)
     }
 
     @Test
     fun guideRightDark() = shot("guide-right-dark", dark = true, waitForText = "Siirto 1/") {
-        SolveScreen(Cube.solved().apply("R2 U' R"), onBack = {}, onHome = {})
+        SolveScreen(Cube.solved().apply("R2 U' R"), onBack = {}, onHome = {}, solver = INLINE_SOLVER)
     }
 
     @Test
