@@ -14,9 +14,13 @@ natural next step).
 - **Spec phase (now):** write proposal, design, specs and tasks for one change, then stop for the
   user's review before the next. Ask opinion questions freely; the user often answers by voice, so
   plain numbered questions in text work better than pickers.
-- **Autopilot:** off. When the user turns it on: apply → verify → commit → archive → commit →
-  push → next specced change, stopping only for money, anything irreversible outside the repo, a
-  decision that forces rework, or failing checks that cannot be fixed.
+- **Autopilot:** **ON since 2026-10-02**, also for proposing the roadmap items not yet specced. Run
+  the loop without review stops: propose → apply → verify → commit → archive → commit → push →
+  next roadmap item. Make UX and technical decisions yourself from `product.md` and the specs;
+  record each non-obvious one in the change's `design.md` and list them in the summary. Stop only
+  for money, external accounts, anything irreversible outside the repo, a decision that forces
+  rework, or failing checks that cannot be fixed. Work that needs the real phone (camera tuning,
+  how the 3D cube feels) is built and unit-tested, then listed for the user to check.
 
 ## Working agreements
 
