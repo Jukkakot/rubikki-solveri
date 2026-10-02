@@ -15,13 +15,17 @@ yet SHALL be visibly disabled and marked as coming later.
 - **WHEN** the user opens the app
 - **THEN** the home screen with the app name is shown
 
-#### Scenario: Unbuilt feature
-- **WHEN** a feature such as the camera scan is not built yet
-- **THEN** its entry is disabled and labelled as coming later
-
 #### Scenario: Open manual input
 - **WHEN** the user taps "enter colours by hand"
 - **THEN** the manual input screen opens on the front face
+
+#### Scenario: Open the scan
+- **WHEN** the user taps "scan the cube"
+- **THEN** the scan screen opens asking for the front face
+
+#### Scenario: Unbuilt feature
+- **WHEN** a feature is not built yet
+- **THEN** its entry is disabled and labelled as coming later
 
 ### Requirement: Settings screen
 The home screen SHALL lead to a settings screen, and the system back action SHALL return from it
