@@ -15,6 +15,7 @@ enum class Evt(val id: String) {
     SCAN_DONE("scan.done"),
     SCAN_PERMISSION("scan.permission"),
     SCAN_ERROR("scan.error"),
+    FOLLOW_EVENT("follow.event"),
 }
 
 enum class Level { DEBUG, INFO, WARN, ERROR }

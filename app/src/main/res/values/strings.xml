@@ -119,4 +119,11 @@
     <string name="settings_moves">Siirrot</string>
     <string name="settings_notation">Näytä siirtomerkinnät</string>
     <string name="settings_notation_summary">Esim. R, U\' ja F2 sanallisen ohjeen alla</string>
+    <string name="follow_camera">Seuraa kameralla</string>
+    <string name="follow_show_3d">Näytä 3D-kuutio</string>
+    <string name="follow_hold">Pidä vihreä keskiö kameraa kohti ja valkoinen ylhäällä, etupuoli ruudukossa.</string>
+    <string name="follow_waiting">Tee siirto – sovellus huomaa sen itse.</string>
+    <string name="follow_not_visible">Tätä siirtoa ei näe edestä. Paina Tein sen, kun olet kääntänyt.</string>
+    <string name="follow_wrong">Käännös meni toisin. Korjaa ensin: %1$s</string>
+    <string name="follow_double">2×</string>
 </resources>

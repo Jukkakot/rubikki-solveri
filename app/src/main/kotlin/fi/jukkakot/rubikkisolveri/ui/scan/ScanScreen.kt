@@ -1,12 +1,5 @@
 package fi.jukkakot.rubikkisolveri.ui.scan
 
-import android.Manifest
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,12 +45,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import fi.jukkakot.rubikkisolveri.R
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.FaceView
@@ -78,19 +69,10 @@ import kotlinx.coroutines.channels.BufferOverflow
 
 @Composable
 fun ScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome) -> Unit) {
-    val context = LocalContext.current
-    var granted by remember {
-        mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
-    }
-    var asked by remember { mutableStateOf(false) }
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
-        granted = ok
-        asked = true
-        AppLog.info(Evt.SCAN_PERMISSION, null, "granted" to ok)
-    }
-    LaunchedEffect(Unit) { if (!granted && !asked) launcher.launch(Manifest.permission.CAMERA) }
-
-    if (granted) {
+    CameraPermissionGate(
+        alternative = stringResource(R.string.scan_manual) to onManual,
+        denied = { content -> PermissionScaffold(onBack) { content() } },
+    ) {
         val frames = remember {
             MutableSharedFlow<List<Rgb>>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
         }
@@ -112,17 +94,6 @@ fun ScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome)
                     modifier = modifier,
                 )
             },
-        )
-    } else {
-        PermissionNeeded(
-            onBack = onBack,
-            onAsk = { launcher.launch(Manifest.permission.CAMERA) },
-            onSettings = {
-                context.startActivity(
-                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
-                )
-            },
-            onManual = onManual,
         )
     }
 }
@@ -286,7 +257,7 @@ private fun Progress(done: Int) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PermissionNeeded(onBack: () -> Unit, onAsk: () -> Unit, onSettings: () -> Unit, onManual: () -> Unit) {
+private fun PermissionScaffold(onBack: () -> Unit, content: @Composable () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -298,13 +269,5 @@ private fun PermissionNeeded(onBack: () -> Unit, onAsk: () -> Unit, onSettings: 
                 },
             )
         },
-    ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(stringResource(R.string.scan_permission_title), style = MaterialTheme.typography.titleLarge)
-            Text(stringResource(R.string.scan_permission_text))
-            Button(onClick = onAsk) { Text(stringResource(R.string.scan_permission_allow)) }
-            OutlinedButton(onClick = onSettings) { Text(stringResource(R.string.scan_permission_settings)) }
-            TextButton(onClick = onManual) { Text(stringResource(R.string.scan_manual)) }
-        }
-    }
+    ) { padding -> Box(Modifier.padding(padding)) { content() } }
 }

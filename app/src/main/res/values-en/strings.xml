@@ -117,4 +117,11 @@
     <string name="settings_moves">Moves</string>
     <string name="settings_notation">Show move notation</string>
     <string name="settings_notation_summary">For example R, U\' and F2 under the words</string>
+    <string name="follow_camera">Follow with the camera</string>
+    <string name="follow_show_3d">Show the 3D cube</string>
+    <string name="follow_hold">Keep the green centre towards the camera and white on top, the front in the grid.</string>
+    <string name="follow_waiting">Make the move – the app notices it by itself.</string>
+    <string name="follow_not_visible">This move cannot be seen from the front. Tap Done when you have turned it.</string>
+    <string name="follow_wrong">That turn went differently. Fix it first: %1$s</string>
+    <string name="follow_double">2×</string>
 </resources>

@@ -100,6 +100,22 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
 - `MoveWordsText`: the move in words, and its notation when Settings → Show move notation is on.
 - Haptics: `Confirm` on done, `SegmentTick` at the end of each demo.
 
+## Camera follow — Implemented
+
+Camera mode of the solution screen (top-bar camera toggle), sharing `StepperState`:
+
+- `cube/follow/FollowTracker`: for the current move m on state S, expects `front(S)` before and
+  `front(S·m)` after; ≥ 8/9 cells and better than "before" for 3 frames → done (auto-advance with a
+  vibration). A stable unique match to another face turn x → `WrongMove(x, fix = x⁻¹)`. Moves that
+  leave the front unchanged (back turns) → `NotVisible`: confirm with the button. Centre not the
+  front colour → `HoldFront`.
+- `LiveCalibration`: references from the default palette, pulled 30 % towards readings of frames
+  that clearly show a known front.
+- `FrontArrow.of(move)`: the 2D arrow on the front face (rows left/right, columns up/down, front
+  round, "2×" for half turns, none for B/S/rotations); `FollowPanel` draws it over the scan grid
+  with the 3D guide cube in the corner.
+- `CameraPermissionGate` is shared with the scan.
+
 ## Screens — Implemented
 
 | Route | Screen | Notes |
@@ -108,10 +124,10 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
 | `ScanRoute` | Scan | camera permission, grid, live dots, auto-capture; result → solve or check |
 | `ManualInputRoute(cube?, marked?, fromScan)` | Manual input / check a scan | face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution |
 | `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
-| `SolveRoute(cube)` | Solution | background solve, then a stepper: show / done / previous, moves in words |
+| `SolveRoute(cube)` | Solution | background solve, then the move guide stepper; camera mode follows on the real cube |
 | `SettingsRoute`, `LogRoute` | Settings, log | |
 
 ## Planned
 
-- Camera follow-along (`camera-follow`), beginner solver (`beginner-solver`), lessons (`lessons`),
+- Beginner solver (`beginner-solver`), lessons (`lessons`),
   timer and history (`progress`), signed APK (`release`).

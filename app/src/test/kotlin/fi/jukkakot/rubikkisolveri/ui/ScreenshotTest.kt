@@ -84,6 +84,20 @@ class ScreenshotTest {
     }
 
     @Test
+    fun follow() = shot("follow") {
+        val start = Cube.solved().apply("R'")
+        val state = fi.jukkakot.rubikkisolveri.ui.guide.rememberStepperState(start, Notation.parse("R"))
+        val frames = kotlinx.coroutines.flow.MutableStateFlow(
+            fi.jukkakot.rubikkisolveri.cube.follow.front(start).map { fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier.DEFAULT_PALETTE.getValue(it) },
+        )
+        androidx.compose.foundation.layout.Column(Modifier.background(androidx.compose.ui.graphics.Color.White)) {
+            fi.jukkakot.rubikkisolveri.ui.guide.FollowPanel(state, frames) {
+                androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530))))
+            }
+        }
+    }
+
+    @Test
     fun scan() = shot("scan") {
         val frames = kotlinx.coroutines.flow.MutableStateFlow(
             listOf(

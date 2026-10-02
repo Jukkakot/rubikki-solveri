@@ -38,6 +38,19 @@ import fi.jukkakot.rubikkisolveri.cube.solve.TwoPhaseSolver
 import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.Evt
 import fi.jukkakot.rubikkisolveri.ui.guide.GuideCube
+import fi.jukkakot.rubikkisolveri.ui.guide.FollowPanel
+import fi.jukkakot.rubikkisolveri.ui.guide.StepperState
+import fi.jukkakot.rubikkisolveri.ui.scan.CameraPermissionGate
+import fi.jukkakot.rubikkisolveri.ui.scan.CameraPreview
+import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import androidx.compose.material3.IconToggleButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.painterResource
 import fi.jukkakot.rubikkisolveri.ui.guide.MoveWordsText
 import fi.jukkakot.rubikkisolveri.ui.guide.rememberStepperState
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -49,7 +62,14 @@ import kotlinx.coroutines.withContext
 /** Finds a solution for [cube] in the background, then steps through it. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SolveScreen(cube: Cube, onBack: () -> Unit, onHome: () -> Unit, showNotation: Boolean = false) {
+fun SolveScreen(
+    cube: Cube,
+    onBack: () -> Unit,
+    onHome: () -> Unit,
+    showNotation: Boolean = false,
+    followPanel: @Composable (StepperState) -> Unit = { DefaultFollowPanel(it) },
+) {
+    var follow by rememberSaveable { mutableStateOf(false) }
     val result by produceState<SolveResult?>(null, cube) {
         value = withContext(Dispatchers.Default) { TwoPhaseSolver.solve(cube) }.also { r ->
             when (r) {
@@ -68,6 +88,13 @@ fun SolveScreen(cube: Cube, onBack: () -> Unit, onHome: () -> Unit, showNotation
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
+                actions = {
+                    if ((result as? SolveResult.Solved)?.moves?.isNotEmpty() == true) {
+                        IconToggleButton(checked = follow, onCheckedChange = { follow = it }) {
+                            Icon(painterResource(R.drawable.ic_camera), contentDescription = stringResource(R.string.follow_camera))
+                        }
+                    }
+                },
             )
         },
     ) { padding ->
@@ -83,7 +110,7 @@ fun SolveScreen(cube: Cube, onBack: () -> Unit, onHome: () -> Unit, showNotation
                     if (r.moves.isEmpty()) {
                         Message(stringResource(R.string.solve_already), stringResource(R.string.solve_home), onHome)
                     } else {
-                        Stepper(cube, r.moves, showNotation, onHome)
+                        Stepper(cube, r.moves, showNotation, onHome, follow, { follow = false }, followPanel)
                     }
             }
         }
@@ -99,7 +126,15 @@ private fun Message(text: String, action: String, onAction: () -> Unit) {
 }
 
 @Composable
-private fun Stepper(start: Cube, moves: List<Move>, showNotation: Boolean, onHome: () -> Unit) {
+private fun Stepper(
+    start: Cube,
+    moves: List<Move>,
+    showNotation: Boolean,
+    onHome: () -> Unit,
+    follow: Boolean,
+    onStopFollowing: () -> Unit,
+    followPanel: @Composable (StepperState) -> Unit,
+) {
     val haptics = LocalHapticFeedback.current
     val state = rememberStepperState(start, moves, onDemoEnd = { haptics.performHapticFeedback(HapticFeedbackType.SegmentTick) })
     val index = state.index
@@ -109,7 +144,13 @@ private fun Stepper(start: Cube, moves: List<Move>, showNotation: Boolean, onHom
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(stringResource(R.string.solve_hold), style = MaterialTheme.typography.bodyMedium)
-        GuideCube(state)
+        if (follow && !state.isFinished) {
+            CameraPermissionGate(alternative = stringResource(R.string.follow_show_3d) to onStopFollowing) {
+                followPanel(state)
+            }
+        } else {
+            GuideCube(state)
+        }
         LinearProgressIndicator(progress = { index / moves.size.toFloat() }, modifier = Modifier.fillMaxWidth())
         if (!state.isFinished) {
             Text(stringResource(R.string.solve_step, index + 1, moves.size), style = MaterialTheme.typography.labelLarge)
@@ -134,5 +175,16 @@ private fun Stepper(start: Cube, moves: List<Move>, showNotation: Boolean, onHom
                 Button(onClick = onHome, modifier = Modifier.weight(1.3f)) { Text(stringResource(R.string.solve_home)) }
             }
         }
+    }
+}
+
+/** Camera mode with the real camera. */
+@Composable
+private fun DefaultFollowPanel(state: StepperState) {
+    val frames = remember {
+        MutableSharedFlow<List<Rgb>>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    }
+    FollowPanel(state, frames) { modifier ->
+        CameraPreview(torch = false, onSamples = { frames.tryEmit(it) }, onError = {}, modifier = modifier)
     }
 }
