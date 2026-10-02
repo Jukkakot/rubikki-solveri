@@ -30,6 +30,14 @@ method stage by stage so you learn to solve it yourself.
   was done, then moves on by itself. A 2D overlay on the visible face is realistic; full 3D tracking
   of the cube is a stretch goal.
 
-## Open questions
-
-Tracked in the current spec work; answers are moved to "Decided".
+- **Audience:** just the author for now (no store listing, no onboarding for strangers).
+- **Language:** Finnish by default, English selectable in settings.
+- **Look:** the most modern Android look: Material 3 with Material You dynamic colour.
+- **Moves are shown with animation and arrows only;** standard notation may come later as an option.
+- **After a scan:** if the scan is valid and confident, go straight to the solution; ask for a
+  check only when something is uncertain or the cube is invalid.
+- **Offline:** no accounts, no server. The only online part may be debug logs to the user's
+  existing Axiom dataset `games`.
+- **Solver library:** min2phase (two-phase), used under its MIT licence option.
+- **Name:** "Rubik's Cube" is a trademark; fine for a personal app, but rethink the name before
+  any public store release.
