@@ -112,3 +112,70 @@ class CubeSceneTest {
         return q.xs.average().toFloat() to q.ys.average().toFloat()
     }
 }
+
+class MoveGuideSceneTest {
+    private val w = 1000f
+    private val h = 1000f
+
+    private fun move(text: String) = fi.jukkakot.rubikkisolveri.cube.Notation.parseMove(text)!!
+
+    /** Shoelace sum of the arrow's screen points around its projected centre (y down: > 0 is clockwise). */
+    private fun screenWinding(m: Move, view: Quat): Float {
+        val (cx, cy) = CubeScene.projectPoint(V3.of(m.layer.axis) * 1.56f, view, w, h)
+        val pts = CubeScene.arrow(m, view).map { CubeScene.projectPoint(it, view, w, h) }.map { (x, y) -> (x - cx) to (y - cy) }
+        var sum = 0f
+        for (i in 0 until pts.size - 1) sum += pts[i].first * pts[i + 1].second - pts[i + 1].first * pts[i].second
+        return sum
+    }
+
+    @Test
+    fun rightLayerHighlighted() {
+        val r = move("R")
+        val projected = CubeScene.project(CubeScene.quads(null, 0f), CubeScene.DEFAULT_VIEW, w, h, highlight = r)
+        val stickers = projected.filter { it.sticker >= 0 }
+        for (q in stickers) {
+            val inLayer = Stickers.all[q.sticker].position.x == 1
+            assertEquals(!inLayer, q.dimmed, "sticker ${q.sticker}")
+        }
+        assertTrue(stickers.any { !it.dimmed } && stickers.any { it.dimmed })
+    }
+
+    @Test
+    fun clockwiseArrow() {
+        assertTrue(screenWinding(move("F"), Quat.IDENTITY) > 0, "F seen from the front is clockwise")
+        assertTrue(screenWinding(move("F'"), Quat.IDENTITY) < 0)
+        assertTrue(screenWinding(move("R"), CubeScene.guideView(move("R"))) > 0)
+        assertTrue(screenWinding(move("U'"), CubeScene.guideView(move("U'"))) < 0)
+    }
+
+    @Test
+    fun halfTurnArrow() {
+        val pts = CubeScene.arrow(move("F2"), Quat.IDENTITY)
+        val a = pts.first()
+        val b = pts.last()
+        // Both ends lie on the circle around the front face's axis, opposite each other.
+        assertTrue(abs(a.x + b.x) < 1e-3f && abs(a.y + b.y) < 1e-3f, "$a $b")
+        val quarter = CubeScene.arrow(move("F"), Quat.IDENTITY)
+        val dot = quarter.first().x * quarter.last().x + quarter.first().y * quarter.last().y
+        assertTrue(abs(dot) < 1e-3f, "quarter arc ends are perpendicular")
+    }
+
+    @Test
+    fun arrowSitsOnTheVisibleSideOfTheFace() {
+        val view = CubeScene.guideView(move("U"))
+        val mid = CubeScene.arrow(move("U"), view)[12]
+        assertTrue(mid.z > 0.5f, "the middle of a top arrow is towards the front: $mid")
+    }
+
+    @Test
+    fun backMove() {
+        for (m in listOf("B", "L'", "D2")) {
+            val face = move(m).layer.face!!
+            val visible = CubeScene.project(CubeScene.quads(null, 0f), CubeScene.guideView(move(m)), w, h)
+                .filter { it.sticker >= 0 && Stickers.all[it.sticker].face == face }
+            assertEquals(9, visible.size, m)
+        }
+        assertEquals(CubeScene.DEFAULT_VIEW, CubeScene.guideView(move("U")))
+        assertEquals(CubeScene.DEFAULT_VIEW, CubeScene.guideView(move("R2")))
+    }
+}

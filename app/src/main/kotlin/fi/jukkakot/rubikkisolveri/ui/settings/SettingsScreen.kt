@@ -16,6 +16,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -39,6 +41,8 @@ fun SettingsScreen(
     onThemeMode: (ThemeMode) -> Unit,
     onOpenLog: () -> Unit,
     onBack: () -> Unit,
+    showNotation: Boolean = false,
+    onShowNotation: (Boolean) -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -66,6 +70,14 @@ fun SettingsScreen(
                 Choice(stringResource(R.string.theme_light), themeMode == ThemeMode.LIGHT) { onThemeMode(ThemeMode.LIGHT) }
                 Choice(stringResource(R.string.theme_dark), themeMode == ThemeMode.DARK) { onThemeMode(ThemeMode.DARK) }
             }
+            HorizontalDivider()
+            SectionTitle(R.string.settings_moves)
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.settings_notation)) },
+                supportingContent = { Text(stringResource(R.string.settings_notation_summary)) },
+                trailingContent = { Switch(checked = showNotation, onCheckedChange = null) },
+                modifier = Modifier.toggleable(value = showNotation, role = Role.Switch, onValueChange = onShowNotation),
+            )
             HorizontalDivider()
             SectionTitle(R.string.settings_diagnostics)
             ListItem(

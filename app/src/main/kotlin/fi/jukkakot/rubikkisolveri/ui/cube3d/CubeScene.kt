@@ -1,16 +1,23 @@
 package fi.jukkakot.rubikkisolveri.ui.cube3d
 
 import fi.jukkakot.rubikkisolveri.cube.Face
+import fi.jukkakot.rubikkisolveri.cube.Layer
 import fi.jukkakot.rubikkisolveri.cube.Move
 import fi.jukkakot.rubikkisolveri.cube.Stickers
 import fi.jukkakot.rubikkisolveri.cube.Vec3
 import kotlin.math.PI
 
-/** A flat four-cornered piece of the cube: a sticker ([sticker] = its index) or plastic (-1). */
-class Quad(val corners: List<V3>, val normal: V3, val sticker: Int, val cubie: V3)
+/**
+ * A flat four-cornered piece of the cube: a sticker ([sticker] = its index) or plastic (-1).
+ * [cubie] is where its little cube is now, [home] where it is at rest (for highlighting).
+ */
+class Quad(val corners: List<V3>, val normal: V3, val sticker: Int, val cubie: V3, val home: Vec3)
 
-/** A quad on screen: its 2D corners (x right, y down), depth and how much it faces the light. */
-class ProjectedQuad(val xs: FloatArray, val ys: FloatArray, val sticker: Int, val light: Float) {
+/**
+ * A quad on screen: its 2D corners (x right, y down), how much it faces the light, and whether it
+ * is outside the highlighted layer.
+ */
+class ProjectedQuad(val xs: FloatArray, val ys: FloatArray, val sticker: Int, val light: Float, val dimmed: Boolean = false) {
     fun contains(px: Float, py: Float): Boolean {
         var sign = 0
         for (i in 0 until 4) {
@@ -69,13 +76,13 @@ object CubeScene {
         val centre = V3.of(cubie)
         val body = directions.map { n ->
             val (u, v) = tangents(n)
-            Quad(square(centre + V3.of(n) * 0.5f, u, v, 0.5f), V3.of(n), -1, centre)
+            Quad(square(centre + V3.of(n) * 0.5f, u, v, 0.5f), V3.of(n), -1, centre, cubie)
         }
         val stickers = Stickers.all.filter { it.position == cubie }.map { s ->
             val face: Face = s.face
             Quad(
                 square(centre + V3.of(s.normal) * STICKER_LIFT, V3.of(face.right), V3.of(face.down), STICKER_HALF),
-                V3.of(s.normal), s.index, centre,
+                V3.of(s.normal), s.index, centre, cubie,
             )
         }
         body + stickers
@@ -96,21 +103,31 @@ object CubeScene {
                 quads
             } else {
                 quads.map { q ->
-                    Quad(q.corners.map(rotation::rotate), rotation.rotate(q.normal), q.sticker, rotation.rotate(q.cubie))
+                    Quad(q.corners.map(rotation::rotate), rotation.rotate(q.normal), q.sticker, rotation.rotate(q.cubie), q.home)
                 }
             }
         }
     }
 
+    // The farthest any cube point can project from the centre is 0.302·scale (a point at the
+    // cube's corner radius 2.6, seen at the worst angle); this keeps it inside 85 % of the half size.
+    private fun scaleFor(width: Float, height: Float) = minOf(width, height) / 2f * 0.85f / 0.302f
+
+    /** Screen position (x right, y down) of world point [p] seen through [view]. */
+    fun projectPoint(p: V3, view: Quat, width: Float, height: Float): Pair<Float, Float> {
+        val c = view.rotate(p)
+        val s = scaleFor(width, height) / (CAMERA_DISTANCE - c.z)
+        return (width / 2f + c.x * s) to (height / 2f - c.y * s)
+    }
+
     /**
      * Projects [quads] seen through [view] onto a canvas of [width]×[height], dropping faces that
-     * look away from the camera, in drawing order (far cubies first).
+     * look away from the camera, in drawing order (far cubies first). Quads outside [highlight]'s
+     * layers are marked dimmed.
      */
-    fun project(quads: List<Quad>, view: Quat, width: Float, height: Float): List<ProjectedQuad> {
+    fun project(quads: List<Quad>, view: Quat, width: Float, height: Float, highlight: Move? = null): List<ProjectedQuad> {
         val camera = V3(0f, 0f, CAMERA_DISTANCE)
-        // The farthest any cube point can project from the centre is 0.302·scale (a point at the
-        // cube's corner radius 2.6, seen at the worst angle); this keeps it inside 85 % of the half size.
-        val scale = minOf(width, height) / 2f * 0.85f / 0.302f
+        val scale = scaleFor(width, height)
         val cx = width / 2f
         val cy = height / 2f
         val visible = ArrayList<Triple<Float, Int, ProjectedQuad>>(quads.size)
@@ -129,11 +146,49 @@ object CubeScene {
             }
             val light = 0.8f + 0.2f * maxOf(0f, normal dot LIGHT)
             val depth = (camera - view.rotate(q.cubie)).length
-            visible += Triple(depth, order, ProjectedQuad(xs, ys, q.sticker, light))
+            val dimmed = highlight != null && !highlight.layer.turns(q.home)
+            visible += Triple(depth, order, ProjectedQuad(xs, ys, q.sticker, light, dimmed))
         }
         // Far cubies first; inside a cubie keep the body before its stickers.
         visible.sortWith(compareByDescending<Triple<Float, Int, ProjectedQuad>> { it.first }.thenBy { it.second })
         return visible.map { it.third }
+    }
+
+    /**
+     * The direction arrow for [move] seen through [view], in world space: an arc in the plane of the
+     * turning face just above the stickers, its middle on the side facing the camera, traced in the
+     * move's turning direction over its full angle (a quarter or half circle).
+     */
+    fun arrow(move: Move, view: Quat, segments: Int = 24): List<V3> {
+        val axis = V3.of(move.layer.axis)
+        val (offset, radius) = when (move.layer.kind) {
+            Layer.Kind.FACE, Layer.Kind.WIDE -> 1.56f to 1.05f
+            else -> 0f to 2.0f
+        }
+        val centre = axis * offset
+        val inverse = Quat(view.w, -view.x, -view.y, -view.z)
+        val towardsCamera = inverse.rotate(V3(0f, 0f, 1f))
+        var u = towardsCamera - axis * (axis dot towardsCamera)
+        if (u.length < 1e-3f) u = if (axis.y != 0f) V3(0f, 0f, 1f) else V3(0f, 1f, 0f)
+        u = u.normalized()
+        val v = axis cross u
+        val sweep = moveAngle(move, 1f)
+        return (0..segments).map { k ->
+            val theta = -sweep / 2 + sweep * k / segments
+            centre + (u * kotlin.math.cos(theta) + v * kotlin.math.sin(theta)) * radius
+        }
+    }
+
+    /** The view for presenting [move]: the hold stays, the camera moves so the turning side shows. */
+    fun guideView(move: Move?): Quat {
+        val deg = (PI / 180).toFloat()
+        val (yaw, pitch) = when (move?.layer?.face) {
+            Face.L -> 32f to 24f
+            Face.B -> 148f to 24f
+            Face.D -> -32f to -24f
+            else -> -32f to 24f
+        }
+        return Quat.axisAngle(V3(1f, 0f, 0f), pitch * deg) * Quat.axisAngle(V3(0f, 1f, 0f), yaw * deg)
     }
 
     /** The sticker under the point, looking from the front (nearest first), or null. */

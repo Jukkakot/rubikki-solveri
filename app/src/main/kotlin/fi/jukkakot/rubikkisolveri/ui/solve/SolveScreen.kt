@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -26,17 +25,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import fi.jukkakot.rubikkisolveri.R
 import fi.jukkakot.rubikkisolveri.cube.Cube
@@ -45,22 +37,19 @@ import fi.jukkakot.rubikkisolveri.cube.solve.SolveResult
 import fi.jukkakot.rubikkisolveri.cube.solve.TwoPhaseSolver
 import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.Evt
-import fi.jukkakot.rubikkisolveri.ui.common.moveDescription
+import fi.jukkakot.rubikkisolveri.ui.guide.GuideCube
+import fi.jukkakot.rubikkisolveri.ui.guide.MoveWordsText
+import fi.jukkakot.rubikkisolveri.ui.guide.rememberStepperState
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import fi.jukkakot.rubikkisolveri.ui.common.validityMessage
-import fi.jukkakot.rubikkisolveri.ui.cube3d.Cube3D
-import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeViewState
-import fi.jukkakot.rubikkisolveri.ui.cube3d.StickerColors
-import fi.jukkakot.rubikkisolveri.ui.cube3d.rememberCubeAnimator
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Finds a solution for [cube] in the background, then steps through it. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SolveScreen(cube: Cube, onBack: () -> Unit, onHome: () -> Unit) {
+fun SolveScreen(cube: Cube, onBack: () -> Unit, onHome: () -> Unit, showNotation: Boolean = false) {
     val result by produceState<SolveResult?>(null, cube) {
         value = withContext(Dispatchers.Default) { TwoPhaseSolver.solve(cube) }.also { r ->
             when (r) {
@@ -94,7 +83,7 @@ fun SolveScreen(cube: Cube, onBack: () -> Unit, onHome: () -> Unit) {
                     if (r.moves.isEmpty()) {
                         Message(stringResource(R.string.solve_already), stringResource(R.string.solve_home), onHome)
                     } else {
-                        Stepper(cube, r.moves, onHome)
+                        Stepper(cube, r.moves, showNotation, onHome)
                     }
             }
         }
@@ -110,72 +99,34 @@ private fun Message(text: String, action: String, onAction: () -> Unit) {
 }
 
 @Composable
-private fun Stepper(start: Cube, moves: List<Move>, onHome: () -> Unit) {
-    var index by rememberSaveable { mutableIntStateOf(0) }
-    fun cubeAt(i: Int) = start.apply(moves.take(i))
-    val animator = rememberCubeAnimator(cubeAt(index))
-    val viewState = remember { CubeViewState() }
-    val scope = rememberCoroutineScope()
-
-    // A "show" demo may still be running or waiting: start from the real state of this step.
-    fun settle() {
-        if (animator.target != cubeAt(index) || animator.pending > 0) animator.snapTo(cubeAt(index))
-    }
+private fun Stepper(start: Cube, moves: List<Move>, showNotation: Boolean, onHome: () -> Unit) {
+    val haptics = LocalHapticFeedback.current
+    val state = rememberStepperState(start, moves, onDemoEnd = { haptics.performHapticFeedback(HapticFeedbackType.SegmentTick) })
+    val index = state.index
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(stringResource(R.string.solve_hold), style = MaterialTheme.typography.bodyMedium)
-        Cube3D(
-            colors = animator.cube.toList().map(StickerColors::of),
-            move = animator.move,
-            progress = animator.progress,
-            viewState = viewState,
-            modifier = Modifier.fillMaxWidth().aspectRatio(1.1f),
-        )
+        GuideCube(state)
         LinearProgressIndicator(progress = { index / moves.size.toFloat() }, modifier = Modifier.fillMaxWidth())
-        if (index < moves.size) {
-            val move = moves[index]
+        if (!state.isFinished) {
             Text(stringResource(R.string.solve_step, index + 1, moves.size), style = MaterialTheme.typography.labelLarge)
-            Text(
-                moveDescription(move),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.heightIn(min = 96.dp),
-            )
+            MoveWordsText(state, showNotation)
         } else {
             Text(stringResource(R.string.solve_finished), style = MaterialTheme.typography.headlineSmall)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedButton(
-                onClick = {
-                    settle()
-                    index--
-                    animator.play(moves[index].inverse)
-                },
-                enabled = index > 0,
-                modifier = Modifier.weight(1f),
-            ) { Text(stringResource(R.string.solve_previous)) }
-            if (index < moves.size) {
-                OutlinedButton(
-                    onClick = {
-                        settle()
-                        val shownAt = index
-                        animator.play(moves[index])
-                        scope.launch {
-                            snapshotFlow { animator.pending }.first { it == 0 }
-                            delay(SHOW_PAUSE_MS)
-                            if (index == shownAt && animator.pending == 0) animator.snapTo(cubeAt(index))
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                ) { Text(stringResource(R.string.solve_show)) }
+            OutlinedButton(onClick = state::back, enabled = index > 0, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.solve_previous))
+            }
+            if (!state.isFinished) {
+                OutlinedButton(onClick = state::demo, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.solve_show)) }
                 Button(
                     onClick = {
-                        settle()
-                        animator.play(moves[index])
-                        index++
+                        haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                        state.done()
                     },
                     modifier = Modifier.weight(1.3f).heightIn(min = 56.dp),
                 ) { Text(stringResource(R.string.solve_done_move)) }
@@ -185,5 +136,3 @@ private fun Stepper(start: Cube, moves: List<Move>, onHome: () -> Unit) {
         }
     }
 }
-
-private const val SHOW_PAUSE_MS = 700L

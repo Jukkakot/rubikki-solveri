@@ -42,6 +42,7 @@ class ShellTest {
     private lateinit var nav: TestNavHostController
     private val chosenLanguages = mutableListOf<AppLanguage>()
     private val chosenThemes = mutableListOf<ThemeMode>()
+    private val notationChoices = mutableListOf<Boolean>()
     private var logLines = mutableListOf("2026-10-02T12:00:00Z INFO app.start ver=test")
 
     private fun start(crashedLastTime: Boolean = false) {
@@ -63,6 +64,7 @@ class ShellTest {
                         crashedLastTime = crashedLastTime,
                         onCrashNoticeShown = {},
                         version = "test",
+                        onShowNotation = { notationChoices += it },
                     ),
                 )
             }
@@ -129,6 +131,14 @@ class ShellTest {
         compose.onNodeWithContentDescription("Asetukset").performClick()
         compose.onNodeWithText("Vaalea").performClick()
         assertEquals(listOf(ThemeMode.LIGHT), chosenThemes)
+    }
+
+    @Test
+    fun notationSwitch() {
+        start()
+        compose.onNodeWithContentDescription("Asetukset").performClick()
+        compose.onNodeWithText("Näytä siirtomerkinnät").performScrollTo().performClick()
+        assertEquals(listOf(true), notationChoices)
     }
 
     @Test

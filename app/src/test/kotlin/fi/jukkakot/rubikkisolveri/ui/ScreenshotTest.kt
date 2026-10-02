@@ -74,6 +74,16 @@ class ScreenshotTest {
     }
 
     @Test
+    fun guideBack() = shot("guide-back", waitForText = "Siirto 1/") {
+        SolveScreen(Cube.solved().apply("B'"), onBack = {}, onHome = {}, showNotation = true)
+    }
+
+    @Test
+    fun guideRightDark() = shot("guide-right-dark", dark = true, waitForText = "Siirto 1/") {
+        SolveScreen(Cube.solved().apply("R2 U' R"), onBack = {}, onHome = {})
+    }
+
+    @Test
     fun scan() = shot("scan") {
         val frames = kotlinx.coroutines.flow.MutableStateFlow(
             listOf(

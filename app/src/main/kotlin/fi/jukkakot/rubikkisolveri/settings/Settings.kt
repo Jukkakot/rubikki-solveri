@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -40,8 +41,16 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         store.edit { it[THEME] = mode.name }
     }
 
+    /** Show the standard move notation (R, U', F2) under the words; off by default. */
+    val showNotation: Flow<Boolean> = store.data.map { it[NOTATION] ?: false }
+
+    suspend fun setShowNotation(show: Boolean) {
+        store.edit { it[NOTATION] = show }
+    }
+
     private companion object {
         val THEME = stringPreferencesKey("theme_mode")
+        val NOTATION = booleanPreferencesKey("show_notation")
     }
 }
 

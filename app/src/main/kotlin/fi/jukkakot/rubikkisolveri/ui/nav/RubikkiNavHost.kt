@@ -35,6 +35,8 @@ class AppActions(
     val crashedLastTime: Boolean,
     val onCrashNoticeShown: () -> Unit,
     val version: String,
+    val showNotation: Boolean = false,
+    val onShowNotation: (Boolean) -> Unit = {},
 )
 
 @Composable
@@ -60,6 +62,8 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 version = actions.version,
                 onLanguage = actions.onLanguage,
                 onThemeMode = actions.onThemeMode,
+                showNotation = actions.showNotation,
+                onShowNotation = actions.onShowNotation,
                 onOpenLog = { navController.navigate(LogRoute) },
                 onBack = { navController.popBackStack() },
             )
@@ -104,6 +108,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 cube = Cube.fromColorString(entry.toRoute<SolveRoute>().cube),
                 onBack = { navController.popBackStack() },
                 onHome = { navController.popBackStack(HomeRoute, inclusive = false) },
+                showNotation = actions.showNotation,
             )
         }
         composable<LogRoute> {

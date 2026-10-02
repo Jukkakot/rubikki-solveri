@@ -26,6 +26,9 @@ import kotlinx.coroutines.launch
  */
 @Stable
 class CubeAnimator(initial: Cube, private val scope: CoroutineScope, private val durationScale: Float = 1f) {
+    /** True when the phone's animations are off: moves apply at once. */
+    val isInstant: Boolean get() = durationScale == 0f
+
     var cube: Cube by mutableStateOf(initial)
         private set
     var move: Move? by mutableStateOf(null)

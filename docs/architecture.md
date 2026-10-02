@@ -88,6 +88,18 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
 - Hold orientations per face (`FaceView` in `cube`) drive the manual input's preview and later
   the scanner's guidance.
 
+## Move guide — Implemented
+
+- `ui/guide/StepperState`: index over a move list, `done` / `back` / `demo` (play, pause 700 ms,
+  snap back) and an automatic demo 500 ms after each new step (skipped when animations are off).
+- `GuideCube`: `Cube3D` with the turning layer highlighted (other stickers mixed 60 % to grey), the
+  direction arrow (`CubeScene.arrow`: an arc on the turning face, sweep = the move's angle, middle
+  towards the camera) while the cube is still, and the view from `CubeScene.guideView(move)` —
+  the hold never changes, only the camera: default for U/F/R, from the left for L, from behind for
+  B, from below for D.
+- `MoveWordsText`: the move in words, and its notation when Settings → Show move notation is on.
+- Haptics: `Confirm` on done, `SegmentTick` at the end of each demo.
+
 ## Screens — Implemented
 
 | Route | Screen | Notes |

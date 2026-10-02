@@ -33,6 +33,7 @@ class MainActivity : AppCompatActivity() {
         val logger = AppLog.logger
         setContent {
             val themeMode by settings.themeMode.collectAsStateWithLifecycle(ThemeMode.SYSTEM)
+            val showNotation by settings.showNotation.collectAsStateWithLifecycle(false)
             val scope = rememberCoroutineScope()
             val navController = rememberNavController()
             DisposableEffect(navController) {
@@ -73,6 +74,11 @@ class MainActivity : AppCompatActivity() {
                         crashedLastTime = app.crashedLastTime,
                         onCrashNoticeShown = app::crashNoticeShown,
                         version = BuildConfig.VERSION_NAME,
+                        showNotation = showNotation,
+                        onShowNotation = { show ->
+                            logger.info(Evt.SETTINGS_CHANGED, null, "notation" to show)
+                            scope.launch { settings.setShowNotation(show) }
+                        },
                     ),
                 )
             }

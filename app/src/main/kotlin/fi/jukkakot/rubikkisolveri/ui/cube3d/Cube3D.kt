@@ -24,11 +24,47 @@ import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.Move
 import kotlin.math.PI
 
+/** The curved direction arrow of [move], with a dark outline and a head at its end. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawArrow(move: Move, view: Quat, path: Path) {
+    val points = CubeScene.arrow(move, view).map { CubeScene.projectPoint(it, view, size.width, size.height) }
+    val width = size.minDimension * 0.035f
+    val headLength = size.minDimension * 0.08f
+    val (ex, ey) = points.last()
+    val (px, py) = points[points.size - 3]
+    val dx = ex - px
+    val dy = ey - py
+    val len = kotlin.math.sqrt(dx * dx + dy * dy).coerceAtLeast(1e-3f)
+    val ux = dx / len
+    val uy = dy / len
+    // The shaft stops where the head begins.
+    val shaftEnd = points.indexOfLast { (x, y) -> (x - ex) * ux + (y - ey) * uy < -headLength * 0.6f }.coerceAtLeast(1)
+    path.reset()
+    path.moveTo(points[0].first, points[0].second)
+    for (i in 1..shaftEnd) path.lineTo(points[i].first, points[i].second)
+    val round = androidx.compose.ui.graphics.StrokeCap.Round
+    drawPath(path, StickerColors.ARROW_OUTLINE, style = Stroke(width * 1.6f, cap = round))
+    drawPath(path, StickerColors.ARROW, style = Stroke(width, cap = round))
+    val head = Path().apply {
+        moveTo(ex + ux * headLength * 0.25f, ey + uy * headLength * 0.25f)
+        lineTo(ex - ux * headLength + -uy * headLength * 0.55f, ey - uy * headLength + ux * headLength * 0.55f)
+        lineTo(ex - ux * headLength - -uy * headLength * 0.55f, ey - uy * headLength - ux * headLength * 0.55f)
+        close()
+    }
+    drawPath(head, StickerColors.ARROW_OUTLINE, style = Stroke(width * 0.6f, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+    drawPath(head, StickerColors.ARROW)
+}
+
 /** Real-cube sticker colours; not themed, they must match the cube in the user's hand. */
 object StickerColors {
     val UNKNOWN = Color(0xFF8A8A8A)
     val PLASTIC = Color(0xFF141414)
     val MARK = Color(0xFFFF1744)
+    val ARROW = Color(0xFFFFB300)
+    val ARROW_OUTLINE = Color(0xFF1A1A1A)
+    private val DIM = Color(0xFF808080)
+
+    /** A sticker outside the highlighted layer: mostly grey, a hint of its colour left. */
+    fun dim(color: Color): Color = lerp(color, DIM, 0.6f)
 
     fun of(color: CubeColor?): Color = when (color) {
         CubeColor.WHITE -> Color(0xFFF4F4F4)
@@ -76,6 +112,8 @@ fun Cube3D(
     marked: Set<Int> = emptySet(),
     onTap: ((Int) -> Unit)? = null,
     description: String? = null,
+    highlight: Move? = null,
+    arrow: Move? = null,
 ) {
     var size by remember { mutableStateOf(Size.Zero) }
     val path = remember { Path() }
@@ -101,16 +139,21 @@ fun Cube3D(
             },
     ) {
         size = this.size
-        val projected = CubeScene.project(CubeScene.quads(move, progress), viewState.rotation, size.width, size.height)
+        val projected = CubeScene.project(CubeScene.quads(move, progress), viewState.rotation, size.width, size.height, highlight)
         val outline = Stroke(width = size.minDimension * 0.012f)
         for (q in projected) {
             path.reset()
             path.moveTo(q.xs[0], q.ys[0])
             for (i in 1 until 4) path.lineTo(q.xs[i], q.ys[i])
             path.close()
-            val base = if (q.sticker < 0) StickerColors.PLASTIC else colors[q.sticker]
+            val base = when {
+                q.sticker < 0 -> StickerColors.PLASTIC
+                q.dimmed -> StickerColors.dim(colors[q.sticker])
+                else -> colors[q.sticker]
+            }
             drawPath(path, lerp(Color.Black, base, q.light))
             if (q.sticker >= 0 && q.sticker in marked) drawPath(path, StickerColors.MARK, style = outline)
         }
+        if (arrow != null && move == null) drawArrow(arrow, viewState.rotation, path)
     }
 }
