@@ -117,6 +117,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 rescanned = LastScan.rescanned,
                 onRescanUsed = { LastScan.rescanned = null },
                 onReadings = { LastScan.readings = it },
+                onRescanTurned = { face, turns -> LastScan.turnPicture(face, turns) },
             )
         }
         composable<ScanRoute> { entry ->

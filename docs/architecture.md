@@ -50,24 +50,35 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
 2. `FrameSampler`: the grid is a centred square, 72 % of the visible area's shorter side, on
    screen and in the frame; each cell's middle 40 % is read (every 2nd pixel, per-channel median),
    mapped through the frame rotation.
-3. `ScanSession`: the face order is trusted, the centre is only a hint (`Holding.centreLooksLike`,
-   read against the default palette and the accepted centres). Steady = every cell within ΔE 12
+3. `ScanSession`: faces in any order, each turned any way. The centre recognises the face among
+   the faces not yet scanned (`Holding.recognised`, `Captured(face)`; read against the default
+   palette and the accepted centres); the review shows it and the user can `choose` another face
+   by its centre colour before `accept`. Readings are stored as seen. Steady = every cell within ΔE 12
    (`STEADY_DISTANCE`) for 1.5 s and 3 frames → capture the per-cell median, then review (raw
-   colours, "Good, next" / "Scan again"; no tap-to-fix). Stops: the last accepted face
-   still in view (`PreviousFace`), and a grid that does not look like stickers (`NoCube`, decided by
+   colours, "Good, next" / "Scan again"; no tap-to-fix). Stops: an accepted face in view in any of
+   its four rotations (`AlreadyScanned`), and a grid that does not look like stickers (`NoCube`, decided by
    `FrameSampler.looksLikeCube` on the grid picture: in ≥ 6 cells the middle is ≥ 15 L lighter than
-   the darkest tenth of the cell's edge, i.e. dark gaps between stickers; colour plays no part). Redo; capture button. Live dots show the raw camera colour.
+   the darkest tenth of the cell's edge, i.e. dark gaps between stickers; colour plays no part). Redo takes back the face accepted last; capture button. Live dots show the raw camera colour.
    Exposure/white balance lock at the first capture (`index > 0 || review != null`); capture
    pictures are written on `Dispatchers.IO`; `scan.stall` logs camera gaps ≥ 300 ms and UI frames
    ≥ 150 ms apart.
 4. `ColorClassifier.classify`: CIE Lab (lightness weight 0.5), balanced assignment (Hungarian,
    every colour exactly nine times) seeded by the six centres, refined twice; confidence per
    sticker; below 0.12 is uncertain.
-5. `ScanOutcome`: valid and no uncertain sticker → solution; otherwise manual input with
+5. `RotationSearch` (in `outcome()`): the 54 classified colours as seen; the 4⁶ = 4096 face
+   rotations are tried (`CubeCheck.realPieceCount`, then `validity` for those with 20 real pieces).
+   One distinct valid cube → it; several → the fewest quarter turns, the faces that differ marked
+   uncertain; none → the most real pieces, after trying each single opposite pair renamed (a
+   mislabelled pair mirrors the cube; any single rename undoes a mirror, so the pair whose readings
+   fit the default palette better swapped is taken). ~0.1 s, 0.35 s worst case on a desktop JVM.
+   The outcome carries `rotations` and `from` (which capture ended on which face); readings and
+   uncertain stickers are turned into net order, and the app turns each picture the same way
+   (`rotatePicture`).
+6. `ScanOutcome`: valid and no uncertain sticker → solution; otherwise manual input with
    `fromScan`, the scanned colours and the doubtful/problem stickers marked. The outcome keeps the
    54 raw readings (`samples`); the app holds them, the pictures and a just-rescanned face in
    `LastScan` (snapshot state, in memory only).
-6. The check (`ScanCheck`, pure Kotlin): faces without a mark start checked; "Looks right" goes to
+7. The check (`ScanCheck`, pure Kotlin): faces without a mark start checked; "Looks right" goes to
    the next unchecked face; after the last one `verdict()` → `Solvable`, or `Impossible` with the
    faces to look at again. `MisreadSearch.swaps` tries every swap of two non-centre stickers of
    different colours (1128 validity checks) and ranks the ones that make the cube valid by how
@@ -75,7 +86,9 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
    swap → the faces of the stickers the validity names, else the two faces whose readings fit
    worst. A face rescanned on its own (`ScanSession(only = …)`) is classified by
    `ColorClassifier.classifyFace` against the other 45 readings labelled by the current colours,
-   after scaling the rescan by the centre's brightness ratio (the new exposure).
+   after scaling the rescan by the centre's brightness ratio (the new exposure), in each of its
+   four rotations: the one giving a solvable cube, else the most real pieces, else the best fit;
+   the check's picture of that face is turned to match.
 
 ## Beginner solver — Implemented
 

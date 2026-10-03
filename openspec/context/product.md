@@ -67,3 +67,12 @@ method stage by stage so you learn to solve it yourself.
 - **Five faces are enough (2026-10-03):** once five faces are scanned, the sixth can largely be
   worked out (each piece is known from its other stickers, the counts fill the rest), so the scan
   could skip it or use it only as a check. Not planned yet.
+- **Video scan (2026-10-03):** instead of one still capture per face, the user turns the cube
+  slowly in front of the camera and the app tracks it continuously, picking up each face as it
+  comes into view. Not planned yet.
+- **Turns animated in steps (2026-10-03):** in the solver, a face turn animates in clear steps
+  (a quarter turn as one step, a half turn as two quarter steps with a pause between), so it is
+  obvious how far to turn. Not planned yet.
+- **Fewer whole-cube turns in the hands (2026-10-03):** keep the need to turn the real cube in the
+  hands to a minimum, in the scan (done in `scan-any-order`: any order, any rotation) and in the
+  solver (e.g. prefer solutions and move views that need no regrip). Not planned yet.

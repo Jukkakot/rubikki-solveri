@@ -6,9 +6,9 @@
 
 ## 2. App
 
-- [ ] 2.1 Scan screen: title "Kuvattu n/6", "any face, any way round" hint (no suggestion, no hold hint), live "looks like" by face, review with the recognised face and the centre-colour picker (44 dp), progress dots by face, already-scanned status; picture turning into `LastScan`; one-face rescan turns its picture; strings fi/en; Compose tests: another face first, changing the recognised face, already-scanned face (`:app:testDebugUnitTest`, lint)
-- [ ] 2.2 Screenshots `scan` and `scan-review` updated (review shows the picker); gallery refreshed after the push
+- [x] 2.1 Scan screen: title "Kuvattu n/6", "any face, any way round" hint (no suggestion, no hold hint), live "looks like" by face, review with the recognised face and the centre-colour picker (44 dp), progress dots by face, already-scanned status; picture turning into `LastScan`; one-face rescan turns its picture; strings fi/en; Compose tests: another face first, changing the recognised face, already-scanned face (`:app:testDebugUnitTest`, lint)
+- [x] 2.2 Screenshots `scan` and `scan-review` updated (review shows the picker); gallery refreshed after the push
 
 ## 3. Docs
 
-- [ ] 3.1 `docs/architecture.md` (scan pipeline: recognition, rotation search), `docs/operations.md` if log fields change, `product.md` later ideas (video), roadmap row for `scan-any-order` done; verify by reading
+- [x] 3.1 `docs/architecture.md` (scan pipeline: recognition, rotation search), `docs/operations.md` if log fields change, `product.md` later ideas (video), roadmap row for `scan-any-order` done; verify by reading

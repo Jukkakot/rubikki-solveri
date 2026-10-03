@@ -55,18 +55,20 @@ Android Studio device menu → **Pair Devices Using Wi-Fi** and scan the QR code
 The scan logs the readings and keeps a small picture of the grid for every capture:
 
 - `scan.capture face=F picture=20261003-104512-123-F.png rgb=…,…` — every capture (automatic or
-  the button, retakes too): the picture's file name and the nine readings (hex RGB, row by row).
-- `scan.face face=F rgb=…,… centreLooksLike=R` — an accepted face; `centreLooksLike` when the
-  centre read as another colour.
+  the button, retakes too): the face the centre was recognised as, the picture's file name and
+  the nine readings as seen (hex RGB, row by row).
+- `scan.face face=F rgb=…,… recognised=L` — an accepted face (as the user confirmed it) and the
+  face it was recognised as.
 - `scan.lock lock=true` — exposure and white balance locked when the first face is captured
-  (`lock=false` when the front face is scanned again).
+  (`lock=false` when no face is done again).
 - `scan.stall where=camera|ui ms=…` — the camera frames or the screen stopped for that long; a
   freeze the user saw should show up here.
-- `scan.done valid=… validity=… uncertain=N cube=…` — the result (`cube` is the 54 colour letters,
-  `.` for unknown).
+- `scan.done valid=… validity=… uncertain=N cube=… rotations=U1R0F3D2L0B0 renamed=RL` — the result
+  (`cube` is the 54 colour letters, `.` for unknown; `rotations` the quarter turns clockwise each
+  face's capture was turned; `renamed` the opposite pair named the wrong way round, if any).
 - `scan.check verdict=solvable|impossible validity=… faces=R,U marked=… cube=…` — the check's
   verdict after the last "Looks right" (`faces` to look at again, `marked` the likely misreads);
-  `scan.check rescan=U colors=…` — a face rescanned on its own replaced that face.
+  `scan.check rescan=U rotation=k colors=…` — a face rescanned on its own replaced that face.
 
 Pictures (120×120 PNG of the grid area) live in `files/logs/scan/` on the phone, newest 12 kept;
 Clear in the log screen deletes them. They leave the phone only when the log is shared.

@@ -105,6 +105,7 @@ fun ManualInputScreen(
     rescanned: Pair<FaceView, List<Rgb>>? = null,
     onRescanUsed: () -> Unit = {},
     onReadings: (List<Rgb>) -> Unit = {},
+    onRescanTurned: (Face, Int) -> Unit = { _, _ -> },
 ) {
     var encoded by rememberSaveable { mutableStateOf(initial.encode()) }
     // The face-by-face check of a scan (null for plain manual input); its readings are not saved
@@ -199,11 +200,12 @@ fun ManualInputScreen(
         val (face, samples) = rescanned ?: return@LaunchedEffect
         val current = scanCheck
         if (current?.readings != null) {
-            val next = current.replaceFace(face, samples)
+            val (next, turns) = current.replaceFace(face, samples)
+            onRescanTurned(face.face, turns)
             setCheck(next)
             next.readings?.let(onReadings)
             faceIndex = face.ordinal
-            AppLog.info(Evt.SCAN_CHECK, null, "rescan" to face.face.name, "colors" to next.editor.encode())
+            AppLog.info(Evt.SCAN_CHECK, null, "rescan" to face.face.name, "rotation" to turns, "colors" to next.editor.encode())
         }
         onRescanUsed()
     }

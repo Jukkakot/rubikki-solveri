@@ -14,6 +14,7 @@ import fi.jukkakot.rubikkisolveri.cube.FaceView
 import fi.jukkakot.rubikkisolveri.cube.Stickers
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
+import fi.jukkakot.rubikkisolveri.cube.scan.RotationSearch
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanCheck
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.ui.manual.ManualInputScreen
@@ -50,11 +51,12 @@ class ScanScreenTest {
         }
     }
 
-    private fun faceSamples(view: FaceView) = (1..9).map { ColorClassifier.DEFAULT_PALETTE.getValue(cube.colorAt(view.face, it)) }
+    private fun faceSamples(view: FaceView, turn: Int = 0) =
+        RotationSearch.turned((1..9).map { ColorClassifier.DEFAULT_PALETTE.getValue(cube.colorAt(view.face, it)) }, turn)
 
-    private fun show(view: FaceView, times: Int) {
+    private fun show(view: FaceView, times: Int, turn: Int = 0) {
         repeat(times) {
-            compose.runOnIdle { frames.tryEmit(faceSamples(view)) }
+            compose.runOnIdle { frames.tryEmit(faceSamples(view, turn)) }
             compose.waitForIdle()
         }
     }
@@ -64,7 +66,7 @@ class ScanScreenTest {
         scan()
         compose.waitForIdle()
         assertEquals(listOf(false), locks)
-        show(FaceView.FRONT, 3)
+        show(FaceView.TOP, 3)
         // Captured, not yet accepted: already locked.
         assertEquals(listOf(false, true), locks)
         compose.onNodeWithText("Kuvaa uudelleen").performClick()
@@ -81,36 +83,59 @@ class ScanScreenTest {
             compose.waitForIdle()
         }
         compose.onNodeWithText("Ruudukossa ei näy kuutiota. Tuo kuution puoli ruudukkoon.").assertIsDisplayed()
-        compose.onNodeWithText("Etupuoli (1/6)").assertIsDisplayed()
+        compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
         assertTrue(saved.isEmpty())
         // The capture button still takes it, and its picture is saved.
         compose.onNodeWithText("Ota kuva").performClick()
         compose.onNodeWithText("Hyvä, seuraava").assertIsDisplayed()
-        assertEquals(listOf("F"), saved)
+        assertEquals(1, saved.size)
     }
 
     @Test
-    fun otherCentreIsAHint() {
+    fun firstFaceAsksForAnyFace() {
         scan()
-        show(FaceView.RIGHT, 2)
-        compose.onNodeWithText("Keskiö näyttää: punainen. Jos tämä on oikea puoli, pidä paikallaan.").assertIsDisplayed()
-        show(FaceView.RIGHT, 1)
-        compose.onNodeWithText("Keskiö luettiin: punainen. Jos tämä silti on oikea puoli, jatka vain.").assertIsDisplayed()
-        compose.onNodeWithText("Etupuoli (1/6)").assertIsDisplayed()
+        compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
+        compose.onNodeWithText("Näytä mikä tahansa kuvaamaton puoli, missä asennossa tahansa.").assertIsDisplayed()
     }
 
     @Test
-    fun previousFaceStillInView() {
+    fun anotherFaceFirst() {
+        // The right face, turned a quarter, first: recognised as the right face.
+        scan()
+        show(FaceView.RIGHT, 2, turn = 1)
+        compose.onNodeWithText("Keskiö näyttää: Oikea puoli. Pidä paikallaan.").assertIsDisplayed()
+        show(FaceView.RIGHT, 1, turn = 1)
+        compose.onNodeWithText("Tunnistettu: Oikea puoli").assertIsDisplayed()
+        compose.onNodeWithText("Hyvä, seuraava").performClick()
+        compose.onNodeWithText("Kuvattu 1/6").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Oikea puoli luettu.").assertIsDisplayed()
+    }
+
+    @Test
+    fun changingTheRecognisedFace() {
+        // Recognised as the left face; the user taps the red centre colour.
+        scan()
+        show(FaceView.LEFT, 3)
+        compose.onNodeWithText("Tunnistettu: Vasen puoli").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Oikea puoli").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Tunnistettu: Oikea puoli").assertIsDisplayed()
+        compose.onNodeWithText("Hyvä, seuraava").performClick()
+        compose.onNodeWithContentDescription("Oikea puoli luettu.").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Vasen puoli luettu.").assertDoesNotExist()
+    }
+
+    @Test
+    fun alreadyScannedFace() {
         scan()
         confirm(FaceView.FRONT)
-        show(FaceView.FRONT, 3)
-        compose.onNodeWithText("Käännä kuutiota: kamera näkee vielä edellisen puolen.").assertIsDisplayed()
-        compose.onNodeWithText("Oikea puoli (2/6)").assertIsDisplayed()
+        show(FaceView.FRONT, 3, turn = 2)
+        compose.onNodeWithText("Tämä puoli on jo kuvattu – käännä kuutiota toiseen puoleen.").assertIsDisplayed()
+        compose.onNodeWithText("Kuvattu 1/6").assertIsDisplayed()
     }
 
     /** Holds [view] until it is captured and accepts it. */
-    private fun confirm(view: FaceView) {
-        show(view, 3)
+    private fun confirm(view: FaceView, turn: Int = 0) {
+        show(view, 3, turn)
         compose.onNodeWithText("Hyvä, seuraava").performClick()
         compose.waitForIdle()
     }
@@ -119,10 +144,10 @@ class ScanScreenTest {
     fun heldStill() {
         scan()
         show(FaceView.FRONT, 3)
-        compose.onNodeWithText("Näin kamera näki tämän puolen.", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("Etupuoli (1/6)").assertIsDisplayed()
+        compose.onNodeWithText("Tunnistettu: Etupuoli").assertIsDisplayed()
+        compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
         compose.onNodeWithText("Hyvä, seuraava").performClick()
-        compose.onNodeWithText("Oikea puoli (2/6)").assertIsDisplayed()
+        compose.onNodeWithText("Kuvattu 1/6").assertIsDisplayed()
         compose.onNodeWithText("Etupuoli luettu.").assertIsDisplayed()
     }
 
@@ -131,10 +156,9 @@ class ScanScreenTest {
         scan()
         show(FaceView.FRONT, 3)
         compose.onNodeWithText("Kuvaa uudelleen").performClick()
-        compose.onNodeWithText("Etupuoli (1/6)").assertIsDisplayed()
-        compose.onNodeWithText("Valmiina 0/6").assertIsDisplayed()
+        compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
         confirm(FaceView.FRONT)
-        compose.onNodeWithText("Oikea puoli (2/6)").assertIsDisplayed()
+        compose.onNodeWithText("Kuvattu 1/6").assertIsDisplayed()
     }
 
     @Test
@@ -142,13 +166,15 @@ class ScanScreenTest {
         scan()
         confirm(FaceView.FRONT)
         compose.onNodeWithText("Edellinen uudelleen").performClick()
-        compose.onNodeWithText("Etupuoli (1/6)").assertIsDisplayed()
+        compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
     }
 
     @Test
     fun confidentScan() {
+        // Any order, some faces turned.
         scan()
-        for (view in FaceView.entries) confirm(view)
+        val order = listOf(FaceView.TOP, FaceView.BACK, FaceView.FRONT, FaceView.BOTTOM, FaceView.LEFT, FaceView.RIGHT)
+        for ((i, view) in order.withIndex()) confirm(view, turn = i % 4)
         compose.waitUntil(5_000) { outcome != null }
         assertTrue(outcome!!.isConfident)
         assertEquals(cube, outcome!!.editor.toCube())
@@ -177,6 +203,7 @@ class ScanScreenTest {
             }
         }
         compose.onNodeWithText("Yläpuoli").assertIsDisplayed()
+        compose.onNodeWithText("Keskiö on valkoinen. Näytä tämä puoli missä asennossa tahansa.").assertIsDisplayed()
         compose.onNodeWithText("Vain tämä puoli").assertIsDisplayed()
         compose.onNodeWithText("Edellinen uudelleen").assertDoesNotExist()
         confirm(FaceView.TOP)
