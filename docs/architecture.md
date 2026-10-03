@@ -105,15 +105,23 @@ yellow cross, yellow edges, yellow corners into place, yellow corners turned.
 - Each `Step` has a `StepNote` (data); the app words it (`ui/common/StepTexts`). About 160 moves,
   < 60 ms on a desktop.
 - The solution screen offers "shortest" or "learn step by step" (`SolveMethod`); learning shows a
-  stage card (stage n/7, the idea on the stage's first step, the step's note). Whole-cube turns
+  stage card (stage n/7 with a goal thumbnail that opens large, the step's note). When a stage
+  begins, a goal card ("Next: …", `GoalCard` in `SolveScreen`) covers the guide until Continue. Whole-cube turns
   are worded by the resulting front and top centres, and the hold line updates as the cube turns.
 
 ## Lessons — Implemented
 
-- `ui/lessons/LessonCatalog`: basics + one lesson per beginner stage; text in string resources
-  (what / how / tip), algorithms from `BeginnerSolver`.
-- `AlgorithmCard`: name, notation, moves in words and a 3D demo from the solved cube with the
-  algorithm's inverse applied, so playing it solves the cube; it snaps back after 1.2 s.
+- `ui/lessons/LessonCatalog`: basics + one lesson per beginner stage, each a list of
+  `LessonPage`s (goal, cases, one per algorithm, practice; basics: four picture pages). Texts are
+  one-liners; pictures carry the lesson. `LessonScreens`: `HorizontalPager` with dots and
+  back/next; every page fits the screen without scrolling.
+- Pictures are all the app's 3D cube via `GoalCube` (grey = not in place, red outline = marked).
+  Data lives in the cube module: `beginner/StageGoals` (per-stage hold and in-place/added
+  stickers), `beginner/StageCases` (case positions built backwards from the goal, so a test proves
+  each case's moves reach what the caption promises), `Sequences.movedStickers` (before/after
+  outlines on algorithm pages).
+- `AlgorithmPage`: 3D demo from the goal hold with the algorithm's inverse applied, the current
+  move highlighted in the notation and said in words; it snaps back after 1.2 s.
 - Practice: `Practice.exercise(stage, random)` (cube) scrambles, beginner-solves, applies the
   earlier stages; `PracticeRoute(stage, seed)` opens `SolveScreen` in practice mode with only that
   stage's steps; "new position" replaces the route with seed + 1.

@@ -100,7 +100,7 @@ class CubeViewState(initial: Quat = CubeScene.DEFAULT_VIEW) {
 /**
  * The 3D cube. [colors] are the 54 sticker colours (URFDLB order) of the state before [move];
  * [progress] 0..1 turns the move's layers. [marked] stickers get a strong outline. [onTap] gets the
- * tapped sticker's index.
+ * tapped sticker's index. A cube that is not [draggable] leaves drags to its parent (e.g. a pager).
  */
 @Composable
 fun Cube3D(
@@ -114,16 +114,19 @@ fun Cube3D(
     description: String? = null,
     highlight: Move? = null,
     arrow: Move? = null,
+    draggable: Boolean = true,
 ) {
     var size by remember { mutableStateOf(Size.Zero) }
     val path = remember { Path() }
     Canvas(
         modifier
             .semantics { if (description != null) contentDescription = description }
-            .pointerInput(viewState) {
-                detectDragGestures { change, drag ->
-                    change.consume()
-                    viewState.drag(drag.x, drag.y, this.size.width.toFloat())
+            .pointerInput(viewState, draggable) {
+                if (draggable) {
+                    detectDragGestures { change, drag ->
+                        change.consume()
+                        viewState.drag(drag.x, drag.y, this.size.width.toFloat())
+                    }
                 }
             }
             .pointerInput(onTap, viewState) {

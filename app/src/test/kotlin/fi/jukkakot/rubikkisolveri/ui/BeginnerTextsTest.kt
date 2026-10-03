@@ -72,6 +72,7 @@ class BeginnerTextsTest {
         compose.onNodeWithText("Opettele vaiheittain").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Vaihe 1/7: Valkoinen risti").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Vaihe 1/7: Valkoinen risti").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Jatka").performScrollTo().performClick()
         compose.onNodeWithText("Vie valkoinen–", substring = true).performScrollTo().assertIsDisplayed()
     }
 }

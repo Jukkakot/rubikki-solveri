@@ -1,26 +1,32 @@
 package fi.jukkakot.rubikkisolveri.ui
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.Sequences
 import fi.jukkakot.rubikkisolveri.cube.beginner.BeginnerSolver
+import fi.jukkakot.rubikkisolveri.cube.beginner.CaseId
 import fi.jukkakot.rubikkisolveri.cube.beginner.Checks
 import fi.jukkakot.rubikkisolveri.cube.beginner.Practice
 import fi.jukkakot.rubikkisolveri.cube.beginner.Stage
+import fi.jukkakot.rubikkisolveri.cube.beginner.StageCases
 import fi.jukkakot.rubikkisolveri.R
 import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeAnimator
 import fi.jukkakot.rubikkisolveri.ui.cube3d.rememberCubeAnimator
 import fi.jukkakot.rubikkisolveri.ui.lessons.Algorithm
-import fi.jukkakot.rubikkisolveri.ui.lessons.AlgorithmCard
+import fi.jukkakot.rubikkisolveri.ui.lessons.AlgorithmPage
+import fi.jukkakot.rubikkisolveri.ui.lessons.CasesPage
 import fi.jukkakot.rubikkisolveri.ui.lessons.LessonCatalog
+import fi.jukkakot.rubikkisolveri.ui.lessons.LessonPage
 import fi.jukkakot.rubikkisolveri.ui.lessons.LessonScreen
 import fi.jukkakot.rubikkisolveri.ui.lessons.LessonsScreen
 import fi.jukkakot.rubikkisolveri.ui.solve.SolveMethod
@@ -46,20 +52,61 @@ class LessonsTest {
     }
 
     @Test
+    fun middleLayerPages() {
+        val pages = LessonCatalog.lessons[3].pages
+        assertEquals(LessonPage.Goal(Stage.MIDDLE_LAYER), pages.first())
+        assertEquals(LessonPage.Cases(Stage.MIDDLE_LAYER), pages[1])
+        assertEquals(
+            listOf(BeginnerSolver.MIDDLE_RIGHT, BeginnerSolver.MIDDLE_LEFT),
+            pages.filterIsInstance<LessonPage.AlgorithmDemo>().map { it.algorithm.moves },
+        )
+        assertEquals(LessonPage.Practice(Stage.MIDDLE_LAYER), pages.last())
+        assertEquals(4, LessonCatalog.lessons[0].pages.size, "basics: four picture pages")
+    }
+
+    @Test
     fun openLessons() {
         compose.setContent { RubikkiTheme(dynamicColor = false) { LessonsScreen(onOpen = {}, onBack = {}) } }
         compose.onNodeWithText("Kuution perusteet").assertIsDisplayed()
         compose.onNodeWithText("1. Valkoinen risti").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Tavoite: Valkoinen risti").assertIsDisplayed()
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("7. Keltaiset kulmat oikein päin"))
         compose.onNodeWithText("7. Keltaiset kulmat oikein päin").assertIsDisplayed()
     }
 
     @Test
-    fun middleLayerLesson() {
+    fun nextMovesToTheSecondPage() {
         compose.setContent { RubikkiTheme(dynamicColor = false) { LessonScreen(3, onBack = {}, onPractice = {}, onFreeCube = {}) } }
-        compose.onNodeWithText("Miten").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("U R U' R' U' F' U F").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("U' L' U L U F U' F'").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Sivu 1/5").assertIsDisplayed()
+        compose.onNodeWithText("Seuraava").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithContentDescription("Sivu 2/5").assertIsDisplayed()
+        compose.onNodeWithText("Mikä tilanne sinulla on?").assertIsDisplayed()
+    }
+
+    @Test
+    fun tapACase() {
+        compose.setContent { RubikkiTheme(dynamicColor = false) { Column { CasesPage(Stage.WHITE_CORNERS) } } }
+        compose.onNodeWithText("Valkoinen oikealle").performClick()
+        compose.onNodeWithText("Toista sarja").assertIsDisplayed()
+        compose.onNodeWithText("Kaikki tilanteet").performClick()
+        compose.onNodeWithText("Valkoinen alas").assertIsDisplayed()
+    }
+
+    @Test
+    fun playACase() {
+        lateinit var animator: CubeAnimator
+        compose.setContent {
+            RubikkiTheme(dynamicColor = false) {
+                Column { CasesPage(Stage.WHITE_CORNERS, animatorFor = { start -> rememberCubeAnimator(start).also { animator = it } }) }
+            }
+        }
+        compose.onNodeWithText("Valkoinen oikealle").performClick()
+        compose.waitForIdle()
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithText("Toista sarja").performClick()
+        compose.mainClock.advanceTimeBy(3000)
+        compose.runOnIdle { assertTrue(StageCases.reached(CaseId.WHITE_RIGHT, animator.cube), "the corner ends in place") }
     }
 
     @Test
@@ -68,15 +115,19 @@ class LessonsTest {
         compose.mainClock.autoAdvance = false
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                AlgorithmCard(Algorithm(R.string.alg_trigger, BeginnerSolver.TRIGGER), animatorFor = { start ->
-                    rememberCubeAnimator(start).also { animator = it }
-                })
+                Column {
+                    AlgorithmPage(Algorithm(R.string.alg_trigger, BeginnerSolver.TRIGGER), animatorFor = { start ->
+                        rememberCubeAnimator(start).also { animator = it }
+                    })
+                }
             }
         }
         compose.mainClock.advanceTimeByFrame()
         val start = Cube.solved().apply(Sequences.inverse(BeginnerSolver.TRIGGER))
         compose.onNodeWithText("Toista sarja").performClick()
-        compose.mainClock.advanceTimeBy(1500)
+        compose.mainClock.advanceTimeBy(450)
+        compose.onNodeWithText("Käännä alapuolta vastapäivään", substring = true).assertIsDisplayed() // D' in words while it plays
+        compose.mainClock.advanceTimeBy(1050)
         compose.runOnIdle { assertTrue(animator.cube.isSolved, "solved at the end of the demo") }
         compose.mainClock.advanceTimeBy(2000)
         compose.runOnIdle { assertEquals(start, animator.cube, "back to the start") }
@@ -96,7 +147,11 @@ class LessonsTest {
                 )
             }
         }
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("Tein sen").fetchSemanticsNodes().isNotEmpty() }
+        // The goal comes first, the moves after "Continue".
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("Jatka").fetchSemanticsNodes().isNotEmpty() }
+        assertTrue(compose.onAllNodesWithText("Tein sen").fetchSemanticsNodes().isEmpty(), "goal card covers the guide")
+        compose.onNodeWithContentDescription("Tavoite: Keltainen risti").assertExists()
+        compose.onNodeWithText("Jatka").performScrollTo().performClick()
         assertTrue(compose.onAllNodesWithText("Opettele vaiheittain").fetchSemanticsNodes().isEmpty(), "no method choice in practice")
         compose.onNodeWithText("Vaihe 4/7: Keltainen risti").performScrollTo().assertIsDisplayed()
         repeat(exercise.steps.sumOf { it.moves.size }) { compose.onNodeWithText("Tein sen").performScrollTo().performClick() }

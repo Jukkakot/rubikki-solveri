@@ -167,10 +167,38 @@ class ScreenshotTest {
         )
     }
 
-    @Test
-    fun lesson() = shot("lesson") {
-        fi.jukkakot.rubikkisolveri.ui.lessons.LessonScreen(2, onBack = {}, onPractice = {}, onFreeCube = {})
+    private fun lessonPage(name: String, lesson: Int, page: Int) = shot(name) {
+        fi.jukkakot.rubikkisolveri.ui.lessons.LessonScreen(lesson, onBack = {}, onPractice = {}, onFreeCube = {}, initialPage = page)
     }
+
+    @Test
+    fun middleLayerGoal() = shot("goal-middle-layer") {
+        fi.jukkakot.rubikkisolveri.ui.lessons.StageGoalPicture(fi.jukkakot.rubikkisolveri.cube.beginner.Stage.MIDDLE_LAYER)
+    }
+
+    @Test
+    fun lessonGoal() = lessonPage("lesson-goal", 3, 0)
+
+    @Test
+    fun lessonCases() = lessonPage("lesson-cases", 3, 1)
+
+    @Test
+    fun lessonAlgorithm() = lessonPage("lesson-algorithm", 3, 2)
+
+    @Test
+    fun lessonPractice() = lessonPage("lesson-practice", 3, 4)
+
+    @Test
+    fun lessonYellowCrossCases() = lessonPage("lesson-cases-yellow-cross", 4, 1)
+
+    @Test
+    fun lessonCornersGoal() = lessonPage("lesson-goal-corners-placed", 6, 0)
+
+    @Test
+    fun basicsMove() = lessonPage("basics-move", 0, 2)
+
+    @Test
+    fun basicsCentres() = lessonPage("basics-centres", 0, 0)
 
     @Test
     fun timer() = shot("timer") {

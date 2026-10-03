@@ -31,7 +31,7 @@ illustrations drawn by hand (all pictures are the app's own 3D cube).
   / two opposite right; 6 one corner in place / none; 7 yellow right ×2 / yellow front ×4.
 - **One picture component, `GoalCube`**: `Cube3D` with colours masked to grey and `marked`
   outlines, a fixed view, draggable only when large. Used for goal pictures, list thumbnails,
-  cases and before/after. Grey is `surfaceVariant` so it works in light and dark. Alternative: 2D
+  cases and before/after. Grey is the theme's `outline` colour: mid grey in light and dark (`surfaceVariant` was tried first; in the light theme it reads as white stickers). Alternative: 2D
   top-view diagrams for the last layer; rejected to keep one consistent look.
 - **Pager:** `HorizontalPager` with page dots and a bottom bar (back / next; on the last page the
   primary button is "Practise"). Buttons, not only swiping, so the pages are discoverable.

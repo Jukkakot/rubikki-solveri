@@ -2,6 +2,7 @@ package fi.jukkakot.rubikkisolveri.ui.solve
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,8 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -25,11 +28,13 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -51,6 +56,7 @@ import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.Move
 import fi.jukkakot.rubikkisolveri.cube.Validity
 import fi.jukkakot.rubikkisolveri.cube.beginner.BeginnerSolver
+import fi.jukkakot.rubikkisolveri.cube.beginner.Stage
 import fi.jukkakot.rubikkisolveri.cube.beginner.Step
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.cube.solve.SolveResult
@@ -63,10 +69,11 @@ import fi.jukkakot.rubikkisolveri.ui.common.RoundIconButton
 import fi.jukkakot.rubikkisolveri.ui.common.RoundIconToggle
 import fi.jukkakot.rubikkisolveri.ui.common.colorName
 import fi.jukkakot.rubikkisolveri.ui.common.noteText
-import fi.jukkakot.rubikkisolveri.ui.common.stageIntro
 import fi.jukkakot.rubikkisolveri.ui.common.stageName
 import fi.jukkakot.rubikkisolveri.ui.common.validityMessage
 import fi.jukkakot.rubikkisolveri.ui.guide.FollowPanel
+import fi.jukkakot.rubikkisolveri.ui.lessons.StageGoalCube
+import fi.jukkakot.rubikkisolveri.ui.lessons.StageGoalPicture
 import fi.jukkakot.rubikkisolveri.ui.guide.GuideCube
 import fi.jukkakot.rubikkisolveri.ui.guide.MoveWordsText
 import fi.jukkakot.rubikkisolveri.ui.guide.StepperState
@@ -225,6 +232,10 @@ private fun Stepper(
     val index = state.index
     val now = state.cubeAt(index)
     val startedAt = remember { System.currentTimeMillis() }
+    // Learn mode: when a stage begins, its goal card covers the guide until the user continues.
+    var seenStages by rememberSaveable { mutableIntStateOf(0) }
+    val stage = plan.steps?.let { stepAt(it, index).stage }
+    val showGoal = stage != null && !state.isFinished && seenStages and (1 shl stage.ordinal) == 0
     var reported by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(state.isFinished) {
         if (state.isFinished && !reported) {
@@ -245,6 +256,10 @@ private fun Stepper(
             ),
             style = MaterialTheme.typography.bodyMedium,
         )
+        if (stage != null && showGoal) {
+            GoalCard(stage) { seenStages = seenStages or (1 shl stage.ordinal) }
+            return@Column
+        }
         plan.steps?.let { steps -> StageCard(steps, index) }
         if (follow && !state.isFinished) {
             CameraPermissionGate(alternative = stringResource(R.string.follow_show_3d) to onStopFollowing) {
@@ -285,22 +300,45 @@ private fun Stepper(
     }
 }
 
-/** The beginner stage and step the current move belongs to. */
-@Composable
-private fun StageCard(steps: List<Step>, index: Int) {
+private fun stepAt(steps: List<Step>, index: Int): Step {
     var at = 0
-    val step = steps.firstOrNull { s -> (index < at + s.moves.size).also { at += s.moves.size } } ?: steps.last()
-    val resources = LocalResources.current
+    return steps.firstOrNull { s -> (index < at + s.moves.size).also { at += s.moves.size } } ?: steps.last()
+}
+
+/** "Next: stage N": the stage's goal picture, shown when the stage begins. */
+@Composable
+private fun GoalCard(stage: Stage, onContinue: () -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(stringResource(R.string.goal_next), style = MaterialTheme.typography.labelLarge)
             Text(
-                stringResource(R.string.stage_header, step.stage.ordinal + 1, stringResource(stageName(step.stage))),
+                stringResource(R.string.stage_header, stage.ordinal + 1, stringResource(stageName(stage))),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
-            // The stage's idea is shown on its first step; later steps keep the screen short.
-            if (steps.first { it.stage == step.stage } === step) {
-                Text(stringResource(stageIntro(step.stage)), style = MaterialTheme.typography.bodySmall)
+            StageGoalPicture(stage, Modifier.fillMaxWidth(0.8f))
+            BigButton(onClick = onContinue, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.goal_continue)) }
+        }
+    }
+}
+
+/** The beginner stage (with its goal picture, tap to enlarge) and the step the current move belongs to. */
+@Composable
+private fun StageCard(steps: List<Step>, index: Int) {
+    val step = stepAt(steps, index)
+    val resources = LocalResources.current
+    var goalOpen by remember { mutableStateOf(false) }
+    val name = stringResource(stageName(step.stage))
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    stringResource(R.string.stage_header, step.stage.ordinal + 1, name),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                StageGoalCube(step.stage, Modifier.size(48.dp).clickable { goalOpen = true })
             }
             Text(
                 noteText(step.note) { id, args -> resources.getString(id, *args) },
@@ -308,6 +346,14 @@ private fun StageCard(steps: List<Step>, index: Int) {
                 fontWeight = FontWeight.SemiBold,
             )
         }
+    }
+    if (goalOpen) {
+        AlertDialog(
+            onDismissRequest = { goalOpen = false },
+            confirmButton = { TextButton(onClick = { goalOpen = false }) { Text(stringResource(R.string.goal_close)) } },
+            title = { Text(stringResource(R.string.goal_description, name)) },
+            text = { StageGoalPicture(step.stage, Modifier.fillMaxWidth()) },
+        )
     }
 }
 

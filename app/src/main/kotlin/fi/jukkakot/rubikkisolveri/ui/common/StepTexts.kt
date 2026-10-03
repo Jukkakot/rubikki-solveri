@@ -28,17 +28,6 @@ fun stageName(stage: Stage): Int = when (stage) {
     Stage.YELLOW_CORNERS_TURNED -> R.string.stage_7
 }
 
-@StringRes
-fun stageIntro(stage: Stage): Int = when (stage) {
-    Stage.WHITE_CROSS -> R.string.stage_1_intro
-    Stage.WHITE_CORNERS -> R.string.stage_2_intro
-    Stage.MIDDLE_LAYER -> R.string.stage_3_intro
-    Stage.YELLOW_CROSS -> R.string.stage_4_intro
-    Stage.YELLOW_EDGES -> R.string.stage_5_intro
-    Stage.YELLOW_CORNERS_PLACED -> R.string.stage_6_intro
-    Stage.YELLOW_CORNERS_TURNED -> R.string.stage_7_intro
-}
-
 /** The step's explanation as a sentence; [text] resolves a string resource with arguments. */
 fun noteText(note: StepNote, text: (Int, Array<out Any>) -> String): String {
     fun name(c: CubeColor) = text(colorName(c), emptyArray())
