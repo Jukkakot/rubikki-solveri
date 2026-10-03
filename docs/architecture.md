@@ -50,9 +50,11 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
 2. `FrameSampler`: the grid is a centred square, 72 % of the visible area's shorter side, on
    screen and in the frame; each cell's middle 40 % is read (every 2nd pixel, per-channel median),
    mapped through the frame rotation.
-3. `ScanSession`: live reading per cell against `ColorClassifier.DEFAULT_PALETTE` (dots, centre
-   check); 6 identical frames with the right centre → capture the per-cell median; redo; capture
-   button.
+3. `ScanSession`: the face order is trusted, the centre is only a hint (`Holding.centreLooksLike`,
+   read against the default palette and the accepted centres). Steady = every cell within ΔE 12
+   (`STEADY_DISTANCE`) for 1.5 s and 3 frames → capture the per-cell median, then review (raw
+   colours, "Good, next" / "Scan again"; no tap-to-fix). The only stop: the last accepted face
+   still in view (`PreviousFace`). Redo; capture button. Live dots show the raw camera colour.
 4. `ColorClassifier.classify`: CIE Lab (lightness weight 0.5), balanced assignment (Hungarian,
    every colour exactly nine times) seeded by the six centres, refined twice; confidence per
    sticker; below 0.12 is uncertain.

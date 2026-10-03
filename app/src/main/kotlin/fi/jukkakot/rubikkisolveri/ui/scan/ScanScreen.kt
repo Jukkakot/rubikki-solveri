@@ -3,7 +3,6 @@ package fi.jukkakot.rubikkisolveri.ui.scan
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -53,8 +52,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import fi.jukkakot.rubikkisolveri.R
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.FaceView
@@ -124,26 +121,27 @@ fun ScanContent(
 ) {
     val session = remember { ScanSession(holdMillis = holdMillis) }
     var event by remember { mutableStateOf<ScanEvent>(ScanEvent.Waiting) }
-    var live by remember { mutableStateOf<List<CubeColor>?>(null) }
+    var live by remember { mutableStateOf<List<Rgb>?>(null) }
     var index by remember { mutableIntStateOf(0) }
-    var review by remember { mutableStateOf<List<CubeColor>?>(null) }
+    var review by remember { mutableStateOf<List<Rgb>?>(null) }
+    var reviewHint by remember { mutableStateOf<CubeColor?>(null) }
     var lastCaptured by remember { mutableStateOf<FaceView?>(null) }
     val haptics = LocalHapticFeedback.current
 
     fun handle(e: ScanEvent) {
         event = e
-        live = session.live
+        live = session.latest
         index = session.index
         if (e is ScanEvent.Captured) {
-            review = session.reviewColors
+            review = session.review?.second
+            reviewHint = session.reviewCentreLooksLike
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
         }
     }
 
     fun accept() {
         val face = session.review?.first ?: return
-        val shown = session.reviewColors
-        val fixed = session.reviewCorrections
+        val hint = session.reviewCentreLooksLike
         session.accept()
         review = null
         lastCaptured = face
@@ -153,8 +151,7 @@ fun ScanContent(
             Evt.SCAN_FACE, null,
             "face" to face.face.name,
             "rgb" to session.capturedSamples(face)?.joinToString(",") { it.toHex() },
-            "live" to shown?.joinToString("") { it.letter.toString() },
-            "fixed" to fixed.entries.joinToString(",") { "${it.key}${it.value.letter}" },
+            "centreLooksLike" to hint?.letter,
         )
         if (session.isDone) {
             val outcome = session.outcome()
@@ -220,15 +217,18 @@ fun ScanContent(
                 if (read == null) {
                     GridOverlay(live, view.centreColor(), Modifier.fillMaxSize())
                 } else {
-                    ReviewOverlay(read, onTap = { cell -> session.cycle(cell); review = session.reviewColors }, Modifier.fillMaxSize())
+                    ReviewOverlay(read, Modifier.fillMaxSize())
                 }
             }
             val holding = (event as? ScanEvent.Holding)?.progress ?: 0f
             LinearProgressIndicator(progress = { if (review != null) 1f else holding }, modifier = Modifier.fillMaxWidth())
             Text(
-                if (review != null) stringResource(R.string.scan_review) else statusText(event, live),
+                if (review != null) stringResource(R.string.scan_review) else statusText(event),
                 style = MaterialTheme.typography.titleMedium,
             )
+            reviewHint?.takeIf { review != null }?.let {
+                Text(stringResource(R.string.scan_review_centre, stringResource(colorName(it))), style = MaterialTheme.typography.bodyMedium)
+            }
             lastCaptured?.let {
                 Text(stringResource(R.string.scan_captured, stringResource(faceName(it))), style = MaterialTheme.typography.bodyMedium)
             }
@@ -261,14 +261,17 @@ fun ScanContent(
 }
 
 @Composable
-private fun statusText(event: ScanEvent, live: List<CubeColor>?): String = when (event) {
-    is ScanEvent.WrongFace -> stringResource(R.string.scan_status_wrong, stringResource(colorName(event.expected)))
-    else -> if (live == null) stringResource(R.string.scan_status_align) else stringResource(R.string.scan_status_hold)
+private fun statusText(event: ScanEvent): String = when (event) {
+    is ScanEvent.PreviousFace -> stringResource(R.string.scan_status_turn)
+    is ScanEvent.Holding -> event.centreLooksLike
+        ?.let { stringResource(R.string.scan_status_centre, stringResource(colorName(it))) }
+        ?: stringResource(R.string.scan_status_hold)
+    else -> stringResource(R.string.scan_status_align)
 }
 
-/** The grid as on [FrameSampler]: a centred square, with a dot of the live colour in each cell. */
+/** The grid as on [FrameSampler]: a centred square, with a dot of what each cell reads. */
 @Composable
-private fun GridOverlay(live: List<CubeColor>?, expectedCentre: CubeColor, modifier: Modifier) {
+private fun GridOverlay(live: List<Rgb>?, expectedCentre: CubeColor, modifier: Modifier) {
     Canvas(modifier) {
         val side = FrameSampler.GRID_SIZE * size.minDimension
         val left = (size.width - side) / 2
@@ -285,37 +288,28 @@ private fun GridOverlay(live: List<CubeColor>?, expectedCentre: CubeColor, modif
         live?.forEachIndexed { i, color ->
             val c = Offset(left + cell * (i % 3 + 0.5f), top + cell * (i / 3 + 0.5f))
             drawCircle(Color.Black, radius = cell * 0.17f, center = c)
-            drawCircle(StickerColors.of(color), radius = cell * 0.14f, center = c)
+            drawCircle(color.toColor(), radius = cell * 0.14f, center = c)
         }
     }
 }
 
-/**
- * The captured face as read: nine large tiles in the grid over a dimmed preview. Tapping a tile
- * (not the centre) calls [onTap] with its cell to change its colour.
- */
+/** The captured face as the camera saw it: nine large tiles in the grid over a dimmed preview. */
 @Composable
-private fun ReviewOverlay(colors: List<CubeColor>, onTap: (Int) -> Unit, modifier: Modifier) {
+private fun ReviewOverlay(samples: List<Rgb>, modifier: Modifier) {
     BoxWithConstraints(modifier.background(Color.Black.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) {
         val cell = min(maxWidth, maxHeight) * FrameSampler.GRID_SIZE / 3
         Column {
             for (row in 0 until 3) {
                 Row {
                     for (col in 0 until 3) {
-                        val i = row * 3 + col
-                        val description = stringResource(R.string.scan_tile, i + 1, stringResource(colorName(colors[i])))
-                        Box(
-                            Modifier.size(cell).padding(4.dp).clip(RoundedCornerShape(8.dp))
-                                .background(StickerColors.of(colors[i]))
-                                .then(if (i == 4) Modifier else Modifier.clickable { onTap(i) })
-                                .semantics { contentDescription = description },
-                        )
+                        Box(Modifier.size(cell).padding(4.dp).clip(RoundedCornerShape(8.dp)).background(samples[row * 3 + col].toColor()))
                     }
                 }
             }
         }
     }
 }
+
 
 @Composable
 private fun Progress(done: Int) {
@@ -349,3 +343,5 @@ private fun PermissionScaffold(onBack: () -> Unit, content: @Composable () -> Un
         },
     ) { padding -> Box(Modifier.padding(padding)) { content() } }
 }
+
+private fun Rgb.toColor() = Color(r, g, b)

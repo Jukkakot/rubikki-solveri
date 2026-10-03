@@ -141,7 +141,7 @@ class ScreenshotTest {
     }
 
     @Test
-    fun scanReview() = shot("scan-review", dark = true, waitForText = "Luettiin näin") {
+    fun scanReview() = shot("scan-review", dark = true, waitForText = "Näin kamera näki") {
         val front = Cube.solved().apply("R U F'").let { cube ->
             (1..9).map { fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier.DEFAULT_PALETTE.getValue(cube.colorAt(fi.jukkakot.rubikkisolveri.cube.Face.F, it)) }
         }

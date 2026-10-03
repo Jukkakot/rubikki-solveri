@@ -1,7 +1,5 @@
 package fi.jukkakot.rubikkisolveri.ui
 
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -29,7 +27,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
@@ -59,17 +56,28 @@ class ScanScreenTest {
     }
 
     @Test
-    fun wrongFace() {
+    fun otherCentreIsAHint() {
         scan()
-        show(FaceView.RIGHT, 3)
-        compose.onNodeWithText("Väärä puoli: käännä vihreä keskiö kameraa kohti.").performScrollTo().assertIsDisplayed()
+        show(FaceView.RIGHT, 2)
+        compose.onNodeWithText("Keskiö näyttää: punainen. Jos tämä on oikea puoli, pidä paikallaan.").performScrollTo().assertIsDisplayed()
+        show(FaceView.RIGHT, 1)
+        compose.onNodeWithText("Keskiö luettiin: punainen. Jos tämä silti on oikea puoli, jatka vain.").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Etupuoli (1/6)").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun previousFaceStillInView() {
+        scan()
+        confirm(FaceView.FRONT)
+        show(FaceView.FRONT, 3)
+        compose.onNodeWithText("Käännä kuutiota: kamera näkee vielä edellisen puolen.").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Oikea puoli (2/6)").performScrollTo().assertIsDisplayed()
     }
 
     /** Holds [view] until it is captured and accepts it. */
     private fun confirm(view: FaceView) {
         show(view, 3)
-        compose.onNodeWithText("Näyttää oikealta").performScrollTo().performClick()
+        compose.onNodeWithText("Hyvä, seuraava").performScrollTo().performClick()
         compose.waitForIdle()
     }
 
@@ -77,35 +85,18 @@ class ScanScreenTest {
     fun heldStill() {
         scan()
         show(FaceView.FRONT, 3)
-        compose.onNodeWithText("Luettiin näin. Napauta tarraa, jos sen väri on väärä.").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Näin kamera näki tämän puolen.", substring = true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Etupuoli (1/6)").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Näyttää oikealta").performScrollTo().performClick()
+        compose.onNodeWithText("Hyvä, seuraava").performScrollTo().performClick()
         compose.onNodeWithText("Oikea puoli (2/6)").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Etupuoli luettu.").performScrollTo().assertIsDisplayed()
-    }
-
-    private fun tile(n: Int) = compose.onNodeWithContentDescription("Tarra $n:", substring = true)
-
-    private fun tileText(n: Int) =
-        tile(n).fetchSemanticsNode().config[SemanticsProperties.ContentDescription].single()
-
-    @Test
-    fun tapToFix() {
-        scan()
-        show(FaceView.FRONT, 3)
-        val before = tileText(1)
-        tile(1).performClick()
-        compose.waitForIdle()
-        assertNotEquals(before, tileText(1))
-        tile(5).assertHasNoClickAction()
-        assertEquals("Tarra 5: vihreä", tileText(5))
     }
 
     @Test
     fun scanAgain() {
         scan()
         show(FaceView.FRONT, 3)
-        compose.onNodeWithText("Skannaa uudelleen").performScrollTo().performClick()
+        compose.onNodeWithText("Kuvaa uudelleen").performScrollTo().performClick()
         compose.onNodeWithText("Etupuoli (1/6)").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Valmiina 0/6").performScrollTo().assertIsDisplayed()
         confirm(FaceView.FRONT)

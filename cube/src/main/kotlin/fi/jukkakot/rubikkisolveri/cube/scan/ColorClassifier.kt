@@ -45,18 +45,13 @@ object ColorClassifier {
     /**
      * Classifies all 54 readings (URFDLB order) by the cube's own centres: every colour gets
      * exactly nine stickers (balanced assignment), references refined to the mean of their nine.
-     * The centres keep the holding position's colours and the [fixed] stickers (the user's
-     * corrections, by sticker index) keep theirs; both seed the references.
+     * The centres keep the holding position's colours and seed the references.
      */
-    fun classify(
-        samples: List<Rgb>,
-        scheme: ColorScheme = ColorScheme.STANDARD,
-        fixed: Map<Int, CubeColor> = emptyMap(),
-    ): Classification {
+    fun classify(samples: List<Rgb>, scheme: ColorScheme = ColorScheme.STANDARD): Classification {
         require(samples.size == Stickers.COUNT)
         val labs = samples.map { it.toLab() }
         val colors = CubeColor.entries
-        val centreColor = fixed + Face.entries.associate { Stickers.centre(it) to scheme[it] }
+        val centreColor = Face.entries.associate { Stickers.centre(it) to scheme[it] }
         var refs: Map<CubeColor, Lab> = centreColor.entries.groupBy({ it.value }, { labs[it.key] }).mapValues { Lab.mean(it.value) }
         var assigned = List(Stickers.COUNT) { CubeColor.WHITE }
         repeat(3) {

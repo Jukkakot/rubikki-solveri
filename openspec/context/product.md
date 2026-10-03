@@ -12,7 +12,7 @@ method stage by stage so you learn to solve it yourself.
 - **Cube:** the standard 3×3.
 - **First solver:** a third-party two-phase (Kociemba) solver library, shortest practical solution
   (about 20 moves). A human-method solver of our own comes later.
-- **Input:** camera scan of all six faces; tap to fix a misread sticker. Manual painting works
+- **Input:** camera scan of all six faces (the app guides but never blocks; colours decided at the end, doubtful ones fixed in the editor). Manual painting works
   before the camera does.
 - **Languages:** Finnish and English.
 - **Showing the moves** is a core feature, not polish: every move must be unmistakable for a
