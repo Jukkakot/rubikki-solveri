@@ -14,5 +14,5 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 6 | `camera-follow` | done | Follow-along with the camera: arrow drawn on the real cube, move detected from colours, auto-advance |
 | 7 | `beginner-solver` | done | Our own layer-by-layer solver that explains each stage |
 | 8 | `lessons` | done | Teaching screens per stage and practice positions |
-| 9 | `progress` | planned | Timer, solve history and stats in a local database |
+| 9 | `progress` | done | Timer, solve history and stats in a local database |
 | 10 | `release` | planned | Signed release APK installed directly on the phone (no Google Play) |

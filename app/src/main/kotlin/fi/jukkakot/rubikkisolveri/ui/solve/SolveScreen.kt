@@ -30,6 +30,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -130,6 +131,7 @@ fun SolveScreen(
     practice: Boolean = false,
     finishedText: String? = null,
     homeLabel: String? = null,
+    onFinished: (method: SolveMethod, moves: Int, durationMillis: Long) -> Unit = { _, _, _ -> },
 ) {
     var follow by rememberSaveable { mutableStateOf(false) }
     var method by rememberSaveable { mutableStateOf(initialMethod) }
@@ -173,7 +175,9 @@ fun SolveScreen(
                             Message(stringResource(R.string.solve_already), stringResource(R.string.solve_home), onHome)
                         } else {
                             key(method) {
-                                Stepper(cube, r, showNotation, onHome, follow, { follow = false }, followPanel, finishedText, homeLabel)
+                                Stepper(cube, r, showNotation, onHome, follow, { follow = false }, followPanel, finishedText, homeLabel) { moves, millis ->
+                                    onFinished(method, moves, millis)
+                                }
                             }
                         }
                 }
@@ -216,12 +220,21 @@ private fun Stepper(
     followPanel: @Composable (StepperState) -> Unit,
     finishedText: String?,
     homeLabel: String?,
+    onFinished: (moves: Int, durationMillis: Long) -> Unit,
 ) {
     val moves = plan.moves
     val haptics = LocalHapticFeedback.current
     val state = rememberStepperState(start, moves, onDemoEnd = { haptics.performHapticFeedback(HapticFeedbackType.SegmentTick) })
     val index = state.index
     val now = state.cubeAt(index)
+    val startedAt = remember { System.currentTimeMillis() }
+    var reported by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(state.isFinished) {
+        if (state.isFinished && !reported) {
+            reported = true
+            onFinished(moves.size, System.currentTimeMillis() - startedAt)
+        }
+    }
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),

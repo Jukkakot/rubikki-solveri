@@ -24,6 +24,14 @@ import fi.jukkakot.rubikkisolveri.cube.beginner.Practice
 import fi.jukkakot.rubikkisolveri.cube.beginner.Stage
 import androidx.compose.ui.res.stringResource
 import kotlin.random.Random
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import fi.jukkakot.rubikkisolveri.cube.Notation
+import fi.jukkakot.rubikkisolveri.progress.InMemoryProgressRepository
+import fi.jukkakot.rubikkisolveri.progress.ProgressRepository
+import fi.jukkakot.rubikkisolveri.ui.progress.HistoryScreen
+import fi.jukkakot.rubikkisolveri.ui.progress.TimerScreen
+import kotlinx.coroutines.launch
 import fi.jukkakot.rubikkisolveri.R
 import fi.jukkakot.rubikkisolveri.settings.AppLanguage
 import fi.jukkakot.rubikkisolveri.settings.ThemeMode
@@ -46,10 +54,12 @@ class AppActions(
     val version: String,
     val showNotation: Boolean = false,
     val onShowNotation: (Boolean) -> Unit = {},
+    val progress: ProgressRepository = InMemoryProgressRepository(),
 )
 
 @Composable
 fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
+    val scope = rememberCoroutineScope()
     NavHost(navController = navController, startDestination = HomeRoute) {
         composable<HomeRoute> {
             HomeScreen(
@@ -57,6 +67,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                     HomeEntry(R.string.home_scan, onOpen = { navController.navigate(ScanRoute) }),
                     HomeEntry(R.string.home_manual, onOpen = { navController.navigate(ManualInputRoute()) }),
                     HomeEntry(R.string.home_learn, onOpen = { navController.navigate(LessonsRoute) }),
+                    HomeEntry(R.string.home_timer, onOpen = { navController.navigate(TimerRoute) }),
                     HomeEntry(R.string.home_free_cube, onOpen = { navController.navigate(FreeCubeRoute()) }),
                 ),
                 onOpenSettings = { navController.navigate(SettingsRoute) },
@@ -119,10 +130,37 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 onBack = { navController.popBackStack() },
                 onHome = { navController.popBackStack(HomeRoute, inclusive = false) },
                 showNotation = actions.showNotation,
+                onFinished = { method, moves, millis -> scope.launch { actions.progress.addGuided(method.name, moves, millis) } },
             )
         }
         composable<LessonsRoute> {
-            LessonsScreen(onOpen = { navController.navigate(LessonRoute(it)) }, onBack = { navController.popBackStack() })
+            val counts by actions.progress.practiceCounts.collectAsStateWithLifecycle(emptyMap())
+            LessonsScreen(onOpen = { navController.navigate(LessonRoute(it)) }, onBack = { navController.popBackStack() }, practiceCounts = counts)
+        }
+        composable<TimerRoute> {
+            TimerScreen(
+                progress = actions.progress,
+                onBack = { navController.popBackStack() },
+                onHistory = { navController.navigate(HistoryRoute) },
+                onGuidedScramble = { moves -> navController.navigate(ScrambleGuideRoute(Notation.format(moves))) },
+            )
+        }
+        composable<HistoryRoute> {
+            HistoryScreen(actions.progress, onBack = { navController.popBackStack() })
+        }
+        composable<ScrambleGuideRoute> { entry ->
+            val moves = remember(entry) { Notation.parse(entry.toRoute<ScrambleGuideRoute>().moves) }
+            SolveScreen(
+                cube = Cube.solved(),
+                onBack = { navController.popBackStack() },
+                onHome = { navController.popBackStack() },
+                showNotation = actions.showNotation,
+                planner = { _, _ -> SolvePlan.Ready(moves, null) },
+                title = stringResource(R.string.scramble_title),
+                practice = true,
+                finishedText = stringResource(R.string.scramble_done),
+                homeLabel = stringResource(R.string.scramble_back),
+            )
         }
         composable<LessonRoute> { entry ->
             LessonScreen(
@@ -151,6 +189,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 practice = true,
                 finishedText = stringResource(R.string.practice_done),
                 homeLabel = stringResource(R.string.practice_new),
+                onFinished = { _, _, millis -> scope.launch { actions.progress.addPractice(route.stage, millis) } },
             )
         }
         composable<LogRoute> {

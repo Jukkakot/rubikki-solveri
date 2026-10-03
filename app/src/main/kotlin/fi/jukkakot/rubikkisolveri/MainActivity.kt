@@ -12,6 +12,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.Evt
+import fi.jukkakot.rubikkisolveri.progress.ProgressDatabase
+import fi.jukkakot.rubikkisolveri.progress.RoomProgressRepository
 import fi.jukkakot.rubikkisolveri.settings.LanguageSetting
 import fi.jukkakot.rubikkisolveri.settings.SettingsRepository
 import fi.jukkakot.rubikkisolveri.settings.ThemeMode
@@ -31,6 +33,7 @@ class MainActivity : AppCompatActivity() {
         val app = application as RubikkiApp
         val settings = SettingsRepository(this)
         val logger = AppLog.logger
+        val progress = RoomProgressRepository(ProgressDatabase.get(this).dao())
         setContent {
             val themeMode by settings.themeMode.collectAsStateWithLifecycle(ThemeMode.SYSTEM)
             val showNotation by settings.showNotation.collectAsStateWithLifecycle(false)
@@ -75,6 +78,7 @@ class MainActivity : AppCompatActivity() {
                         onCrashNoticeShown = app::crashNoticeShown,
                         version = BuildConfig.VERSION_NAME,
                         showNotation = showNotation,
+                        progress = progress,
                         onShowNotation = { show ->
                             logger.info(Evt.SETTINGS_CHANGED, null, "notation" to show)
                             scope.launch { settings.setShowNotation(show) }

@@ -87,6 +87,18 @@ yellow cross, yellow edges, yellow corners into place, yellow corners turned.
   earlier stages; `PracticeRoute(stage, seed)` opens `SolveScreen` in practice mode with only that
   stage's steps; "new position" replaces the route with seed + 1.
 
+## Progress — Implemented
+
+- Room database `progress.db` (`ProgressDatabase`, KSP; schema in `app/schemas`): `timed_solve`,
+  `guided_solve`, `practice`. `ProgressRepository` (Room implementation; `InMemoryProgressRepository`
+  for tests and previews) is created in `MainActivity` and passed through `AppActions`.
+- `TimerState` (hold 500 ms → ready → release starts → tap stops) and `SolveStats` (best, aoN
+  with competition DNF rules, mean) are plain Kotlin.
+- Timer screen: random-state scramble (`TwoPhaseSolver.randomStateScramble`), guided scramble
+  through the solution screen (`ScrambleGuideRoute`), +2/DNF/delete, stats. History lists timed
+  and guided solves and practice. The solution screen reports `onFinished`; the nav host records
+  guided solves and practice; the lesson list shows practice counts.
+
 ## App structure — Implemented
 
 - `RubikkiApp` (Application): sets up the log and the crash handler, logs `app.start`.
@@ -151,6 +163,7 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 | `HomeRoute` | Home | entries: scan, manual input, learn, free cube |
 | `LessonsRoute`, `LessonRoute(index)` | Lessons | basics + 7 stages, algorithm demos |
 | `PracticeRoute(stage, seed)` | Practice | the solution screen limited to one stage |
+| `TimerRoute`, `HistoryRoute`, `ScrambleGuideRoute(moves)` | Timer, history, guided scramble | |
 | `ScanRoute` | Scan | camera permission, grid, live dots, auto-capture; result → solve or check |
 | `ManualInputRoute(cube?, marked?, fromScan)` | Manual input / check a scan | face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution |
 | `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
@@ -159,4 +172,4 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 
 ## Planned
 
-- Timer and history (`progress`), signed APK (`release`).
+- Signed APK (`release`).

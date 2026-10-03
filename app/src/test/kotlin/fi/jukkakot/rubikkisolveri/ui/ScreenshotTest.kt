@@ -111,6 +111,19 @@ class ScreenshotTest {
     }
 
     @Test
+    fun timer() = shot("timer") {
+        val repo = androidx.compose.runtime.remember {
+            fi.jukkakot.rubikkisolveri.progress.InMemoryProgressRepository().also { r ->
+                kotlinx.coroutines.runBlocking { for (ms in listOf(41_230L, 38_900L, 45_010L, 36_420L, 39_870L)) r.addTimed(ms, "R U") }
+            }
+        }
+        fi.jukkakot.rubikkisolveri.ui.progress.TimerScreen(
+            repo, onBack = {}, onHistory = {}, onGuidedScramble = {},
+            scrambles = { Notation.parse("D2 F2 U' R2 D B2 U2 L2 F2 R2 U' F' L U' B R' D2 B' U F'") },
+        )
+    }
+
+    @Test
     fun scan() = shot("scan") {
         val frames = kotlinx.coroutines.flow.MutableStateFlow(
             listOf(

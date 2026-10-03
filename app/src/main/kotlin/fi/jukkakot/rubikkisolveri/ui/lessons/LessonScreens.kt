@@ -67,14 +67,18 @@ private fun LessonScaffold(title: String, onBack: () -> Unit, content: @Composab
 
 /** The basics and the seven stages, in order. */
 @Composable
-fun LessonsScreen(onOpen: (Int) -> Unit, onBack: () -> Unit) {
+fun LessonsScreen(onOpen: (Int) -> Unit, onBack: () -> Unit, practiceCounts: Map<Int, Int> = emptyMap()) {
     LessonScaffold(stringResource(R.string.lessons_title), onBack) { modifier ->
         LazyColumn(modifier.fillMaxSize()) {
             itemsIndexed(LessonCatalog.lessons) { index, lesson ->
                 val title = stringResource(lesson.title)
                 ListItem(
                     headlineContent = { Text(if (lesson.stage == null) title else "${lesson.stage.ordinal + 1}. $title") },
-                    supportingContent = { Text(stringResource(lesson.summary)) },
+                    supportingContent = {
+                        val count = lesson.stage?.let { practiceCounts[it.ordinal] } ?: 0
+                        val summary = stringResource(lesson.summary)
+                        Text(if (count > 0) "$summary · ${stringResource(R.string.lesson_practised, count)}" else summary)
+                    },
                     modifier = Modifier.clickable { onOpen(index) },
                 )
                 HorizontalDivider()

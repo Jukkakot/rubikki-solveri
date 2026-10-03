@@ -39,3 +39,13 @@ data class LessonRoute(val index: Int)
 /** Practise beginner stage [stage] (its ordinal) on the position made from [seed]. */
 @Serializable
 data class PracticeRoute(val stage: Int, val seed: Long)
+
+@Serializable
+data object TimerRoute
+
+@Serializable
+data object HistoryRoute
+
+/** Perform the scramble [moves] (notation) with the move guide. */
+@Serializable
+data class ScrambleGuideRoute(val moves: String)

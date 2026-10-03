@@ -62,6 +62,13 @@ If the scan misreads colours: scan once, Settings → Log → Share, and give th
 readings are enough to replay the classification in a unit test and adjust
 `ColorClassifier.DEFAULT_PALETTE` (live dots and the centre check) or `UNCERTAIN_BELOW`.
 
+## Data on the phone — Implemented
+
+- Settings: DataStore `settings` (theme, notation). Language: the system's per-app language.
+- Solves and practice: Room database `progress.db` in the app's private storage. Uninstalling the
+  app deletes it; Android backup is off (`allowBackup=false`), so it is not copied anywhere.
+- Schema changes need a Room migration (schemas are exported to `app/schemas`).
+
 ## Release — Planned (`release`)
 
 A signed release APK installed directly on the phone; no Google Play.
