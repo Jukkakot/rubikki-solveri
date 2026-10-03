@@ -72,7 +72,7 @@ method stage by stage so you learn to solve it yourself.
   comes into view. Not planned yet.
 - **Turns animated in steps (2026-10-03):** in the solver, a face turn animates in clear steps
   (a quarter turn as one step, a half turn as two quarter steps with a pause between), so it is
-  obvious how far to turn. Not planned yet.
+  obvious how far to turn. On the roadmap as `turn-steps` (22b).
 - **Fewer whole-cube turns in the hands (2026-10-03):** keep the need to turn the real cube in the
   hands to a minimum, in the scan (done in `scan-any-order`: any order, any rotation) and in the
   solver (e.g. prefer solutions and move views that need no regrip). Not planned yet.
