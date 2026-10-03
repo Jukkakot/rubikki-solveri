@@ -13,7 +13,8 @@ not fit is a reading error.
 
 - Any not-yet-scanned face can be shown, turned any way. The centre tells which face it is: the
   review says "Recognised: Right face" and the user can change it with a tap on another face's
-  colour before going on. The fixed order stays as a suggestion ("Next, for example: right face").
+  colour before going on. No order or way of holding is suggested any more (user decision): the screen just asks for any
+  face not yet scanned.
 - Showing a face that is already scanned (in any rotation) asks to turn to another face, as the
   "previous face still in view" check does now.
 - After the six faces, the app finds how each face was turned: it tries the 4⁶ = 4096 rotations
@@ -36,7 +37,7 @@ None.
 ### Modified Capabilities
 
 - `camera-scan`: guided scan, live reading, capture, confirm each face, one-face scan and result
-  change from a fixed order and hold to any order and rotation.
+  change from a fixed order and hold to any order and rotation, with no suggested order.
 - `manual-input`: the check's camera pictures are shown turned to match the colours.
 
 ## Impact

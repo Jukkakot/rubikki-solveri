@@ -23,4 +23,4 @@ the user changes that face.
 
 #### Scenario: Scan again from the check
 - **WHEN** the user chooses to scan the whole cube again on the check
-- **THEN** the scan starts again from the front face
+- **THEN** the scan starts again with no face done

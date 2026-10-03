@@ -2,13 +2,12 @@
 
 ### Requirement: Guided scan
 The scan screen SHALL show the camera preview with a 3×3 grid and which faces are done. Any face not
-yet scanned SHALL be accepted, in any order and turned any way. The screen SHALL suggest the next
-face in the order front, right, back, left, top, bottom with how to hold the cube, and say that any
-other face not yet scanned will do too.
+yet scanned SHALL be accepted, in any order and turned any way. The screen SHALL NOT suggest an
+order or a way to hold the cube; it SHALL ask for any face not yet scanned, held any way round.
 
 #### Scenario: First face
 - **WHEN** the scan starts
-- **THEN** it suggests the front face (green centre towards the user, white on top) and says any face will do
+- **THEN** it asks for any face of the cube, held any way round, and names no particular face
 
 #### Scenario: Another face first
 - **WHEN** the scan starts and the user shows the top face turned a quarter
@@ -22,7 +21,7 @@ centre SHALL use the colours this cube has already shown (the accepted centres) 
 palette for colours not seen yet.
 
 #### Scenario: Wrong face
-- **WHEN** the front face is suggested and the camera sees a red centre
+- **WHEN** no face is done yet and the camera sees a red centre
 - **THEN** the screen says the centre looks like the right face, and the face can be captured
 
 #### Scenario: Warm red
@@ -66,7 +65,7 @@ SHALL NOT be tappable. Only an accepted face SHALL count as done.
 
 #### Scenario: Accept
 - **WHEN** a face recognised as the front has been captured and the user taps "Good, next"
-- **THEN** the front face counts as done and the next face not yet scanned is suggested
+- **THEN** the front face counts as done and any face not yet scanned is asked for
 
 #### Scenario: Centre note in the review
 - **WHEN** a capture was recognised as the left face (orange) and the user taps the red centre colour
@@ -117,8 +116,8 @@ until a face is captured again.
 - **THEN** the next faces are read with the first face's exposure, not a brighter one
 
 ### Requirement: Scan one face
-The scan SHALL be able to ask for a single face, started from the check of a scan. It SHALL show that
-face with how to hold the cube, capture and confirm it as in the full scan, accept it turned any way,
+The scan SHALL be able to ask for a single face, started from the check of a scan. It SHALL name that
+face and its centre colour, capture and confirm it as in the full scan, accept it turned any way,
 and on "Good, next" return the face's readings and its picture to the check instead of asking for
 another face. The face progress SHALL show only that face, and the action to scan the previous face
 again SHALL not be offered.

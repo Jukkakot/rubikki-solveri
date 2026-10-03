@@ -11,7 +11,7 @@ the face is held the way `FaceView` describes. The check (`ScanCheck`) and the o
 ## Goals / Non-Goals
 
 **Goals:** any order, any rotation, the right cube out; the user confirms which face each capture
-is; nothing worse than today for a user who follows the suggested order.
+is; no suggested order (user decision 2026-10-03: just show the six faces).
 
 **Non-Goals:** video / continuous tracking (noted as a later idea); mirrored views (a camera never
 mirrors a real cube); deducing the sixth face from five (later idea).
@@ -26,7 +26,7 @@ mirrors a real cube); deducing the sixth face from five (later idea).
   confirmation, deduce all labels at the end — rejected: the user asked for the confirmation, and
   it keeps the live references (the cube's own red) right from the second face on.
 - **Session state.** `captured: Map<FaceView, List<Rgb>>` plus an accept order (stack) for redo;
-  `index` = number done; `suggested` = first `FaceView` not done; `isDone` = six done (one-face
+  `index` = number done; `isDone` = six done (one-face
   mode: that face done). "Already scanned" = the frame is alike (ΔE 12 per cell) to any accepted
   face in any of its four rotations → `ScanEvent.AlreadyScanned` (replaces `PreviousFace`; text
   "Tämä puoli on jo kuvattu – käännä kuutiota toiseen puoleen.").
@@ -35,7 +35,7 @@ mirrors a real cube); deducing the sixth face from five (later idea).
   (rotation does not matter to the balanced classification), then for the 4⁶ combinations rotate
   the colours of each face and run `CubeCheck.validity`; collect the valid ones. One distinct valid
   cube → use it. Several distinct valid cubes → use the one with the fewest quarter turns (most
-  likely as suggested) and mark every non-centre sticker of the faces whose rotation differs
+  likely as held, since people tend to hold a face upright) and mark every non-centre sticker of the faces whose rotation differs
   between them. None → score = number of the 20 piece places whose colours form a real piece
   (`CubeCheck.pieces`-style reading per place); best score, ties by fewest turns. Then, only when
   none was valid, the same with the colours of one opposite pair of centres renamed (red↔orange,
@@ -49,9 +49,10 @@ mirrors a real cube); deducing the sixth face from five (later idea).
   keeps the one that gives a valid cube with the rest, else the one with the most real pieces,
   ties by the lowest classification distance; it returns the rotation so the picture can turn too.
 - **Exposure lock.** `locked = index > 0 || review != null` keeps its meaning (index = faces done).
-- **Texts.** Title "Kuvattu %d/6" while scanning; the hint line "Seuraavaksi vaikka: %1$s – %2$s.
-  Mikä tahansa kuvaamaton puoli käy, missä asennossa tahansa." (face name, hold hint); live status
-  "Keskiö näyttää: %s" (face name). One-face mode keeps its title (the face name) and hold hint.
+- **Texts.** Title "Kuvattu %d/6" while scanning; the hint line "Näytä mikä tahansa kuvaamaton
+  puoli, missä asennossa tahansa."; live status "Keskiö näyttää: %s" (face name). The hold hints
+  ("vihreä keskiö sinua kohti…") are no longer shown in the scan. One-face mode: title the face
+  name, hint "Näytä %1$s (%2$s keskiö) missä asennossa tahansa." (face, centre colour).
 - **Picture turning.** `rotatePicture(argb, size, k)` in the app (plain index math on the IntArray).
 
 ## Risks / Trade-offs
