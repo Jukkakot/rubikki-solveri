@@ -47,7 +47,8 @@ JPEGs, grouped by area). Claude publishes it as a private claude.ai page, always
 address: **https://claude.ai/artifact/FWqmj6ZeSBgK4qiQFXZyRR**. The user reviews screens there and
 can leave comments on the page. Refresh it after a pushed change that touches UI: run the
 screenshot test, the script, then republish `build/gallery/index.html` with its `img/` files to
-that URL.
+that URL. The first publish in a session is refused until the page has been read and its files
+listed: read the URL, list it with `scope: "files"`, then publish only the changed images.
 
 Screens are numbered in the gallery ("7: nappi liian pieni"); the numbers, Finnish names and
 the "→" links (where a screen leads) come from the `GROUPS` table in the script. A new screen or
