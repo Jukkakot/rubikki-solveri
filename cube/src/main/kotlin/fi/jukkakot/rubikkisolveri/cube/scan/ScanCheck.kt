@@ -50,22 +50,37 @@ data class ScanCheck(
     }
 
     /**
-     * The rescanned [view] ([samples], net order) replaces that face: classified against the rest of
-     * this cube, unchecked, its doubtful stickers marked. Needs [readings].
+     * The rescanned [view] ([samples] as seen, held any way) replaces that face: classified against
+     * the rest of this cube in each of its four rotations, keeping the one that gives a solvable cube,
+     * else the one with the most real pieces, else the best colour fit (fewest turns on a tie).
+     * The face goes back to unchecked with its doubtful stickers marked. Needs [readings]. Returns the
+     * new check and how many quarter turns clockwise the samples were turned (for the picture).
      */
-    fun replaceFace(view: FaceView, samples: List<Rgb>): ScanCheck {
+    fun replaceFace(view: FaceView, samples: List<Rgb>): Pair<ScanCheck, Int> {
         val known = requireNotNull(readings) { "No readings to classify against" }
         val face = view.face
-        val result = ColorClassifier.classifyFace(face, samples, editor.colors, known, editor.scheme)
+        val scheme = editor.scheme
+        val (rotation, result) = (0 until 4).map { k ->
+            k to ColorClassifier.classifyFace(face, RotationSearch.turned(samples, k), editor.colors, known, scheme)
+        }.maxWith(
+            compareBy<Pair<Int, Classification>> { (_, c) -> if (cubeWith(face, c)?.let { CubeCheck.validity(it, scheme).isValid } == true) 1 else 0 }
+                .thenBy { (_, c) -> cubeWith(face, c)?.let(CubeCheck::realPieceCount) ?: 0 }
+                .thenBy { (_, c) -> c.confidence.sum() }
+                .thenBy { (k, _) -> -minOf(k, 4 - k) },
+        )
+        val turned = RotationSearch.turned(samples, rotation)
         val base = face.ordinal * 9
-        val newReadings = known.toMutableList().also { for (n in 0 until 9) it[base + n] = samples[n] }
-        return copy(
+        val newReadings = known.toMutableList().also { for (n in 0 until 9) it[base + n] = turned[n] }
+        val next = copy(
             editor = editor.withFace(face, result.colors),
             checked = checked - view,
             marks = marks.filterTo(HashSet()) { it / 9 != face.ordinal } + result.uncertain().map { base + it },
             readings = newReadings,
         )
+        return next to rotation
     }
+
+    private fun cubeWith(face: Face, classification: Classification): Cube? = editor.withFace(face, classification.colors).toCube()
 
     /** Checks the cube: solvable, or the faces to look at again. */
     fun verdict(scheme: ColorScheme = editor.scheme): Verdict {

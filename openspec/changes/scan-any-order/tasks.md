@@ -1,8 +1,8 @@
 ## 1. Cube module
 
-- [ ] 1.1 Face rotation helpers (net positions turned k quarter turns) and `RotationSearch` (4096 combinations, distinct valid cubes, piece score, opposite-pair renames, ambiguous faces); tests: a scrambled cube with faces turned is restored, the phone regression scan with turned faces gives the same cube, a misread sticker still gives the right rotations, a red/orange label swap is undone, the solved cube is not reported ambiguous (`./gradlew :cube:test`)
-- [ ] 1.2 `ScanSession` without fixed order: recognition among faces not done, `accept(face)`, already-scanned check in any rotation, redo of the last accepted, no suggested face, one-face mode kept; `outcome()` uses `RotationSearch`, readings turned to net order, `rotations`; existing session tests updated (`:cube:test`)
-- [ ] 1.3 `ScanCheck.replaceFace` tries the four rotations and returns the one used; test: a quarter-turned rescan comes back right (`:cube:test`)
+- [x] 1.1 Face rotation helpers (net positions turned k quarter turns) and `RotationSearch` (4096 combinations, distinct valid cubes, piece score, opposite-pair renames, ambiguous faces); tests: a scrambled cube with faces turned is restored, the phone regression scan with turned faces gives the same cube, a misread sticker still gives the right rotations, a red/orange label swap is undone, the solved cube is not reported ambiguous (`./gradlew :cube:test`)
+- [x] 1.2 `ScanSession` without fixed order: recognition among faces not done, `accept(face)`, already-scanned check in any rotation, redo of the last accepted, no suggested face, one-face mode kept; `outcome()` uses `RotationSearch`, readings turned to net order, `rotations`; existing session tests updated (`:cube:test`)
+- [x] 1.3 `ScanCheck.replaceFace` tries the four rotations and returns the one used; test: a quarter-turned rescan comes back right (`:cube:test`)
 
 ## 2. App
 

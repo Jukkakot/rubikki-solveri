@@ -87,6 +87,15 @@ object CubeCheck {
         return Pieces(corners.map { it.first }, corners.map { it.second }, edges.map { it.first }, edges.map { it.second })
     }
 
+    /** How many of the 20 piece places hold colours that form a real corner or edge (0 without six different centres). */
+    fun realPieceCount(cube: Cube): Int {
+        val faceOf: Map<CubeColor, Face> = Face.entries.associateBy { cube.centre(it) }
+        if (faceOf.size != 6) return 0
+        val faces = (0 until Stickers.COUNT).map { faceOf.getValue(cube[it]) }
+        return Corner.entries.count { readCorner(it.stickers.map { s -> faces[s] }) != null } +
+            Edge.entries.count { readEdge(it.stickers.map { s -> faces[s] }) != null }
+    }
+
     private fun readCorner(seen: List<Face>): Pair<Corner, Int>? {
         val twist = seen.indexOfFirst { it == Face.U || it == Face.D }
         if (twist < 0) return null

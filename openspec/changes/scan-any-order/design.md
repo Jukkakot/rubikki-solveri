@@ -39,9 +39,14 @@ mirrors a real cube); deducing the sixth face from five (later idea).
   between them. None → score = number of the 20 piece places whose colours form a real piece
   (`CubeCheck.pieces`-style reading per place); best score, ties by fewest turns. Then, only when
   none was valid, the same with the colours of one opposite pair of centres renamed (red↔orange,
-  white↔yellow, green↔blue: the 7 non-empty combinations); a valid result there wins. Cost: up to
-  8 × 4096 validity checks ≈ 1 s worst case, on `Dispatchers.Default` (it already runs off the
-  main thread at the end of the scan); the common case stops after the first 4096.
+  white↔yellow, green↔blue); a valid result there wins. *Changed in implementation:* only one pair
+  at a time, not the 7 combinations. Naming one pair the wrong way round mirrors the cube; renaming
+  any one pair undoes a mirror (two mirrors are a whole-cube turn), so all three single pairs give
+  a solvable but only one the right cube, and two pairs never fix anything. The pair is chosen by
+  the readings: the one whose two colours' readings fit the default palette better with the names
+  swapped (without readings: red/orange, white/yellow, green/blue). Cost: up to 4 × 4096 checks,
+  measured ≈ 0.35 s on the desktop JVM, on `Dispatchers.Default`; the common case stops after the
+  first 4096 (≈ 0.1 s).
 - **What the outcome carries.** `ScanOutcome.samples` become the readings turned into net order (so
   the check and `classifyFace` keep working unchanged) and `rotations: Map<Face, Int>`; the app
   turns each face's picture by the same k before handing it to `LastScan`.

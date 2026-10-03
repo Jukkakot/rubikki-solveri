@@ -1,9 +1,9 @@
 package fi.jukkakot.rubikkisolveri.cube.scan
 
 import fi.jukkakot.rubikkisolveri.cube.ColorScheme
-import fi.jukkakot.rubikkisolveri.cube.CubeCheck
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.CubeEditor
+import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.FaceView
 import fi.jukkakot.rubikkisolveri.cube.Validity
 
@@ -13,30 +13,34 @@ sealed interface ScanEvent {
     data object Waiting : ScanEvent
 
     /**
-     * A face is steady; [progress] (0…1) of the hold time has passed. [centreLooksLike] is set when
-     * the centre reads as another colour than the asked face's: a hint, not a stop.
+     * A face is steady; [progress] (0…1) of the hold time has passed. [recognised] is the face not
+     * yet scanned whose centre colour the centre reads closest to.
      */
-    data class Holding(val progress: Float, val centreLooksLike: CubeColor? = null) : ScanEvent
+    data class Holding(val progress: Float, val recognised: FaceView? = null) : ScanEvent
 
-    /** The camera still sees the face accepted last: the user should turn the cube. */
-    data object PreviousFace : ScanEvent
+    /** The camera sees a face already accepted (in any rotation): the user should turn the cube. */
+    data object AlreadyScanned : ScanEvent
 
     /** The grid does not look like cube stickers (a desk, a hand): nothing is captured automatically. */
     data object NoCube : ScanEvent
 
-    /** [face] was captured and awaits [ScanSession.accept] or [ScanSession.retake]. */
+    /** A face recognised as [face] was captured and awaits [ScanSession.accept] or [ScanSession.retake]. */
     data class Captured(val face: FaceView) : ScanEvent
 }
 
 /**
  * The finished scan: the colours, which stickers to double-check, whether it can be solved, and the
- * 54 raw readings (URFDLB) the colours were worked out from.
+ * 54 raw readings (URFDLB, net order) the colours were worked out from. [rotations] is how many
+ * quarter turns clockwise each face's capture was turned to net order, and [from] which face's
+ * capture ended up on each face (see [RotationResult]); the pictures turn the same way.
  */
 data class ScanOutcome(
     val editor: CubeEditor,
     val uncertain: Set<Int>,
     val validity: Validity,
     val samples: List<Rgb> = emptyList(),
+    val rotations: Map<Face, Int> = emptyMap(),
+    val from: Map<Face, Face> = emptyMap(),
 ) {
     /** Valid and no doubtful sticker: go straight to the solution. */
     val isConfident: Boolean get() = validity.isValid && uncertain.isEmpty()
@@ -46,14 +50,15 @@ data class ScanOutcome(
 }
 
 /**
- * The six-face scan, frame by frame. The session guides the order of the faces but the user knows
- * best which face is in view: a centre that reads as another colour is only a hint. A face is
- * captured when every cell has stayed steady for [holdMillis] and at least [minFrames] frames (the
- * captured samples are the per-cell median of those frames) and is under review until [accept] or
- * [retake]. The colours are only decided at the end, from all 54 readings together.
+ * The six-face scan, frame by frame, in any order and with each face turned any way. The centre
+ * tells which face is in view (among the faces not yet scanned); the user confirms or changes it in
+ * the review. A face is captured when every cell has stayed steady for [holdMillis] and at least
+ * [minFrames] frames (the captured samples are the per-cell median of those frames) and is under
+ * review until [accept] or [retake]. The colours and how each face was turned are only worked out
+ * at the end, from all 54 readings together ([RotationSearch]).
  *
  * With [only] set, the session scans just that face (a rescan from the check): accepting it ends
- * the session, there is no previous face and [redo] does nothing.
+ * the session and [redo] does nothing.
  */
 class ScanSession(
     private val scheme: ColorScheme = ColorScheme.STANDARD,
@@ -61,27 +66,29 @@ class ScanSession(
     private val minFrames: Int = MIN_FRAMES,
     val only: FaceView? = null,
 ) {
-    private val captured = arrayOfNulls<List<Rgb>>(FaceView.entries.size)
+    /** Accepted faces as seen, in the order they were accepted. */
+    private val captured = LinkedHashMap<FaceView, List<Rgb>>()
     private val streak = ArrayList<List<Rgb>>()
     private var streakLabs: List<Lab>? = null
     private var streakStart = 0L
     private var refs = ColorClassifier.references()
 
-    var index: Int = only?.ordinal ?: 0
+    /** Number of faces done. */
+    val index: Int get() = captured.size
+
+    /** The faces still to scan. */
+    val remaining: List<FaceView> get() = (only?.let(::listOf) ?: FaceView.entries).filter { it !in captured }
+
+    val isDone: Boolean get() = remaining.isEmpty()
+
+    fun isAccepted(view: FaceView): Boolean = view in captured
+
+    /** The captured samples waiting for confirmation. */
+    var review: List<Rgb>? = null
         private set
 
-    private val lastIndex = only?.ordinal ?: FaceView.entries.lastIndex
-
-    val current: FaceView? get() = FaceView.entries.getOrNull(index)?.takeIf { index <= lastIndex }
-
-    val isDone: Boolean get() = index > lastIndex
-
-    /** The captured face waiting for confirmation, and its samples. */
-    var review: Pair<FaceView, List<Rgb>>? = null
-        private set
-
-    /** Set when the centre of the face under review read as another colour than its face's. */
-    var reviewCentreLooksLike: CubeColor? = null
+    /** Which face the samples under review are taken as; the user may [choose] another. */
+    var reviewFace: FaceView? = null
         private set
 
     /** Live colours of the latest frame, for the dots on the grid. */
@@ -92,8 +99,8 @@ class ScanSession(
     var latest: List<Rgb>? = null
         private set
 
-    /** Confirmed readings so far per face (null = not yet). */
-    fun capturedSamples(view: FaceView): List<Rgb>? = captured[view.ordinal]
+    /** Confirmed readings so far per face, as seen (null = not yet). */
+    fun capturedSamples(view: FaceView): List<Rgb>? = captured[view]
 
     /**
      * Handles one frame of grid readings taken at [nowMillis]. [looksLikeCube] is whether the frame
@@ -101,15 +108,13 @@ class ScanSession(
      */
     fun onFrame(samples: List<Rgb>, nowMillis: Long, looksLikeCube: Boolean = true): ScanEvent {
         require(samples.size == 9)
-        if (review != null) return ScanEvent.Waiting
-        val view = current ?: return ScanEvent.Waiting
+        if (review != null || isDone) return ScanEvent.Waiting
         latest = samples
         live = samples.map { ColorClassifier.live(it, refs) }
         val labs = samples.map { it.toLab() }
-        val previous = if (only != null) null else FaceView.entries.getOrNull(index - 1)?.let { captured[it.ordinal] }
-        if (previous != null && looksAlike(labs, previous.map { it.toLab() })) {
+        if (captured.values.any { seen -> alreadySeen(labs, seen.map { it.toLab() }) }) {
             resetStreak()
-            return ScanEvent.PreviousFace
+            return ScanEvent.AlreadyScanned
         }
         if (!looksLikeCube) {
             resetStreak()
@@ -125,72 +130,84 @@ class ScanSession(
         val held = nowMillis - streakStart
         if (streak.size < minFrames || held < holdMillis) {
             val progress = if (holdMillis <= 0) streak.size.toFloat() / minFrames else held.toFloat() / holdMillis
-            return ScanEvent.Holding(progress.coerceIn(0f, 1f), centreHint(samples[CENTRE], view))
+            return ScanEvent.Holding(progress.coerceIn(0f, 1f), recognise(samples[CENTRE]))
         }
         return capture(medianOf(streak))
     }
 
     /** Captures the latest frame at once (the capture button). */
-    fun captureNow(): ScanEvent = if (review != null) ScanEvent.Waiting else latest?.let { capture(it) } ?: ScanEvent.Waiting
+    fun captureNow(): ScanEvent = if (review != null || isDone) ScanEvent.Waiting else latest?.let { capture(it) } ?: ScanEvent.Waiting
 
-    /** Keeps the face under review and moves on to the next one. */
+    /** The face under review is taken as [view] (one not yet scanned). */
+    fun choose(view: FaceView) {
+        if (review != null && view in remaining) reviewFace = view
+    }
+
+    /** Keeps the face under review as [reviewFace]; any face not yet scanned is asked for next. */
     fun accept() {
-        val (view, samples) = review ?: return
-        captured[view.ordinal] = samples
-        index++
+        val samples = review ?: return
+        captured[reviewFace ?: return] = samples
         clearReview()
         updateReferences()
         resetStreak()
     }
 
-    /** Drops the face under review; the same face is asked for again. */
+    /** Drops the face under review; nothing is stored for it. */
     fun retake() {
         clearReview()
         resetStreak()
     }
 
-    /** Goes back to scan the previous confirmed face again. */
+    /** Takes back the face accepted last, so it can be scanned again. */
     fun redo() {
         clearReview()
-        if (only == null && index > 0) {
-            index--
-            captured[index] = null
-            updateReferences()
-        }
+        if (only == null) captured.keys.lastOrNull()?.let { captured.remove(it) }
+        updateReferences()
         resetStreak()
     }
 
     fun outcome(): ScanOutcome {
         check(isDone && only == null) { "Scan not finished" }
-        val samples = FaceView.entries.sortedBy { it.face.ordinal }.flatMap { captured[it.ordinal]!! }
-        val classification = ColorClassifier.classify(samples, scheme)
-        val editor = CubeEditor(classification.colors, scheme)
-        val validity = CubeCheck.validity(editor.toCube()!!, scheme)
-        return ScanOutcome(editor, classification.uncertain(), validity, samples)
+        val seen = Face.entries.flatMap { captured.getValue(FaceView.of(it)) }
+        val classification = ColorClassifier.classify(seen, scheme)
+        val found = RotationSearch.search(classification.colors, scheme, seen)
+        val uncertainSeen = classification.uncertain()
+        val uncertain = (0 until seen.size).filter { i ->
+            found.source[i] in uncertainSeen || (i % 9 != CENTRE && Face.entries[i / 9] in found.ambiguous)
+        }.toSet()
+        return ScanOutcome(
+            editor = CubeEditor(found.colors, scheme),
+            uncertain = uncertain,
+            validity = found.validity,
+            samples = found.source.map { seen[it] },
+            rotations = found.rotations,
+            from = found.from,
+        )
     }
 
     private fun capture(samples: List<Rgb>): ScanEvent {
-        val view = current ?: return ScanEvent.Waiting
-        review = view to samples
-        reviewCentreLooksLike = centreHint(samples[CENTRE], view)
+        val face = recognise(samples[CENTRE]) ?: return ScanEvent.Waiting
+        review = samples
+        reviewFace = face
         resetStreak()
-        return ScanEvent.Captured(view)
+        return ScanEvent.Captured(face)
     }
 
-    /** The colour the centre reads as, when that is not the asked face's colour. */
-    private fun centreHint(centre: Rgb, view: FaceView): CubeColor? =
-        ColorClassifier.live(centre, refs).takeIf { it != view.centreColor(scheme) }
+    /** The face not yet scanned whose centre colour [centre] reads closest to. */
+    private fun recognise(centre: Rgb): FaceView? {
+        val left = remaining
+        val color = ColorClassifier.ranked(centre, refs).firstOrNull { c -> left.any { it.centreColor(scheme) == c } }
+        return left.firstOrNull { it.centreColor(scheme) == color }
+    }
 
     private fun clearReview() {
         review = null
-        reviewCentreLooksLike = null
+        reviewFace = null
     }
 
     /** The cube's own centres seen so far become the references of the live reading. */
     private fun updateReferences() {
-        val known = FaceView.entries.mapNotNull { view ->
-            captured[view.ordinal]?.let { view.centreColor(scheme) to listOf(it[CENTRE].toLab()) }
-        }.toMap()
+        val known = captured.entries.associate { (view, samples) -> view.centreColor(scheme) to listOf(samples[CENTRE].toLab()) }
         refs = ColorClassifier.references(known)
     }
 
@@ -218,5 +235,8 @@ class ScanSession(
 
         /** Every cell of [a] is within [STEADY_DISTANCE] of the same cell of [b]. */
         private fun looksAlike(a: List<Lab>, b: List<Lab>): Boolean = a.indices.all { a[it].distance(b[it]) < STEADY_DISTANCE }
+
+        /** [a] looks like [b] turned any way. */
+        private fun alreadySeen(a: List<Lab>, b: List<Lab>): Boolean = (0 until 4).any { looksAlike(a, RotationSearch.turned(b, it)) }
     }
 }

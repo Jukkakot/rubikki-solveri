@@ -3,6 +3,7 @@ package fi.jukkakot.rubikkisolveri.cube
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.MisreadSearch
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
+import fi.jukkakot.rubikkisolveri.cube.scan.RotationSearch
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanCheck
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.cube.scan.Verdict
@@ -186,12 +187,27 @@ class ScanCheckTest {
         val wrong = swapped(cube, a, b)
         val check = check(wrong).lookRight(FaceView.TOP).lookRight(FaceView.FRONT)
         val rescan = (1..9).map { read(cube.colorAt(Face.U, it), random, gain = 0.85) }
-        val next = check.replaceFace(FaceView.TOP, rescan)
+        val (next, rotation) = check.replaceFace(FaceView.TOP, rescan)
+        assertEquals(0, rotation)
         assertEquals((1..9).map { cube.colorAt(Face.U, it) }, (0 until 9).map { next.editor[Stickers.index(Face.U, it + 1)] })
         assertTrue(FaceView.TOP !in next.checked)
         assertTrue(FaceView.FRONT in next.checked)
         // Other faces as before.
         assertEquals(wrong[b], next.editor[b])
+    }
+
+    @Test
+    fun quarterTurnedRescanComesBackRight() {
+        // Two top stickers misread the wrong way round; the top is rescanned turned a quarter.
+        val top = (1..9).map { Stickers.index(Face.U, it) }.filter { it % 9 != 4 }
+        val a = top.first()
+        val b = top.first { cube[it] != cube[a] }
+        val check = check(swapped(cube, a, b))
+        val rescan = RotationSearch.turned((1..9).map { read(cube.colorAt(Face.U, it), random) }, 1)
+        val (next, rotation) = check.replaceFace(FaceView.TOP, rescan)
+        assertEquals(3, rotation)
+        assertEquals(cube, next.editor.toCube())
+        assertEquals(RotationSearch.turned(rescan, 3), next.readings!!.subList(Face.U.ordinal * 9, Face.U.ordinal * 9 + 9))
     }
 
     @Test
