@@ -138,7 +138,9 @@ yellow cross, yellow edges, yellow corners into place, yellow corners turned.
   navigation graph.
 - `ui/nav`: type-safe routes (`HomeRoute`, `SettingsRoute`, `LogRoute`) and `RubikkiNavHost`.
   Screens take plain values and callbacks, so tests drive them with fakes.
-- `ui/theme`: `RubikkiTheme` — Material You dynamic colour, light/dark by the theme setting.
+- `ui/theme`: `RubikkiTheme` — Material You dynamic colour, light/dark by the theme setting, Karkki
+  typography and shapes; `ForcedDark` wraps the scan routes. `ui/common/Buttons.kt`: shared
+  `RoundIconButton`, `BigButton`, `BackButton`.
 - `settings`: theme in DataStore Preferences; language through AppCompat per-app locales (stored
   by the system on Android 13+, by AppCompat on 12). Finnish is set on the first start.
 - `log`: `Logger` (Logcat + capped file on a background thread), `LogLine` (line format),

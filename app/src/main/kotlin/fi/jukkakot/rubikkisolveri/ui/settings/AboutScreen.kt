@@ -40,6 +40,7 @@ fun AboutScreen(version: String, onBack: () -> Unit, licencesOpen: Boolean = fal
     var open by rememberSaveable { mutableStateOf(licencesOpen) }
     val resources = LocalResources.current
     val min2phase = remember { resources.openRawResource(R.raw.min2phase_license).bufferedReader().use { it.readText() } }
+    val fonts = remember { resources.openRawResource(R.raw.fonts_ofl).bufferedReader().use { it.readText() } }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -69,6 +70,8 @@ fun AboutScreen(version: String, onBack: () -> Unit, licencesOpen: Boolean = fal
                 Text(stringResource(R.string.about_kotlin))
                 Text(stringResource(R.string.about_min2phase))
                 Text(min2phase, fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 14.sp)
+                Text(stringResource(R.string.about_fonts))
+                Text(fonts, fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 14.sp)
             }
         }
     }

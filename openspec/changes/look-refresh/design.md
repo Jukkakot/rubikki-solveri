@@ -52,3 +52,16 @@ navigation or behaviour changes.
   that variant and chose it.
 - Rounder, larger buttons take height → the "no tall pages" rule still holds; checked with the
   screenshot tests at phone size.
+
+## Decisions taken while building
+
+- **Kept colours:** the timer's hold/ready red and green (the speedcubing signal convention) and
+  the log's warning amber (M3 has no warning role) stay fixed, like sticker and camera colours.
+- **Face pips:** done faces fill from the left in the order the screen knows (face order), not the
+  scan order; the count keeps the "Kuvattu n/6" text. A one-face rescan shows its face name there.
+- **Short labels by the shutter:** "Syötä käsin" and "Uudelleen" (redo the previous face); the
+  long "Syötä värit käsin" stays in the review and permission views.
+- **Status bar:** while the forced-dark scan is shown the status-bar icons are light, restored on
+  leaving.
+- **Fonts** are the variable TTFs from google/fonts; each weight picks its point on the axis. The
+  OFL text ships as `res/raw/fonts_ofl.txt` and is shown on the licences screen.

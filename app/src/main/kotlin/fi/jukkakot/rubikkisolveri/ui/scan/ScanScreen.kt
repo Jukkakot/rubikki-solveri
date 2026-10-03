@@ -1,6 +1,14 @@
 package fi.jukkakot.rubikkisolveri.ui.scan
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.FilledTonalButton
+import fi.jukkakot.rubikkisolveri.ui.common.BackButton
+import fi.jukkakot.rubikkisolveri.ui.common.RoundIconToggle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.selection.selectable
@@ -21,18 +29,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -284,35 +288,37 @@ fun ScanContent(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.scan_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                    }
-                },
+                navigationIcon = { Box(Modifier.padding(horizontal = 8.dp)) { BackButton(onBack) } },
                 actions = {
-                    IconToggleButton(checked = torch, onCheckedChange = onTorch) {
+                    RoundIconToggle(checked = torch, onCheckedChange = onTorch, modifier = Modifier.padding(horizontal = 8.dp)) {
                         Icon(painterResource(R.drawable.ic_torch), contentDescription = stringResource(R.string.scan_torch))
                     }
                 },
             )
         },
         bottomBar = {
-            Surface(tonalElevation = 3.dp) {
-                Column(
-                    Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Progress(session::isAccepted, index, only)
-                    if (review != null) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(onClick = ::retake, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.scan_retake)) }
-                            Button(onClick = ::accept, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.scan_accept)) }
+            Column(
+                Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (review != null) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = ::retake, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) { Text(stringResource(R.string.scan_retake)) }
+                        Button(onClick = ::accept, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) { Text(stringResource(R.string.scan_accept)) }
+                    }
+                    TextButton(onClick = onManual) { Text(stringResource(R.string.scan_manual)) }
+                } else {
+                    // Manual entry, the shutter in the middle, and redo of the previous face.
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                            OutlinedButton(onClick = onManual, contentPadding = PaddingValues(horizontal = 14.dp)) { Text(stringResource(R.string.scan_manual_short)) }
                         }
-                    } else {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Shutter(enabled = live != null, onClick = { handle(session.captureNow()) })
+                        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
                             // A one-face rescan has no previous face to go back to.
                             if (only == null) {
-                                OutlinedButton(
+                                FilledTonalButton(
                                     onClick = {
                                         session.redo()
                                         index = session.index
@@ -320,40 +326,24 @@ fun ScanContent(
                                         lastCaptured = null
                                     },
                                     enabled = index > 0,
-                                    modifier = Modifier.weight(1f),
                                 ) { Text(stringResource(R.string.scan_redo)) }
-                            }
-                            Button(onClick = { handle(session.captureNow()) }, enabled = live != null, modifier = Modifier.weight(1f)) {
-                                Text(stringResource(R.string.scan_capture))
                             }
                         }
                     }
-                    TextButton(onClick = onManual) { Text(stringResource(R.string.scan_manual)) }
                 }
             }
         },
     ) { padding ->
-        // One screen, no scrolling: the camera takes what the texts above and the actions below leave.
+        // One screen, no scrolling: the camera takes what the marks above and the texts and actions below leave.
         Column(
-            Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                if (only != null) stringResource(faceName(only)) else stringResource(R.string.scan_done_title, index.coerceAtMost(6)),
-                style = MaterialTheme.typography.titleLarge,
-            )
-            Text(
-                if (only != null) {
-                    stringResource(R.string.scan_one_hint, stringResource(colorName(only.centreColor())))
-                } else {
-                    stringResource(R.string.scan_any_hint)
-                },
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            Progress(session::isAccepted, index, only)
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Box(
                     Modifier.aspectRatio(3f / 4f, matchHeightConstraintsFirst = true)
-                        .clip(RoundedCornerShape(16.dp)).background(Color.Black),
+                        .clip(MaterialTheme.shapes.extraLarge).background(Color.Black),
                 ) {
                     if (cameraFailed) {
                         Text(stringResource(R.string.scan_camera_error), color = Color.White, modifier = Modifier.align(Alignment.Center))
@@ -366,16 +356,21 @@ fun ScanContent(
                         GridOverlay(live, holding?.recognised?.centreColor(), Modifier.fillMaxSize())
                         OnCamera(Modifier.align(Alignment.BottomCenter)) {
                             Text(statusText(event, only), color = Color.White, style = MaterialTheme.typography.titleSmall)
-                            LinearProgressIndicator(progress = { holding?.progress ?: 0f }, modifier = Modifier.fillMaxWidth())
+                            LinearProgressIndicator(
+                                progress = { holding?.progress ?: 0f },
+                                modifier = Modifier.fillMaxWidth().height(6.dp),
+                                gapSize = 0.dp,
+                                drawStopIndicator = {},
+                            )
                         }
                         lastCaptured?.let {
                             Text(
                                 stringResource(R.string.scan_captured, stringResource(faceName(it))),
                                 color = Color.White,
                                 style = MaterialTheme.typography.labelLarge,
-                                modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
-                                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.align(Alignment.TopStart).padding(12.dp)
+                                    .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
                             )
                         }
                     } else {
@@ -398,8 +393,31 @@ fun ScanContent(
                     }
                 }
             }
+            Text(
+                if (only != null) {
+                    stringResource(R.string.scan_one_hint, stringResource(colorName(only.centreColor())))
+                } else {
+                    stringResource(R.string.scan_any_hint)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
+}
+
+/** The capture button: a large round shutter in primary with a light ring. */
+@Composable
+private fun Shutter(enabled: Boolean, onClick: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val description = stringResource(R.string.scan_capture)
+    Box(
+        Modifier.padding(horizontal = 8.dp).size(84.dp).clip(CircleShape)
+            .background(if (enabled) scheme.primary else scheme.surfaceContainerHigh)
+            .border(6.dp, if (enabled) scheme.onSurface else scheme.outlineVariant, CircleShape)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = description },
+    )
 }
 
 /** Text on the camera view: white on a dark band, readable whatever the camera shows. */
@@ -468,25 +486,39 @@ private fun ReviewOverlay(samples: List<Rgb>, modifier: Modifier) {
 
 
 /**
- * Which faces are done, by their centre colours; a one-face rescan ([only]) shows just that face.
+ * Which faces are done, as six marks: a done face filled with its centre colour, the face being
+ * scanned ringed, the rest empty; the count beside. A one-face rescan ([only]) shows just that face.
  * [done] is read again whenever [count] changes.
  */
 @Composable
 private fun Progress(done: (FaceView) -> Boolean, count: Int, only: FaceView?) {
+    val scheme = MaterialTheme.colorScheme
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         if (only != null) Text(stringResource(R.string.scan_one_face), style = MaterialTheme.typography.labelLarge)
-        for (view in only?.let(::listOf) ?: FaceView.entries) {
-            val isDone = count >= 0 && done(view)
-            val doneText = stringResource(R.string.scan_captured, stringResource(faceName(view)))
-            Box(
-                Modifier.size(24.dp).clip(CircleShape).background(StickerColors.of(view.centreColor()))
-                    .border(1.dp, Color.Gray, CircleShape)
-                    .then(if (isDone) Modifier.semantics { contentDescription = doneText } else Modifier),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (isDone) Icon(Icons.Filled.Check, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
+        val views = only?.let(::listOf) ?: FaceView.entries
+        val doneViews = views.filter { count >= 0 && done(it) }
+        views.indices.forEach { i ->
+            val view = doneViews.getOrNull(i)
+            val current = view == null && i == doneViews.size
+            val mark = when {
+                view != null -> stringResource(R.string.scan_captured, stringResource(faceName(view)))
+                current -> stringResource(R.string.scan_pip_current)
+                else -> stringResource(R.string.scan_pip_empty)
             }
+            val shape = MaterialTheme.shapes.small
+            Box(
+                Modifier.size(34.dp).clip(shape)
+                    .then(if (view != null) Modifier.background(StickerColors.of(view.centreColor())) else Modifier)
+                    .border(3.dp, if (view != null) StickerColors.of(view.centreColor()) else if (current) scheme.onSurface else scheme.outlineVariant, shape)
+                    .semantics { contentDescription = mark },
+            )
         }
+        Spacer(Modifier.weight(1f))
+        Text(
+            if (only != null) stringResource(faceName(only)) else stringResource(R.string.scan_done_title, count.coerceAtMost(6)),
+            style = if (only != null) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelLarge,
+            color = if (only != null) scheme.onSurface else scheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -501,7 +533,7 @@ private fun FacePicker(faces: List<FaceView>, selected: FaceView?, onPick: (Face
                 Modifier.size(44.dp).clip(CircleShape)
                     .selectable(selected = isSelected, role = Role.RadioButton) { onPick(view) }
                     .background(StickerColors.of(view.centreColor()))
-                    .border(if (isSelected) 4.dp else 1.dp, if (isSelected) Color.White else Color.Gray, CircleShape)
+                    .border(if (isSelected) 4.dp else 1.dp, if (isSelected) Color.White else MaterialTheme.colorScheme.outline, CircleShape)
                     .semantics { contentDescription = name },
                 contentAlignment = Alignment.Center,
             ) {
@@ -518,11 +550,7 @@ private fun PermissionScaffold(onBack: () -> Unit, content: @Composable () -> Un
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.scan_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                    }
-                },
+                navigationIcon = { Box(Modifier.padding(horizontal = 8.dp)) { BackButton(onBack) } },
             )
         },
     ) { padding -> Box(Modifier.padding(padding)) { content() } }

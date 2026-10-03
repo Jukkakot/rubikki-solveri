@@ -26,6 +26,15 @@ import fi.jukkakot.rubikkisolveri.ui.nav.TimerRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.RubikkiNavHost
 import fi.jukkakot.rubikkisolveri.ui.nav.SettingsRoute
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
+import fi.jukkakot.rubikkisolveri.ui.theme.ForcedDark
+import fi.jukkakot.rubikkisolveri.ui.theme.Fredoka
+import fi.jukkakot.rubikkisolveri.ui.theme.KarkkiShapes
+import fi.jukkakot.rubikkisolveri.ui.theme.Nunito
+import androidx.compose.material3.Shapes
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.Typography
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import org.junit.Rule
@@ -159,7 +168,8 @@ class ShellTest {
         compose.onNodeWithText("min2phase (kaksivaiheinen ratkaisija)", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Avoimen lähdekoodin lisenssit").performClick()
         compose.onNodeWithText("min2phase (kaksivaiheinen ratkaisija)", substring = true).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Permission is hereby granted", substring = true).performScrollTo().assertExists()
+        compose.onNodeWithText("Copyright (c) 2023 Chen Shuang", substring = true).performScrollTo().assertExists()
+        compose.onNodeWithText("SIL OPEN FONT LICENSE", substring = true).performScrollTo().assertExists()
     }
 
     @Test
@@ -216,6 +226,43 @@ class ThemeTest {
     @Test
     fun forcedLight() {
         assertTrue(backgroundLuminance(ThemeMode.LIGHT, systemDark = true) > 0.8f)
+    }
+
+    @Test
+    fun karkkiFontsAndShapesInBothModes() {
+        var dark by mutableStateOf(false)
+        var typography: Typography? = null
+        var shapes: Shapes? = null
+        compose.setContent {
+            RubikkiTheme(systemDark = dark, dynamicColor = false) {
+                typography = MaterialTheme.typography
+                shapes = MaterialTheme.shapes
+            }
+        }
+        for (mode in listOf(false, true)) {
+            dark = mode
+            compose.waitForIdle()
+            assertEquals(Fredoka, typography!!.headlineSmall.fontFamily)
+            assertEquals(Fredoka, typography!!.titleLarge.fontFamily)
+            assertEquals(Nunito, typography!!.bodyLarge.fontFamily)
+            assertEquals(Nunito, typography!!.labelLarge.fontFamily)
+            assertEquals(KarkkiShapes, shapes)
+        }
+    }
+
+    @Test
+    fun scanIsDarkInALightApp() {
+        var app = -1f
+        var scan = -1f
+        compose.setContent {
+            RubikkiTheme(mode = ThemeMode.LIGHT, dynamicColor = false) {
+                app = MaterialTheme.colorScheme.background.luminance()
+                ForcedDark { scan = MaterialTheme.colorScheme.background.luminance() }
+            }
+        }
+        compose.waitForIdle()
+        assertTrue(app > 0.8f)
+        assertTrue(scan < 0.2f)
     }
 }
 

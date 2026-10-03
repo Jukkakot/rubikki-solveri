@@ -19,6 +19,7 @@ import fi.jukkakot.rubikkisolveri.ui.manual.ManualInputScreen
 import fi.jukkakot.rubikkisolveri.ui.cube3d.Cube3D
 import fi.jukkakot.rubikkisolveri.ui.cube3d.StickerColors
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
+import fi.jukkakot.rubikkisolveri.ui.theme.ForcedDark
 import androidx.compose.runtime.Composable
 import fi.jukkakot.rubikkisolveri.R
 import androidx.compose.runtime.setValue
@@ -110,15 +111,15 @@ class ScreenshotTest {
 
     /** The check after an unsure scan: two faces left to check. */
     @Test
-    fun scanCheck() = shot("scan-check") { CheckOf(setOf(8, 9, 20)) }
+    fun scanCheck() = shot("scan-check") { ForcedDark { CheckOf(setOf(8, 9, 20)) } }
 
     /** Every face found right but the cube cannot be: the faces to look at again. */
     @Test
-    fun scanCheckVerdict() = shot("scan-check-verdict", waitForText = "Tällaista kuutiota") { CheckOf(emptySet()) }
+    fun scanCheckVerdict() = shot("scan-check-verdict", waitForText = "Tällaista kuutiota") { ForcedDark { CheckOf(emptySet()) } }
 
     /** Rescanning one face from the check. */
     @Test
-    fun scanOneFace() = shot("scan-one-face") {
+    fun scanOneFace() = shot("scan-one-face") { ForcedDark {
         val top = Cube.solved().apply("R U F'").let { cube ->
             (1..9).map { fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier.DEFAULT_PALETTE.getValue(cube.colorAt(fi.jukkakot.rubikkisolveri.cube.Face.U, it)) }
         }
@@ -127,7 +128,7 @@ class ScreenshotTest {
             only = fi.jukkakot.rubikkisolveri.cube.FaceView.TOP,
             preview = { androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530)))) },
         )
-    }
+    } }
 
     @Test
     fun solve() = shot("solve", waitForText = "Siirto 1/") {
@@ -185,7 +186,7 @@ class ScreenshotTest {
     }
 
     @Test
-    fun scan() = shot("scan") {
+    fun scan() = shot("scan") { ForcedDark {
         val frames = kotlinx.coroutines.flow.MutableStateFlow(
             listOf(
                 fi.jukkakot.rubikkisolveri.cube.CubeColor.RED, fi.jukkakot.rubikkisolveri.cube.CubeColor.GREEN,
@@ -199,10 +200,10 @@ class ScreenshotTest {
             frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {},
             preview = { androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530)))) },
         )
-    }
+    } }
 
     @Test
-    fun scanReview() = shot("scan-review", waitForText = "Tunnistettu") {
+    fun scanReview() = shot("scan-review", waitForText = "Tunnistettu") { ForcedDark {
         val front = Cube.solved().apply("R U F'").let { cube ->
             (1..9).map { fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier.DEFAULT_PALETTE.getValue(cube.colorAt(fi.jukkakot.rubikkisolveri.cube.Face.F, it)) }
         }
@@ -211,7 +212,7 @@ class ScreenshotTest {
             holdMillis = 0,
             preview = { androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530)))) },
         )
-    }
+    } }
 
     @Test
     fun midTurn() = shot("mid-turn") {
@@ -285,8 +286,8 @@ class ScreenshotTest {
     }
 
     @Test
-    fun scanPermission() = shot("scan-permission") {
+    fun scanPermission() = shot("scan-permission") { ForcedDark {
         // Robolectric grants no camera permission: the screen shows why it is needed.
         fi.jukkakot.rubikkisolveri.ui.scan.ScanScreen(onBack = {}, onManual = {}, onResult = {})
-    }
+    } }
 }

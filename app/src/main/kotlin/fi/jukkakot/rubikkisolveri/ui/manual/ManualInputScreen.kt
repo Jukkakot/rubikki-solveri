@@ -425,7 +425,7 @@ private fun Palette(editor: CubeEditor, selected: CubeColor, onSelect: (CubeColo
                 Box(
                     Modifier.size(48.dp).clip(CircleShape).background(StickerColors.of(color))
                         .border(
-                            if (color == selected) BorderStroke(4.dp, MaterialTheme.colorScheme.primary) else BorderStroke(1.dp, Color.Gray),
+                            if (color == selected) BorderStroke(4.dp, MaterialTheme.colorScheme.primary) else BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                             CircleShape,
                         )
                         .clickable { onSelect(color) }
@@ -490,8 +490,8 @@ private fun MiniNet(editor: CubeEditor, current: FaceView, marked: Set<Int>, che
                 Icon(
                     Icons.Filled.Check,
                     contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp).clip(CircleShape).background(Color(0xFF2E7D32)).padding(2.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(16.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary).padding(2.dp),
                 )
             }
         }

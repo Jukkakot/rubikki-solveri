@@ -6,20 +6,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -60,6 +57,10 @@ import fi.jukkakot.rubikkisolveri.cube.solve.SolveResult
 import fi.jukkakot.rubikkisolveri.cube.solve.TwoPhaseSolver
 import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.Evt
+import fi.jukkakot.rubikkisolveri.ui.common.BackButton
+import fi.jukkakot.rubikkisolveri.ui.common.BigButton
+import fi.jukkakot.rubikkisolveri.ui.common.RoundIconButton
+import fi.jukkakot.rubikkisolveri.ui.common.RoundIconToggle
 import fi.jukkakot.rubikkisolveri.ui.common.colorName
 import fi.jukkakot.rubikkisolveri.ui.common.noteText
 import fi.jukkakot.rubikkisolveri.ui.common.stageIntro
@@ -143,14 +144,10 @@ fun SolveScreen(
         topBar = {
             TopAppBar(
                 title = { Text(title ?: stringResource(R.string.solve_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                    }
-                },
+                navigationIcon = { Box(Modifier.padding(horizontal = 8.dp)) { BackButton(onBack) } },
                 actions = {
                     if ((result as? SolvePlan.Ready)?.moves?.isNotEmpty() == true) {
-                        IconToggleButton(checked = follow, onCheckedChange = { follow = it }) {
+                        RoundIconToggle(checked = follow, onCheckedChange = { follow = it }, modifier = Modifier.padding(horizontal = 8.dp)) {
                             Icon(painterResource(R.drawable.ic_camera), contentDescription = stringResource(R.string.follow_camera))
                         }
                     }
@@ -256,28 +253,33 @@ private fun Stepper(
         } else {
             GuideCube(state)
         }
-        LinearProgressIndicator(progress = { index / moves.size.toFloat() }, modifier = Modifier.fillMaxWidth())
+        LinearProgressIndicator(
+            progress = { index / moves.size.toFloat() },
+            modifier = Modifier.fillMaxWidth().height(8.dp),
+            gapSize = 0.dp,
+            drawStopIndicator = {},
+        )
         if (!state.isFinished) {
-            Text(stringResource(R.string.solve_step, index + 1, moves.size), style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.solve_step, index + 1, moves.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             MoveWordsText(state, showNotation)
         } else {
             Text(finishedText ?: stringResource(R.string.solve_finished), style = MaterialTheme.typography.headlineSmall)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedButton(onClick = state::back, enabled = index > 0, modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.solve_previous))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            RoundIconButton(onClick = state::back, enabled = index > 0, size = 56.dp) {
+                Icon(painterResource(R.drawable.ic_undo), contentDescription = stringResource(R.string.solve_previous))
             }
             if (!state.isFinished) {
-                OutlinedButton(onClick = state::demo, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.solve_show)) }
-                Button(
+                OutlinedButton(onClick = state::demo, modifier = Modifier.heightIn(min = 56.dp)) { Text(stringResource(R.string.solve_show)) }
+                BigButton(
                     onClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                         state.done()
                     },
-                    modifier = Modifier.weight(1.3f).heightIn(min = 56.dp),
+                    modifier = Modifier.weight(1f),
                 ) { Text(stringResource(R.string.solve_done_move)) }
             } else {
-                Button(onClick = onHome, modifier = Modifier.weight(1.3f)) { Text(homeLabel ?: stringResource(R.string.solve_home)) }
+                BigButton(onClick = onHome, modifier = Modifier.weight(1f)) { Text(homeLabel ?: stringResource(R.string.solve_home)) }
             }
         }
     }

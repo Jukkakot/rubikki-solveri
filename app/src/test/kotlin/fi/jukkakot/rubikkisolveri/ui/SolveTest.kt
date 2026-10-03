@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -75,7 +76,7 @@ class SolveTest {
         waitFor("Siirto 1/2")
         compose.onNodeWithText("Tein sen").performScrollTo().performClick()
         compose.onNodeWithText("Siirto 2/2").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Edellinen").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Edellinen").performScrollTo().performClick()
         compose.onNodeWithText("Siirto 1/2").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Käännä yläpuolta vastapäivään (katsottuna ylhäältä).").performScrollTo().assertIsDisplayed()
     }

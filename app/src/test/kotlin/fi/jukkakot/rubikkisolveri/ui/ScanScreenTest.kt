@@ -2,6 +2,8 @@ package fi.jukkakot.rubikkisolveri.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -86,7 +88,7 @@ class ScanScreenTest {
         compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
         assertTrue(saved.isEmpty())
         // The capture button still takes it, and its picture is saved.
-        compose.onNodeWithText("Ota kuva").performClick()
+        compose.onNodeWithContentDescription("Ota kuva").performClick()
         compose.onNodeWithText("Hyvä, seuraava").assertIsDisplayed()
         assertEquals(1, saved.size)
     }
@@ -162,10 +164,21 @@ class ScanScreenTest {
     }
 
     @Test
+    fun facePipsShowDoneCurrentAndEmpty() {
+        scan()
+        confirm(FaceView.TOP)
+        confirm(FaceView.FRONT)
+        compose.onNodeWithContentDescription("Yläpuoli luettu.").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Etupuoli luettu.").assertIsDisplayed()
+        compose.onAllNodesWithContentDescription("Kuvattava puoli").assertCountEquals(1)
+        compose.onAllNodesWithContentDescription("Kuvaamatta").assertCountEquals(3)
+    }
+
+    @Test
     fun redo() {
         scan()
         confirm(FaceView.FRONT)
-        compose.onNodeWithText("Edellinen uudelleen").performClick()
+        compose.onNodeWithText("Uudelleen").performClick()
         compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
     }
 
@@ -205,7 +218,7 @@ class ScanScreenTest {
         compose.onNodeWithText("Yläpuoli").assertIsDisplayed()
         compose.onNodeWithText("Keskiö on valkoinen. Näytä tämä puoli missä asennossa tahansa.").assertIsDisplayed()
         compose.onNodeWithText("Vain tämä puoli").assertIsDisplayed()
-        compose.onNodeWithText("Edellinen uudelleen").assertDoesNotExist()
+        compose.onNodeWithText("Uudelleen").assertDoesNotExist()
         confirm(FaceView.TOP)
         show(FaceView.TOP, 3)
         assertEquals(listOf(FaceView.TOP), faces.map { it.first })

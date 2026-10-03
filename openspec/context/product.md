@@ -32,7 +32,10 @@ method stage by stage so you learn to solve it yourself.
 
 - **Audience:** just the author for now (no store listing, no onboarding for strangers).
 - **Language:** Finnish by default, English selectable in settings.
-- **Look:** the most modern Android look: Material 3 with Material You dynamic colour.
+- **Look:** "Karkki" (decided 2026-10-03): Material 3 with the phone's Material You colours, soft
+  playful shapes (raised corner radii, pill buttons, round icon buttons) and rounded fonts (Fredoka
+  for headings, Nunito for text, bundled). The scan screens (camera, permission, colour check) are
+  always dark.
 - **Moves are shown with animation and arrows only;** standard notation may come later as an option.
 - **After a scan:** if the scan is valid and confident, go straight to the solution; ask for a
   check only when something is uncertain or the cube is invalid.

@@ -15,6 +15,8 @@ import androidx.navigation.toRoute
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeEditor
 import fi.jukkakot.rubikkisolveri.ui.scan.ScanScreen
+import fi.jukkakot.rubikkisolveri.ui.theme.DarkIf
+import fi.jukkakot.rubikkisolveri.ui.theme.ForcedDark
 import fi.jukkakot.rubikkisolveri.ui.free.FreeCubeScreen
 import fi.jukkakot.rubikkisolveri.ui.manual.ManualInputScreen
 import fi.jukkakot.rubikkisolveri.ui.solve.SolveScreen
@@ -99,7 +101,8 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
             val route = entry.toRoute<ManualInputRoute>()
             val initial = route.cube?.let(CubeEditor::decode) ?: CubeEditor.empty()
             val marked = route.marked?.split(',')?.mapNotNull { it.toIntOrNull() }?.toSet().orEmpty()
-            ManualInputScreen(
+            // The colour check after a scan is part of the scan, so it stays dark like it.
+            DarkIf(route.fromScan) { ManualInputScreen(
                 onBack = { navController.popBackStack() },
                 onValid = { cube -> navController.navigate(SolveRoute(cube.toColorString())) },
                 initial = initial,
@@ -118,11 +121,11 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 onRescanUsed = { LastScan.rescanned = null },
                 onReadings = { LastScan.readings = it },
                 onRescanTurned = { face, turns -> LastScan.turnPicture(face, turns) },
-            )
+            ) }
         }
         composable<ScanRoute> { entry ->
             val only = entry.toRoute<ScanRoute>().face?.let(FaceView::valueOf)
-            ScanScreen(
+            ForcedDark { ScanScreen(
                 onBack = { navController.popBackStack() },
                 onManual = {
                     if (only != null) {
@@ -144,7 +147,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                     }
                     navController.navigate(next) { popUpTo<ScanRoute> { inclusive = true } }
                 },
-            )
+            ) }
         }
         composable<FreeCubeRoute> { entry ->
             val route = entry.toRoute<FreeCubeRoute>()
