@@ -61,3 +61,9 @@ method stage by stage so you learn to solve it yourself.
   always visible (bottom bar), secondary text short or behind a tap. Scrolling only where the
   content is a genuinely long list (history, log, lessons list), and even then the actions stay
   pinned. New and changed screens are checked against this.
+
+## Later ideas
+
+- **Five faces are enough (2026-10-03):** once five faces are scanned, the sixth can largely be
+  worked out (each piece is known from its other stickers, the counts fill the rest), so the scan
+  could skip it or use it only as a check. Not planned yet.
