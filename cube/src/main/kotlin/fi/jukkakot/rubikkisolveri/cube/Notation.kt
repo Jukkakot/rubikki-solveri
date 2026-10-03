@@ -38,6 +38,13 @@ object Sequences {
     /** The sequence that undoes [moves]. */
     fun inverse(moves: List<Move>): List<Move> = moves.asReversed().map { it.inverse }
 
+    /** The sticker places whose sticker [moves] change (moved away or turned in place). */
+    fun movedStickers(moves: List<Move>): Set<Int> {
+        var places = IntArray(Stickers.COUNT) { it }
+        for (move in moves) places = IntArray(Stickers.COUNT) { move.permutation[places[it]] }
+        return (0 until Stickers.COUNT).filter { places[it] != it }.toSet()
+    }
+
     /** Merges consecutive turns of the same layer and drops turns that cancel out. */
     fun simplify(moves: List<Move>): List<Move> {
         val out = ArrayList<Move>()

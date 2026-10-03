@@ -1,8 +1,8 @@
 ## 1. Cube module: goals and cases
 
-- [ ] 1.1 `beginner/StageGoals.kt`: per stage the in-place stickers and the new stickers in the stage's hold; tests for the cross, middle layer and yellow cross masks. Verify: `./gradlew :cube:test`
-- [ ] 1.2 Moved-pieces helper (stickers an algorithm changes on a solved cube); test for the trigger and the yellow cross. Verify: `./gradlew :cube:test`
-- [ ] 1.3 `beginner/StageCases.kt`: cases for every stage (setup, highlight, solving moves); a test that every case's moves reach what it promises. Verify: `./gradlew :cube:test`
+- [x] 1.1 `beginner/StageGoals.kt`: per stage the in-place stickers and the new stickers in the stage's hold; tests for the cross, middle layer and yellow cross masks. Verify: `./gradlew :cube:test`
+- [x] 1.2 Moved-pieces helper (stickers an algorithm changes on a solved cube); test for the trigger and the yellow cross. Verify: `./gradlew :cube:test`
+- [x] 1.3 `beginner/StageCases.kt`: cases for every stage (setup, highlight, solving moves); a test that every case's moves reach what it promises. Verify: `./gradlew :cube:test`
 
 ## 2. Goal picture component
 
