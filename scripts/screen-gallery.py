@@ -57,6 +57,69 @@ GROUPS = [
     ]),
 ]
 
+# Sub-states drawn inside their parent's box in the navigation diagram, not as boxes of their own.
+PARTS = {
+    "solve": ["solve-learn", "guide-back", "guide-right", "follow", "mid-turn"],
+}
+
+
+def numbers(ns: list[int]) -> str:
+    ns = sorted(ns)
+    if len(ns) > 2 and ns[-1] - ns[0] == len(ns) - 1:
+        return f"{ns[0]}–{ns[-1]}"
+    return ", ".join(map(str, ns))
+
+
+def diagram(groups, names: list[str], number: dict, title_of: dict) -> str:
+    """Mermaid flowchart of every route: a subgraph per area, PARTS folded into their parent."""
+    owner = {part: parent for parent, parts in PARTS.items() for part in parts if parent in names}
+    lines = ["flowchart TD"]
+    for i, (title, group) in enumerate(groups):
+        boxes = [s for s in group if s[0] not in owner]
+        if not boxes:
+            continue
+        alone = len(boxes) == 1  # a one-screen area needs no frame around it
+        if not alone:
+            lines.append(f'  subgraph g{i}["{title}"]')
+        for sid, name, _ in boxes:
+            label = f"<b>{number[sid]}</b> {name}"
+            parts = [p for p in PARTS.get(sid, []) if p in names]
+            if parts:
+                part_names = ", ".join(title_of[p].split(": ")[-1].lower() for p in parts)
+                label += f"<br/><small>{numbers([number[p] for p in parts])}: {part_names}</small>"
+            lines.append(f'    n{number[sid]}["{label}"]')
+        if not alone:
+            lines.append("  end")
+    edges = []
+    for _, group in groups:
+        for sid, _, targets in group:
+            src = owner.get(sid, sid)
+            for t in targets:
+                dst = owner.get(t, t)
+                if t in names and dst != src and (src, dst) not in edges:
+                    edges.append((src, dst))
+    # Back edges (a depth-first walk from the first screen meets them going back up its own path)
+    # are dotted, so the forward routes read first.
+    back, seen, path = set(), set(), []
+
+    def walk(a: str) -> None:
+        seen.add(a)
+        path.append(a)
+        for x, b in edges:
+            if x == a:
+                if b in path:
+                    back.add((a, b))
+                elif b not in seen:
+                    walk(b)
+        path.pop()
+
+    for start, _ in edges:
+        if start not in seen:
+            walk(start)
+    lines += [f"  n{number[a]} {'-.->' if (a, b) in back else '-->'} n{number[b]}" for a, b in edges]
+    lines += [f'  click n{number[sid]} href "#{sid}"' for _, group in groups for sid, _, _ in group if sid not in owner]
+    return "\n".join(lines)
+
 
 def git(*args: str) -> str:
     return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True).stdout.strip()
@@ -112,7 +175,8 @@ def main() -> None:
     </div>
   </section>""")
 
-    page = TEMPLATE.replace("{{stamp}}", html.escape(stamp)).replace("{{count}}", str(len(names))).replace("{{sections}}", "\n".join(sections))
+    page = (TEMPLATE.replace("{{stamp}}", html.escape(stamp)).replace("{{count}}", str(len(names)))
+            .replace("{{diagram}}", diagram(groups, names, number, title_of)).replace("{{sections}}", "\n".join(sections)))
     (OUT / "index.html").write_text(page, encoding="utf-8", newline="\n")
     print(f"{len(names)} screens -> {OUT / 'index.html'}")
 
@@ -163,6 +227,11 @@ TEMPLATE = """<title>Rubikki Solveri näkymät</title>
   .to b { color: var(--accent); font-variant-numeric: tabular-nums; }
   .screen { scroll-margin-top: 16px; }
   .screen:target .pair a { outline: 3px solid var(--accent); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .map-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  #map-svg svg { display: block; margin: 0 auto; min-width: 760px; }
+  #map-svg .node { cursor: pointer; }
+  #map-svg small { color: var(--muted); }
 </style>
 <main>
   <header>
@@ -177,8 +246,42 @@ TEMPLATE = """<title>Rubikki Solveri näkymät</title>
       <button type="button" id="t-dark" aria-pressed="false">Tumma</button>
     </div>
   </header>
+  <section id="map" hidden>
+    <h2>Navigaatiokartta</h2>
+    <div class="map-scroll"><div id="map-svg"></div></div>
+  </section>
 {{sections}}
 </main>
+<script type="text/plain" id="map-src">
+{{diagram}}
+</script>
+<script type="module">
+  // The diagram is extra: if Mermaid does not load, the section stays hidden and the "→" lines remain.
+  const section = document.getElementById('map'), target = document.getElementById('map-svg');
+  const src = document.getElementById('map-src').textContent;
+  const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  let mermaid = null, seq = 0;
+  try { mermaid = (await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs')).default; } catch (e) {}
+  async function draw() {
+    if (!mermaid) return;
+    mermaid.initialize({
+      startOnLoad: false, securityLevel: 'loose', theme: 'base', fontFamily: css('--sans'),
+      themeVariables: {
+        background: css('--surface'), primaryColor: css('--surface'), primaryTextColor: css('--fg'),
+        primaryBorderColor: css('--accent'), lineColor: css('--muted'), clusterBkg: css('--bg'),
+        clusterBorder: css('--line'), titleColor: css('--fg'), fontSize: '14px',
+      },
+    });
+    try {
+      const { svg, bindFunctions } = await mermaid.render('map-graph-' + ++seq, src);
+      target.innerHTML = svg;
+      bindFunctions?.(target);
+      section.hidden = false;
+    } catch (e) { section.hidden = true; }
+  }
+  await draw();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+</script>
 <script>
   const buttons = { both: 't-both', light: 't-light', dark: 't-dark' };
   function show(mode) {

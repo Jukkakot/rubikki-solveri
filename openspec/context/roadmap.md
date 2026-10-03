@@ -25,3 +25,4 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 17 | `scan-polish` | done | Exposure locked at the first capture (fixes the overexposed scan), no main-thread work at capture and stall logging, the check page fits one screen and shows the camera picture |
 | 18 | `screen-gallery` | done | Every screen in light and dark from the screenshot tests, published as a private gallery page and refreshed after UI changes |
 | 19 | `gallery-numbers` | done | Gallery screens numbered with Finnish names and a "→" line of where each leads |
+| 20 | `gallery-map` | done | Navigation map at the top of the gallery, drawn from the screen table; the solve screen's sub-states in one box |

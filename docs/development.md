@@ -53,6 +53,10 @@ Screens are numbered in the gallery ("7: nappi liian pieni"); the numbers, Finni
 the "→" links (where a screen leads) come from the `GROUPS` table in the script. A new screen or
 route gets its line there, in step with `ui/nav/RubikkiNavHost.kt`.
 
+The navigation map at the top of the page is drawn with Mermaid from the same table: one box per
+screen, a frame per area, dotted arrows back up the path. Sub-states of a screen (the solve
+screen's modes) are folded into its box through the `PARTS` table.
+
 ## Debugging — Implemented
 
 - **Log:** every event is one line in Logcat (tag `Rubikki`) and in the app's log file. In
