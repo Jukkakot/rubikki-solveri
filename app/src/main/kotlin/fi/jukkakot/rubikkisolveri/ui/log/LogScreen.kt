@@ -3,6 +3,7 @@ package fi.jukkakot.rubikkisolveri.ui.log
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,6 +22,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -28,7 +33,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import fi.jukkakot.rubikkisolveri.R
+import fi.jukkakot.rubikkisolveri.log.Level
+import fi.jukkakot.rubikkisolveri.log.LogLine
+import fi.jukkakot.rubikkisolveri.log.LogTime
 import java.io.File
+import java.time.LocalDate
+import java.time.ZoneId
 
 /** Shows the log [lines] newest first. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,16 +68,31 @@ fun LogScreen(lines: List<String>, onShare: () -> Unit, onClear: () -> Unit, onB
             Text(stringResource(R.string.log_empty), modifier = Modifier.padding(padding).padding(16.dp))
         } else {
             SelectionContainer(Modifier.padding(padding)) {
+                val locale = LocalConfiguration.current.locales[0]
+                val zone = remember { ZoneId.systemDefault() }
+                val today = remember(zone) { LocalDate.now(zone) }
                 LazyColumn(Modifier.fillMaxSize()) {
                     items(lines.asReversed()) { line ->
-                        Text(
-                            line,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
-                            lineHeight = 14.sp,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        )
+                        val parsed = remember(line) { LogLine.parse(line) }
+                        Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                            parsed.time?.let {
+                                Text(
+                                    LogTime.format(it, today, zone, locale),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            // INFO is the default; other levels say so, so colour is not the only signal.
+                            val level = parsed.level
+                            Text(
+                                if (level != null && level != Level.INFO) "${level.name} ${parsed.rest}" else parsed.rest,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 11.sp,
+                                lineHeight = 14.sp,
+                                color = levelColor(level),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                         HorizontalDivider()
                     }
                 }
@@ -75,6 +100,18 @@ fun LogScreen(lines: List<String>, onShare: () -> Unit, onClear: () -> Unit, onB
         }
     }
 }
+
+/** Errors red, warnings amber, debug muted, info (and unparsed lines) plain. */
+@Composable
+private fun levelColor(level: Level?): Color = when (level) {
+    Level.ERROR -> MaterialTheme.colorScheme.error
+    Level.WARN -> if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) WARN_DARK else WARN_LIGHT
+    Level.DEBUG -> MaterialTheme.colorScheme.onSurfaceVariant
+    else -> MaterialTheme.colorScheme.onSurface
+}
+
+private val WARN_LIGHT = Color(0xFFB26A00)
+private val WARN_DARK = Color(0xFFFFB74D)
 
 /**
  * The share-sheet intent for the log [file] and the scan [pictures], readable by the receiving app

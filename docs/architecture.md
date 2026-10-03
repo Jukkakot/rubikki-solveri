@@ -199,12 +199,13 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 | `ManualInputRoute(cube?, marked?, fromScan)` | Manual input / check a scan | one screen (palette, ‹ › and check in the bottom bar); face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution. From a scan: the face-by-face check (`ScanCheck`): checked faces ticked in the face map, "N faces left", the face's camera picture beside the grid (`LastScan`), "Kuvaa uudelleen" (one-face scan) and "Näyttää oikealta" in place of ‹ › and check, the verdict line, "scan the whole cube again" in the menu |
 | `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
 | `SolveRoute(cube)` | Solution | background solve, then the move guide stepper; camera mode follows on the real cube |
-| `SettingsRoute`, `LogRoute` | Settings, log | |
+| `SettingsRoute`, `LogRoute` | Settings, log | the log viewer splits each line (`LogLine.parse`), shows its time in the phone's zone and the app language's format (`LogTime.format`, only the time for today) and colours it by level (error/warn/debug/info; the level word shown for non-INFO) |
 
 ## Release build — Implemented
 
 R8-shrunk release (`app/proguard-rules.pro`: line numbers, navigation routes), signed from
 `keystore.properties` / `RELEASE_*` env / debug key; `versionCode` = commit count. Settings →
-About shows the version and the open-source licences (min2phase's MIT text from `res/raw`, kept
-identical to the vendored `LICENSE` by a test). `.github/workflows/release.yml` builds tagged
+About shows the name, version and one-line description; the open-source licences (min2phase's
+MIT text from `res/raw`, kept
+identical to the vendored `LICENSE` by a test) unfold behind an "Open-source licences" button. `.github/workflows/release.yml` builds tagged
 releases. See [operations.md](operations.md#release--implemented).

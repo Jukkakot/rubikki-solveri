@@ -259,6 +259,8 @@
     <string name="about_title">About the app</string>
     <string name="about_text">Rubikki Solveri scans your cube and teaches you to solve it. Everything runs on the phone: no pictures or data are sent anywhere.</string>
     <string name="about_licences">Open-source parts</string>
+    <string name="about_licences_show">Open-source licences</string>
+    <string name="about_licences_hide">Hide licences</string>
     <string name="about_androidx">Android Jetpack (AndroidX, Compose, CameraX, Room) – Apache License 2.0, The Android Open Source Project.</string>
     <string name="about_kotlin">Kotlin and the kotlinx libraries – Apache License 2.0, JetBrains.</string>
     <string name="about_min2phase">min2phase (two-phase solver) – MIT licence, Chen Shuang:</string>

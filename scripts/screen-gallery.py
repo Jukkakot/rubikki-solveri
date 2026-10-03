@@ -24,7 +24,8 @@ GROUPS = [
     ("Aloitus", [
         ("home", "Koti", ["scan", "manual-input", "lessons", "timer", "free-cube", "settings", "log"]),
         ("settings", "Asetukset", ["about", "log"]),
-        ("about", "Tietoja", []),
+        ("about", "Tietoja", ["about-licences"]),
+        ("about-licences", "Tietoja: lisenssit", ["about"]),
         ("log", "Loki", []),
     ]),
     ("Skannaus", [
@@ -63,6 +64,7 @@ GROUPS = [
 PARTS = {
     "solve": ["solve-learn", "guide-back", "guide-right", "follow", "mid-turn"],
     "scan-check": ["scan-check-verdict"],
+    "about": ["about-licences"],
 }
 
 

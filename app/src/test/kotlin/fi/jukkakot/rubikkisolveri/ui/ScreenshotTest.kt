@@ -251,12 +251,17 @@ class ScreenshotTest {
     fun about() = shot("about") { fi.jukkakot.rubikkisolveri.ui.settings.AboutScreen("1.0.51-0365b23", onBack = {}) }
 
     @Test
+    fun aboutLicences() = shot("about-licences") { fi.jukkakot.rubikkisolveri.ui.settings.AboutScreen("1.0.51-0365b23", onBack = {}, licencesOpen = true) }
+
+    @Test
     fun log() = shot("log") {
         fi.jukkakot.rubikkisolveri.ui.log.LogScreen(
             lines = listOf(
-                "2026-10-03T08:09:51Z INFO solve.done method=FAST moves=17 ms=100",
-                "2026-10-03T08:09:51Z INFO scan.done valid=true validity=Valid uncertain=0",
                 "2026-10-03T08:09:50Z INFO scan.capture face=D picture=20261003-110950-204-D.png",
+                "2026-10-03T08:09:51Z INFO scan.done valid=true validity=Valid uncertain=0",
+                "2026-10-03T08:09:51Z INFO solve.done method=FAST moves=17 ms=100",
+                "2026-10-03T08:09:52Z WARN scan.stall where=ui ms=180",
+                "2026-10-03T08:09:53Z ERROR scan.error msg=\"camera closed\"",
             ),
             onShare = {}, onClear = {}, onBack = {},
         )

@@ -155,6 +155,9 @@ class ShellTest {
         start()
         compose.onNodeWithContentDescription("Asetukset").performClick()
         compose.onNodeWithText("Tietoja").performScrollTo().performClick()
+        // At a glance: no licence text until the button is tapped.
+        compose.onNodeWithText("min2phase (kaksivaiheinen ratkaisija)", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Avoimen lähdekoodin lisenssit").performClick()
         compose.onNodeWithText("min2phase (kaksivaiheinen ratkaisija)", substring = true).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Permission is hereby granted", substring = true).performScrollTo().assertExists()
     }
@@ -173,7 +176,7 @@ class ShellTest {
         compose.onNodeWithContentDescription("Asetukset").performClick()
         compose.onNodeWithText("Loki").performScrollTo().performClick()
         assertTrue(isOn(LogRoute))
-        compose.onNodeWithText("2026-10-02T12:00:00Z INFO app.start ver=test").assertIsDisplayed()
+        compose.onNodeWithText("app.start ver=test").assertIsDisplayed()
         compose.onNodeWithContentDescription("Tyhjennä").performClick()
         compose.onNodeWithText("Loki on tyhjä.").assertIsDisplayed()
         assertTrue(logLines.isEmpty())

@@ -45,8 +45,10 @@ Android Studio device menu → **Pair Devices Using Wi-Fi** and scan the QR code
 
 ## Logs and debugging on the phone — Implemented
 
-- Settings → Troubleshooting → Log shows the newest lines first; Share sends the file (e.g. to
-  yourself by email, or paste into a Claude session); Clear empties it.
+- Settings → Troubleshooting → Log shows the newest lines first, with the phone's local time
+  (only the time for today) and errors in red, warnings in amber; Share sends the file (e.g. to
+  yourself by email, or paste into a Claude session); Clear empties it. The shared file keeps the
+  UTC ISO times.
 - The file keeps about the last 512 kB.
 - With the phone connected, Android Studio's Logcat shows the same lines live (`tag:Rubikki`).
 
