@@ -28,6 +28,6 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 20 | `gallery-map` | done | Navigation map at the top of the gallery, drawn from the screen table; the solve screen's sub-states in one box |
 | 21 | `scan-check-faces` | planned | Colour check goes face by face: "looks right" per face, fix a sticker or rescan just that face; says plainly when the cube cannot be right and which faces to suspect (gallery feedback 8) |
 | 22 | `about-log-polish` | planned | About shows only the version and the one-line description; log lines coloured by level, times in the phone's local time and format (gallery feedback 3, 4) |
-| 23 | `solve-challenge` | planned | Learning mode on the solve screen: show the position to reach next, the user tries it themselves, a "hint" button reveals the moves step by step |
-| 24 | `look-refresh` | planned | Modern look for the whole app, scan first: mockups in two directions (light and dark), the user picks, then built (gallery feedback 5, 6) |
+| 23 | `solve-challenge` | planned | Learning mode on the solve screen: show the position to reach next, the user tries it themselves, a "hint" button reveals the moves step by step; the target shown as the turnable 3D cube (decided 2026-10-03) |
+| 24 | `look-refresh` | planned | Modern look for the whole app, scan first: mockups in two directions (light and dark), the user picks, then built; the scan screens are always dark, also in the light theme (decided 2026-10-03). Autopilot stops here to show the mockups (gallery feedback 5, 6) |
 | 25 | `home-design` | planned | A proper home screen; not specced yet, after the functional work (gallery feedback 1) |
