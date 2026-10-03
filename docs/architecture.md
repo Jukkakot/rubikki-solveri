@@ -54,8 +54,9 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
    read against the default palette and the accepted centres). Steady = every cell within ΔE 12
    (`STEADY_DISTANCE`) for 1.5 s and 3 frames → capture the per-cell median, then review (raw
    colours, "Good, next" / "Scan again"; no tap-to-fix). Stops: the last accepted face
-   still in view (`PreviousFace`), and a grid that does not look like stickers (`NoCube`: more
-   than one cell neither chroma ≥ 20 nor L ≥ 55). Redo; capture button. Live dots show the raw camera colour.
+   still in view (`PreviousFace`), and a grid that does not look like stickers (`NoCube`, decided by
+   `FrameSampler.looksLikeCube` on the grid picture: in ≥ 6 cells the middle is ≥ 15 L lighter than
+   the darkest tenth of the cell's edge, i.e. dark gaps between stickers; colour plays no part). Redo; capture button. Live dots show the raw camera colour.
 4. `ColorClassifier.classify`: CIE Lab (lightness weight 0.5), balanced assignment (Hungarian,
    every colour exactly nine times) seeded by the six centres, refined twice; confidence per
    sticker; below 0.12 is uncertain.

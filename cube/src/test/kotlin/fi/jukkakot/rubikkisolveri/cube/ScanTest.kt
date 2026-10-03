@@ -358,27 +358,22 @@ class ScanSessionTest {
 
     @Test
     fun noCubeInTheGrid() {
-        // A dark mouse pad and a grey desk, held still: never captured automatically.
-        for (surface in listOf(Rgb(35, 35, 40), Rgb(120, 115, 110))) {
-            val session = ScanSession()
-            val samples = List(9) { surface }
-            repeat(30) { assertEquals(ScanEvent.NoCube, session.onFrame(samples, it * 100L), "$surface") }
-            assertEquals(null, session.review)
-            // The capture button still takes it.
-            assertEquals(ScanEvent.Captured(FaceView.FRONT), session.captureNow())
-        }
+        // Something that is not a cube, held still: never captured automatically.
+        val session = ScanSession()
+        val samples = List(9) { Rgb(150, 145, 138) }
+        repeat(30) { assertEquals(ScanEvent.NoCube, session.onFrame(samples, it * 100L, looksLikeCube = false)) }
+        assertEquals(null, session.review)
+        // The capture button still takes it.
+        assertEquals(ScanEvent.Captured(FaceView.FRONT), session.captureNow())
     }
 
     @Test
-    fun cubeFacesLookLikeACube() {
+    fun aCubeAgainStartsTheHold() {
         val session = ScanSession()
-        session.capture(FaceView.FRONT, face(FaceView.FRONT))
-        // A solved white face and one sticker in shadow still pass.
-        val white = List(9) { ColorClassifier.DEFAULT_PALETTE.getValue(CubeColor.WHITE) }
-        assertTrue(ScanSession.looksLikeCube(white.map { it.toLab() }))
-        val shadow = face(FaceView.RIGHT).toMutableList().also { it[0] = Rgb(40, 40, 40) }
-        assertTrue(ScanSession.looksLikeCube(shadow.map { it.toLab() }))
-        val twoShadows = shadow.also { it[1] = Rgb(40, 40, 40) }
-        assertTrue(!ScanSession.looksLikeCube(twoShadows.map { it.toLab() }))
+        val front = face(FaceView.FRONT)
+        session.onFrame(front, 0, looksLikeCube = false)
+        assertEquals(ScanEvent.Holding(0f), session.onFrame(front, 100))
+        session.show(front, 200, 1_600)
+        assertEquals(ScanEvent.Captured(FaceView.FRONT), session.onFrame(front, 1_600))
     }
 }

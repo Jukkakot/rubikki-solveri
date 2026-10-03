@@ -36,12 +36,13 @@ class ScanScreenTest {
     private val frames = MutableSharedFlow<List<Rgb>>(extraBufferCapacity = 64)
     private var outcome: ScanOutcome? = null
     private val saved = ArrayList<String>()
+    private var cubeInView = true
     private val cube = Cube.solved().apply("R U F' D2 L B")
 
     private fun scan() {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0, savePicture = { saved += it; "$it.png" }, preview = {})
+                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0, savePicture = { saved += it; "$it.png" }, looksLikeCube = { cubeInView }, preview = {})
             }
         }
     }
@@ -58,8 +59,9 @@ class ScanScreenTest {
     @Test
     fun noCubeInTheGrid() {
         scan()
+        cubeInView = false
         repeat(3) {
-            compose.runOnIdle { frames.tryEmit(List(9) { Rgb(35, 35, 40) }) }
+            compose.runOnIdle { frames.tryEmit(List(9) { Rgb(150, 145, 138) }) }
             compose.waitForIdle()
         }
         compose.onNodeWithText("Ruudukossa ei näy kuutiota. Tuo kuution puoli ruudukkoon.").assertIsDisplayed()

@@ -95,5 +95,43 @@ object FrameSampler {
 
     const val PICTURE_SIZE = 120
 
+    /** A cell looks like a sticker when its middle is this much lighter (Lab L) than its gap. */
+    const val MIN_GAP_CONTRAST = 15.0
+
+    /** At least this many of the nine cells must look like stickers. */
+    const val MIN_STICKER_CELLS = 6
+
+    /**
+     * Per cell of a grid [picture] ([size]×[size] ARGB): the median lightness of the cell's middle
+     * minus the darkest tenth of its outer edge. Stickers on a cube have dark gaps around them; a
+     * desk or a sheet of paper does not, whatever its colour.
+     */
+    fun gapContrast(picture: IntArray, size: Int = PICTURE_SIZE): List<Double> {
+        val cell = size / 3
+        val middle = cell * 3 / 10 until cell - cell * 3 / 10
+        val edge = cell / 5
+        return (0 until 9).map { i ->
+            val left = (i % 3) * cell
+            val top = (i / 3) * cell
+            val mid = ArrayList<Double>()
+            val ring = ArrayList<Double>()
+            for (y in 0 until cell) for (x in 0 until cell) {
+                val inMiddle = x in middle && y in middle
+                val onEdge = x < edge || y < edge || x >= cell - edge || y >= cell - edge
+                if (!inMiddle && !onEdge) continue
+                val p = picture[(top + y) * size + left + x]
+                val l = Rgb((p shr 16) and 0xff, (p shr 8) and 0xff, p and 0xff).toLab().l
+                if (inMiddle) mid += l else ring += l
+            }
+            mid.sort()
+            ring.sort()
+            mid[mid.size / 2] - ring[ring.size / 10]
+        }
+    }
+
+    /** The grid [picture] shows cube stickers: enough cells have a dark gap around a lighter middle. */
+    fun looksLikeCube(picture: IntArray, size: Int = PICTURE_SIZE): Boolean =
+        gapContrast(picture, size).count { it >= MIN_GAP_CONTRAST } >= MIN_STICKER_CELLS
+
     fun median(values: List<Int>): Int = values.sorted()[values.size / 2]
 }

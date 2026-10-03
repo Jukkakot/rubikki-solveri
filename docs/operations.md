@@ -68,7 +68,11 @@ Clear in the log screen deletes them. They leave the phone only when the log is 
 If the scan misbehaves: scan once, Settings → Log → Share → **Drive** (the log and the pictures go
 together), then tell Claude; Claude fetches them with the Google Drive connector. The readings
 replay in a unit test to tune `ColorClassifier`, the "looks like a cube" thresholds
-(`ScanSession.MIN_CHROMA`, `MIN_WHITE_LIGHTNESS`) or `STEADY_DISTANCE`.
+(`FrameSampler.MIN_GAP_CONTRAST`, `MIN_STICKER_CELLS`) or `STEADY_DISTANCE`.
+
+With the phone on wireless debugging Claude can also pull them directly:
+`adb exec-out run-as fi.jukkakot.rubikkisolveri cat files/logs/scan/<name>.png > <name>.png`
+(debug builds only). Pictures worth keeping go to `cube/src/test/resources/scan/` as test fixtures.
 
 ## Data on the phone — Implemented
 

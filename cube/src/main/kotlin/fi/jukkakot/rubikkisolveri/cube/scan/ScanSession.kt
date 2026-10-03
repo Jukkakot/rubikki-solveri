@@ -6,7 +6,6 @@ import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.CubeEditor
 import fi.jukkakot.rubikkisolveri.cube.FaceView
 import fi.jukkakot.rubikkisolveri.cube.Validity
-import kotlin.math.hypot
 
 /** What the latest frame meant for the scan. */
 sealed interface ScanEvent {
@@ -82,8 +81,11 @@ class ScanSession(
     /** Confirmed readings so far per face (null = not yet). */
     fun capturedSamples(view: FaceView): List<Rgb>? = captured[view.ordinal]
 
-    /** Handles one frame of grid readings taken at [nowMillis]. */
-    fun onFrame(samples: List<Rgb>, nowMillis: Long): ScanEvent {
+    /**
+     * Handles one frame of grid readings taken at [nowMillis]. [looksLikeCube] is whether the frame
+     * shows cube stickers at all (see [FrameSampler.looksLikeCube]).
+     */
+    fun onFrame(samples: List<Rgb>, nowMillis: Long, looksLikeCube: Boolean = true): ScanEvent {
         require(samples.size == 9)
         if (review != null) return ScanEvent.Waiting
         val view = current ?: return ScanEvent.Waiting
@@ -95,7 +97,7 @@ class ScanSession(
             resetStreak()
             return ScanEvent.PreviousFace
         }
-        if (!looksLikeCube(labs)) {
+        if (!looksLikeCube) {
             resetStreak()
             return ScanEvent.NoCube
         }
@@ -199,14 +201,6 @@ class ScanSession(
         /** Largest colour difference per cell that still counts as the same view. */
         const val STEADY_DISTANCE = 12.0
         private const val CENTRE = 4
-
-        /** A sticker is clearly coloured (blue is dark but saturated) or bright (white). */
-        const val MIN_CHROMA = 20.0
-        const val MIN_WHITE_LIGHTNESS = 55.0
-
-        /** All cells but at most one (glare, a shadow) read as stickers. */
-        fun looksLikeCube(labs: List<Lab>): Boolean =
-            labs.count { hypot(it.a, it.b) < MIN_CHROMA && it.l < MIN_WHITE_LIGHTNESS } <= 1
 
         /** Every cell of [a] is within [STEADY_DISTANCE] of the same cell of [b]. */
         private fun looksAlike(a: List<Lab>, b: List<Lab>): Boolean = a.indices.all { a[it].distance(b[it]) < STEADY_DISTANCE }

@@ -87,7 +87,8 @@ fun ScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome)
         var cameraFailed by remember { mutableStateOf(false) }
         val context = LocalContext.current
         val pictures = remember { ScanPictures.of(context) }
-        val latestPicture = remember { AtomicReference<IntArray?>(null) }
+        // The latest grid picture and whether it shows cube stickers (worked out on the camera thread).
+        val latestPicture = remember { AtomicReference<Pair<IntArray, Boolean>?>(null) }
         ScanContent(
             frames = frames,
             torch = torch,
@@ -97,13 +98,14 @@ fun ScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome)
             onResult = onResult,
             cameraFailed = cameraFailed,
             onLockExposure = { lockExposure = it },
-            savePicture = { face -> latestPicture.get()?.let { pictures.save(face, it, FrameSampler.PICTURE_SIZE) } },
+            savePicture = { face -> latestPicture.get()?.let { pictures.save(face, it.first, FrameSampler.PICTURE_SIZE) } },
+            looksLikeCube = { latestPicture.get()?.second ?: true },
             preview = { modifier ->
                 CameraPreview(
                     torch = torch,
                     lockExposure = lockExposure,
                     onSamples = { frames.tryEmit(it) },
-                    onPicture = { latestPicture.set(it) },
+                    onPicture = { latestPicture.set(it to FrameSampler.looksLikeCube(it)) },
                     onError = { cameraFailed = true },
                     modifier = modifier,
                 )
@@ -126,6 +128,7 @@ fun ScanContent(
     holdMillis: Long = ScanSession.HOLD_MILLIS,
     onLockExposure: (Boolean) -> Unit = {},
     savePicture: (face: String) -> String? = { null },
+    looksLikeCube: () -> Boolean = { true },
     preview: @Composable (Modifier) -> Unit,
 ) {
     val session = remember { ScanSession(holdMillis = holdMillis) }
@@ -191,7 +194,7 @@ fun ScanContent(
 
     LaunchedEffect(session) {
         frames.collect { samples ->
-            if (!session.isDone && session.review == null) handle(session.onFrame(samples, System.nanoTime() / 1_000_000))
+            if (!session.isDone && session.review == null) handle(session.onFrame(samples, System.nanoTime() / 1_000_000, looksLikeCube()))
         }
     }
     // After the first face, keep exposure and white balance fixed so every face is read alike.

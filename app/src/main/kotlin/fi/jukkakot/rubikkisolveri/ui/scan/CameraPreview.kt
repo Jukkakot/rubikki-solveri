@@ -86,8 +86,9 @@ fun CameraPreview(
                     image.width, image.height, plane.rowStride, buffer, image.imageInfo.rotationDegrees,
                     crop.left, crop.top, crop.right, crop.bottom,
                 )
-                onSamples(FrameSampler.sample(frame))
+                // The picture first, so it belongs to the same frame as the readings.
                 onPicture?.invoke(FrameSampler.picture(frame))
+                onSamples(FrameSampler.sample(frame))
             } catch (e: Exception) {
                 AppLog.logger.error(Evt.SCAN_ERROR, e)
             } finally {
