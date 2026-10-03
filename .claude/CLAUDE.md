@@ -28,17 +28,14 @@ natural next step).
   signing), give exact click-by-click instructions.
 - Commit and push to `main` yourself once the GitHub repo exists.
 - End every summary that changed something runnable with a short "How to check".
-- After every pushed change to the app, put it on the phone if `adb devices` lists it (wireless
-  debugging; adb is `$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe`): `./gradlew :app:installDebug`,
-  then `adb shell am force-stop fi.jukkakot.rubikkisolveri` and
-  `adb shell monkey -p fi.jukkakot.rubikkisolveri -c android.intent.category.LAUNCHER 1`. Say the
-  installed version in the summary. No device listed: say so in one line, don't ask the user to
-  connect. Never uninstall (it deletes the user's history); if the install fails on the signature,
-  report it.
-- After a pushed change that touches UI, refresh the screen gallery
-  (https://claude.ai/artifact/FWqmj6ZeSBgK4qiQFXZyRR; recipe in `docs/development.md`) without a
-  review stop, and check its comments (ArtifactComments) at session start and when the user
-  mentions them. A new screen gets a screenshot test.
+- Don't install or launch the app yourself (decided 2026-10-03): the user puts it on the phone
+  with **Run ▶** in Android Studio. The "How to check" of a pushed change starts with "Asenna:
+  Android Studio → Run ▶". Install via adb only when the user asks, and only if `adb devices`
+  lists the phone. Never uninstall (it deletes the user's history).
+- UI changes are described in words in the summary: which screen, what changed (decided
+  2026-10-03). The screen gallery (https://claude.ai/artifact/FWqmj6ZeSBgK4qiQFXZyRR; recipe in
+  `docs/development.md`) is not refreshed per change; use it, lighter (no navigation map), only for
+  a bigger UI overhaul or when asking the user's opinion on screens.
 
 ## Handover
 
