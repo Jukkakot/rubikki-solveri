@@ -17,15 +17,44 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SHOTS = ROOT / "app" / "build" / "screenshots"
 OUT = ROOT / "build" / "gallery"
 
-# Screens by area, in the order a user meets them. A screen missing here lands under "Muut".
+# Every screen, by area in the order a user meets them: (id, Finnish name, screens it leads to).
+# The position gives the screen's number in the gallery ("7: nappi liian pieni"), so add new
+# screens at the end of their area and keep the targets in step with ui/nav/RubikkiNavHost.kt.
 GROUPS = [
-    ("Aloitus", ["home", "settings", "about", "log"]),
-    ("Skannaus", ["scan", "scan-review", "scan-permission", "scan-check"]),
-    ("Käsin syöttö", ["manual-input"]),
-    ("Ratkaisu", ["solve", "solve-learn", "guide-back", "guide-right", "follow", "mid-turn"]),
-    ("Oppiminen", ["lessons", "lesson"]),
-    ("Ajanotto", ["timer", "history"]),
-    ("Vapaa kuutio", ["free-cube"]),
+    ("Aloitus", [
+        ("home", "Koti", ["scan", "manual-input", "lessons", "timer", "free-cube", "settings", "log"]),
+        ("settings", "Asetukset", ["about", "log"]),
+        ("about", "Tietoja", []),
+        ("log", "Loki", []),
+    ]),
+    ("Skannaus", [
+        ("scan", "Skannaus", ["scan-review", "scan-permission", "manual-input"]),
+        ("scan-review", "Puolen tarkistus", ["scan", "solve", "scan-check"]),
+        ("scan-permission", "Kameralupa", ["manual-input"]),
+        ("scan-check", "Tarkista värit", ["solve", "scan"]),
+    ]),
+    ("Käsin syöttö", [
+        ("manual-input", "Syötä värit käsin", ["solve"]),
+    ]),
+    ("Ratkaisu", [
+        ("solve", "Ratkaisu", ["solve-learn", "guide-back", "guide-right", "follow", "mid-turn", "home"]),
+        ("solve-learn", "Ratkaisu: opettele", ["solve"]),
+        ("guide-back", "Siirto takana", []),
+        ("guide-right", "Siirto oikealla", []),
+        ("follow", "Seuraa kameralla", []),
+        ("mid-turn", "Siirto käynnissä", []),
+    ]),
+    ("Oppiminen", [
+        ("lessons", "Oppitunnit", ["lesson"]),
+        ("lesson", "Oppitunti", ["solve", "free-cube"]),
+    ]),
+    ("Ajanotto", [
+        ("timer", "Ajanotto", ["history", "solve"]),
+        ("history", "Historia", []),
+    ]),
+    ("Vapaa kuutio", [
+        ("free-cube", "Vapaa kuutio", ["solve"]),
+    ]),
 ]
 
 
@@ -37,9 +66,18 @@ def main() -> None:
     names = sorted({p.name.rsplit("-", 1)[0] for p in SHOTS.glob("*-light.png")})
     if not names:
         raise SystemExit(f"No screenshots in {SHOTS}; run the ScreenshotTest first.")
-    known = {n for _, group in GROUPS for n in group}
-    groups = [(title, [n for n in group if n in names]) for title, group in GROUPS]
-    groups.append(("Muut", [n for n in names if n not in known]))
+    screens = [screen for _, group in GROUPS for screen in group]
+    number = {sid: i + 1 for i, (sid, _, _) in enumerate(screens)}
+    title_of = {sid: name for sid, name, _ in screens}
+    for n in names:
+        if n not in number:
+            number[n] = len(number) + 1
+            title_of[n] = n
+    groups = [(title, [s for s in group if s[0] in names]) for title, group in GROUPS]
+    groups.append(("Muut", [(n, n, []) for n in names if n not in {sid for sid, _, _ in screens}]))
+
+    def link(sid: str) -> str:
+        return f'<a href="#{sid}"><b>{number[sid]}</b> {html.escape(title_of[sid])}</a>'
 
     img = OUT / "img"
     img.mkdir(parents=True, exist_ok=True)
@@ -58,13 +96,14 @@ def main() -> None:
             continue
         figures = "\n".join(
             f"""      <figure class="screen" id="{n}">
+        <figcaption><span class="num">{number[n]}</span> {html.escape(title)} <code>{n}</code></figcaption>
         <div class="pair">
           <a class="light" href="img/{n}-light.jpg" target="_blank"><img src="img/{n}-light.jpg" alt="{n}, vaalea" loading="lazy"></a>
           <a class="dark" href="img/{n}-dark.jpg" target="_blank"><img src="img/{n}-dark.jpg" alt="{n}, tumma" loading="lazy"></a>
         </div>
-        <figcaption>{html.escape(n)}</figcaption>
+        {('<p class="to">→ ' + ' · '.join(link(t) for t in targets if t in names) + '</p>') if any(t in names for t in targets) else ''}
       </figure>"""
-            for n in group
+            for n, title, targets in group
         )
         sections.append(f"""  <section>
     <h2>{html.escape(title)} <span class="count">{len(group)}</span></h2>
@@ -99,6 +138,7 @@ TEMPLATE = """<title>Rubikki Solveri näkymät</title>
   header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; }
   h1 { font-size: 1.6rem; font-weight: 600; margin: 0; text-wrap: balance; }
   .meta { color: var(--muted); font: 13px var(--mono); }
+  .hint { margin: 6px 0 0; color: var(--muted); max-width: 65ch; }
   .themes { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
   .themes button { font: 600 13px var(--sans); color: var(--muted); background: none; border: 0; padding: 8px 14px; cursor: pointer; min-height: 36px; }
   .themes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
@@ -113,13 +153,23 @@ TEMPLATE = """<title>Rubikki Solveri näkymät</title>
   body.only-light .dark, body.only-dark .light { display: none; }
   .pair a { display: block; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px var(--phone-shadow), 0 6px 18px var(--phone-shadow); border: 1px solid var(--line); }
   .pair img { display: block; width: 100%; height: auto; max-width: 100%; }
-  figcaption { font: 13px var(--mono); color: var(--muted); }
+  figcaption { font-weight: 600; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  figcaption code { font: 12px var(--mono); color: var(--muted); font-weight: 400; }
+  .num { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 999px;
+    background: var(--accent); color: var(--surface); font: 600 14px var(--sans); font-variant-numeric: tabular-nums; }
+  .to { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+  .to a { color: var(--fg); text-decoration: none; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  .to a:hover, .to a:focus-visible { color: var(--accent); border-color: var(--accent); }
+  .to b { color: var(--accent); font-variant-numeric: tabular-nums; }
+  .screen { scroll-margin-top: 16px; }
+  .screen:target .pair a { outline: 3px solid var(--accent); outline-offset: 2px; }
 </style>
 <main>
   <header>
     <div>
       <h1>Rubikki Solveri näkymät</h1>
       <div class="meta">{{count}} näkymää · {{stamp}}</div>
+      <p class="hint">Viittaa näkymiin numerolla, esim. "7: nappi liian pieni". → kertoo mihin näkymästä pääsee.</p>
     </div>
     <div class="themes" role="group" aria-label="Teema">
       <button type="button" id="t-both" aria-pressed="true">Molemmat</button>

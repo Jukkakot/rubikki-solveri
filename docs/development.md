@@ -49,6 +49,10 @@ can leave comments on the page. Refresh it after a pushed change that touches UI
 screenshot test, the script, then republish `build/gallery/index.html` with its `img/` files to
 that URL.
 
+Screens are numbered in the gallery ("7: nappi liian pieni"); the numbers, Finnish names and
+the "→" links (where a screen leads) come from the `GROUPS` table in the script. A new screen or
+route gets its line there, in step with `ui/nav/RubikkiNavHost.kt`.
+
 ## Debugging — Implemented
 
 - **Log:** every event is one line in Logcat (tag `Rubikki`) and in the app's log file. In
