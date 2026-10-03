@@ -19,3 +19,4 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 11 | `scan-confirm` | done | Scan holds a face 1.5 s with a progress bar, then shows the read colours to confirm or scan again (from phone testing) |
 | 12 | `scan-calibrate` | done | Live reading learns the cube's own colours, tap a sticker in the review to fix it, exposure/white balance locked after the first face (from phone testing) |
 | 13 | `scan-flow` | done | Scan guides but never blocks: centre is a hint, only "previous face still in view" stops; raw camera colours in the review, colours decided at the end; tap-to-fix removed (from phone testing) |
+| 14 | `scan-layout` | done | Scan fits one screen: actions always visible at the bottom, status and review texts on the camera view (from phone testing) |

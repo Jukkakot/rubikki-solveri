@@ -166,7 +166,7 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 | `LessonsRoute`, `LessonRoute(index)` | Lessons | basics + 7 stages, algorithm demos |
 | `PracticeRoute(stage, seed)` | Practice | the solution screen limited to one stage |
 | `TimerRoute`, `HistoryRoute`, `ScrambleGuideRoute(moves)` | Timer, history, guided scramble | |
-| `ScanRoute` | Scan | camera permission, grid, live dots, auto-capture; result → solve or check |
+| `ScanRoute` | Scan | camera permission, grid, live dots, auto-capture; one screen (actions in the bottom bar, status and review texts on the camera); result → solve or check |
 | `ManualInputRoute(cube?, marked?, fromScan)` | Manual input / check a scan | face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution |
 | `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
 | `SolveRoute(cube)` | Solution | background solve, then the move guide stepper; camera mode follows on the real cube |

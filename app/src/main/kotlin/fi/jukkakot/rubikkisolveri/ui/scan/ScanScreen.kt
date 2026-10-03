@@ -11,12 +11,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -29,6 +28,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -197,67 +197,107 @@ fun ScanContent(
                 },
             )
         },
+        bottomBar = {
+            Surface(tonalElevation = 3.dp) {
+                Column(
+                    Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Progress(index)
+                    if (review != null) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = ::retake, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.scan_retake)) }
+                            Button(onClick = ::accept, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.scan_accept)) }
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = {
+                                    session.redo()
+                                    index = session.index
+                                    event = ScanEvent.Waiting
+                                    lastCaptured = null
+                                },
+                                enabled = index > 0,
+                                modifier = Modifier.weight(1f),
+                            ) { Text(stringResource(R.string.scan_redo)) }
+                            Button(onClick = { handle(session.captureNow()) }, enabled = live != null, modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.scan_capture))
+                            }
+                        }
+                    }
+                    TextButton(onClick = onManual) { Text(stringResource(R.string.scan_manual)) }
+                }
+            }
+        },
     ) { padding ->
+        // One screen, no scrolling: the camera takes what the texts above and the actions below leave.
         Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 stringResource(R.string.scan_face_title, stringResource(faceName(view)), index + 1),
                 style = MaterialTheme.typography.titleLarge,
             )
-            Text(holdHint(view), style = MaterialTheme.typography.bodyLarge)
-            Box(Modifier.fillMaxWidth().aspectRatio(3f / 4f).clip(RoundedCornerShape(16.dp)).background(Color.Black)) {
-                if (cameraFailed) {
-                    Text(stringResource(R.string.scan_camera_error), color = Color.White, modifier = Modifier.align(Alignment.Center))
-                } else {
-                    preview(Modifier.fillMaxSize())
-                }
-                val read = review
-                if (read == null) {
-                    GridOverlay(live, view.centreColor(), Modifier.fillMaxSize())
-                } else {
-                    ReviewOverlay(read, Modifier.fillMaxSize())
-                }
-            }
-            val holding = (event as? ScanEvent.Holding)?.progress ?: 0f
-            LinearProgressIndicator(progress = { if (review != null) 1f else holding }, modifier = Modifier.fillMaxWidth())
-            Text(
-                if (review != null) stringResource(R.string.scan_review) else statusText(event),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            reviewHint?.takeIf { review != null }?.let {
-                Text(stringResource(R.string.scan_review_centre, stringResource(colorName(it))), style = MaterialTheme.typography.bodyMedium)
-            }
-            lastCaptured?.let {
-                Text(stringResource(R.string.scan_captured, stringResource(faceName(it))), style = MaterialTheme.typography.bodyMedium)
-            }
-            Progress(index)
-            if (review != null) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = ::retake, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.scan_retake)) }
-                    Button(onClick = ::accept, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.scan_accept)) }
-                }
-            } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
-                        onClick = {
-                            session.redo()
-                            index = session.index
-                            event = ScanEvent.Waiting
-                            lastCaptured = null
-                        },
-                        enabled = index > 0,
-                        modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.scan_redo)) }
-                    Button(onClick = { handle(session.captureNow()) }, enabled = live != null, modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.scan_capture))
+            Text(holdHint(view), style = MaterialTheme.typography.bodyMedium)
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier.aspectRatio(3f / 4f, matchHeightConstraintsFirst = true)
+                        .clip(RoundedCornerShape(16.dp)).background(Color.Black),
+                ) {
+                    if (cameraFailed) {
+                        Text(stringResource(R.string.scan_camera_error), color = Color.White, modifier = Modifier.align(Alignment.Center))
+                    } else {
+                        preview(Modifier.fillMaxSize())
+                    }
+                    val read = review
+                    if (read == null) {
+                        GridOverlay(live, view.centreColor(), Modifier.fillMaxSize())
+                        val holding = (event as? ScanEvent.Holding)?.progress ?: 0f
+                        OnCamera(Modifier.align(Alignment.BottomCenter)) {
+                            Text(statusText(event), color = Color.White, style = MaterialTheme.typography.titleSmall)
+                            LinearProgressIndicator(progress = { holding }, modifier = Modifier.fillMaxWidth())
+                        }
+                        lastCaptured?.let {
+                            Text(
+                                stringResource(R.string.scan_captured, stringResource(faceName(it))),
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
+                                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
+                        }
+                    } else {
+                        ReviewOverlay(read, Modifier.fillMaxSize())
+                        OnCamera(Modifier.align(Alignment.BottomCenter), scrim = false) {
+                            Text(stringResource(R.string.scan_review), color = Color.White, style = MaterialTheme.typography.titleSmall)
+                            Text(stringResource(R.string.scan_review_note), color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
+                            reviewHint?.let {
+                                Text(
+                                    stringResource(R.string.scan_review_centre, stringResource(colorName(it))),
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
                     }
                 }
             }
-            TextButton(onClick = onManual) { Text(stringResource(R.string.scan_manual)) }
         }
     }
+}
+
+/** Text on the camera view: white on a dark band, readable whatever the camera shows. */
+@Composable
+private fun OnCamera(modifier: Modifier, scrim: Boolean = true, content: @Composable () -> Unit) {
+    Column(
+        modifier.fillMaxWidth()
+            .then(if (scrim) Modifier.background(Color.Black.copy(alpha = 0.6f)) else Modifier)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) { content() }
 }
 
 @Composable

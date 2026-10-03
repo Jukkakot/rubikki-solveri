@@ -6,7 +6,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.CubeEditor
@@ -59,10 +58,10 @@ class ScanScreenTest {
     fun otherCentreIsAHint() {
         scan()
         show(FaceView.RIGHT, 2)
-        compose.onNodeWithText("Keskiö näyttää: punainen. Jos tämä on oikea puoli, pidä paikallaan.").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Keskiö näyttää: punainen. Jos tämä on oikea puoli, pidä paikallaan.").assertIsDisplayed()
         show(FaceView.RIGHT, 1)
-        compose.onNodeWithText("Keskiö luettiin: punainen. Jos tämä silti on oikea puoli, jatka vain.").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Etupuoli (1/6)").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Keskiö luettiin: punainen. Jos tämä silti on oikea puoli, jatka vain.").assertIsDisplayed()
+        compose.onNodeWithText("Etupuoli (1/6)").assertIsDisplayed()
     }
 
     @Test
@@ -70,14 +69,14 @@ class ScanScreenTest {
         scan()
         confirm(FaceView.FRONT)
         show(FaceView.FRONT, 3)
-        compose.onNodeWithText("Käännä kuutiota: kamera näkee vielä edellisen puolen.").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Oikea puoli (2/6)").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Käännä kuutiota: kamera näkee vielä edellisen puolen.").assertIsDisplayed()
+        compose.onNodeWithText("Oikea puoli (2/6)").assertIsDisplayed()
     }
 
     /** Holds [view] until it is captured and accepts it. */
     private fun confirm(view: FaceView) {
         show(view, 3)
-        compose.onNodeWithText("Hyvä, seuraava").performScrollTo().performClick()
+        compose.onNodeWithText("Hyvä, seuraava").performClick()
         compose.waitForIdle()
     }
 
@@ -85,30 +84,30 @@ class ScanScreenTest {
     fun heldStill() {
         scan()
         show(FaceView.FRONT, 3)
-        compose.onNodeWithText("Näin kamera näki tämän puolen.", substring = true).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Etupuoli (1/6)").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Hyvä, seuraava").performScrollTo().performClick()
-        compose.onNodeWithText("Oikea puoli (2/6)").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Etupuoli luettu.").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Näin kamera näki tämän puolen.", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Etupuoli (1/6)").assertIsDisplayed()
+        compose.onNodeWithText("Hyvä, seuraava").performClick()
+        compose.onNodeWithText("Oikea puoli (2/6)").assertIsDisplayed()
+        compose.onNodeWithText("Etupuoli luettu.").assertIsDisplayed()
     }
 
     @Test
     fun scanAgain() {
         scan()
         show(FaceView.FRONT, 3)
-        compose.onNodeWithText("Kuvaa uudelleen").performScrollTo().performClick()
-        compose.onNodeWithText("Etupuoli (1/6)").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Valmiina 0/6").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Kuvaa uudelleen").performClick()
+        compose.onNodeWithText("Etupuoli (1/6)").assertIsDisplayed()
+        compose.onNodeWithText("Valmiina 0/6").assertIsDisplayed()
         confirm(FaceView.FRONT)
-        compose.onNodeWithText("Oikea puoli (2/6)").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Oikea puoli (2/6)").assertIsDisplayed()
     }
 
     @Test
     fun redo() {
         scan()
         confirm(FaceView.FRONT)
-        compose.onNodeWithText("Edellinen uudelleen").performScrollTo().performClick()
-        compose.onNodeWithText("Etupuoli (1/6)").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Edellinen uudelleen").performClick()
+        compose.onNodeWithText("Etupuoli (1/6)").assertIsDisplayed()
     }
 
     @Test
@@ -144,8 +143,8 @@ class ScanScreenTest {
         }
         compose.onNodeWithText("Tarkista värit").assertIsDisplayed()
         compose.onNodeWithText("Skannaus ei ollut varma", substring = true).assertIsDisplayed()
-        compose.onNodeWithContentDescription("punainen").performScrollTo().performClick()
-        compose.onNodeWithContentDescription("Etupuoli, tarra 1").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("punainen").performClick()
+        compose.onNodeWithContentDescription("Etupuoli, tarra 1").performClick()
         assertTrue(compose.onAllNodesWithText("Skannaus ei ollut varma", substring = true).fetchSemanticsNodes().isEmpty())
     }
 }

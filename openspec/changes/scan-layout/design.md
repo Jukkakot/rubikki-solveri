@@ -15,8 +15,8 @@ the scan logic.
 
 - **Scaffold `bottomBar` for the actions.** Button row plus the manual-input link in a small row
   under it. Always visible, no scroll container at all.
-- **Camera takes the remaining height.** The content column holds the title row (face title + face
-  progress dots) and the hold hint, then a `weight(1f)` area with the 3:4 camera box centred in it
+- **Camera takes the remaining height.** The content column holds the face title and the hold hint (the
+  face progress dots sit in the bottom bar above the buttons), then a `weight(1f)` area with the 3:4 camera box centred in it
   (aspect ratio matched to height first), so the grid geometry the sampler uses stays the same.
 - **Overlays.** At the bottom of the camera box: a translucent dark panel with the status line and
   the hold progress bar while scanning. During the review the dimmed overlay already covers the

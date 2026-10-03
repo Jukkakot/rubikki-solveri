@@ -104,7 +104,8 @@
     <string name="scan_captured">%1$s luettu.</string>
     <string name="scan_capture">Ota kuva</string>
     <string name="scan_redo">Edellinen uudelleen</string>
-    <string name="scan_review">Näin kamera näki tämän puolen. Värit tulkitaan lopuksi koko kuution perusteella, ja epävarmat voit tarkistaa silloin.</string>
+    <string name="scan_review">Näin kamera näki tämän puolen.</string>
+    <string name="scan_review_note">Värit tulkitaan lopuksi koko kuution perusteella.</string>
     <string name="scan_review_centre">Keskiö luettiin: %1$s. Jos tämä silti on oikea puoli, jatka vain.</string>
     <string name="scan_status_centre">Keskiö näyttää: %1$s. Jos tämä on oikea puoli, pidä paikallaan.</string>
     <string name="scan_status_turn">Käännä kuutiota: kamera näkee vielä edellisen puolen.</string>

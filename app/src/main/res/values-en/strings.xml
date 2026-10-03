@@ -102,7 +102,8 @@
     <string name="scan_captured">%1$s read.</string>
     <string name="scan_capture">Capture</string>
     <string name="scan_redo">Redo previous</string>
-    <string name="scan_review">This is how the camera saw this side. The colours are worked out at the end from the whole cube, and you can check doubtful ones then.</string>
+    <string name="scan_review">This is how the camera saw this side.</string>
+    <string name="scan_review_note">The colours are worked out at the end from the whole cube.</string>
     <string name="scan_review_centre">The centre read as %1$s. If this is the right side anyway, just go on.</string>
     <string name="scan_status_centre">The centre looks %1$s. If this is the right side, hold still.</string>
     <string name="scan_status_turn">Turn the cube: the camera still sees the previous side.</string>
