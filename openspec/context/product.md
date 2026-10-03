@@ -54,3 +54,10 @@ method stage by stage so you learn to solve it yourself.
 - **Beginner method:** any human-understandable layer-by-layer method that teaches real cube
   knowledge.
 - **Minimum Android:** 12 (API 31), the first with Material You dynamic colour.
+
+## Decided (2026-10-03)
+
+- **No tall pages.** Every screen should fit a phone in portrait without scrolling: primary actions
+  always visible (bottom bar), secondary text short or behind a tap. Scrolling only where the
+  content is a genuinely long list (history, log, lessons list), and even then the actions stay
+  pinned. New and changed screens are checked against this.
