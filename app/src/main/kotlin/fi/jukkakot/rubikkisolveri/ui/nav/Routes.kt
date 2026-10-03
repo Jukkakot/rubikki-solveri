@@ -18,8 +18,9 @@ data object LogRoute
 @Serializable
 data class ManualInputRoute(val cube: String? = null, val marked: String? = null, val fromScan: Boolean = false)
 
+/** The scan; with [face] (a `FaceView` name) only that face, rescanned from the check. */
 @Serializable
-data object ScanRoute
+data class ScanRoute(val face: String? = null)
 
 /** [cube] is a colour string (see Cube.toColorString), or null for a solved cube. */
 @Serializable

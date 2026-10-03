@@ -89,17 +89,43 @@ class ScreenshotTest {
         }
     }
 
-    /** The check after an unsure scan: the phone scan of 2026-10-03 08:17 (overexposed, invalid). */
+    /** The phone scan of 2026-10-03 08:17 (overexposed, invalid). */
+    private val phoneScan = CubeEditor.decode("YWYGWWGYOWYGRRBRRBYBBWGGROOBOWBYYRRRWROYOOBGGGBOGBWYOW")!!
+
+    /** Camera readings that match [phoneScan]'s colours. */
+    private val phoneReadings = phoneScan.colors.map { fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier.DEFAULT_PALETTE.getValue(it!!) }
+
+    @Composable
+    private fun CheckOf(marked: Set<Int>) = ManualInputScreen(
+        onBack = {}, onValid = {},
+        initial = phoneScan,
+        initialMarked = marked,
+        title = R.string.check_title,
+        note = R.string.check_note,
+        pictures = mapOf(fi.jukkakot.rubikkisolveri.cube.Face.U to stickerPicture(cube = "YWYGWWGYO")),
+        onScanAgain = {},
+        check = fi.jukkakot.rubikkisolveri.cube.scan.ScanCheck.start(phoneScan, marked, phoneReadings),
+        onScanFace = {},
+    )
+
+    /** The check after an unsure scan: two faces left to check. */
     @Test
-    fun scanCheck() = shot("scan-check") {
-        ManualInputScreen(
-            onBack = {}, onValid = {},
-            initial = CubeEditor.decode("YWYGWWGYOWYGRRBRRBYBBWGGROOBOWBYYRRRWROYOOBGGGBOGBWYOW")!!,
-            initialMarked = setOf(8, 9, 20),
-            title = R.string.check_title,
-            note = R.string.check_note,
-            pictures = mapOf(fi.jukkakot.rubikkisolveri.cube.Face.U to stickerPicture(cube = "YWYGWWGYO")),
-            onScanAgain = {},
+    fun scanCheck() = shot("scan-check") { CheckOf(setOf(8, 9, 20)) }
+
+    /** Every face found right but the cube cannot be: the faces to look at again. */
+    @Test
+    fun scanCheckVerdict() = shot("scan-check-verdict", waitForText = "Tällaista kuutiota") { CheckOf(emptySet()) }
+
+    /** Rescanning one face from the check. */
+    @Test
+    fun scanOneFace() = shot("scan-one-face") {
+        val top = Cube.solved().apply("R U F'").let { cube ->
+            (1..9).map { fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier.DEFAULT_PALETTE.getValue(cube.colorAt(fi.jukkakot.rubikkisolveri.cube.Face.U, it)) }
+        }
+        fi.jukkakot.rubikkisolveri.ui.scan.ScanContent(
+            kotlinx.coroutines.flow.MutableStateFlow(top), torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {},
+            only = fi.jukkakot.rubikkisolveri.cube.FaceView.TOP,
+            preview = { androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530)))) },
         )
     }
 

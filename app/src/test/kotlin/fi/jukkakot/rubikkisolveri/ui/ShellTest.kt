@@ -104,7 +104,7 @@ class ShellTest {
     fun openTheScan() {
         start()
         compose.onNodeWithText("Skannaa kuutio").performClick()
-        assertTrue(isOn(ScanRoute))
+        assertTrue(isOn(ScanRoute()))
     }
 
     @Test

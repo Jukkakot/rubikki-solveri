@@ -86,6 +86,44 @@ object ColorClassifier {
         return Classification(assigned, confidence)
     }
 
+    /**
+     * Classifies a rescanned [face] ([samples], net order) against the rest of this cube: the
+     * references are the mean of the other faces' [readings] per colour, labelled by [colors] (so the
+     * user's fixes count). The rescan has its own exposure, so its readings are first scaled by how
+     * much brighter the face's centre read in [readings]. Each sticker takes the nearest colour; the
+     * centre keeps the holding position's. Returns nine colours and confidences.
+     */
+    fun classifyFace(
+        face: Face,
+        samples: List<Rgb>,
+        colors: List<CubeColor?>,
+        readings: List<Rgb>,
+        scheme: ColorScheme = ColorScheme.STANDARD,
+    ): Classification {
+        require(samples.size == 9 && colors.size == Stickers.COUNT && readings.size == Stickers.COUNT)
+        val others = (0 until Stickers.COUNT).filter { it / 9 != face.ordinal }
+        val refs = CubeColor.entries.mapNotNull { color ->
+            others.filter { colors[it] == color }.takeIf { it.isNotEmpty() }?.let { idx -> color to Lab.mean(idx.map { readings[it].toLab() }) }
+        }.toMap().ifEmpty { references() }
+        // Exposure acts as a gain: scale the rescan so its centre is as bright as in the first scan.
+        val before = readings[Stickers.centre(face)].let { it.r + it.g + it.b }
+        val now = samples[4].let { it.r + it.g + it.b }
+        val gain = if (now == 0) 1.0 else before.toDouble() / now
+        fun scaled(v: Int) = (v * gain).toInt().coerceIn(0, 255)
+        val labs = samples.map { Rgb(scaled(it.r), scaled(it.g), scaled(it.b)).toLab() }
+        val result = labs.mapIndexed { n, lab ->
+            if (n == 4) {
+                scheme[face] to 1.0
+            } else {
+                val sorted = refs.entries.sortedBy { it.value.distance(lab) }
+                val d1 = sorted[0].value.distance(lab)
+                val d2 = sorted.getOrNull(1)?.value?.distance(lab) ?: d1
+                sorted[0].key to if (d1 + d2 == 0.0) 0.0 else (d2 - d1) / (d1 + d2)
+            }
+        }
+        return Classification(result.map { it.first }, result.map { it.second })
+    }
+
     private const val BIG = 1e9
 }
 

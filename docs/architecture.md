@@ -64,7 +64,18 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
    every colour exactly nine times) seeded by the six centres, refined twice; confidence per
    sticker; below 0.12 is uncertain.
 5. `ScanOutcome`: valid and no uncertain sticker → solution; otherwise manual input with
-   `fromScan`, the scanned colours and the doubtful/problem stickers marked.
+   `fromScan`, the scanned colours and the doubtful/problem stickers marked. The outcome keeps the
+   54 raw readings (`samples`); the app holds them, the pictures and a just-rescanned face in
+   `LastScan` (snapshot state, in memory only).
+6. The check (`ScanCheck`, pure Kotlin): faces without a mark start checked; "Looks right" goes to
+   the next unchecked face; after the last one `verdict()` → `Solvable`, or `Impossible` with the
+   faces to look at again. `MisreadSearch.swaps` tries every swap of two non-centre stickers of
+   different colours (1128 validity checks) and ranks the ones that make the cube valid by how
+   much worse the readings fit; the best swap's two faces are named and its stickers marked. No
+   swap → the faces of the stickers the validity names, else the two faces whose readings fit
+   worst. A face rescanned on its own (`ScanSession(only = …)`) is classified by
+   `ColorClassifier.classifyFace` against the other 45 readings labelled by the current colours,
+   after scaling the rescan by the centre's brightness ratio (the new exposure).
 
 ## Beginner solver — Implemented
 
@@ -171,8 +182,8 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 | `LessonsRoute`, `LessonRoute(index)` | Lessons | basics + 7 stages, algorithm demos |
 | `PracticeRoute(stage, seed)` | Practice | the solution screen limited to one stage |
 | `TimerRoute`, `HistoryRoute`, `ScrambleGuideRoute(moves)` | Timer, history, guided scramble | |
-| `ScanRoute` | Scan | camera permission, grid, live dots, auto-capture; one screen (actions in the bottom bar, status and review texts on the camera); result → solve or check |
-| `ManualInputRoute(cube?, marked?, fromScan)` | Manual input / check a scan | one screen (palette, ‹ › and check in the bottom bar); face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution. From a scan: one-line instruction, the face's camera picture beside the grid (`LastScanPictures`, in memory), "Scan again" |
+| `ScanRoute(face?)` | Scan (with `face`: that face only, back to the check) | camera permission, grid, live dots, auto-capture; one screen (actions in the bottom bar, status and review texts on the camera); result → solve or check |
+| `ManualInputRoute(cube?, marked?, fromScan)` | Manual input / check a scan | one screen (palette, ‹ › and check in the bottom bar); face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution. From a scan: the face-by-face check (`ScanCheck`): checked faces ticked in the face map, "N faces left", the face's camera picture beside the grid (`LastScan`), "Kuvaa uudelleen" (one-face scan) and "Näyttää oikealta" in place of ‹ › and check, the verdict line, "scan the whole cube again" in the menu |
 | `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
 | `SolveRoute(cube)` | Solution | background solve, then the move guide stepper; camera mode follows on the real cube |
 | `SettingsRoute`, `LogRoute` | Settings, log | |

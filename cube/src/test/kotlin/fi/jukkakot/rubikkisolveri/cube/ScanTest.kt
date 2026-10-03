@@ -349,6 +349,40 @@ class ScanSessionTest {
     }
 
     @Test
+    fun outcomeKeepsTheReadings() {
+        val session = scanAll(cube)
+        val outcome = session.outcome()
+        assertEquals(54, outcome.samples.size)
+        assertEquals(session.capturedSamples(FaceView.TOP), outcome.samples.subList(Face.U.ordinal * 9, Face.U.ordinal * 9 + 9))
+    }
+
+    @Test
+    fun oneFaceOnly() {
+        val session = ScanSession(only = FaceView.TOP)
+        assertEquals(FaceView.TOP, session.current)
+        val top = face(FaceView.TOP)
+        session.capture(FaceView.TOP, top)
+        session.retake()
+        assertEquals(FaceView.TOP, session.current)
+        session.capture(FaceView.TOP, top)
+        session.accept()
+        assertTrue(session.isDone)
+        assertEquals(null, session.current)
+        assertEquals(top, session.capturedSamples(FaceView.TOP))
+        // Nothing else is asked for, and redo does not step back to another face.
+        session.redo()
+        assertTrue(session.isDone)
+        assertEquals(ScanEvent.Waiting, session.onFrame(face(FaceView.BOTTOM), 9_000))
+    }
+
+    @Test
+    fun oneFaceHasNoPreviousFace() {
+        // The face before it was not just shown, so showing it again is not "turn the cube".
+        val session = ScanSession(only = FaceView.RIGHT)
+        assertIs<ScanEvent.Holding>(session.onFrame(face(FaceView.FRONT), 0))
+    }
+
+    @Test
     fun captureButtonTakesTheLatestFrame() {
         val session = ScanSession()
         session.onFrame(face(FaceView.FRONT), 0)

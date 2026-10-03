@@ -121,10 +121,16 @@
     <string name="scan_permission_settings">Avaa sovelluksen asetukset</string>
     <string name="scan_camera_error">Kameraa ei saatu käyttöön.</string>
     <string name="check_title">Tarkista värit</string>
-    <string name="check_note">Vertaa kameran kuvaan. Valitse väri alta ja napauta väärää tarraa. Punareunaiset ovat epävarmoja.</string>
-    <string name="check_scan_again">Skannaa uudelleen</string>
+    <string name="check_note">Vertaa kameran kuvaan. Korjaa väärä tarra valitsemalla väri ja napauttamalla tarraa, tai kuvaa puoli uudelleen. Punareunaiset ovat epävarmoja.</string>
     <string name="check_picture">Kamera näki</string>
     <string name="check_colors">Värit</string>
+    <string name="check_looks_right">Näyttää oikealta</string>
+    <string name="check_rescan_face">Kuvaa uudelleen</string>
+    <string name="check_scan_whole">Skannaa koko kuutio uudelleen</string>
+    <string name="check_impossible">Tällaista kuutiota ei voi olla – jokin tarra on luettu väärin. Katso vielä: %1$s.</string>
+    <string name="check_and">ja</string>
+    <string name="check_face_checked">%1$s, tarkistettu</string>
+    <string name="scan_one_face">Vain tämä puoli</string>
     <string name="settings_moves">Siirrot</string>
     <string name="settings_notation">Näytä siirtomerkinnät</string>
     <string name="settings_notation_summary">Esim. R, U\' ja F2 sanallisen ohjeen alla</string>
@@ -257,4 +263,8 @@
     <string name="about_androidx">Android Jetpack (AndroidX, Compose, CameraX, Room) – Apache License 2.0, The Android Open Source Project.</string>
     <string name="about_kotlin">Kotlin ja kotlinx-kirjastot – Apache License 2.0, JetBrains.</string>
     <string name="about_min2phase">min2phase (kaksivaiheinen ratkaisija) – MIT-lisenssi, Chen Shuang:</string>
+    <plurals name="check_faces_left">
+        <item quantity="one">Tarkistamatta vielä %d puoli</item>
+        <item quantity="other">Tarkistamatta vielä %d puolta</item>
+    </plurals>
 </resources>

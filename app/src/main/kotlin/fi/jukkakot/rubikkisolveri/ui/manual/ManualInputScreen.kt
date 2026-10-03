@@ -30,7 +30,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.res.pluralStringResource
+import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanCheck
+import fi.jukkakot.rubikkisolveri.cube.scan.Verdict
+import fi.jukkakot.rubikkisolveri.log.AppLog
+import fi.jukkakot.rubikkisolveri.log.Evt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -89,14 +100,30 @@ fun ManualInputScreen(
     note: Int? = null,
     pictures: Map<Face, IntArray> = emptyMap(),
     onScanAgain: (() -> Unit)? = null,
+    check: ScanCheck? = null,
+    onScanFace: ((FaceView) -> Unit)? = null,
+    rescanned: Pair<FaceView, List<Rgb>>? = null,
+    onRescanUsed: () -> Unit = {},
+    onReadings: (List<Rgb>) -> Unit = {},
 ) {
     var encoded by rememberSaveable { mutableStateOf(initial.encode()) }
-    val editor = CubeEditor.decode(encoded) ?: CubeEditor.empty()
+    // The face-by-face check of a scan (null for plain manual input); its readings are not saved
+    // across rotation, the caller hands them in again with [check].
+    var checkText by rememberSaveable { mutableStateOf(check?.encode()) }
+    var readings by remember { mutableStateOf(check?.readings) }
+    val scanCheck = checkText?.let { ScanCheck.decode(it, readings) }
+    val editor = scanCheck?.editor ?: CubeEditor.decode(encoded) ?: CubeEditor.empty()
     // Marks handed over by a scan; they stay until the user changes the cube.
     var handedMarks by rememberSaveable { mutableStateOf(initialMarked.joinToString(",")) }
     var faceIndex by rememberSaveable {
-        mutableIntStateOf(initialMarked.minOrNull()?.let { FaceView.of(Face.entries[it / 9]).ordinal } ?: 0)
+        mutableIntStateOf(
+            check?.nextUnchecked()?.ordinal
+                ?: initialMarked.minOrNull()?.let { FaceView.of(Face.entries[it / 9]).ordinal } ?: 0,
+        )
     }
+    // The faces named by the last "cannot be right" verdict (ordinals), shown until the next verdict.
+    var verdictFaces by rememberSaveable { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
     val view = FaceView.entries[faceIndex]
     var colorIndex by rememberSaveable { mutableIntStateOf(CubeColor.WHITE.ordinal) }
     val selectedColor = CubeColor.entries[colorIndex]
@@ -111,7 +138,78 @@ fun ManualInputScreen(
         handedMarks = ""
     }
 
-    val marked = markedStickers(validity) + handedMarks.split(',').mapNotNull { it.toIntOrNull() }
+    fun setCheck(next: ScanCheck) {
+        checkText = next.encode()
+        readings = next.readings
+    }
+
+    fun paint(index: Int) {
+        if (scanCheck != null) setCheck(scanCheck.paint(index, selectedColor)) else update(editor.paint(index, selectedColor))
+    }
+
+    // Every face checked: a solvable cube opens its solution, otherwise the faces to look at again.
+    fun judge(next: ScanCheck) {
+        scope.launch {
+            val result = withContext(Dispatchers.Default) { next.verdict() }
+            when (result) {
+                is Verdict.Solvable -> {
+                    AppLog.info(Evt.SCAN_CHECK, null, "verdict" to "solvable", "cube" to next.editor.encode())
+                    setCheck(next)
+                    verdictFaces = ""
+                    onValid(result.cube)
+                }
+                is Verdict.Impossible -> {
+                    AppLog.info(
+                        Evt.SCAN_CHECK, null,
+                        "verdict" to "impossible",
+                        "validity" to result.validity.toString(),
+                        "faces" to result.faces.joinToString(",") { it.face.name },
+                        "marked" to result.marked.sorted().joinToString(","),
+                        "cube" to next.editor.encode(),
+                    )
+                    val after = next.apply(result)
+                    setCheck(after)
+                    verdictFaces = result.faces.joinToString(",") { it.ordinal.toString() }
+                    after.nextUnchecked()?.let { faceIndex = it.ordinal }
+                }
+            }
+        }
+    }
+
+    // "Looks right": the next unchecked face, or, after the last one, the verdict.
+    fun lookRight() {
+        val current = scanCheck ?: return
+        val next = current.lookRight(view)
+        if (next.unchecked.isNotEmpty()) {
+            setCheck(next)
+            faceIndex = next.nextUnchecked(view)!!.ordinal
+            return
+        }
+        judge(next)
+    }
+
+    // A scan that cannot be right without any doubtful sticker starts with every face checked: say
+    // at once which faces to look at.
+    LaunchedEffect(Unit) {
+        if (check != null && check.unchecked.isEmpty() && verdictFaces.isEmpty()) judge(check)
+    }
+
+    // A face rescanned on its own comes back: it replaces that face in the check.
+    LaunchedEffect(rescanned) {
+        val (face, samples) = rescanned ?: return@LaunchedEffect
+        val current = scanCheck
+        if (current?.readings != null) {
+            val next = current.replaceFace(face, samples)
+            setCheck(next)
+            next.readings?.let(onReadings)
+            faceIndex = face.ordinal
+            AppLog.info(Evt.SCAN_CHECK, null, "rescan" to face.face.name, "colors" to next.editor.encode())
+        }
+        onRescanUsed()
+    }
+
+    val marked = scanCheck?.marks ?: (markedStickers(validity) + handedMarks.split(',').mapNotNull { it.toIntOrNull() })
+    val verdictNames = verdictFaces.split(',').mapNotNull { it.toIntOrNull() }.map { stringResource(faceName(FaceView.entries[it])) }
 
     Scaffold(
         topBar = {
@@ -123,25 +221,36 @@ fun ManualInputScreen(
                     }
                 },
                 actions = {
-                    onScanAgain?.let { TextButton(onClick = it) { Text(stringResource(R.string.check_scan_again)) } }
                     IconButton(onClick = { menuOpen = true }) {
                         Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.manual_more))
                     }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.manual_clear)) },
-                            onClick = {
-                                menuOpen = false
-                                update(editor.clear())
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.manual_fill_solved)) },
-                            onClick = {
-                                menuOpen = false
-                                update(CubeEditor.of(Cube.solved()))
-                            },
-                        )
+                        onScanAgain?.let { scanAgain ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.check_scan_whole)) },
+                                onClick = {
+                                    menuOpen = false
+                                    scanAgain()
+                                },
+                            )
+                        }
+                        // Clearing or a solved cube make no sense while checking a scan.
+                        if (scanCheck == null) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.manual_clear)) },
+                                onClick = {
+                                    menuOpen = false
+                                    update(editor.clear())
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.manual_fill_solved)) },
+                                onClick = {
+                                    menuOpen = false
+                                    update(CubeEditor.of(Cube.solved()))
+                                },
+                            )
+                        }
                     }
                 },
             )
@@ -160,8 +269,26 @@ fun ManualInputScreen(
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     }
+                    if (verdictNames.isNotEmpty()) {
+                        Text(
+                            stringResource(R.string.check_impossible, joinNames(verdictNames)),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                     Palette(editor, selectedColor, onSelect = { colorIndex = it.ordinal })
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (scanCheck != null) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (onScanFace != null && scanCheck.readings != null) {
+                                OutlinedButton(onClick = { onScanFace(view) }, modifier = Modifier.weight(1f)) {
+                                    Text(stringResource(R.string.check_rescan_face), maxLines = 1)
+                                }
+                            }
+                            Button(onClick = ::lookRight, modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.check_looks_right), maxLines = 1)
+                            }
+                        }
+                    } else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = { view.previous?.let { faceIndex = it.ordinal } }, enabled = view.previous != null, modifier = Modifier.weight(1f)) {
                             Text(stringResource(R.string.manual_previous), maxLines = 1)
                         }
@@ -192,12 +319,18 @@ fun ManualInputScreen(
             if (note != null) {
                 Text(stringResource(note), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.tertiary)
             }
+            scanCheck?.unchecked?.size?.takeIf { it > 0 }?.let { left ->
+                Text(
+                    pluralStringResource(R.plurals.check_faces_left, left, left),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
             Row(
                 Modifier.fillMaxWidth().height(110.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                MiniNet(editor, view, marked, onSelect = { faceIndex = it.ordinal })
+                MiniNet(editor, view, marked, checked = scanCheck?.checked.orEmpty(), onSelect = { faceIndex = it.ordinal })
                 Cube3D(
                     colors = editor.colors.map(StickerColors::of),
                     viewState = viewState,
@@ -216,7 +349,7 @@ fun ManualInputScreen(
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 val picture = pictures[view.face]
                 if (picture == null) {
-                    FaceGrid(editor, view, marked, onTap = { index -> update(editor.paint(index, selectedColor)) }, Modifier.size(min(maxWidth, maxHeight)))
+                    FaceGrid(editor, view, marked, onTap = ::paint, Modifier.size(min(maxWidth, maxHeight)))
                 } else {
                     val side = min((maxWidth - 12.dp) / 2, maxHeight - 24.dp)
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -226,7 +359,7 @@ fun ManualInputScreen(
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(stringResource(R.string.check_colors), style = MaterialTheme.typography.labelLarge)
-                            FaceGrid(editor, view, marked, onTap = { index -> update(editor.paint(index, selectedColor)) }, Modifier.size(side))
+                            FaceGrid(editor, view, marked, onTap = ::paint, Modifier.size(side))
                         }
                     }
                 }
@@ -309,31 +442,55 @@ private fun Palette(editor: CubeEditor, selected: CubeColor, onSelect: (CubeColo
     }
 }
 
-/** All six faces as a small net (top above front, left-front-right-back in a row, bottom below). */
+/** "Etupuoli ja Yläpuoli", "Etupuoli, Vasen puoli ja Yläpuoli". */
 @Composable
-private fun MiniNet(editor: CubeEditor, current: FaceView, marked: Set<Int>, onSelect: (FaceView) -> Unit) {
+private fun joinNames(names: List<String>): String {
+    if (names.size <= 1) return names.joinToString()
+    return names.dropLast(1).joinToString(", ") + " " + stringResource(R.string.check_and) + " " + names.last()
+}
+
+/**
+ * All six faces as a small net (top above front, left-front-right-back in a row, bottom below);
+ * [checked] faces (in the check of a scan) carry a check mark.
+ */
+@Composable
+private fun MiniNet(editor: CubeEditor, current: FaceView, marked: Set<Int>, checked: Set<FaceView> = emptySet(), onSelect: (FaceView) -> Unit) {
     val cell = 9.dp
     val faceSize = cell * 3 + 4.dp
     @Composable
     fun face(view: FaceView) {
-        val name = stringResource(faceName(view))
-        Column(
+        val name = if (view in checked) {
+            stringResource(R.string.check_face_checked, stringResource(faceName(view)))
+        } else {
+            stringResource(faceName(view))
+        }
+        Box(
             Modifier.size(faceSize)
                 .border(if (view == current) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else BorderStroke(0.dp, Color.Transparent))
                 .clickable { onSelect(view) }
-                .semantics { contentDescription = name }
-                .padding(2.dp),
+                .semantics { contentDescription = name },
+            contentAlignment = Alignment.Center,
         ) {
-            for (row in 0 until 3) {
-                Row {
-                    for (col in 0 until 3) {
-                        val index = view.face.ordinal * 9 + row * 3 + col
-                        Box(
-                            Modifier.size(cell).padding(0.5.dp)
-                                .background(if (index in marked) StickerColors.MARK else StickerColors.of(editor[index])),
-                        )
+            Column(Modifier.padding(2.dp)) {
+                for (row in 0 until 3) {
+                    Row {
+                        for (col in 0 until 3) {
+                            val index = view.face.ordinal * 9 + row * 3 + col
+                            Box(
+                                Modifier.size(cell).padding(0.5.dp)
+                                    .background(if (index in marked) StickerColors.MARK else StickerColors.of(editor[index])),
+                            )
+                        }
                     }
                 }
+            }
+            if (view in checked) {
+                Icon(
+                    Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp).clip(CircleShape).background(Color(0xFF2E7D32)).padding(2.dp),
+                )
             }
         }
     }

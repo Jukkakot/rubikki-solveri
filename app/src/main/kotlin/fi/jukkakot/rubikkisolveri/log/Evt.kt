@@ -18,6 +18,7 @@ enum class Evt(val id: String) {
     SCAN_LOCK("scan.lock"),
     SCAN_PERMISSION("scan.permission"),
     SCAN_ERROR("scan.error"),
+    SCAN_CHECK("scan.check"),
     FOLLOW_EVENT("follow.event"),
 }
 

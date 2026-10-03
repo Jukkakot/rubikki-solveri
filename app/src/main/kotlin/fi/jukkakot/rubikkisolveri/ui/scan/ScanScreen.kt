@@ -78,8 +78,18 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.channels.BufferOverflow
 
+/**
+ * The scan of all six faces, or with [only] set just that face (a rescan from the check), whose
+ * readings go to [onFace] and whose picture replaces that face's in [LastScan].
+ */
 @Composable
-fun ScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome) -> Unit) {
+fun ScanScreen(
+    onBack: () -> Unit,
+    onManual: () -> Unit,
+    onResult: (ScanOutcome) -> Unit,
+    only: FaceView? = null,
+    onFace: (FaceView, List<Rgb>) -> Unit = { _, _ -> },
+) {
     CameraPermissionGate(
         alternative = stringResource(R.string.scan_manual) to onManual,
         denied = { content -> PermissionScaffold(onBack) { content() } },
@@ -104,8 +114,14 @@ fun ScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome)
             onBack = onBack,
             onManual = onManual,
             onResult = { outcome ->
-                LastScanPictures.byFace = facePictures.toMap()
+                LastScan.pictures = facePictures.toMap()
+                LastScan.readings = outcome.samples
                 onResult(outcome)
+            },
+            only = only,
+            onFace = { view, samples ->
+                LastScan.pictures = LastScan.pictures + facePictures
+                onFace(view, samples)
             },
             cameraFailed = cameraFailed,
             watchStalls = true,
@@ -152,9 +168,11 @@ fun ScanContent(
     savePicture: (face: String) -> String? = { null },
     looksLikeCube: () -> Boolean = { true },
     watchStalls: Boolean = false,
+    only: FaceView? = null,
+    onFace: (FaceView, List<Rgb>) -> Unit = { _, _ -> },
     preview: @Composable (Modifier) -> Unit,
 ) {
-    val session = remember { ScanSession(holdMillis = holdMillis) }
+    val session = remember { ScanSession(holdMillis = holdMillis, only = only) }
     var event by remember { mutableStateOf<ScanEvent>(ScanEvent.Waiting) }
     var live by remember { mutableStateOf<List<Rgb>?>(null) }
     var index by remember { mutableIntStateOf(0) }
@@ -196,7 +214,9 @@ fun ScanContent(
             "rgb" to session.capturedSamples(face)?.joinToString(",") { it.toHex() },
             "centreLooksLike" to hint?.letter,
         )
-        if (session.isDone) {
+        if (session.isDone && only != null) {
+            session.capturedSamples(only)?.let { onFace(only, it) }
+        } else if (session.isDone) {
             val outcome = session.outcome()
             AppLog.info(
                 Evt.SCAN_DONE, null,
@@ -222,7 +242,7 @@ fun ScanContent(
     }
     // From the first capture on (the cube held still, the camera settled on it), keep exposure and
     // white balance fixed so every face is read alike. Scanning the front again releases it.
-    val locked = index > 0 || review != null
+    val locked = index > (only?.ordinal ?: 0) || review != null
     LaunchedEffect(locked) { onLockExposure(locked) }
     if (watchStalls) {
         LaunchedEffect(Unit) {
@@ -260,7 +280,7 @@ fun ScanContent(
                     Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Progress(index)
+                    Progress(index, only)
                     if (review != null) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(onClick = ::retake, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.scan_retake)) }
@@ -268,16 +288,19 @@ fun ScanContent(
                         }
                     } else {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(
-                                onClick = {
-                                    session.redo()
-                                    index = session.index
-                                    event = ScanEvent.Waiting
-                                    lastCaptured = null
-                                },
-                                enabled = index > 0,
-                                modifier = Modifier.weight(1f),
-                            ) { Text(stringResource(R.string.scan_redo)) }
+                            // A one-face rescan has no previous face to go back to.
+                            if (only == null) {
+                                OutlinedButton(
+                                    onClick = {
+                                        session.redo()
+                                        index = session.index
+                                        event = ScanEvent.Waiting
+                                        lastCaptured = null
+                                    },
+                                    enabled = index > 0,
+                                    modifier = Modifier.weight(1f),
+                                ) { Text(stringResource(R.string.scan_redo)) }
+                            }
                             Button(onClick = { handle(session.captureNow()) }, enabled = live != null, modifier = Modifier.weight(1f)) {
                                 Text(stringResource(R.string.scan_capture))
                             }
@@ -294,7 +317,11 @@ fun ScanContent(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                stringResource(R.string.scan_face_title, stringResource(faceName(view)), index + 1),
+                if (only != null) {
+                    stringResource(faceName(only))
+                } else {
+                    stringResource(R.string.scan_face_title, stringResource(faceName(view)), index + 1)
+                },
                 style = MaterialTheme.typography.titleLarge,
             )
             Text(holdHint(view), style = MaterialTheme.typography.bodyMedium)
@@ -409,11 +436,16 @@ private fun ReviewOverlay(samples: List<Rgb>, modifier: Modifier) {
 }
 
 
+/** Which faces are done; a one-face rescan ([only]) shows just that face. */
 @Composable
-private fun Progress(done: Int) {
+private fun Progress(done: Int, only: FaceView?) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(R.string.scan_progress, done.coerceAtMost(6)), style = MaterialTheme.typography.labelLarge)
-        for (view in FaceView.entries) {
+        if (only == null) {
+            Text(stringResource(R.string.scan_progress, done.coerceAtMost(6)), style = MaterialTheme.typography.labelLarge)
+        } else {
+            Text(stringResource(R.string.scan_one_face), style = MaterialTheme.typography.labelLarge)
+        }
+        for (view in only?.let(::listOf) ?: FaceView.entries) {
             Box(
                 Modifier.size(24.dp).clip(CircleShape).background(StickerColors.of(view.centreColor()))
                     .border(1.dp, Color.Gray, CircleShape),

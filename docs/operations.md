@@ -64,6 +64,9 @@ The scan logs the readings and keeps a small picture of the grid for every captu
   freeze the user saw should show up here.
 - `scan.done valid=… validity=… uncertain=N cube=…` — the result (`cube` is the 54 colour letters,
   `.` for unknown).
+- `scan.check verdict=solvable|impossible validity=… faces=R,U marked=… cube=…` — the check's
+  verdict after the last "Looks right" (`faces` to look at again, `marked` the likely misreads);
+  `scan.check rescan=U colors=…` — a face rescanned on its own replaced that face.
 
 Pictures (120×120 PNG of the grid area) live in `files/logs/scan/` on the phone, newest 12 kept;
 Clear in the log screen deletes them. They leave the phone only when the log is shared.

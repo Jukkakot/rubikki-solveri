@@ -40,8 +40,9 @@ keeping the scan's readings across an app restart; a new look (that is `look-ref
 - **One face against this cube's colours.** `ColorClassifier.classifyFace(samples, labelled,
   ownCentre)`: references are the mean reading per colour over the other 45 stickers, labelled by
   the check's current colours (so the user's fixes count). Because the one-face scan starts the
-  camera afresh with its own exposure, all references are shifted by the difference between the
-  face's centre now and in the original scan (Lab offset). Each sticker takes the nearest reference
+  camera afresh with its own exposure, the rescan's readings are scaled by one gain: the face's
+  centre brightness (r+g+b) in the original scan over now. (A Lab offset was tried first and failed
+  the test: exposure acts as a gain, and a darker red then read as orange.) Each sticker takes the nearest reference
   (no balancing: the other faces are fixed, the counts show any surplus); confidence as in
   `classify`. Phone check item: whether the offset is enough under a different exposure.
 - **Check state.** A small pure `ScanCheck` in the cube module holds the editor, the checked faces,
@@ -57,10 +58,13 @@ keeping the scan's readings across an app restart; a new look (that is `look-ref
 - **One-face scan.** `ScanRoute(face: String? = null)`. `ScanSession(only = FaceView)`: index starts
   at that face, `accept()` ends the session (`isDone`), no previous-face check (the face before it
   was not just shown), redo disabled, progress shows one dot. Exposure lock as before (at capture).
-  The result goes back through `navController.previousBackStackEntry.savedStateHandle["rescan"]`
-  (face + readings as a string) and the picture through `LastScan.pictures`; the check consumes it
-  once. Alternative: a shared view model — rejected: one value back is all that is needed.
-- **Texts (fi).** "Näyttää oikealta", "Kuvaa tämä puoli uudelleen", "Tarkistettavana vielä %d
+  The result goes back through `LastScan.rescanned` (snapshot state, next to the pictures and
+  readings it belongs with) and the check consumes it once. Changed from the planned
+  `savedStateHandle`: the readings and pictures already live in `LastScan`, so one place is
+  simpler. Alternative: a shared view model — rejected: one value back is all that is needed.
+- **A scan invalid without any mark** (twist, flip, swapped pieces, nothing uncertain) starts with
+  every face checked; the check gives its verdict at once on opening instead of waiting for a tap.
+- **Texts (fi).** "Näyttää oikealta", "Kuvaa uudelleen" (the review's word for the same act; the longer text did not fit the half-width button), "Tarkistettavana vielä %d
   puolta", verdict "Tällaista kuutiota ei voi olla – jokin tarra on luettu väärin. Katso vielä:
   %s." (faces joined with "ja"), "Skannaa koko kuutio uudelleen" in the menu. English to match.
 

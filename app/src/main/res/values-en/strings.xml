@@ -119,10 +119,16 @@
     <string name="scan_permission_settings">Open app settings</string>
     <string name="scan_camera_error">The camera could not be started.</string>
     <string name="check_title">Check the colours</string>
-    <string name="check_note">Compare with the camera picture. Pick a colour below and tap the wrong sticker. Red-edged ones are doubtful.</string>
-    <string name="check_scan_again">Scan again</string>
+    <string name="check_note">Compare with the camera picture. Fix a wrong sticker by picking a colour and tapping it, or scan the face again. Red-edged ones are doubtful.</string>
     <string name="check_picture">Camera saw</string>
     <string name="check_colors">Colours</string>
+    <string name="check_looks_right">Looks right</string>
+    <string name="check_rescan_face">Rescan face</string>
+    <string name="check_scan_whole">Scan the whole cube again</string>
+    <string name="check_impossible">This cube cannot be right – some sticker was read wrong. Look again at: %1$s.</string>
+    <string name="check_and">and</string>
+    <string name="check_face_checked">%1$s, checked</string>
+    <string name="scan_one_face">This face only</string>
     <string name="settings_moves">Moves</string>
     <string name="settings_notation">Show move notation</string>
     <string name="settings_notation_summary">For example R, U\' and F2 under the words</string>
@@ -255,4 +261,8 @@
     <string name="about_androidx">Android Jetpack (AndroidX, Compose, CameraX, Room) – Apache License 2.0, The Android Open Source Project.</string>
     <string name="about_kotlin">Kotlin and the kotlinx libraries – Apache License 2.0, JetBrains.</string>
     <string name="about_min2phase">min2phase (two-phase solver) – MIT licence, Chen Shuang:</string>
+    <plurals name="check_faces_left">
+        <item quantity="one">%d face left to check</item>
+        <item quantity="other">%d faces left to check</item>
+    </plurals>
 </resources>

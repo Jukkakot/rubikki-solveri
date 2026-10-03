@@ -28,8 +28,16 @@ sealed interface ScanEvent {
     data class Captured(val face: FaceView) : ScanEvent
 }
 
-/** The finished scan: the colours, which stickers to double-check, and whether it can be solved. */
-data class ScanOutcome(val editor: CubeEditor, val uncertain: Set<Int>, val validity: Validity) {
+/**
+ * The finished scan: the colours, which stickers to double-check, whether it can be solved, and the
+ * 54 raw readings (URFDLB) the colours were worked out from.
+ */
+data class ScanOutcome(
+    val editor: CubeEditor,
+    val uncertain: Set<Int>,
+    val validity: Validity,
+    val samples: List<Rgb> = emptyList(),
+) {
     /** Valid and no doubtful sticker: go straight to the solution. */
     val isConfident: Boolean get() = validity.isValid && uncertain.isEmpty()
 
@@ -43,11 +51,15 @@ data class ScanOutcome(val editor: CubeEditor, val uncertain: Set<Int>, val vali
  * captured when every cell has stayed steady for [holdMillis] and at least [minFrames] frames (the
  * captured samples are the per-cell median of those frames) and is under review until [accept] or
  * [retake]. The colours are only decided at the end, from all 54 readings together.
+ *
+ * With [only] set, the session scans just that face (a rescan from the check): accepting it ends
+ * the session, there is no previous face and [redo] does nothing.
  */
 class ScanSession(
     private val scheme: ColorScheme = ColorScheme.STANDARD,
     private val holdMillis: Long = HOLD_MILLIS,
     private val minFrames: Int = MIN_FRAMES,
+    val only: FaceView? = null,
 ) {
     private val captured = arrayOfNulls<List<Rgb>>(FaceView.entries.size)
     private val streak = ArrayList<List<Rgb>>()
@@ -55,12 +67,14 @@ class ScanSession(
     private var streakStart = 0L
     private var refs = ColorClassifier.references()
 
-    var index: Int = 0
+    var index: Int = only?.ordinal ?: 0
         private set
 
-    val current: FaceView? get() = FaceView.entries.getOrNull(index)
+    private val lastIndex = only?.ordinal ?: FaceView.entries.lastIndex
 
-    val isDone: Boolean get() = index >= FaceView.entries.size
+    val current: FaceView? get() = FaceView.entries.getOrNull(index)?.takeIf { index <= lastIndex }
+
+    val isDone: Boolean get() = index > lastIndex
 
     /** The captured face waiting for confirmation, and its samples. */
     var review: Pair<FaceView, List<Rgb>>? = null
@@ -92,7 +106,7 @@ class ScanSession(
         latest = samples
         live = samples.map { ColorClassifier.live(it, refs) }
         val labs = samples.map { it.toLab() }
-        val previous = FaceView.entries.getOrNull(index - 1)?.let { captured[it.ordinal] }
+        val previous = if (only != null) null else FaceView.entries.getOrNull(index - 1)?.let { captured[it.ordinal] }
         if (previous != null && looksAlike(labs, previous.map { it.toLab() })) {
             resetStreak()
             return ScanEvent.PreviousFace
@@ -138,7 +152,7 @@ class ScanSession(
     /** Goes back to scan the previous confirmed face again. */
     fun redo() {
         clearReview()
-        if (index > 0) {
+        if (only == null && index > 0) {
             index--
             captured[index] = null
             updateReferences()
@@ -147,12 +161,12 @@ class ScanSession(
     }
 
     fun outcome(): ScanOutcome {
-        check(isDone) { "Scan not finished" }
+        check(isDone && only == null) { "Scan not finished" }
         val samples = FaceView.entries.sortedBy { it.face.ordinal }.flatMap { captured[it.ordinal]!! }
         val classification = ColorClassifier.classify(samples, scheme)
         val editor = CubeEditor(classification.colors, scheme)
         val validity = CubeCheck.validity(editor.toCube()!!, scheme)
-        return ScanOutcome(editor, classification.uncertain(), validity)
+        return ScanOutcome(editor, classification.uncertain(), validity, samples)
     }
 
     private fun capture(samples: List<Rgb>): ScanEvent {

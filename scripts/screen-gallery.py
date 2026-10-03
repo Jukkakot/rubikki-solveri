@@ -31,7 +31,9 @@ GROUPS = [
         ("scan", "Skannaus", ["scan-review", "scan-permission", "manual-input"]),
         ("scan-review", "Puolen tarkistus", ["scan", "solve", "scan-check"]),
         ("scan-permission", "Kameralupa", ["manual-input"]),
-        ("scan-check", "Tarkista värit", ["solve", "scan"]),
+        ("scan-check", "Tarkista värit", ["solve", "scan", "scan-one-face", "scan-check-verdict"]),
+        ("scan-check-verdict", "Tarkista värit: ei voi olla", ["scan-check"]),
+        ("scan-one-face", "Kuvaa puoli uudelleen", ["scan-check"]),
     ]),
     ("Käsin syöttö", [
         ("manual-input", "Syötä värit käsin", ["solve"]),
@@ -60,6 +62,7 @@ GROUPS = [
 # Sub-states drawn inside their parent's box in the navigation diagram, not as boxes of their own.
 PARTS = {
     "solve": ["solve-learn", "guide-back", "guide-right", "follow", "mid-turn"],
+    "scan-check": ["scan-check-verdict"],
 }
 
 

@@ -1,6 +1,8 @@
 package fi.jukkakot.rubikkisolveri.ui.nav
 
-import fi.jukkakot.rubikkisolveri.ui.scan.LastScanPictures
+import fi.jukkakot.rubikkisolveri.ui.scan.LastScan
+import fi.jukkakot.rubikkisolveri.cube.FaceView
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanCheck
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,7 +68,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
         composable<HomeRoute> {
             HomeScreen(
                 entries = listOf(
-                    HomeEntry(R.string.home_scan, onOpen = { navController.navigate(ScanRoute) }),
+                    HomeEntry(R.string.home_scan, onOpen = { navController.navigate(ScanRoute()) }),
                     HomeEntry(R.string.home_manual, onOpen = { navController.navigate(ManualInputRoute()) }),
                     HomeEntry(R.string.home_learn, onOpen = { navController.navigate(LessonsRoute) }),
                     HomeEntry(R.string.home_timer, onOpen = { navController.navigate(TimerRoute) }),
@@ -95,26 +97,43 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
         }
         composable<ManualInputRoute> { entry ->
             val route = entry.toRoute<ManualInputRoute>()
+            val initial = route.cube?.let(CubeEditor::decode) ?: CubeEditor.empty()
+            val marked = route.marked?.split(',')?.mapNotNull { it.toIntOrNull() }?.toSet().orEmpty()
             ManualInputScreen(
                 onBack = { navController.popBackStack() },
                 onValid = { cube -> navController.navigate(SolveRoute(cube.toColorString())) },
-                initial = route.cube?.let(CubeEditor::decode) ?: CubeEditor.empty(),
-                initialMarked = route.marked?.split(',')?.mapNotNull { it.toIntOrNull() }?.toSet().orEmpty(),
+                initial = initial,
+                initialMarked = marked,
                 title = if (route.fromScan) R.string.check_title else R.string.manual_title,
                 note = if (route.fromScan) R.string.check_note else null,
-                pictures = if (route.fromScan) LastScanPictures.byFace else emptyMap(),
+                pictures = if (route.fromScan) LastScan.pictures else emptyMap(),
                 onScanAgain = if (route.fromScan) {
-                    { navController.navigate(ScanRoute) { popUpTo<ManualInputRoute> { inclusive = true } } }
+                    { navController.navigate(ScanRoute()) { popUpTo<ManualInputRoute> { inclusive = true } } }
                 } else {
                     null
                 },
+                check = if (route.fromScan) ScanCheck.start(initial, marked, LastScan.readings) else null,
+                onScanFace = { view -> navController.navigate(ScanRoute(view.name)) },
+                rescanned = LastScan.rescanned,
+                onRescanUsed = { LastScan.rescanned = null },
+                onReadings = { LastScan.readings = it },
             )
         }
-        composable<ScanRoute> {
+        composable<ScanRoute> { entry ->
+            val only = entry.toRoute<ScanRoute>().face?.let(FaceView::valueOf)
             ScanScreen(
                 onBack = { navController.popBackStack() },
                 onManual = {
-                    navController.navigate(ManualInputRoute()) { popUpTo(ScanRoute) { inclusive = true } }
+                    if (only != null) {
+                        navController.popBackStack()
+                    } else {
+                        navController.navigate(ManualInputRoute()) { popUpTo<ScanRoute> { inclusive = true } }
+                    }
+                },
+                only = only,
+                onFace = { view, samples ->
+                    LastScan.rescanned = view to samples
+                    navController.popBackStack()
                 },
                 onResult = { outcome ->
                     val next: Any = if (outcome.isConfident) {
@@ -122,7 +141,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                     } else {
                         ManualInputRoute(outcome.editor.encode(), outcome.marked.joinToString(","), fromScan = true)
                     }
-                    navController.navigate(next) { popUpTo(ScanRoute) { inclusive = true } }
+                    navController.navigate(next) { popUpTo<ScanRoute> { inclusive = true } }
                 },
             )
         }

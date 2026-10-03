@@ -14,6 +14,7 @@ import fi.jukkakot.rubikkisolveri.cube.FaceView
 import fi.jukkakot.rubikkisolveri.cube.Stickers
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanCheck
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.ui.manual.ManualInputScreen
 import fi.jukkakot.rubikkisolveri.ui.scan.ScanContent
@@ -165,29 +166,102 @@ class ScanScreenTest {
     }
 
     @Test
+    fun oneFaceScan() {
+        val faces = ArrayList<Pair<FaceView, List<Rgb>>>()
+        compose.setContent {
+            RubikkiTheme(dynamicColor = false) {
+                ScanContent(
+                    frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0,
+                    only = FaceView.TOP, onFace = { view, samples -> faces += view to samples }, preview = {},
+                )
+            }
+        }
+        compose.onNodeWithText("Yläpuoli").assertIsDisplayed()
+        compose.onNodeWithText("Vain tämä puoli").assertIsDisplayed()
+        compose.onNodeWithText("Edellinen uudelleen").assertDoesNotExist()
+        confirm(FaceView.TOP)
+        show(FaceView.TOP, 3)
+        assertEquals(listOf(FaceView.TOP), faces.map { it.first })
+        assertEquals(faceSamples(FaceView.TOP), faces.single().second)
+        assertEquals(null, outcome)
+    }
+
+    /** The check of [colors] after a scan with [marked] stickers; the readings are the true colours. */
+    private fun check(colors: Cube, marked: Set<Int>, onValid: (Cube) -> Unit = {}, onScanFace: (FaceView) -> Unit = {}, onScanAgain: () -> Unit = {}) {
+        val readings = (0 until 54).map { ColorClassifier.DEFAULT_PALETTE.getValue(cube[it]) }
+        val editor = CubeEditor.of(colors)
+        compose.setContent {
+            RubikkiTheme(dynamicColor = false) {
+                ManualInputScreen(
+                    onBack = {}, onValid = onValid, initial = editor, initialMarked = marked,
+                    title = R.string.check_title, note = R.string.check_note,
+                    pictures = mapOf(Face.F to IntArray(120 * 120) { 0xff808080.toInt() }),
+                    onScanAgain = onScanAgain,
+                    check = ScanCheck.start(editor, marked, readings),
+                    onScanFace = onScanFace,
+                )
+            }
+        }
+    }
+
+    @Test
     @Config(qualifiers = "fi-w411dp-h891dp")
     fun openedFromAScan() {
         val f1 = Stickers.index(Face.F, 1)
         var scanAgain = false
-        compose.setContent {
-            RubikkiTheme(dynamicColor = false) {
-                ManualInputScreen(
-                    onBack = {}, onValid = {}, initial = CubeEditor.of(cube), initialMarked = setOf(f1),
-                    title = R.string.check_title, note = R.string.check_note,
-                    pictures = mapOf(Face.F to IntArray(120 * 120) { 0xff808080.toInt() }),
-                    onScanAgain = { scanAgain = true },
-                )
-            }
-        }
+        var rescan: FaceView? = null
+        check(cube, setOf(f1), onScanFace = { rescan = it }, onScanAgain = { scanAgain = true })
         compose.onNodeWithText("Tarkista värit").assertIsDisplayed()
         compose.onNodeWithText("Vertaa kameran kuvaan.", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Tarkistamatta vielä 1 puoli").assertIsDisplayed()
         // The camera's picture of the front face is beside the editable face, and the palette and
-        // the check button are in view without scrolling.
+        // the check's actions are in view without scrolling.
         compose.onNodeWithContentDescription("Kamera näki").assertIsDisplayed()
         compose.onNodeWithContentDescription("punainen").assertIsDisplayed().performClick()
-        compose.onNodeWithText("Tarkista").assertIsDisplayed()
+        compose.onNodeWithText("Näyttää oikealta").assertIsDisplayed()
         compose.onNodeWithContentDescription("Etupuoli, tarra 1").performClick()
-        compose.onNodeWithText("Skannaa uudelleen").performClick()
+        compose.onNodeWithText("Kuvaa uudelleen").assertIsDisplayed().performClick()
+        assertEquals(FaceView.FRONT, rescan)
+        compose.onNodeWithContentDescription("Lisää").performClick()
+        compose.onNodeWithText("Skannaa koko kuutio uudelleen").performClick()
         assertTrue(scanAgain)
+    }
+
+    @Test
+    @Config(qualifiers = "fi-w411dp-h891dp")
+    fun looksRightGoesToTheNextUncheckedFace() {
+        check(cube, setOf(Stickers.index(Face.R, 1), Stickers.index(Face.U, 3)))
+        compose.onNodeWithText("Oikea puoli (2/6)").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Etupuoli, tarkistettu").assertIsDisplayed()
+        compose.onNodeWithText("Näyttää oikealta").performClick()
+        compose.onNodeWithText("Yläpuoli (5/6)").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Oikea puoli, tarkistettu").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "fi-w411dp-h891dp")
+    fun anImpossibleCubeNamesTheFaces() {
+        // A top and a right sticker read the wrong way round.
+        val top = (1..9).map { Stickers.index(Face.U, it) }.filter { it % 9 != 4 }
+        val right = (1..9).map { Stickers.index(Face.R, it) }.filter { it % 9 != 4 }
+        val (a, b) = top.flatMap { x -> right.map { x to it } }.first { (x, y) ->
+            cube[x] != cube[y] && !fi.jukkakot.rubikkisolveri.cube.CubeCheck.validity(cube.with(x, cube[y]).with(y, cube[x])).isValid
+        }
+        check(cube.with(a, cube[b]).with(b, cube[a]), setOf(a))
+        compose.onNodeWithText("Näyttää oikealta").performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("Tällaista kuutiota ei voi olla", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Katso vielä: Oikea puoli ja Yläpuoli.", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Oikea puoli (2/6)").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "fi-w411dp-h891dp")
+    fun aSolvableCubeOpensTheSolution() {
+        var solved: Cube? = null
+        check(cube, setOf(Stickers.index(Face.D, 2)), onValid = { solved = it })
+        compose.onNodeWithText("Alapuoli (6/6)").assertIsDisplayed()
+        compose.onNodeWithText("Näyttää oikealta").performClick()
+        compose.waitUntil(5_000) { solved != null }
+        assertEquals(cube, solved)
     }
 }
