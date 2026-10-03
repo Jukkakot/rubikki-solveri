@@ -7,28 +7,32 @@ complete, checked cube to the solver or, when unsure, to the manual editor.
 ## Requirements
 
 ### Requirement: Guided scan
-The scan screen SHALL show the camera preview with a 3×3 grid, the face to show (front, right,
-back, left, top, bottom) with how to hold the cube, and which faces are done.
+The scan screen SHALL show the camera preview with a 3×3 grid and which faces are done. Any face not
+yet scanned SHALL be accepted, in any order and turned any way. The screen SHALL NOT suggest an
+order or a way to hold the cube; it SHALL ask for any face not yet scanned, held any way round.
 
 #### Scenario: First face
 - **WHEN** the scan starts
-- **THEN** it asks for the front face: green centre towards the user, white on top
+- **THEN** it asks for any face of the cube, held any way round, and names no particular face
+
+#### Scenario: Another face first
+- **WHEN** the scan starts and the user shows the top face turned a quarter
+- **THEN** it is captured and recognised as the top face
 
 ### Requirement: Live reading
 While a face is in the grid, each cell SHALL show a dot of the colour the camera currently sees
-there, as seen, without deciding which cube colour it is. If the centre reads closer to another
-cube colour than the asked face's, the screen SHALL say which colour the centre looks like and that
-the user can hold still if this is the right side anyway; this SHALL NOT stop the capture. The
-reading of the centre SHALL use the colours this cube has already shown (the accepted centres) and
-a default palette for colours not seen yet.
+there, as seen, without deciding which cube colour it is. The screen SHALL say which face the centre
+looks like, among the faces not yet scanned; this SHALL NOT stop the capture. The reading of the
+centre SHALL use the colours this cube has already shown (the accepted centres) and a default
+palette for colours not seen yet.
 
 #### Scenario: Wrong face
-- **WHEN** the front face is asked for and the camera sees a red centre
-- **THEN** the screen says the centre looks red and the user can hold still if this is the right side, and the face can still be captured as the front
+- **WHEN** no face is done yet and the camera sees a red centre
+- **THEN** the screen says the centre looks like the right face, and the face can be captured
 
 #### Scenario: Warm red
-- **WHEN** the cube's red reads closer to the default orange and the right face (red centre) is asked for
-- **THEN** the face is captured, and once accepted, this cube's red reads as red
+- **WHEN** the cube's red reads closer to the default orange and the right face (red centre) is shown
+- **THEN** the face can be captured and its recognised face changed to the right face in the review, and once accepted, this cube's red reads as red
 
 #### Scenario: Raw colours
 - **WHEN** a cell of the grid sees a pinkish red
@@ -38,12 +42,12 @@ a default palette for colours not seen yet.
 A face SHALL be captured automatically when every cell's reading has stayed close to the same
 colour for about 1.5 seconds, with a short vibration, or at once with the capture button. While the
 face is held steady, a progress indicator SHALL show how much of the hold time has passed; a clear
-change in any cell's reading SHALL restart it. While the camera still sees the face accepted last,
-the screen SHALL ask the user to turn the cube and SHALL NOT capture. The previous face SHALL be
-re-scannable.
+change in any cell's reading SHALL restart it. While the camera sees a face already accepted, in any
+rotation, the screen SHALL ask the user to turn to a face not yet scanned and SHALL NOT capture. The
+face accepted last SHALL be re-scannable.
 
 #### Scenario: Held still
-- **WHEN** the asked face is held still in the grid for the hold time
+- **WHEN** a face not yet scanned is held still in the grid for the hold time
 - **THEN** it is captured and shown for confirmation
 
 #### Scenario: Still turning
@@ -51,12 +55,12 @@ re-scannable.
 - **THEN** nothing is captured and the progress starts again
 
 #### Scenario: Previous face still in view
-- **WHEN** the front face has been accepted and the camera still sees it
-- **THEN** the screen asks to turn the cube, the right face stays asked for and nothing is captured
+- **WHEN** the front face has been accepted and the camera sees it again, turned a quarter
+- **THEN** the screen asks to turn to another face and nothing is captured
 
 #### Scenario: Redo
-- **WHEN** the user taps redo after confirming the right face
-- **THEN** the right face is asked for again
+- **WHEN** the user taps redo after accepting the right face
+- **THEN** the right face is no longer done and can be scanned again
 
 ### Requirement: Classification by the centres
 After all faces, each sticker SHALL get the colour of the centre it is closest to, such that every
@@ -71,17 +75,26 @@ colour is used exactly nine times, and a confidence. The six centres SHALL keep 
 - **THEN** it is marked uncertain
 
 ### Requirement: Result
-A valid scan where no sticker is uncertain SHALL open the solution directly. Otherwise the manual
-editor SHALL open with the scanned colours, the uncertain or problem stickers marked, and a note
-asking the user to check them.
+After the six faces, the scan SHALL find how each face was turned, on the assumption that the real
+cube is solvable: of all rotations of the six faces, the one that gives a solvable cube SHALL be
+used. When none does, the one with the most stickers forming real pieces SHALL be used, and if the
+colours of two opposite centres were read the wrong way round, swapping them SHALL be tried too.
+When rotations giving different solvable cubes exist, the faces whose rotation differs SHALL be
+marked. A valid scan where no sticker is uncertain or marked SHALL open the solution directly.
+Otherwise the check SHALL open with the scanned colours, the uncertain or problem stickers marked,
+and a note asking the user to check them.
 
 #### Scenario: Confident scan
 - **WHEN** the scan is valid and confident
 - **THEN** the solution opens
 
+#### Scenario: Faces turned
+- **WHEN** a scrambled cube is scanned with the top face turned a quarter and the back face upside down
+- **THEN** the solution opens for the real cube
+
 #### Scenario: Unsure scan
 - **WHEN** the scan has uncertain stickers or is invalid
-- **THEN** the manual editor opens with those stickers marked
+- **THEN** the check opens with those stickers marked
 
 ### Requirement: Camera permission
 Without camera permission the screen SHALL explain why the camera is needed, offer to ask for it
@@ -93,39 +106,40 @@ again and offer manual input instead.
 
 ### Requirement: Confirm each face
 After a capture the screen SHALL stop reading the camera and show the nine colours as the camera
-saw them, with a note that the colours are worked out at the end from the whole cube, and a choice
-to go on to the next face or scan the same face again. If the captured centre read as another
-colour than the asked face's, the review SHALL say so and that the user can go on if this is the
-right side. Stickers in the review SHALL NOT be tappable. Only an accepted face SHALL count as done.
+saw them, which face it was recognised as, with a note that the colours are worked out at the end
+from the whole cube, and a choice to go on or scan again. The user SHALL be able to change the
+recognised face to any face not yet scanned by tapping its centre colour. Stickers in the review
+SHALL NOT be tappable. Only an accepted face SHALL count as done.
 
 #### Scenario: Accept
-- **WHEN** the front face has been captured and the user taps "Good, next"
-- **THEN** the right face is asked for
-
-#### Scenario: Scan again
-- **WHEN** the front face has been captured and the user taps "Scan again"
-- **THEN** the front face is asked for again and nothing is stored for it
+- **WHEN** a face recognised as the front has been captured and the user taps "Good, next"
+- **THEN** the front face counts as done and any face not yet scanned is asked for
 
 #### Scenario: Centre note in the review
-- **WHEN** the face captured as the front has a centre that read as red
-- **THEN** the review says the centre read as red and that the user can go on if this is the right side
+- **WHEN** a capture was recognised as the left face (orange) and the user taps the red centre colour
+- **THEN** the review says right face, and on "Good, next" the right face counts as done
+
+#### Scenario: Scan again
+- **WHEN** a face has been captured and the user taps "Scan again"
+- **THEN** nothing is stored for it and the camera is read again
 
 #### Scenario: Tap to fix
 - **WHEN** the user taps a sticker in the review
-- **THEN** nothing changes; doubtful stickers are checked in the manual editor after the scan
+- **THEN** nothing changes; doubtful stickers are checked after the scan
 
 ### Requirement: Steady camera settings
 When the first face is captured, the camera's exposure and white balance SHALL be locked for the
-rest of the scan, so that every face is read under the settings the camera had while the front face
-was held still. Scanning the front face again SHALL release the lock until it is captured again.
+rest of the scan, so that every face is read under the settings the camera had while the first face
+was held still. Going back to no face done (scanning the first face again) SHALL release the lock
+until a face is captured again.
 
 #### Scenario: Lock after the first face
-- **WHEN** the front face is captured
-- **THEN** exposure and white balance are locked until the scan ends or returns to the front face
+- **WHEN** the first face is captured, whichever face it is
+- **THEN** exposure and white balance are locked until the scan ends or no face is done again
 
 #### Scenario: Turning after the first face
-- **WHEN** the front face has been captured and the user turns the cube towards a darker view before accepting
-- **THEN** the next faces are read with the front face's exposure, not a brighter one
+- **WHEN** the first face has been captured and the user turns the cube towards a darker view before accepting
+- **THEN** the next faces are read with the first face's exposure, not a brighter one
 
 ### Requirement: One screen
 In portrait the scan screen SHALL fit the display without scrolling. The actions (capture and redo
@@ -174,15 +188,19 @@ notice SHALL be written to the log with where it happened and how long it lasted
 - **THEN** the log gets a stall line with its length
 
 ### Requirement: Scan one face
-The scan SHALL be able to ask for a single face, started from the check of a scan. It SHALL show that
-face with how to hold the cube, capture and confirm it as in the full scan, and on "Good, next"
-return the face's readings and its picture to the check instead of asking for another face. The
-face progress SHALL show only that face, and the action to scan the previous face again SHALL not be
-offered.
+The scan SHALL be able to ask for a single face, started from the check of a scan. It SHALL name that
+face and its centre colour, capture and confirm it as in the full scan, accept it turned any way,
+and on "Good, next" return the face's readings and its picture to the check instead of asking for
+another face. The face progress SHALL show only that face, and the action to scan the previous face
+again SHALL not be offered.
 
 #### Scenario: One face only
 - **WHEN** the one-face scan is opened for the top face and the user accepts a capture
 - **THEN** the check is shown again with the top face's new reading and no other face is asked for
+
+#### Scenario: Turned in the rescan
+- **WHEN** the top face is rescanned turned a quarter
+- **THEN** the check shows the top face's colours the right way round
 
 #### Scenario: Scan the same face again
 - **WHEN** the top face has been captured in the one-face scan and the user taps "Scan again"
