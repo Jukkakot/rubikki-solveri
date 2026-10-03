@@ -25,6 +25,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -37,12 +38,13 @@ class ScanScreenTest {
     private var outcome: ScanOutcome? = null
     private val saved = ArrayList<String>()
     private var cubeInView = true
+    private val locks = ArrayList<Boolean>()
     private val cube = Cube.solved().apply("R U F' D2 L B")
 
     private fun scan() {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0, savePicture = { saved += it; "$it.png" }, looksLikeCube = { cubeInView }, preview = {})
+                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0, savePicture = { saved += it; "$it.png" }, looksLikeCube = { cubeInView }, onLockExposure = { locks += it }, preview = {})
             }
         }
     }
@@ -54,6 +56,19 @@ class ScanScreenTest {
             compose.runOnIdle { frames.tryEmit(faceSamples(view)) }
             compose.waitForIdle()
         }
+    }
+
+    @Test
+    fun exposureLocksOnTheFirstCapture() {
+        scan()
+        compose.waitForIdle()
+        assertEquals(listOf(false), locks)
+        show(FaceView.FRONT, 3)
+        // Captured, not yet accepted: already locked.
+        assertEquals(listOf(false, true), locks)
+        compose.onNodeWithText("Kuvaa uudelleen").performClick()
+        compose.waitForIdle()
+        assertEquals(listOf(false, true, false), locks)
     }
 
     @Test
@@ -150,20 +165,29 @@ class ScanScreenTest {
     }
 
     @Test
+    @Config(qualifiers = "fi-w411dp-h891dp")
     fun openedFromAScan() {
         val f1 = Stickers.index(Face.F, 1)
+        var scanAgain = false
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
                 ManualInputScreen(
                     onBack = {}, onValid = {}, initial = CubeEditor.of(cube), initialMarked = setOf(f1),
                     title = R.string.check_title, note = R.string.check_note,
+                    pictures = mapOf(Face.F to IntArray(120 * 120) { 0xff808080.toInt() }),
+                    onScanAgain = { scanAgain = true },
                 )
             }
         }
         compose.onNodeWithText("Tarkista värit").assertIsDisplayed()
-        compose.onNodeWithText("Skannaus ei ollut varma", substring = true).assertIsDisplayed()
-        compose.onNodeWithContentDescription("punainen").performClick()
+        compose.onNodeWithText("Vertaa kameran kuvaan.", substring = true).assertIsDisplayed()
+        // The camera's picture of the front face is beside the editable face, and the palette and
+        // the check button are in view without scrolling.
+        compose.onNodeWithContentDescription("Kamera näki").assertIsDisplayed()
+        compose.onNodeWithContentDescription("punainen").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Tarkista").assertIsDisplayed()
         compose.onNodeWithContentDescription("Etupuoli, tarra 1").performClick()
-        assertTrue(compose.onAllNodesWithText("Skannaus ei ollut varma", substring = true).fetchSemanticsNodes().isEmpty())
+        compose.onNodeWithText("Skannaa uudelleen").performClick()
+        assertTrue(scanAgain)
     }
 }

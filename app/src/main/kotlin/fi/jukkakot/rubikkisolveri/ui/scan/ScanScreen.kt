@@ -64,6 +64,11 @@ import fi.jukkakot.rubikkisolveri.cube.scan.ScanSession
 import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.Evt
 import fi.jukkakot.rubikkisolveri.log.ScanPictures
+import fi.jukkakot.rubikkisolveri.cube.Face
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicReference
 import fi.jukkakot.rubikkisolveri.ui.common.colorName
 import fi.jukkakot.rubikkisolveri.ui.common.faceName
@@ -89,16 +94,33 @@ fun ScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome)
         val pictures = remember { ScanPictures.of(context) }
         // The latest grid picture and whether it shows cube stickers (worked out on the camera thread).
         val latestPicture = remember { AtomicReference<Pair<IntArray, Boolean>?>(null) }
+        // The picture of each face as last captured, for the check after an unsure scan.
+        val facePictures = remember { HashMap<Face, IntArray>() }
+        val scope = rememberCoroutineScope()
         ScanContent(
             frames = frames,
             torch = torch,
             onTorch = { torch = it },
             onBack = onBack,
             onManual = onManual,
-            onResult = onResult,
+            onResult = { outcome ->
+                LastScanPictures.byFace = facePictures.toMap()
+                onResult(outcome)
+            },
             cameraFailed = cameraFailed,
+            watchStalls = true,
             onLockExposure = { lockExposure = it },
-            savePicture = { face -> latestPicture.get()?.let { pictures.save(face, it.first, FrameSampler.PICTURE_SIZE) } },
+            savePicture = { face ->
+                latestPicture.get()?.first?.let { picture ->
+                    facePictures[Face.valueOf(face)] = picture
+                    pictures.newName(face).also { name ->
+                        scope.launch(Dispatchers.IO) {
+                            runCatching { pictures.write(name, picture, FrameSampler.PICTURE_SIZE) }
+                                .onFailure { AppLog.logger.error(Evt.SCAN_ERROR, it, "picture") }
+                        }
+                    }
+                }
+            },
             looksLikeCube = { latestPicture.get()?.second ?: true },
             preview = { modifier ->
                 CameraPreview(
@@ -129,6 +151,7 @@ fun ScanContent(
     onLockExposure: (Boolean) -> Unit = {},
     savePicture: (face: String) -> String? = { null },
     looksLikeCube: () -> Boolean = { true },
+    watchStalls: Boolean = false,
     preview: @Composable (Modifier) -> Unit,
 ) {
     val session = remember { ScanSession(holdMillis = holdMillis) }
@@ -197,8 +220,22 @@ fun ScanContent(
             if (!session.isDone && session.review == null) handle(session.onFrame(samples, System.nanoTime() / 1_000_000, looksLikeCube()))
         }
     }
-    // After the first face, keep exposure and white balance fixed so every face is read alike.
-    LaunchedEffect(index > 0) { onLockExposure(index > 0) }
+    // From the first capture on (the cube held still, the camera settled on it), keep exposure and
+    // white balance fixed so every face is read alike. Scanning the front again releases it.
+    val locked = index > 0 || review != null
+    LaunchedEffect(locked) { onLockExposure(locked) }
+    if (watchStalls) {
+        LaunchedEffect(Unit) {
+            var last = 0L
+            while (true) {
+                withFrameNanos { now ->
+                    val gap = (now - last) / 1_000_000
+                    if (last > 0 && gap >= UI_STALL_MILLIS) AppLog.info(Evt.SCAN_STALL, null, "where" to "ui", "ms" to gap)
+                    last = now
+                }
+            }
+        }
+    }
 
     val view = FaceView.entries.getOrNull(index) ?: FaceView.BOTTOM
     Scaffold(
@@ -406,3 +443,6 @@ private fun PermissionScaffold(onBack: () -> Unit, content: @Composable () -> Un
 }
 
 private fun Rgb.toColor() = Color(r, g, b)
+
+/** A screen frame this late is a stutter worth logging. */
+private const val UI_STALL_MILLIS = 150L

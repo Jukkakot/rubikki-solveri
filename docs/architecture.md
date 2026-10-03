@@ -57,6 +57,9 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
    still in view (`PreviousFace`), and a grid that does not look like stickers (`NoCube`, decided by
    `FrameSampler.looksLikeCube` on the grid picture: in ≥ 6 cells the middle is ≥ 15 L lighter than
    the darkest tenth of the cell's edge, i.e. dark gaps between stickers; colour plays no part). Redo; capture button. Live dots show the raw camera colour.
+   Exposure/white balance lock at the first capture (`index > 0 || review != null`); capture
+   pictures are written on `Dispatchers.IO`; `scan.stall` logs camera gaps ≥ 300 ms and UI frames
+   ≥ 150 ms apart.
 4. `ColorClassifier.classify`: CIE Lab (lightness weight 0.5), balanced assignment (Hungarian,
    every colour exactly nine times) seeded by the six centres, refined twice; confidence per
    sticker; below 0.12 is uncertain.
@@ -169,7 +172,7 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 | `PracticeRoute(stage, seed)` | Practice | the solution screen limited to one stage |
 | `TimerRoute`, `HistoryRoute`, `ScrambleGuideRoute(moves)` | Timer, history, guided scramble | |
 | `ScanRoute` | Scan | camera permission, grid, live dots, auto-capture; one screen (actions in the bottom bar, status and review texts on the camera); result → solve or check |
-| `ManualInputRoute(cube?, marked?, fromScan)` | Manual input / check a scan | face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution |
+| `ManualInputRoute(cube?, marked?, fromScan)` | Manual input / check a scan | one screen (palette, ‹ › and check in the bottom bar); face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution. From a scan: one-line instruction, the face's camera picture beside the grid (`LastScanPictures`, in memory), "Scan again" |
 | `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
 | `SolveRoute(cube)` | Solution | background solve, then the move guide stepper; camera mode follows on the real cube |
 | `SettingsRoute`, `LogRoute` | Settings, log | |

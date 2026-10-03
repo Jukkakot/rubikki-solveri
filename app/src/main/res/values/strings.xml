@@ -121,7 +121,10 @@
     <string name="scan_permission_settings">Avaa sovelluksen asetukset</string>
     <string name="scan_camera_error">Kameraa ei saatu käyttöön.</string>
     <string name="check_title">Tarkista värit</string>
-    <string name="check_note">Skannaus ei ollut varma punaisella merkityistä tarroista. Tarkista ne ja korjaa tarvittaessa, sitten paina Tarkista.</string>
+    <string name="check_note">Vertaa kameran kuvaan. Valitse väri alta ja napauta väärää tarraa. Punareunaiset ovat epävarmoja.</string>
+    <string name="check_scan_again">Skannaa uudelleen</string>
+    <string name="check_picture">Kamera näki</string>
+    <string name="check_colors">Värit</string>
     <string name="settings_moves">Siirrot</string>
     <string name="settings_notation">Näytä siirtomerkinnät</string>
     <string name="settings_notation_summary">Esim. R, U\' ja F2 sanallisen ohjeen alla</string>

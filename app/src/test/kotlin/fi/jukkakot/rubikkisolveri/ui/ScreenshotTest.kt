@@ -65,6 +65,32 @@ class ScreenshotTest {
         ManualInputScreen(onBack = {}, onValid = {}, initial = CubeEditor.of(Cube.solved().apply("R U F")).paint(0, null))
     }
 
+    /** A picture like the scan's: nine stickers in [cube] colours (letters) with dark gaps. */
+    private fun stickerPicture(cube: String): IntArray = IntArray(120 * 120) { i ->
+        val x = i % 120
+        val y = i / 120
+        if (x % 40 < 4 || x % 40 >= 36 || y % 40 < 4 || y % 40 >= 36) {
+            0xff151515.toInt()
+        } else {
+            val c = fi.jukkakot.rubikkisolveri.ui.cube3d.StickerColors.of(fi.jukkakot.rubikkisolveri.cube.CubeColor.fromLetter(cube[(y / 40) * 3 + x / 40]))
+            (0xff shl 24) or ((c.red * 255).toInt() shl 16) or ((c.green * 255).toInt() shl 8) or (c.blue * 255).toInt()
+        }
+    }
+
+    /** The check after an unsure scan: the phone scan of 2026-10-03 08:17 (overexposed, invalid). */
+    @Test
+    fun scanCheck() = shot("scan-check") {
+        ManualInputScreen(
+            onBack = {}, onValid = {},
+            initial = CubeEditor.decode("YWYGWWGYOWYGRRBRRBYBBWGGROOBOWBYYRRRWROYOOBGGGBOGBWYOW")!!,
+            initialMarked = setOf(8, 9, 20),
+            title = fi.jukkakot.rubikkisolveri.R.string.check_title,
+            note = fi.jukkakot.rubikkisolveri.R.string.check_note,
+            pictures = mapOf(fi.jukkakot.rubikkisolveri.cube.Face.U to stickerPicture(cube = "YWYGWWGYO")),
+            onScanAgain = {},
+        )
+    }
+
     @Test
     fun manualInputDark() = shot("manual-input-dark", dark = true) { ManualInputScreen(onBack = {}, onValid = {}) }
 

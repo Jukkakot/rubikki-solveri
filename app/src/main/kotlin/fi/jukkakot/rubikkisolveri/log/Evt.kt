@@ -12,6 +12,7 @@ enum class Evt(val id: String) {
     SOLVE_DONE("solve.done"),
     SOLVE_FAILED("solve.failed"),
     SCAN_CAPTURE("scan.capture"),
+    SCAN_STALL("scan.stall"),
     SCAN_FACE("scan.face"),
     SCAN_DONE("scan.done"),
     SCAN_LOCK("scan.lock"),

@@ -1,5 +1,17 @@
 package fi.jukkakot.rubikkisolveri.ui.manual
 
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.unit.min
+import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,22 +21,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -80,6 +87,8 @@ fun ManualInputScreen(
     initialMarked: Set<Int> = emptySet(),
     title: Int = R.string.manual_title,
     note: Int? = null,
+    pictures: Map<Face, IntArray> = emptyMap(),
+    onScanAgain: (() -> Unit)? = null,
 ) {
     var encoded by rememberSaveable { mutableStateOf(initial.encode()) }
     val editor = CubeEditor.decode(encoded) ?: CubeEditor.empty()
@@ -114,6 +123,7 @@ fun ManualInputScreen(
                     }
                 },
                 actions = {
+                    onScanAgain?.let { TextButton(onClick = it) { Text(stringResource(R.string.check_scan_again)) } }
                     IconButton(onClick = { menuOpen = true }) {
                         Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.manual_more))
                     }
@@ -136,20 +146,57 @@ fun ManualInputScreen(
                 },
             )
         },
-    ) { padding ->
-        Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            if (note != null && handedMarks.isNotEmpty()) {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
-                    modifier = Modifier.fillMaxWidth(),
+        bottomBar = {
+            // Palette and actions always in view: the screen never scrolls.
+            Surface(tonalElevation = 3.dp) {
+                Column(
+                    Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text(stringResource(note), modifier = Modifier.padding(16.dp))
+                    validity?.let { result ->
+                        Text(
+                            validityMessage(result),
+                            color = if (result.isValid) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    Palette(editor, selectedColor, onSelect = { colorIndex = it.ordinal })
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { view.previous?.let { faceIndex = it.ordinal } }, enabled = view.previous != null, modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.manual_previous), maxLines = 1)
+                        }
+                        OutlinedButton(onClick = { view.next?.let { faceIndex = it.ordinal } }, enabled = view.next != null, modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.manual_next), maxLines = 1)
+                        }
+                        Button(
+                            onClick = {
+                                val cube = editor.toCube() ?: return@Button
+                                val result = CubeCheck.validity(cube)
+                                validity = result
+                                if (result.isValid) onValid(cube)
+                            },
+                            enabled = editor.isComplete,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(stringResource(R.string.manual_check), maxLines = 1)
+                        }
+                    }
                 }
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        },
+    ) { padding ->
+        Column(
+            Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (note != null) {
+                Text(stringResource(note), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.tertiary)
+            }
+            Row(
+                Modifier.fillMaxWidth().height(110.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 MiniNet(editor, view, marked, onSelect = { faceIndex = it.ordinal })
                 Cube3D(
                     colors = editor.colors.map(StickerColors::of),
@@ -157,64 +204,55 @@ fun ManualInputScreen(
                     marked = marked,
                     onTap = { sticker -> faceIndex = FaceView.of(Face.entries[sticker / 9]).ordinal },
                     description = stringResource(R.string.manual_preview),
-                    modifier = Modifier.weight(1f).aspectRatio(1f),
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
             }
             Text(
                 stringResource(R.string.manual_face_title, stringResource(faceName(view)), faceIndex + 1),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
             )
-            Text(holdHint(view), style = MaterialTheme.typography.bodyLarge)
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                FaceGrid(
-                    editor = editor,
-                    view = view,
-                    marked = marked,
-                    onTap = { index -> update(editor.paint(index, selectedColor)) },
-                )
-            }
-            Palette(editor, selectedColor, onSelect = { colorIndex = it.ordinal })
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = { view.previous?.let { faceIndex = it.ordinal } }, enabled = view.previous != null, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.manual_previous))
-                }
-                OutlinedButton(onClick = { view.next?.let { faceIndex = it.ordinal } }, enabled = view.next != null, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.manual_next))
-                }
-            }
-            Button(
-                onClick = {
-                    val cube = editor.toCube() ?: return@Button
-                    val result = CubeCheck.validity(cube)
-                    validity = result
-                    if (result.isValid) onValid(cube)
-                },
-                enabled = editor.isComplete,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.manual_check))
-            }
-            validity?.let { result ->
-                Card(
-                    colors = if (result.isValid) {
-                        CardDefaults.cardColors()
-                    } else {
-                        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(validityMessage(result), modifier = Modifier.padding(16.dp))
+            Text(holdHint(view), style = MaterialTheme.typography.bodySmall)
+            // The face fills what is left; when checking a scan, the camera's picture sits beside it.
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                val picture = pictures[view.face]
+                if (picture == null) {
+                    FaceGrid(editor, view, marked, onTap = { index -> update(editor.paint(index, selectedColor)) }, Modifier.size(min(maxWidth, maxHeight)))
+                } else {
+                    val side = min((maxWidth - 12.dp) / 2, maxHeight - 24.dp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(stringResource(R.string.check_picture), style = MaterialTheme.typography.labelLarge)
+                            CameraPicture(picture, Modifier.size(side))
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(stringResource(R.string.check_colors), style = MaterialTheme.typography.labelLarge)
+                            FaceGrid(editor, view, marked, onTap = { index -> update(editor.paint(index, selectedColor)) }, Modifier.size(side))
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+/** A grid picture from the scan ([FrameSampler.PICTURE_SIZE] square ARGB), drawn sharp. */
 @Composable
-private fun FaceGrid(editor: CubeEditor, view: FaceView, marked: Set<Int>, onTap: (Int) -> Unit) {
+private fun CameraPicture(argb: IntArray, modifier: Modifier) {
+    val size = FrameSampler.PICTURE_SIZE
+    val bitmap = remember(argb) { Bitmap.createBitmap(argb, size, size, Bitmap.Config.ARGB_8888).asImageBitmap() }
+    Image(
+        bitmap = bitmap,
+        contentDescription = stringResource(R.string.check_picture),
+        filterQuality = FilterQuality.None,
+        modifier = modifier.clip(RoundedCornerShape(12.dp)),
+    )
+}
+
+@Composable
+private fun FaceGrid(editor: CubeEditor, view: FaceView, marked: Set<Int>, onTap: (Int) -> Unit, modifier: Modifier) {
     val name = stringResource(faceName(view))
     Column(
-        Modifier.fillMaxWidth(0.8f).aspectRatio(1f).clip(RoundedCornerShape(12.dp)).background(StickerColors.PLASTIC).padding(6.dp),
+        modifier.clip(RoundedCornerShape(12.dp)).background(StickerColors.PLASTIC).padding(6.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         for (row in 0 until 3) {

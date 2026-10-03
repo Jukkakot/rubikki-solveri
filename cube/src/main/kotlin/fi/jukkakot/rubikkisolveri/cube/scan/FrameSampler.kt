@@ -107,26 +107,42 @@ object FrameSampler {
      * desk or a sheet of paper does not, whatever its colour.
      */
     fun gapContrast(picture: IntArray, size: Int = PICTURE_SIZE): List<Double> {
+        // Runs on every camera frame: primitive arrays only, lightness through a lookup table.
         val cell = size / 3
-        val middle = cell * 3 / 10 until cell - cell * 3 / 10
+        val m0 = cell * 3 / 10
+        val m1 = cell - m0
         val edge = cell / 5
+        val mid = DoubleArray((m1 - m0) * (m1 - m0))
+        val ring = DoubleArray(cell * cell)
         return (0 until 9).map { i ->
             val left = (i % 3) * cell
             val top = (i / 3) * cell
-            val mid = ArrayList<Double>()
-            val ring = ArrayList<Double>()
+            var nm = 0
+            var nr = 0
             for (y in 0 until cell) for (x in 0 until cell) {
-                val inMiddle = x in middle && y in middle
+                val inMiddle = x in m0 until m1 && y in m0 until m1
                 val onEdge = x < edge || y < edge || x >= cell - edge || y >= cell - edge
                 if (!inMiddle && !onEdge) continue
-                val p = picture[(top + y) * size + left + x]
-                val l = Rgb((p shr 16) and 0xff, (p shr 8) and 0xff, p and 0xff).toLab().l
-                if (inMiddle) mid += l else ring += l
+                val l = lightness(picture[(top + y) * size + left + x])
+                if (inMiddle) mid[nm++] = l else ring[nr++] = l
             }
-            mid.sort()
-            ring.sort()
-            mid[mid.size / 2] - ring[ring.size / 10]
+            java.util.Arrays.sort(mid, 0, nm)
+            java.util.Arrays.sort(ring, 0, nr)
+            mid[nm / 2] - ring[nr / 10]
         }
+    }
+
+    /** sRGB channel value to linear light. */
+    private val LINEAR = DoubleArray(256) { c ->
+        val v = c / 255.0
+        if (v <= 0.04045) v / 12.92 else Math.pow((v + 0.055) / 1.055, 2.4)
+    }
+
+    /** CIE L* of an ARGB pixel (same as [Rgb.toLab]'s `l`). */
+    fun lightness(argb: Int): Double {
+        val y = 0.2126 * LINEAR[(argb shr 16) and 0xff] + 0.7152 * LINEAR[(argb shr 8) and 0xff] + 0.0722 * LINEAR[argb and 0xff]
+        val f = if (y > 216.0 / 24389) Math.cbrt(y) else (24389.0 / 27 * y + 16) / 116
+        return 116 * f - 16
     }
 
     /** The grid [picture] shows cube stickers: enough cells have a dark gap around a lighter middle. */

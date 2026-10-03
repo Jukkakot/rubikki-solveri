@@ -1,5 +1,6 @@
 package fi.jukkakot.rubikkisolveri.ui.nav
 
+import fi.jukkakot.rubikkisolveri.ui.scan.LastScanPictures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -101,6 +102,12 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 initialMarked = route.marked?.split(',')?.mapNotNull { it.toIntOrNull() }?.toSet().orEmpty(),
                 title = if (route.fromScan) R.string.check_title else R.string.manual_title,
                 note = if (route.fromScan) R.string.check_note else null,
+                pictures = if (route.fromScan) LastScanPictures.byFace else emptyMap(),
+                onScanAgain = if (route.fromScan) {
+                    { navController.navigate(ScanRoute) { popUpTo<ManualInputRoute> { inclusive = true } } }
+                } else {
+                    null
+                },
             )
         }
         composable<ScanRoute> {

@@ -119,7 +119,10 @@
     <string name="scan_permission_settings">Open app settings</string>
     <string name="scan_camera_error">The camera could not be started.</string>
     <string name="check_title">Check the colours</string>
-    <string name="check_note">The scan was not sure about the stickers marked in red. Check them, fix any that are wrong, then tap Check.</string>
+    <string name="check_note">Compare with the camera picture. Pick a colour below and tap the wrong sticker. Red-edged ones are doubtful.</string>
+    <string name="check_scan_again">Scan again</string>
+    <string name="check_picture">Camera saw</string>
+    <string name="check_colors">Colours</string>
     <string name="settings_moves">Moves</string>
     <string name="settings_notation">Show move notation</string>
     <string name="settings_notation_summary">For example R, U\' and F2 under the words</string>

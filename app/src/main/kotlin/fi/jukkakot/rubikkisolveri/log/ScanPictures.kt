@@ -13,16 +13,18 @@ import java.util.Locale
  */
 class ScanPictures(val dir: File) {
 
-    /** Saves [argb] ([size]×[size]) for a capture of [face]; returns the file name. */
+    /** The file name for a capture of [face] at [now]. */
+    fun newName(face: String, now: Date = Date()): String =
+        SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.ROOT).format(now) + "-$face.png"
+
+    /** Writes the picture [name] (slow enough to keep off the main thread) and drops the oldest. */
     @Synchronized
-    fun save(face: String, argb: IntArray, size: Int, now: Date = Date()): String {
+    fun write(name: String, argb: IntArray, size: Int) {
         dir.mkdirs()
-        val name = SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.ROOT).format(now) + "-$face.png"
         val bitmap = Bitmap.createBitmap(argb, size, size, Bitmap.Config.ARGB_8888)
         File(dir, name).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         bitmap.recycle()
         list().dropLast(KEEP).forEach { it.delete() }
-        return name
     }
 
     /** The pictures, oldest first. */

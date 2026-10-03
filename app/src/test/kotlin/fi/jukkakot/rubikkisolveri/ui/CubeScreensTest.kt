@@ -24,12 +24,14 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
+@Config(qualifiers = "fi-w411dp-h891dp")
 class CubeScreensTest {
     @get:Rule
     val compose = createComposeRule()
@@ -50,7 +52,7 @@ class CubeScreensTest {
     fun paintASticker() {
         manual()
         compose.onNodeWithContentDescription("Etupuoli, tarra 1").assert(stateIs("ei väriä"))
-        compose.onNodeWithContentDescription("punainen").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("punainen").performClick()
         compose.onNodeWithContentDescription("Etupuoli, tarra 1").performClick()
         compose.onNodeWithContentDescription("Etupuoli, tarra 1").assert(stateIs("punainen"))
     }
@@ -58,7 +60,7 @@ class CubeScreensTest {
     @Test
     fun centresAreFixedOnScreen() {
         manual()
-        compose.onNodeWithContentDescription("punainen").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("punainen").performClick()
         compose.onNodeWithContentDescription("Etupuoli, tarra 5").performClick()
         compose.onNodeWithContentDescription("Etupuoli, tarra 5").assert(stateIs("vihreä"))
     }
@@ -66,15 +68,15 @@ class CubeScreensTest {
     @Test
     fun nextFace() {
         manual()
-        compose.onNodeWithText("Seuraava").performScrollTo().performClick()
-        compose.onNodeWithText("Pidä kuutiota näin: punainen keskiö sinua kohti, valkoinen ylhäällä.").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Oikea puoli (2/6)").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Seuraava").performClick()
+        compose.onNodeWithText("Pidä kuutiota näin: punainen keskiö sinua kohti, valkoinen ylhäällä.").assertIsDisplayed()
+        compose.onNodeWithText("Oikea puoli (2/6)").assertIsDisplayed()
     }
 
     @Test
     fun unfinishedCube() {
         manual()
-        compose.onNodeWithText("Tarkista").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("Tarkista").assertIsNotEnabled()
     }
 
     @Test
@@ -83,8 +85,8 @@ class CubeScreensTest {
         val urf = Corner.URF.stickers
         val twisted = solved.with(urf[0], solved[urf[2]]).with(urf[1], solved[urf[0]]).with(urf[2], solved[urf[1]])
         manual(CubeEditor.of(twisted))
-        compose.onNodeWithText("Tarkista").performScrollTo().assertIsEnabled().performClick()
-        compose.onNodeWithText("Yksi kulma on kiertynyt", substring = true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Tarkista").assertIsEnabled().performClick()
+        compose.onNodeWithText("Yksi kulma on kiertynyt", substring = true).assertIsDisplayed()
         assertNull(accepted)
     }
 
@@ -92,7 +94,7 @@ class CubeScreensTest {
     fun validCube() {
         val cube = Cube.solved().apply("R U R' F2")
         manual(CubeEditor.of(cube))
-        compose.onNodeWithText("Tarkista").performScrollTo().performClick()
+        compose.onNodeWithText("Tarkista").performClick()
         assertEquals(cube, accepted)
     }
 

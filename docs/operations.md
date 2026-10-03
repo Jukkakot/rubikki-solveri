@@ -58,7 +58,10 @@ The scan logs the readings and keeps a small picture of the grid for every captu
   the button, retakes too): the picture's file name and the nine readings (hex RGB, row by row).
 - `scan.face face=F rgb=…,… centreLooksLike=R` — an accepted face; `centreLooksLike` when the
   centre read as another colour.
-- `scan.lock lock=true` — exposure and white balance locked after the first face.
+- `scan.lock lock=true` — exposure and white balance locked when the first face is captured
+  (`lock=false` when the front face is scanned again).
+- `scan.stall where=camera|ui ms=…` — the camera frames or the screen stopped for that long; a
+  freeze the user saw should show up here.
 - `scan.done valid=… validity=… uncertain=N cube=…` — the result (`cube` is the 54 colour letters,
   `.` for unknown).
 

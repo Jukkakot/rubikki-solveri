@@ -22,3 +22,4 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 14 | `scan-layout` | done | Scan fits one screen: actions always visible at the bottom, status and review texts on the camera view (from phone testing) |
 | 15 | `scan-cube-check` | done | No auto-capture without a cube in the grid; a small picture of every capture, shared with the log (from phone testing) |
 | 16 | `scan-grid-check` | done | The cube check looks for the dark gaps between stickers instead of colours; the first successful phone scan is a regression test |
+| 17 | `scan-polish` | done | Exposure locked at the first capture (fixes the overexposed scan), no main-thread work at capture and stall logging, the check page fits one screen and shows the camera picture |

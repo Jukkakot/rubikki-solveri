@@ -27,6 +27,9 @@ import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.Evt
 import java.util.concurrent.Executors
 
+/** Camera frames this far apart are a stall worth logging. */
+private const val CAMERA_STALL_MILLIS = 300L
+
 @androidx.annotation.OptIn(markerClass = [ExperimentalCamera2Interop::class])
 private fun lockExposure(controller: LifecycleCameraController, lock: Boolean) {
     val control = controller.cameraControl ?: return
@@ -75,8 +78,14 @@ fun CameraPreview(
     }
     DisposableEffect(controller) {
         var buffer = ByteArray(0)
+        var lastFrame = 0L
         controller.setImageAnalysisAnalyzer(executor) { image: ImageProxy ->
             try {
+                val now = System.nanoTime() / 1_000_000
+                if (lastFrame > 0 && now - lastFrame >= CAMERA_STALL_MILLIS) {
+                    AppLog.info(Evt.SCAN_STALL, null, "where" to "camera", "ms" to now - lastFrame)
+                }
+                lastFrame = now
                 val plane = image.planes[0]
                 val bytes = plane.buffer
                 if (buffer.size != bytes.remaining()) buffer = ByteArray(bytes.remaining())
