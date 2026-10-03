@@ -121,3 +121,17 @@ rest of the scan, so that every face is read under the same settings.
 #### Scenario: Lock after the first face
 - **WHEN** the front face is accepted
 - **THEN** exposure and white balance are locked until the scan ends or returns to the front face
+
+### Requirement: One screen
+In portrait the scan screen SHALL fit the display without scrolling. The actions (capture and redo
+while scanning; scan again and go on during the review) SHALL stay visible at the bottom, and the
+status line, the hold progress and the review texts SHALL be shown on the camera view, not between
+it and the actions.
+
+#### Scenario: Review on a phone
+- **WHEN** a face has been captured on a phone in portrait
+- **THEN** "Good, next" and "Scan again" are visible without scrolling, and the review texts are on the dimmed camera view
+
+#### Scenario: Scanning on a phone
+- **WHEN** a face is being held in the grid
+- **THEN** the status and the progress are shown on the camera view and the capture button is visible without scrolling
