@@ -35,6 +35,10 @@ natural next step).
   installed version in the summary. No device listed: say so in one line, don't ask the user to
   connect. Never uninstall (it deletes the user's history); if the install fails on the signature,
   report it.
+- After a pushed change that touches UI, refresh the screen gallery
+  (https://claude.ai/artifact/FWqmj6ZeSBgK4qiQFXZyRR; recipe in `docs/development.md`) without a
+  review stop, and check its comments (ArtifactComments) at session start and when the user
+  mentions them. A new screen gets a screenshot test.
 
 ## Handover
 

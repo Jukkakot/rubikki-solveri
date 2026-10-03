@@ -20,6 +20,10 @@ import fi.jukkakot.rubikkisolveri.ui.cube3d.Cube3D
 import fi.jukkakot.rubikkisolveri.ui.cube3d.StickerColors
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
 import androidx.compose.runtime.Composable
+import fi.jukkakot.rubikkisolveri.R
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,7 +43,12 @@ class ScreenshotTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private fun shot(name: String, dark: Boolean = false, waitForText: String? = null, content: @Composable () -> Unit) {
+    /**
+     * Renders [content] in the light and the dark theme to `<name>-light.png` and `<name>-dark.png`
+     * (one composition; the theme switches in between, so the screen keeps its state).
+     */
+    private fun shot(name: String, waitForText: String? = null, content: @Composable () -> Unit) {
+        var dark by mutableStateOf(false)
         compose.setContent {
             RubikkiTheme(systemDark = dark, dynamicColor = false) { Surface(Modifier.fillMaxSize()) { content() } }
         }
@@ -51,10 +60,13 @@ class ScreenshotTest {
                 compose.mainClock.advanceTimeBy(100)
             }
         }
-        compose.mainClock.advanceTimeBy(2000)
-        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
         val dir = File("build/screenshots").apply { mkdirs() }
-        File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        for (theme in listOf("light", "dark")) {
+            dark = theme == "dark"
+            compose.mainClock.advanceTimeBy(2000)
+            val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+            File(dir, "$name-$theme.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
     }
 
     @Test
@@ -84,15 +96,12 @@ class ScreenshotTest {
             onBack = {}, onValid = {},
             initial = CubeEditor.decode("YWYGWWGYOWYGRRBRRBYBBWGGROOBOWBYYRRRWROYOOBGGGBOGBWYOW")!!,
             initialMarked = setOf(8, 9, 20),
-            title = fi.jukkakot.rubikkisolveri.R.string.check_title,
-            note = fi.jukkakot.rubikkisolveri.R.string.check_note,
+            title = R.string.check_title,
+            note = R.string.check_note,
             pictures = mapOf(fi.jukkakot.rubikkisolveri.cube.Face.U to stickerPicture(cube = "YWYGWWGYO")),
             onScanAgain = {},
         )
     }
-
-    @Test
-    fun manualInputDark() = shot("manual-input-dark", dark = true) { ManualInputScreen(onBack = {}, onValid = {}) }
 
     @Test
     fun solve() = shot("solve", waitForText = "Siirto 1/") {
@@ -105,7 +114,7 @@ class ScreenshotTest {
     }
 
     @Test
-    fun guideRightDark() = shot("guide-right-dark", dark = true, waitForText = "Siirto 1/") {
+    fun guideRight() = shot("guide-right", waitForText = "Siirto 1/") {
         SolveScreen(Cube.solved().apply("R2 U' R"), onBack = {}, onHome = {}, planner = INLINE_PLANNER)
     }
 
@@ -124,7 +133,7 @@ class ScreenshotTest {
     }
 
     @Test
-    fun learn() = shot("learn", waitForText = "Vaihe ") {
+    fun learn() = shot("solve-learn", waitForText = "Vaihe ") {
         SolveScreen(
             Cube.solved().apply("R U F' L2 D B R2"), onBack = {}, onHome = {}, planner = INLINE_PLANNER,
             initialMethod = fi.jukkakot.rubikkisolveri.ui.solve.SolveMethod.LEARN,
@@ -167,7 +176,7 @@ class ScreenshotTest {
     }
 
     @Test
-    fun scanReview() = shot("scan-review", dark = true, waitForText = "Näin kamera näki") {
+    fun scanReview() = shot("scan-review", waitForText = "Näin kamera näki") {
         val front = Cube.solved().apply("R U F'").let { cube ->
             (1..9).map { fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier.DEFAULT_PALETTE.getValue(cube.colorAt(fi.jukkakot.rubikkisolveri.cube.Face.F, it)) }
         }
@@ -186,5 +195,67 @@ class ScreenshotTest {
             progress = 0.35f,
             modifier = Modifier.fillMaxSize(),
         )
+    }
+
+    @Test
+    fun home() = shot("home") {
+        fi.jukkakot.rubikkisolveri.ui.home.HomeScreen(
+            entries = listOf(
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_scan) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_manual) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_learn) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_timer) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_free_cube) {},
+            ),
+            onOpenSettings = {}, crashedLastTime = false, onShowLog = {}, onCrashNoticeShown = {},
+            version = "1.0.51-0365b23 · 3.10.2026 11.30",
+        )
+    }
+
+    @Test
+    fun settings() = shot("settings") {
+        fi.jukkakot.rubikkisolveri.ui.settings.SettingsScreen(
+            language = fi.jukkakot.rubikkisolveri.settings.AppLanguage.entries.first(),
+            themeMode = fi.jukkakot.rubikkisolveri.settings.ThemeMode.SYSTEM,
+            version = "1.0.51-0365b23", onLanguage = {}, onThemeMode = {}, onOpenLog = {}, onBack = {},
+        )
+    }
+
+    @Test
+    fun about() = shot("about") { fi.jukkakot.rubikkisolveri.ui.settings.AboutScreen("1.0.51-0365b23", onBack = {}) }
+
+    @Test
+    fun log() = shot("log") {
+        fi.jukkakot.rubikkisolveri.ui.log.LogScreen(
+            lines = listOf(
+                "2026-10-03T08:09:51Z INFO solve.done method=FAST moves=17 ms=100",
+                "2026-10-03T08:09:51Z INFO scan.done valid=true validity=Valid uncertain=0",
+                "2026-10-03T08:09:50Z INFO scan.capture face=D picture=20261003-110950-204-D.png",
+            ),
+            onShare = {}, onClear = {}, onBack = {},
+        )
+    }
+
+    @Test
+    fun lessons() = shot("lessons") { fi.jukkakot.rubikkisolveri.ui.lessons.LessonsScreen(onOpen = {}, onBack = {}, practiceCounts = mapOf(0 to 3)) }
+
+    @Test
+    fun history() = shot("history") {
+        val repo = androidx.compose.runtime.remember {
+            fi.jukkakot.rubikkisolveri.progress.InMemoryProgressRepository().also { r ->
+                kotlinx.coroutines.runBlocking {
+                    r.addTimed(41_230L, "R U R' U'", 1_759_480_000_000)
+                    r.addGuided("FAST", 17, 95_000, 1_759_480_100_000)
+                    r.addPractice(1, 64_000, 1_759_480_200_000)
+                }
+            }
+        }
+        fi.jukkakot.rubikkisolveri.ui.progress.HistoryScreen(repo, onBack = {})
+    }
+
+    @Test
+    fun scanPermission() = shot("scan-permission") {
+        // Robolectric grants no camera permission: the screen shows why it is needed.
+        fi.jukkakot.rubikkisolveri.ui.scan.ScanScreen(onBack = {}, onManual = {}, onResult = {})
     }
 }

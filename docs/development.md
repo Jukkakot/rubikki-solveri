@@ -35,9 +35,19 @@ Run before every commit (CI runs the same):
 
 ## Screenshots without a phone — Implemented
 
-`./gradlew :app:testDebugUnitTest --tests '*ScreenshotTest*'` renders key screens with
-Robolectric's native graphics into `app/build/screenshots/*.png` (Galaxy S24-sized, light and
-dark). It only fails when rendering crashes; look at the images to check layout and the 3D cube.
+`./gradlew :app:testDebugUnitTest --tests '*ScreenshotTest*'` renders every screen with
+Robolectric's native graphics into `app/build/screenshots/<name>-light.png` and `-dark.png`
+(Galaxy S24-sized). It only fails when rendering crashes; look at the images to check layout and
+the 3D cube. A new screen gets a `shot(...)` there.
+
+### Screen gallery
+
+`python scripts/screen-gallery.py` turns those images into `build/gallery/` (page + downscaled
+JPEGs, grouped by area). Claude publishes it as a private claude.ai page, always to the same
+address: **https://claude.ai/artifact/FWqmj6ZeSBgK4qiQFXZyRR**. The user reviews screens there and
+can leave comments on the page. Refresh it after a pushed change that touches UI: run the
+screenshot test, the script, then republish `build/gallery/index.html` with its `img/` files to
+that URL.
 
 ## Debugging — Implemented
 
