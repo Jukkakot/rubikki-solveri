@@ -141,6 +141,18 @@ class ScreenshotTest {
     }
 
     @Test
+    fun scanReview() = shot("scan-review", dark = true, waitForText = "Luettiin näin") {
+        val front = Cube.solved().apply("R U F'").let { cube ->
+            (1..9).map { fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier.DEFAULT_PALETTE.getValue(cube.colorAt(fi.jukkakot.rubikkisolveri.cube.Face.F, it)) }
+        }
+        fi.jukkakot.rubikkisolveri.ui.scan.ScanContent(
+            kotlinx.coroutines.flow.flowOf(front, front, front), torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {},
+            holdMillis = 0,
+            preview = { androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530)))) },
+        )
+    }
+
+    @Test
     fun midTurn() = shot("mid-turn") {
         Cube3D(
             colors = Cube.solved().toList().map(StickerColors::of),

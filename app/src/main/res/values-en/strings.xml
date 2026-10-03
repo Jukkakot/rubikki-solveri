@@ -103,6 +103,9 @@
     <string name="scan_captured">%1$s read.</string>
     <string name="scan_capture">Capture</string>
     <string name="scan_redo">Redo previous</string>
+    <string name="scan_review">Read like this. Are the colours right?</string>
+    <string name="scan_accept">Looks right</string>
+    <string name="scan_retake">Scan again</string>
     <string name="scan_torch">Torch</string>
     <string name="scan_manual">Enter colours by hand</string>
     <string name="scan_progress">Done %1$d/6</string>

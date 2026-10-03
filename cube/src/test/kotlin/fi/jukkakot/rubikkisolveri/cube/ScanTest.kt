@@ -182,27 +182,81 @@ class ScanSessionTest {
     fun wrongFace() {
         val session = ScanSession()
         repeat(10) {
-            assertEquals(ScanEvent.WrongFace(CubeColor.GREEN, CubeColor.RED), session.onFrame(face(FaceView.RIGHT)))
+            assertEquals(ScanEvent.WrongFace(CubeColor.GREEN, CubeColor.RED), session.onFrame(face(FaceView.RIGHT), 0))
         }
         assertEquals(FaceView.FRONT, session.current)
     }
 
+    /** Shows [samples] every 100 ms from [from] until [until] (exclusive); returns the last event. */
+    private fun ScanSession.show(samples: List<Rgb>, from: Long, until: Long): ScanEvent {
+        var event: ScanEvent = ScanEvent.Waiting
+        for (t in from until until step 100) event = onFrame(samples, t)
+        return event
+    }
+
+    /** Captures [view] (held for the hold time) and accepts it. */
+    private fun ScanSession.scanFace(view: FaceView, of: Cube = cube) {
+        val samples = face(view, of)
+        show(samples, 0, ScanSession.HOLD_MILLIS)
+        assertEquals(ScanEvent.Captured(view), onFrame(samples, ScanSession.HOLD_MILLIS))
+        accept()
+    }
+
     @Test
     fun heldStill() {
-        val session = ScanSession(stableFrames = 6)
+        val session = ScanSession()
         val front = face(FaceView.FRONT)
-        repeat(5) { assertEquals(ScanEvent.Waiting, session.onFrame(front)) }
-        assertEquals(ScanEvent.Captured(FaceView.FRONT), session.onFrame(front))
+        assertEquals(ScanEvent.Holding(0f), session.onFrame(front, 0))
+        assertEquals(ScanEvent.Holding(7 / 15f), session.show(front, 100, 800))
+        assertEquals(ScanEvent.Holding(14 / 15f), session.show(front, 800, 1_500))
+        assertEquals(ScanEvent.Captured(FaceView.FRONT), session.onFrame(front, 1_500))
+        // Under review: nothing more is read, the front is not yet done.
+        assertEquals(ScanEvent.Waiting, session.onFrame(front, 1_600))
+        assertEquals(FaceView.FRONT, session.current)
+        assertEquals(null, session.capturedSamples(FaceView.FRONT))
+    }
+
+    @Test
+    fun stillTurning() {
+        val session = ScanSession()
+        val front = face(FaceView.FRONT)
+        val other = CubeColor.entries.first { it != ColorClassifier.live(front[0]) && it != CubeColor.GREEN }
+        val turning = listOf(reading(other, Triple(1.0, 1.0, 1.0), random, 6)) + front.drop(1)
+        session.show(front, 0, 1_000)
+        // One cell changes just before the hold time is up: the hold starts again.
+        assertEquals(ScanEvent.Holding(0f), session.onFrame(turning, 1_000))
+        assertIs<ScanEvent.Holding>(session.show(turning, 1_100, 2_500))
+        assertEquals(ScanEvent.Captured(FaceView.FRONT), session.onFrame(turning, 2_500))
+    }
+
+    @Test
+    fun accept() {
+        val session = ScanSession()
+        session.scanFace(FaceView.FRONT)
         assertEquals(FaceView.RIGHT, session.current)
+        assertEquals(null, session.review)
+        assertTrue(session.capturedSamples(FaceView.FRONT) != null)
         // Still showing the front: wrong face now, nothing captured twice.
-        assertIs<ScanEvent.WrongFace>(session.onFrame(front))
+        assertIs<ScanEvent.WrongFace>(session.onFrame(face(FaceView.FRONT), 2_000))
+    }
+
+    @Test
+    fun scanAgain() {
+        val session = ScanSession()
+        val front = face(FaceView.FRONT)
+        session.show(front, 0, 1_600)
+        assertEquals(FaceView.FRONT, session.review?.first)
+        session.retake()
+        assertEquals(FaceView.FRONT, session.current)
+        assertEquals(null, session.capturedSamples(FaceView.FRONT))
+        assertEquals(ScanEvent.Holding(0f), session.onFrame(front, 2_000))
     }
 
     @Test
     fun redo() {
-        val session = ScanSession(stableFrames = 1)
-        session.onFrame(face(FaceView.FRONT))
-        session.onFrame(face(FaceView.RIGHT))
+        val session = ScanSession()
+        session.scanFace(FaceView.FRONT)
+        session.scanFace(FaceView.RIGHT)
         assertEquals(FaceView.BACK, session.current)
         session.redo()
         assertEquals(FaceView.RIGHT, session.current)
@@ -210,12 +264,8 @@ class ScanSessionTest {
     }
 
     private fun scanAll(of: Cube): ScanSession {
-        val session = ScanSession(stableFrames = 2)
-        for (view in FaceView.entries) {
-            val samples = face(view, of)
-            session.onFrame(samples)
-            assertEquals(ScanEvent.Captured(view), session.onFrame(samples))
-        }
+        val session = ScanSession()
+        for (view in FaceView.entries) session.scanFace(view, of)
         assertTrue(session.isDone)
         return session
     }
@@ -240,7 +290,8 @@ class ScanSessionTest {
     @Test
     fun captureButtonTakesTheLatestFrame() {
         val session = ScanSession()
-        session.onFrame(face(FaceView.FRONT))
+        session.onFrame(face(FaceView.FRONT), 0)
         assertEquals(ScanEvent.Captured(FaceView.FRONT), session.captureNow())
+        assertEquals(FaceView.FRONT, session.review?.first)
     }
 }

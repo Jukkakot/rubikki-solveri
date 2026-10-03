@@ -24,6 +24,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -40,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -52,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import fi.jukkakot.rubikkisolveri.R
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.FaceView
+import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanEvent
@@ -109,12 +112,14 @@ fun ScanContent(
     onManual: () -> Unit,
     onResult: (ScanOutcome) -> Unit,
     cameraFailed: Boolean = false,
+    holdMillis: Long = ScanSession.HOLD_MILLIS,
     preview: @Composable (Modifier) -> Unit,
 ) {
-    val session = remember { ScanSession() }
+    val session = remember { ScanSession(holdMillis = holdMillis) }
     var event by remember { mutableStateOf<ScanEvent>(ScanEvent.Waiting) }
     var live by remember { mutableStateOf<List<CubeColor>?>(null) }
     var index by remember { mutableIntStateOf(0) }
+    var review by remember { mutableStateOf<List<CubeColor>?>(null) }
     var lastCaptured by remember { mutableStateOf<FaceView?>(null) }
     val haptics = LocalHapticFeedback.current
 
@@ -123,30 +128,47 @@ fun ScanContent(
         live = session.live
         index = session.index
         if (e is ScanEvent.Captured) {
-            lastCaptured = e.face
+            review = session.review?.second?.map(ColorClassifier::live)
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-            AppLog.info(
-                Evt.SCAN_FACE, null,
-                "face" to e.face.face.name,
-                "rgb" to session.capturedSamples(e.face)?.joinToString(",") { it.toHex() },
-                "live" to session.live?.joinToString("") { it.letter.toString() },
-            )
-            if (session.isDone) {
-                val outcome = session.outcome()
-                AppLog.info(
-                    Evt.SCAN_DONE, null,
-                    "valid" to outcome.validity.isValid,
-                    "validity" to outcome.validity.toString(),
-                    "uncertain" to outcome.uncertain.size,
-                    "cube" to outcome.editor.encode(),
-                )
-                onResult(outcome)
-            }
         }
     }
 
+    fun accept() {
+        val face = session.review?.first ?: return
+        session.accept()
+        review = null
+        lastCaptured = face
+        index = session.index
+        event = ScanEvent.Waiting
+        AppLog.info(
+            Evt.SCAN_FACE, null,
+            "face" to face.face.name,
+            "rgb" to session.capturedSamples(face)?.joinToString(",") { it.toHex() },
+            "live" to session.live?.joinToString("") { it.letter.toString() },
+        )
+        if (session.isDone) {
+            val outcome = session.outcome()
+            AppLog.info(
+                Evt.SCAN_DONE, null,
+                "valid" to outcome.validity.isValid,
+                "validity" to outcome.validity.toString(),
+                "uncertain" to outcome.uncertain.size,
+                "cube" to outcome.editor.encode(),
+            )
+            onResult(outcome)
+        }
+    }
+
+    fun retake() {
+        session.retake()
+        review = null
+        event = ScanEvent.Waiting
+    }
+
     LaunchedEffect(session) {
-        frames.collect { samples -> if (!session.isDone) handle(session.onFrame(samples)) }
+        frames.collect { samples ->
+            if (!session.isDone && session.review == null) handle(session.onFrame(samples, System.nanoTime() / 1_000_000))
+        }
     }
 
     val view = FaceView.entries.getOrNull(index) ?: FaceView.BOTTOM
@@ -182,26 +204,43 @@ fun ScanContent(
                 } else {
                     preview(Modifier.fillMaxSize())
                 }
-                GridOverlay(live, view.centreColor(), Modifier.fillMaxSize())
+                val read = review
+                if (read == null) {
+                    GridOverlay(live, view.centreColor(), Modifier.fillMaxSize())
+                } else {
+                    ReviewOverlay(read, Modifier.fillMaxSize())
+                }
             }
-            Text(statusText(event, live), style = MaterialTheme.typography.titleMedium)
+            val holding = (event as? ScanEvent.Holding)?.progress ?: 0f
+            LinearProgressIndicator(progress = { if (review != null) 1f else holding }, modifier = Modifier.fillMaxWidth())
+            Text(
+                if (review != null) stringResource(R.string.scan_review) else statusText(event, live),
+                style = MaterialTheme.typography.titleMedium,
+            )
             lastCaptured?.let {
                 Text(stringResource(R.string.scan_captured, stringResource(faceName(it))), style = MaterialTheme.typography.bodyMedium)
             }
             Progress(index)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(
-                    onClick = {
-                        session.redo()
-                        index = session.index
-                        event = ScanEvent.Waiting
-                        lastCaptured = null
-                    },
-                    enabled = index > 0,
-                    modifier = Modifier.weight(1f),
-                ) { Text(stringResource(R.string.scan_redo)) }
-                Button(onClick = { handle(session.captureNow()) }, enabled = live != null, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.scan_capture))
+            if (review != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = ::retake, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.scan_retake)) }
+                    Button(onClick = ::accept, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.scan_accept)) }
+                }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            session.redo()
+                            index = session.index
+                            event = ScanEvent.Waiting
+                            lastCaptured = null
+                        },
+                        enabled = index > 0,
+                        modifier = Modifier.weight(1f),
+                    ) { Text(stringResource(R.string.scan_redo)) }
+                    Button(onClick = { handle(session.captureNow()) }, enabled = live != null, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.scan_capture))
+                    }
                 }
             }
             TextButton(onClick = onManual) { Text(stringResource(R.string.scan_manual)) }
@@ -235,6 +274,27 @@ private fun GridOverlay(live: List<CubeColor>?, expectedCentre: CubeColor, modif
             val c = Offset(left + cell * (i % 3 + 0.5f), top + cell * (i / 3 + 0.5f))
             drawCircle(Color.Black, radius = cell * 0.17f, center = c)
             drawCircle(StickerColors.of(color), radius = cell * 0.14f, center = c)
+        }
+    }
+}
+
+/** The captured face as read: nine large tiles in the grid over a dimmed preview. */
+@Composable
+private fun ReviewOverlay(colors: List<CubeColor>, modifier: Modifier) {
+    Canvas(modifier) {
+        drawRect(Color.Black.copy(alpha = 0.6f))
+        val side = FrameSampler.GRID_SIZE * size.minDimension
+        val left = (size.width - side) / 2
+        val top = (size.height - side) / 2
+        val cell = side / 3
+        val gap = 4.dp.toPx()
+        colors.forEachIndexed { i, color ->
+            drawRoundRect(
+                StickerColors.of(color),
+                topLeft = Offset(left + cell * (i % 3) + gap, top + cell * (i / 3) + gap),
+                size = Size(cell - 2 * gap, cell - 2 * gap),
+                cornerRadius = CornerRadius(8.dp.toPx()),
+            )
         }
     }
 }

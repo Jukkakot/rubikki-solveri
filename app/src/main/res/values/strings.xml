@@ -105,6 +105,9 @@
     <string name="scan_captured">%1$s luettu.</string>
     <string name="scan_capture">Ota kuva</string>
     <string name="scan_redo">Edellinen uudelleen</string>
+    <string name="scan_review">Luettiin näin. Ovatko värit oikein?</string>
+    <string name="scan_accept">Näyttää oikealta</string>
+    <string name="scan_retake">Skannaa uudelleen</string>
     <string name="scan_torch">Taskulamppu</string>
     <string name="scan_manual">Syötä värit käsin</string>
     <string name="scan_progress">Valmiina %1$d/6</string>

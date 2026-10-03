@@ -41,7 +41,7 @@ class ScanScreenTest {
     private fun scan() {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, preview = {})
+                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0, preview = {})
             }
         }
     }
@@ -63,18 +63,39 @@ class ScanScreenTest {
         compose.onNodeWithText("Etupuoli (1/6)").performScrollTo().assertIsDisplayed()
     }
 
+    /** Holds [view] until it is captured and accepts it. */
+    private fun confirm(view: FaceView) {
+        show(view, 3)
+        compose.onNodeWithText("Näyttää oikealta").performScrollTo().performClick()
+        compose.waitForIdle()
+    }
+
     @Test
     fun heldStill() {
         scan()
-        show(FaceView.FRONT, 6)
+        show(FaceView.FRONT, 3)
+        compose.onNodeWithText("Luettiin näin. Ovatko värit oikein?").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Etupuoli (1/6)").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Näyttää oikealta").performScrollTo().performClick()
         compose.onNodeWithText("Oikea puoli (2/6)").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Etupuoli luettu.").performScrollTo().assertIsDisplayed()
     }
 
     @Test
+    fun scanAgain() {
+        scan()
+        show(FaceView.FRONT, 3)
+        compose.onNodeWithText("Skannaa uudelleen").performScrollTo().performClick()
+        compose.onNodeWithText("Etupuoli (1/6)").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Valmiina 0/6").performScrollTo().assertIsDisplayed()
+        confirm(FaceView.FRONT)
+        compose.onNodeWithText("Oikea puoli (2/6)").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
     fun redo() {
         scan()
-        show(FaceView.FRONT, 6)
+        confirm(FaceView.FRONT)
         compose.onNodeWithText("Edellinen uudelleen").performScrollTo().performClick()
         compose.onNodeWithText("Etupuoli (1/6)").performScrollTo().assertIsDisplayed()
     }
@@ -82,7 +103,7 @@ class ScanScreenTest {
     @Test
     fun confidentScan() {
         scan()
-        for (view in FaceView.entries) show(view, 6)
+        for (view in FaceView.entries) confirm(view)
         compose.waitUntil(5_000) { outcome != null }
         assertTrue(outcome!!.isConfident)
         assertEquals(cube, outcome!!.editor.toCube())

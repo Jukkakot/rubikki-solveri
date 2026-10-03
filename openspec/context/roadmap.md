@@ -16,3 +16,4 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 8 | `lessons` | done | Teaching screens per stage and practice positions |
 | 9 | `progress` | done | Timer, solve history and stats in a local database |
 | 10 | `release` | done | Signed release APK installed directly on the phone (no Google Play) |
+| 11 | `scan-confirm` | done | Scan holds a face 1.5 s with a progress bar, then shows the read colours to confirm or scan again (from phone testing) |
