@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -15,6 +17,36 @@ val gitSha: String = providers.environmentVariable("GITHUB_SHA").map { it.take(7
     )
     .get()
 
+// The build number is the number of commits, so every pushed build installs over the previous one.
+val commitCount: Int = providers.exec {
+    commandLine("git", "rev-list", "--count", "HEAD")
+    isIgnoreExitValue = true
+}.standardOutput.asText.map { it.trim().toIntOrNull() ?: 1 }.get()
+
+/**
+ * Release signing: keystore.properties next to the project (never committed) or, in CI, the
+ * RELEASE_* environment variables. Without either, the release build is signed with the debug key.
+ */
+val releaseSigning: Map<String, String>? = run {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) {
+        val props = Properties().apply { file.inputStream().use { load(it) } }
+        props.stringPropertyNames().associateWith { props.getProperty(it) }
+    } else {
+        val path = providers.environmentVariable("RELEASE_STORE_FILE").orNull
+        if (path == null) {
+            null
+        } else {
+            mapOf(
+                "storeFile" to path,
+                "storePassword" to providers.environmentVariable("RELEASE_STORE_PASSWORD").get(),
+                "keyAlias" to providers.environmentVariable("RELEASE_KEY_ALIAS").get(),
+                "keyPassword" to providers.environmentVariable("RELEASE_KEY_PASSWORD").get(),
+            )
+        }
+    }
+}
+
 android {
     namespace = "fi.jukkakot.rubikkisolveri"
     compileSdk = 37
@@ -23,8 +55,8 @@ android {
         applicationId = "fi.jukkakot.rubikkisolveri"
         minSdk = 31
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0-$gitSha"
+        versionCode = commitCount
+        versionName = "1.0.$commitCount-$gitSha"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -33,9 +65,23 @@ android {
         generateLocaleConfig = true
     }
 
+    signingConfigs {
+        if (releaseSigning != null) {
+            create("release") {
+                storeFile = rootProject.file(releaseSigning.getValue("storeFile"))
+                storePassword = releaseSigning.getValue("storePassword")
+                keyAlias = releaseSigning.getValue("keyAlias")
+                keyPassword = releaseSigning.getValue("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 

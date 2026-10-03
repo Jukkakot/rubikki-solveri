@@ -39,6 +39,7 @@ import fi.jukkakot.rubikkisolveri.ui.home.HomeEntry
 import fi.jukkakot.rubikkisolveri.ui.home.HomeScreen
 import fi.jukkakot.rubikkisolveri.ui.log.LogScreen
 import fi.jukkakot.rubikkisolveri.ui.settings.SettingsScreen
+import fi.jukkakot.rubikkisolveri.ui.settings.AboutScreen
 
 /** What the screens need from the app; tests pass fakes. */
 class AppActions(
@@ -85,6 +86,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 onThemeMode = actions.onThemeMode,
                 showNotation = actions.showNotation,
                 onShowNotation = actions.onShowNotation,
+                onOpenAbout = { navController.navigate(AboutRoute) },
                 onOpenLog = { navController.navigate(LogRoute) },
                 onBack = { navController.popBackStack() },
             )
@@ -191,6 +193,9 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 homeLabel = stringResource(R.string.practice_new),
                 onFinished = { _, _, millis -> scope.launch { actions.progress.addPractice(route.stage, millis) } },
             )
+        }
+        composable<AboutRoute> {
+            AboutScreen(actions.version, onBack = { navController.popBackStack() })
         }
         composable<LogRoute> {
             var lines by remember { mutableStateOf(actions.readLog()) }

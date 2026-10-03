@@ -43,6 +43,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     showNotation: Boolean = false,
     onShowNotation: (Boolean) -> Unit = {},
+    onOpenAbout: () -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -84,6 +85,10 @@ fun SettingsScreen(
                 headlineContent = { Text(stringResource(R.string.log_title)) },
                 supportingContent = { Text(stringResource(R.string.log_open_summary)) },
                 modifier = Modifier.clickable(onClick = onOpenLog),
+            )
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.settings_about)) },
+                modifier = Modifier.clickable(onClick = onOpenAbout),
             )
             Text(
                 stringResource(R.string.version_label, version),

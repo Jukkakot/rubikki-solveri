@@ -49,3 +49,6 @@ data object HistoryRoute
 /** Perform the scramble [moves] (notation) with the move guide. */
 @Serializable
 data class ScrambleGuideRoute(val moves: String)
+
+@Serializable
+data object AboutRoute

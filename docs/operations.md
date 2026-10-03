@@ -18,6 +18,7 @@ Two ways:
    open it and allow "install unknown apps" for the file manager. A debug APK from CI is signed
    with that runner's debug key, so installing it over a Studio-installed build needs an
    uninstall first.
+3. **A signed release** for everyday use: see Release below.
 
 ### First time: Android Studio on Windows and the Galaxy S24
 
@@ -69,6 +70,56 @@ readings are enough to replay the classification in a unit test and adjust
   app deletes it; Android backup is off (`allowBackup=false`), so it is not copied anywhere.
 - Schema changes need a Room migration (schemas are exported to `app/schemas`).
 
-## Release — Planned (`release`)
+## Release — Implemented
 
-A signed release APK installed directly on the phone; no Google Play.
+The release APK is shrunk with R8 (about 4.5 MB) and signed with your own key. Versions: build
+number = number of commits, name `1.0.<count>-<commit>` (shown in Settings → About and in the
+log's `app.start`). Android only installs an update over an app signed with the **same key**, so
+create the key once and keep it.
+
+### 1. Create the signing key (once, in Android Studio)
+
+1. Android Studio → **Build → Generate Signed App Bundle or APK…** → choose **APK** → Next.
+2. Module **app**. Under *Key store path* click **Create new…**.
+3. Key store path: a folder outside the project, e.g. `C:\Users\<you>\keys\rubikki.jks`.
+   Choose a password and confirm it. Alias: `rubikki`, its password (may be the same), validity
+   25 years, your name under *First and Last Name*. **OK**.
+4. Back in the dialog press **Cancel** (the build below uses the Gradle setup instead).
+5. **Back up `rubikki.jks` and the passwords** (e.g. a password manager and a USB stick). If the
+   key is lost, updates are impossible: the app must be uninstalled, which deletes its history.
+
+### 2. Build a release APK on your computer
+
+1. In the project folder (next to `settings.gradle.kts`) create `keystore.properties`
+   (it is git-ignored, never commit it):
+   ```
+   storeFile=C:/Users/<you>/keys/rubikki.jks
+   storePassword=<key store password>
+   keyAlias=rubikki
+   keyPassword=<key password>
+   ```
+2. Android Studio → **Build → Select Build Variant…** → set *app* to **release**, then
+   **Build → Build App Bundle(s) / APK(s) → Build APK(s)**. The APK is in
+   `app/build/outputs/apk/release/app-release.apk` (the "locate" link in the pop-up opens it).
+   Alternatively Run ▶ with the release variant installs it on the connected phone directly.
+
+### 3. Optional: releases from GitHub
+
+1. GitHub → the repo → **Settings → Secrets and variables → Actions → New repository secret**,
+   four secrets:
+   - `RELEASE_KEYSTORE_BASE64`: the key file as base64 — in PowerShell
+     `[Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\Users\<you>\keys\rubikki.jks")) | Set-Clipboard`,
+     then paste.
+   - `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS` (`rubikki`), `RELEASE_KEY_PASSWORD`.
+2. Tag a version: Android Studio → **Git → New Tag…** → `v1.0` → push with tags (or ask Claude to
+   do it). The **Release** workflow builds, tests and attaches `rubikki-solveri-v1.0.apk` to a
+   GitHub release. Without the secrets it still runs, but signs with a throw-away debug key.
+
+### 4. Install the APK on the Galaxy S24
+
+1. Copy the APK to the phone (USB cable → *Phone/Download*, or download it on the phone from the
+   GitHub release).
+2. On the phone open **My Files → Downloads** and tap the APK. The first time Android asks to
+   allow installs from that app: **Settings → Allow from this source** → back → **Install**.
+3. A build signed with a different key than the installed one does not install over it ("App not
+   installed"): uninstall the old one first (this deletes its history) — or always use the same key.

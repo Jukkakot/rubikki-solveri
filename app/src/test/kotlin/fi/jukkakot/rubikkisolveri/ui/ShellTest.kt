@@ -150,6 +150,15 @@ class ShellTest {
     }
 
     @Test
+    fun aboutShowsTheLicences() {
+        start()
+        compose.onNodeWithContentDescription("Asetukset").performClick()
+        compose.onNodeWithText("Tietoja").performScrollTo().performClick()
+        compose.onNodeWithText("min2phase (kaksivaiheinen ratkaisija)", substring = true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Permission is hereby granted", substring = true).performScrollTo().assertExists()
+    }
+
+    @Test
     fun notationSwitch() {
         start()
         compose.onNodeWithContentDescription("Asetukset").performClick()

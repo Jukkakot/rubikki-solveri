@@ -240,4 +240,11 @@
         <item quantity="one">%d siirto</item>
         <item quantity="other">%d siirtoa</item>
     </plurals>
+    <string name="settings_about">Tietoja</string>
+    <string name="about_title">Tietoja sovelluksesta</string>
+    <string name="about_text">Rubikki Solveri skannaa kuutiosi ja opettaa ratkaisemaan sen. Kaikki toimii puhelimessa: kuvia tai tietoja ei lähetetä minnekään.</string>
+    <string name="about_licences">Avoimen lähdekoodin osat</string>
+    <string name="about_androidx">Android Jetpack (AndroidX, Compose, CameraX, Room) – Apache License 2.0, The Android Open Source Project.</string>
+    <string name="about_kotlin">Kotlin ja kotlinx-kirjastot – Apache License 2.0, JetBrains.</string>
+    <string name="about_min2phase">min2phase (kaksivaiheinen ratkaisija) – MIT-lisenssi, Chen Shuang:</string>
 </resources>

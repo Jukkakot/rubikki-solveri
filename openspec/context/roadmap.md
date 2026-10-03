@@ -15,4 +15,4 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 7 | `beginner-solver` | done | Our own layer-by-layer solver that explains each stage |
 | 8 | `lessons` | done | Teaching screens per stage and practice positions |
 | 9 | `progress` | done | Timer, solve history and stats in a local database |
-| 10 | `release` | planned | Signed release APK installed directly on the phone (no Google Play) |
+| 10 | `release` | done | Signed release APK installed directly on the phone (no Google Play) |

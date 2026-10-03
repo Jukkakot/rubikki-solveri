@@ -170,6 +170,10 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 | `SolveRoute(cube)` | Solution | background solve, then the move guide stepper; camera mode follows on the real cube |
 | `SettingsRoute`, `LogRoute` | Settings, log | |
 
-## Planned
+## Release build — Implemented
 
-- Signed APK (`release`).
+R8-shrunk release (`app/proguard-rules.pro`: line numbers, navigation routes), signed from
+`keystore.properties` / `RELEASE_*` env / debug key; `versionCode` = commit count. Settings →
+About shows the version and the open-source licences (min2phase's MIT text from `res/raw`, kept
+identical to the vendored `LICENSE` by a test). `.github/workflows/release.yml` builds tagged
+releases. See [operations.md](operations.md#release--implemented).

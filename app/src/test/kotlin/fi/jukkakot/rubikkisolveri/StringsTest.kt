@@ -16,6 +16,14 @@ class StringsTest {
     }
 
     @Test
+    fun shownLicenceMatchesTheVendoredOne() {
+        assertEquals(
+            File("../cube/src/main/java/cs/min2phase/LICENSE").readText(),
+            File("src/main/res/raw/min2phase_license.txt").readText(),
+        )
+    }
+
+    @Test
     fun everyFinnishTextHasAnEnglishOne() {
         val finnish = keys("src/main/res/values/strings.xml", onlyTranslatable = true)
         val english = keys("src/main/res/values-en/strings.xml", onlyTranslatable = false)
