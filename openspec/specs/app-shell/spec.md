@@ -8,8 +8,8 @@ language the whole app follows.
 
 ### Requirement: Home screen
 The app SHALL open on a home screen that shows the app name and an entry for each main feature:
-scan the cube, enter colours by hand, learn, and the free cube. An entry for a feature that is not
-built yet SHALL be visibly disabled and marked as coming later.
+scan the cube, enter colours by hand, learn, timer and statistics, and the free cube. An entry for
+a feature that is not built yet SHALL be visibly disabled and marked as coming later.
 
 #### Scenario: App starts on home
 - **WHEN** the user opens the app
@@ -30,6 +30,10 @@ built yet SHALL be visibly disabled and marked as coming later.
 #### Scenario: Open lessons
 - **WHEN** the user taps "learn"
 - **THEN** the lessons list opens
+
+#### Scenario: Open the timer
+- **WHEN** the user taps "timer and statistics"
+- **THEN** the timer opens with a scramble
 
 ### Requirement: Settings screen
 The home screen SHALL lead to a settings screen, and the system back action SHALL return from it

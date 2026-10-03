@@ -42,3 +42,10 @@ position.
 - **WHEN** the user practises the yellow cross
 - **THEN** the position has the first two layers solved and no yellow cross, and the guide ends
   when the yellow cross is made
+
+### Requirement: Practice count
+The lesson list SHALL show how many times each stage has been practised to the end.
+
+#### Scenario: Practised twice
+- **WHEN** the yellow cross has been practised twice
+- **THEN** its lesson shows "practised 2×"
