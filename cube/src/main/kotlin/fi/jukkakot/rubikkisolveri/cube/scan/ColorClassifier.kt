@@ -26,23 +26,38 @@ object ColorClassifier {
 
     private val defaultLabs = DEFAULT_PALETTE.mapValues { it.value.toLab() }
 
-    /** Quick reading of one cell against the default palette (live preview and centre check). */
-    fun live(rgb: Rgb): CubeColor {
+    /**
+     * References for the live reading: the mean of the readings [known] for a colour (the cube's own
+     * centres and the user's corrections), the default palette for colours not seen yet.
+     */
+    fun references(known: Map<CubeColor, List<Lab>> = emptyMap()): Map<CubeColor, Lab> =
+        defaultLabs.mapValues { (color, default) -> known[color]?.takeIf { it.isNotEmpty() }?.let(Lab::mean) ?: default }
+
+    /** Quick reading of one cell (live preview, review and centre check). */
+    fun live(rgb: Rgb, refs: Map<CubeColor, Lab> = defaultLabs): CubeColor = ranked(rgb, refs).first()
+
+    /** All colours, the closest to [rgb] first. */
+    fun ranked(rgb: Rgb, refs: Map<CubeColor, Lab> = defaultLabs): List<CubeColor> {
         val lab = rgb.toLab()
-        return defaultLabs.minBy { it.value.distance(lab) }.key
+        return refs.entries.sortedBy { it.value.distance(lab) }.map { it.key }
     }
 
     /**
      * Classifies all 54 readings (URFDLB order) by the cube's own centres: every colour gets
      * exactly nine stickers (balanced assignment), references refined to the mean of their nine.
-     * The centres keep the holding position's colours.
+     * The centres keep the holding position's colours and the [fixed] stickers (the user's
+     * corrections, by sticker index) keep theirs; both seed the references.
      */
-    fun classify(samples: List<Rgb>, scheme: ColorScheme = ColorScheme.STANDARD): Classification {
+    fun classify(
+        samples: List<Rgb>,
+        scheme: ColorScheme = ColorScheme.STANDARD,
+        fixed: Map<Int, CubeColor> = emptyMap(),
+    ): Classification {
         require(samples.size == Stickers.COUNT)
         val labs = samples.map { it.toLab() }
         val colors = CubeColor.entries
-        val centreColor = Face.entries.associate { Stickers.centre(it) to scheme[it] }
-        var refs: Map<CubeColor, Lab> = Face.entries.associate { scheme[it] to labs[Stickers.centre(it)] }
+        val centreColor = fixed + Face.entries.associate { Stickers.centre(it) to scheme[it] }
+        var refs: Map<CubeColor, Lab> = centreColor.entries.groupBy({ it.value }, { labs[it.key] }).mapValues { Lab.mean(it.value) }
         var assigned = List(Stickers.COUNT) { CubeColor.WHITE }
         repeat(3) {
             val cost = Array(Stickers.COUNT) { i ->

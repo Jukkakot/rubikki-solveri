@@ -1,5 +1,7 @@
 package fi.jukkakot.rubikkisolveri.ui
 
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -27,6 +29,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
@@ -74,11 +77,28 @@ class ScanScreenTest {
     fun heldStill() {
         scan()
         show(FaceView.FRONT, 3)
-        compose.onNodeWithText("Luettiin näin. Ovatko värit oikein?").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Luettiin näin. Napauta tarraa, jos sen väri on väärä.").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Etupuoli (1/6)").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Näyttää oikealta").performScrollTo().performClick()
         compose.onNodeWithText("Oikea puoli (2/6)").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Etupuoli luettu.").performScrollTo().assertIsDisplayed()
+    }
+
+    private fun tile(n: Int) = compose.onNodeWithContentDescription("Tarra $n:", substring = true)
+
+    private fun tileText(n: Int) =
+        tile(n).fetchSemanticsNode().config[SemanticsProperties.ContentDescription].single()
+
+    @Test
+    fun tapToFix() {
+        scan()
+        show(FaceView.FRONT, 3)
+        val before = tileText(1)
+        tile(1).performClick()
+        compose.waitForIdle()
+        assertNotEquals(before, tileText(1))
+        tile(5).assertHasNoClickAction()
+        assertEquals("Tarra 5: vihreä", tileText(5))
     }
 
     @Test

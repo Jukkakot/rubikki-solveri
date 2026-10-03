@@ -130,6 +130,31 @@ class ClassifierTest {
     }
 
     @Test
+    fun fixedStickersKeepTheirColour() {
+        val cube = Cube.solved().apply("R U R' F2 D' L B2")
+        val samples = cube.toList().map { TRUE_COLORS.getValue(it) }.toMutableList()
+        val centres = Face.entries.map { Stickers.centre(it) }.toSet()
+        val red = samples.indices.first { cube[it] == CubeColor.RED && it !in centres }
+        val orange = samples.indices.first { cube[it] == CubeColor.ORANGE && it !in centres }
+        samples[red] = samples[orange].also { samples[orange] = samples[red] }
+        // Swapped readings: by colour alone the two stickers trade places.
+        assertEquals(CubeColor.ORANGE, ColorClassifier.classify(samples).colors[red])
+        val fixed = ColorClassifier.classify(samples, fixed = mapOf(red to CubeColor.RED, orange to CubeColor.ORANGE))
+        assertEquals(CubeColor.RED, fixed.colors[red])
+        assertEquals(CubeColor.ORANGE, fixed.colors[orange])
+        assertEquals(1.0, fixed.confidence[red])
+    }
+
+    @Test
+    fun referencesFromTheCube() {
+        val cubeRed = Rgb(225, 70, 30)
+        assertEquals(CubeColor.ORANGE, ColorClassifier.live(cubeRed))
+        val refs = ColorClassifier.references(mapOf(CubeColor.RED to listOf(cubeRed.toLab())))
+        assertEquals(CubeColor.RED, ColorClassifier.live(cubeRed, refs))
+        assertEquals(listOf(CubeColor.ORANGE, CubeColor.RED), ColorClassifier.ranked(cubeRed).take(2))
+    }
+
+    @Test
     fun differentLighting() {
         for (seed in 0 until 200) {
             val random = Random(seed)
@@ -195,11 +220,70 @@ class ScanSessionTest {
     }
 
     /** Captures [view] (held for the hold time) and accepts it. */
-    private fun ScanSession.scanFace(view: FaceView, of: Cube = cube) {
-        val samples = face(view, of)
+    private fun ScanSession.scanFace(view: FaceView, of: Cube = cube, samples: List<Rgb> = face(view, of)) {
+        capture(view, samples)
+        accept()
+    }
+
+    private fun ScanSession.capture(view: FaceView, samples: List<Rgb>) {
         show(samples, 0, ScanSession.HOLD_MILLIS)
         assertEquals(ScanEvent.Captured(view), onFrame(samples, ScanSession.HOLD_MILLIS))
-        accept()
+    }
+
+    /** A cube whose red the default palette reads as orange. */
+    private val reddish = ColorClassifier.DEFAULT_PALETTE + mapOf(CubeColor.RED to Rgb(225, 70, 30), CubeColor.ORANGE to Rgb(250, 150, 40))
+
+    private fun reddishFace(view: FaceView, of: Cube) = (1..9).map { reddish.getValue(of.colorAt(view.face, it)) }
+
+    private fun FaceView.colors(of: Cube) = (1..9).map { of.colorAt(face, it) }
+
+    @Test
+    fun centresTeachTheReading() {
+        val session = ScanSession()
+        session.scanFace(FaceView.FRONT, samples = reddishFace(FaceView.FRONT, cube))
+        session.scanFace(FaceView.RIGHT, samples = reddishFace(FaceView.RIGHT, cube))
+        // The red centre is known now: the next faces read this cube's red as red.
+        for (view in listOf(FaceView.BACK, FaceView.LEFT, FaceView.TOP, FaceView.BOTTOM)) {
+            session.capture(view, reddishFace(view, cube))
+            assertEquals(view.colors(cube), session.reviewColors, "$view")
+            session.accept()
+        }
+        assertEquals(cube, session.outcome().editor.toCube())
+    }
+
+    @Test
+    fun tapToFix() {
+        // U brings the right face's red top row to the front.
+        val cube = Cube.solved().apply("U")
+        val session = ScanSession()
+        session.capture(FaceView.FRONT, reddishFace(FaceView.FRONT, cube))
+        assertEquals(CubeColor.ORANGE, session.reviewColors!![0])
+        session.cycle(0)
+        assertEquals(CubeColor.RED, session.reviewColors!![0])
+        assertEquals(mapOf(0 to CubeColor.RED), session.reviewCorrections)
+        // Round the six colours back to the reading: no correction left.
+        repeat(5) { session.cycle(0) }
+        assertEquals(CubeColor.ORANGE, session.reviewColors!![0])
+        assertEquals(emptyMap(), session.reviewCorrections)
+        session.cycle(4)
+        assertEquals(CubeColor.GREEN, session.reviewColors!![4])
+        session.cycle(0)
+        session.accept()
+        // The corrected reading teaches the rest of the scan.
+        session.capture(FaceView.RIGHT, reddishFace(FaceView.RIGHT, cube))
+        assertEquals(FaceView.RIGHT.colors(cube), session.reviewColors)
+    }
+
+    @Test
+    fun redoForgetsCorrections() {
+        val cube = Cube.solved().apply("U")
+        val session = ScanSession()
+        session.capture(FaceView.FRONT, reddishFace(FaceView.FRONT, cube))
+        session.cycle(0)
+        session.accept()
+        session.redo()
+        session.capture(FaceView.FRONT, reddishFace(FaceView.FRONT, cube))
+        assertEquals(CubeColor.ORANGE, session.reviewColors!![0])
     }
 
     @Test

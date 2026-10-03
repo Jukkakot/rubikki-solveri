@@ -54,8 +54,10 @@ Android Studio device menu → **Pair Devices Using Wi-Fi** and scan the QR code
 
 The scan logs numbers, never pictures:
 
-- `scan.face face=F rgb=…,…` — the nine captured readings of a face (hex RGB, row by row as seen),
-  and `live=` the quick per-cell reading.
+- `scan.face face=F rgb=…,…` — the nine accepted readings of a face (hex RGB, row by row as seen),
+  `live=` the colours shown in the review and `fixed=` the user's taps there (cell and colour
+  letter, e.g. `0R`).
+- `scan.lock lock=true` — exposure and white balance locked after the first face.
 - `scan.done valid=… validity=… uncertain=N cube=…` — the result (`cube` is the 54 colour letters,
   `.` for unknown).
 

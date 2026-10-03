@@ -13,6 +13,7 @@ enum class Evt(val id: String) {
     SOLVE_FAILED("solve.failed"),
     SCAN_FACE("scan.face"),
     SCAN_DONE("scan.done"),
+    SCAN_LOCK("scan.lock"),
     SCAN_PERMISSION("scan.permission"),
     SCAN_ERROR("scan.error"),
     FOLLOW_EVENT("follow.event"),

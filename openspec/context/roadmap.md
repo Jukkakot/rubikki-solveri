@@ -17,3 +17,4 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 9 | `progress` | done | Timer, solve history and stats in a local database |
 | 10 | `release` | done | Signed release APK installed directly on the phone (no Google Play) |
 | 11 | `scan-confirm` | done | Scan holds a face 1.5 s with a progress bar, then shows the read colours to confirm or scan again (from phone testing) |
+| 12 | `scan-calibrate` | done | Live reading learns the cube's own colours, tap a sticker in the review to fix it, exposure/white balance locked after the first face (from phone testing) |

@@ -3,8 +3,10 @@ package fi.jukkakot.rubikkisolveri.ui.scan
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -41,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -51,10 +52,12 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import fi.jukkakot.rubikkisolveri.R
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.FaceView
-import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanEvent
@@ -80,6 +83,7 @@ fun ScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome)
             MutableSharedFlow<List<Rgb>>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
         }
         var torch by remember { mutableStateOf(false) }
+        var lockExposure by remember { mutableStateOf(false) }
         var cameraFailed by remember { mutableStateOf(false) }
         ScanContent(
             frames = frames,
@@ -89,9 +93,11 @@ fun ScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome)
             onManual = onManual,
             onResult = onResult,
             cameraFailed = cameraFailed,
+            onLockExposure = { lockExposure = it },
             preview = { modifier ->
                 CameraPreview(
                     torch = torch,
+                    lockExposure = lockExposure,
                     onSamples = { frames.tryEmit(it) },
                     onError = { cameraFailed = true },
                     modifier = modifier,
@@ -113,6 +119,7 @@ fun ScanContent(
     onResult: (ScanOutcome) -> Unit,
     cameraFailed: Boolean = false,
     holdMillis: Long = ScanSession.HOLD_MILLIS,
+    onLockExposure: (Boolean) -> Unit = {},
     preview: @Composable (Modifier) -> Unit,
 ) {
     val session = remember { ScanSession(holdMillis = holdMillis) }
@@ -128,13 +135,15 @@ fun ScanContent(
         live = session.live
         index = session.index
         if (e is ScanEvent.Captured) {
-            review = session.review?.second?.map(ColorClassifier::live)
+            review = session.reviewColors
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
         }
     }
 
     fun accept() {
         val face = session.review?.first ?: return
+        val shown = session.reviewColors
+        val fixed = session.reviewCorrections
         session.accept()
         review = null
         lastCaptured = face
@@ -144,7 +153,8 @@ fun ScanContent(
             Evt.SCAN_FACE, null,
             "face" to face.face.name,
             "rgb" to session.capturedSamples(face)?.joinToString(",") { it.toHex() },
-            "live" to session.live?.joinToString("") { it.letter.toString() },
+            "live" to shown?.joinToString("") { it.letter.toString() },
+            "fixed" to fixed.entries.joinToString(",") { "${it.key}${it.value.letter}" },
         )
         if (session.isDone) {
             val outcome = session.outcome()
@@ -170,6 +180,8 @@ fun ScanContent(
             if (!session.isDone && session.review == null) handle(session.onFrame(samples, System.nanoTime() / 1_000_000))
         }
     }
+    // After the first face, keep exposure and white balance fixed so every face is read alike.
+    LaunchedEffect(index > 0) { onLockExposure(index > 0) }
 
     val view = FaceView.entries.getOrNull(index) ?: FaceView.BOTTOM
     Scaffold(
@@ -208,7 +220,7 @@ fun ScanContent(
                 if (read == null) {
                     GridOverlay(live, view.centreColor(), Modifier.fillMaxSize())
                 } else {
-                    ReviewOverlay(read, Modifier.fillMaxSize())
+                    ReviewOverlay(read, onTap = { cell -> session.cycle(cell); review = session.reviewColors }, Modifier.fillMaxSize())
                 }
             }
             val holding = (event as? ScanEvent.Holding)?.progress ?: 0f
@@ -278,23 +290,29 @@ private fun GridOverlay(live: List<CubeColor>?, expectedCentre: CubeColor, modif
     }
 }
 
-/** The captured face as read: nine large tiles in the grid over a dimmed preview. */
+/**
+ * The captured face as read: nine large tiles in the grid over a dimmed preview. Tapping a tile
+ * (not the centre) calls [onTap] with its cell to change its colour.
+ */
 @Composable
-private fun ReviewOverlay(colors: List<CubeColor>, modifier: Modifier) {
-    Canvas(modifier) {
-        drawRect(Color.Black.copy(alpha = 0.6f))
-        val side = FrameSampler.GRID_SIZE * size.minDimension
-        val left = (size.width - side) / 2
-        val top = (size.height - side) / 2
-        val cell = side / 3
-        val gap = 4.dp.toPx()
-        colors.forEachIndexed { i, color ->
-            drawRoundRect(
-                StickerColors.of(color),
-                topLeft = Offset(left + cell * (i % 3) + gap, top + cell * (i / 3) + gap),
-                size = Size(cell - 2 * gap, cell - 2 * gap),
-                cornerRadius = CornerRadius(8.dp.toPx()),
-            )
+private fun ReviewOverlay(colors: List<CubeColor>, onTap: (Int) -> Unit, modifier: Modifier) {
+    BoxWithConstraints(modifier.background(Color.Black.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) {
+        val cell = min(maxWidth, maxHeight) * FrameSampler.GRID_SIZE / 3
+        Column {
+            for (row in 0 until 3) {
+                Row {
+                    for (col in 0 until 3) {
+                        val i = row * 3 + col
+                        val description = stringResource(R.string.scan_tile, i + 1, stringResource(colorName(colors[i])))
+                        Box(
+                            Modifier.size(cell).padding(4.dp).clip(RoundedCornerShape(8.dp))
+                                .background(StickerColors.of(colors[i]))
+                                .then(if (i == 4) Modifier else Modifier.clickable { onTap(i) })
+                                .semantics { contentDescription = description },
+                        )
+                    }
+                }
+            }
         }
     }
 }

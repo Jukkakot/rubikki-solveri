@@ -1,6 +1,10 @@
 package fi.jukkakot.rubikkisolveri.ui.scan
 
+import android.hardware.camera2.CaptureRequest
 import android.util.Size
+import androidx.camera.camera2.interop.Camera2CameraControl
+import androidx.camera.camera2.interop.CaptureRequestOptions
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -23,13 +27,35 @@ import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.Evt
 import java.util.concurrent.Executors
 
+@androidx.annotation.OptIn(markerClass = [ExperimentalCamera2Interop::class])
+private fun lockExposure(controller: LifecycleCameraController, lock: Boolean) {
+    val control = controller.cameraControl ?: return
+    try {
+        val options = CaptureRequestOptions.Builder()
+            .setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, lock)
+            .setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, lock)
+            .build()
+        Camera2CameraControl.from(control).setCaptureRequestOptions(options)
+        AppLog.info(Evt.SCAN_LOCK, null, "lock" to lock)
+    } catch (e: Exception) {
+        AppLog.logger.error(Evt.SCAN_ERROR, e, "exposure lock failed")
+    }
+}
+
 /**
  * The back camera's preview. Every analysed frame is read through the grid and its nine readings
  * passed to [onSamples] (on a background thread). The controller aligns analysis with the visible
- * preview, so the frame's crop rect is exactly what the user sees.
+ * preview, so the frame's crop rect is exactly what the user sees. [lockExposure] holds the current
+ * exposure and white balance (auto exposure / auto white balance lock).
  */
 @Composable
-fun CameraPreview(torch: Boolean, onSamples: (List<Rgb>) -> Unit, onError: (Throwable) -> Unit, modifier: Modifier = Modifier) {
+fun CameraPreview(
+    torch: Boolean,
+    onSamples: (List<Rgb>) -> Unit,
+    onError: (Throwable) -> Unit,
+    modifier: Modifier = Modifier,
+    lockExposure: Boolean = false,
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val executor = remember { Executors.newSingleThreadExecutor() }
@@ -79,6 +105,7 @@ fun CameraPreview(torch: Boolean, onSamples: (List<Rgb>) -> Unit, onError: (Thro
         }
     }
     LaunchedEffect(torch) { runCatching { controller.enableTorch(torch) } }
+    LaunchedEffect(lockExposure) { lockExposure(controller, lockExposure) }
     AndroidView(
         factory = { PreviewView(it).apply {
             scaleType = PreviewView.ScaleType.FILL_CENTER
