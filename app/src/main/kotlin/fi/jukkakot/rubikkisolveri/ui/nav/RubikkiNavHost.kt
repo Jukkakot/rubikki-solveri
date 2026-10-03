@@ -72,6 +72,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                     HomeEntry(R.string.home_free_cube, onOpen = { navController.navigate(FreeCubeRoute()) }),
                 ),
                 onOpenSettings = { navController.navigate(SettingsRoute) },
+                version = actions.version,
                 crashedLastTime = actions.crashedLastTime,
                 onShowLog = { navController.navigate(LogRoute) },
                 onCrashNoticeShown = actions.onCrashNoticeShown,

@@ -1,6 +1,8 @@
 package fi.jukkakot.rubikkisolveri
 
 import android.os.Bundle
+import java.text.DateFormat
+import java.util.Date
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -76,7 +78,7 @@ class MainActivity : AppCompatActivity() {
                         },
                         crashedLastTime = app.crashedLastTime,
                         onCrashNoticeShown = app::crashNoticeShown,
-                        version = BuildConfig.VERSION_NAME,
+                        version = versionWithInstallTime(),
                         showNotation = showNotation,
                         progress = progress,
                         onShowNotation = { show ->
@@ -88,4 +90,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+}
+
+/** The version and when this build was installed, so the user can tell an update arrived. */
+private fun AppCompatActivity.versionWithInstallTime(): String {
+    val installed = runCatching { packageManager.getPackageInfo(packageName, 0).lastUpdateTime }.getOrNull()
+        ?: return BuildConfig.VERSION_NAME
+    return BuildConfig.VERSION_NAME + " · " + DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(installed))
 }

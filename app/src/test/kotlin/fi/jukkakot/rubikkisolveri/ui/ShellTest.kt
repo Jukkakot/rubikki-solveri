@@ -82,6 +82,7 @@ class ShellTest {
     fun appStartsOnHome() {
         start()
         compose.onNodeWithText("Rubikki Solveri").assertIsDisplayed()
+        compose.onNodeWithText("Versio test").assertExists()
         assertTrue(isOn(HomeRoute))
     }
 
