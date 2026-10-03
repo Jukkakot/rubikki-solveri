@@ -30,7 +30,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 21b | `scan-any-order` | done | Faces scanned in any order and rotation: the face from its centre (confirmed in the review), rotations found by search assuming the real cube is valid; no suggested order; inserted before 22 (decided 2026-10-03) |
 | 22 | `about-log-polish` | done | About shows only the version and the one-line description; log lines coloured by level, times in the phone's local time and format (gallery feedback 3, 4) |
 | 22b | `turn-steps` | done | Solver turns animated in steps: a quarter turn as one clear step, a half turn as two quarter steps with a pause, so it is obvious how far to turn (user priority 2026-10-03: more important than polish) |
-| 23 | `look-refresh` | planned | Modern look for the whole app, scan first: mockups in two directions (light and dark), the user picks, then built; the scan screens are always dark, also in the light theme (decided 2026-10-03). Autopilot stops here to show the mockups (gallery feedback 5, 6) |
+| 23 | `look-refresh` | specced | Modern look for the whole app, scan first: mockups in two directions (light and dark), the user picks, then built; the scan screens are always dark, also in the light theme (decided 2026-10-03). Autopilot stops here to show the mockups (gallery feedback 5, 6) |
 | 24 | `home-design` | planned | A proper home screen, right after the look refresh (gallery feedback 1) |
 
 ## Backlog
