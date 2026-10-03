@@ -115,12 +115,17 @@ right side. Stickers in the review SHALL NOT be tappable. Only an accepted face 
 - **THEN** nothing changes; doubtful stickers are checked in the manual editor after the scan
 
 ### Requirement: Steady camera settings
-After the first face is accepted, the camera's exposure and white balance SHALL stay fixed for the
-rest of the scan, so that every face is read under the same settings.
+When the first face is captured, the camera's exposure and white balance SHALL be locked for the
+rest of the scan, so that every face is read under the settings the camera had while the front face
+was held still. Scanning the front face again SHALL release the lock until it is captured again.
 
 #### Scenario: Lock after the first face
-- **WHEN** the front face is accepted
+- **WHEN** the front face is captured
 - **THEN** exposure and white balance are locked until the scan ends or returns to the front face
+
+#### Scenario: Turning after the first face
+- **WHEN** the front face has been captured and the user turns the cube towards a darker view before accepting
+- **THEN** the next faces are read with the front face's exposure, not a brighter one
 
 ### Requirement: One screen
 In portrait the scan screen SHALL fit the display without scrolling. The actions (capture and redo
@@ -154,3 +159,16 @@ SHALL not run. The capture button SHALL still capture what is in the grid.
 #### Scenario: Capture anyway
 - **WHEN** no cube is seen and the user taps the capture button
 - **THEN** the grid is captured and shown for review
+
+### Requirement: Smooth capture
+The camera view SHALL keep moving through a capture and the review; saving the capture's picture
+SHALL not hold up the screen. A stop of the camera frames or of the screen's drawing long enough to
+notice SHALL be written to the log with where it happened and how long it lasted.
+
+#### Scenario: Capture without a freeze
+- **WHEN** a face is captured
+- **THEN** the camera view does not freeze while the picture is saved
+
+#### Scenario: Stall logged
+- **WHEN** no camera frame arrives for a noticeable time during the scan
+- **THEN** the log gets a stall line with its length
