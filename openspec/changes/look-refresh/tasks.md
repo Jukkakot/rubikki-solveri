@@ -3,8 +3,8 @@
 ## 1. Theme
 
 - [ ] 1.1 Add Fredoka and Nunito font files (SIL OFL) under `res/font`; typography with Fredoka for display/headline/title and Nunito for body/label
-- [ ] 1.2 Fixed light and dark colour schemes from the mockup tokens; drop dynamic colour and the `dynamicColor` parameter (update tests that pass it); raised shape scale; window backgrounds in `values`/`values-night` match the grounds
-- [ ] 1.3 Test: the scheme does not change with dynamic colour available (same primary in light), and light/dark pick the right ground
+- [ ] 1.2 Raised shape scale; test fallback schemes from the `#1B6EF3` seed palette (dynamic colour stays on the phone)
+- [ ] 1.3 Test: the theme provides the Fredoka/Nunito typography and the raised shapes in light and dark
 
 ## 2. Shared pieces
 
@@ -25,5 +25,5 @@
 
 ## 5. Docs and roadmap
 
-- [ ] 5.1 Update `openspec/context/product.md` (Look: own Karkki look, no dynamic colour) and the theme note in `docs/architecture.md`
+- [ ] 5.1 Update `openspec/context/product.md` (Look: Karkki shapes and fonts on Material You colours; scan always dark) and the theme note in `docs/architecture.md`
 - [ ] 5.2 Mark roadmap item 23 `look-refresh` done
