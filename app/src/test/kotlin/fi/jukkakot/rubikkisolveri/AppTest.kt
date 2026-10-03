@@ -6,9 +6,11 @@ import androidx.test.core.app.ApplicationProvider
 import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.ui.log.shareFilesIntent
 import fi.jukkakot.rubikkisolveri.ui.log.shareLogIntent
+import org.junit.Assume.assumeFalse
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -37,6 +39,8 @@ class AppTest {
 
     @Test
     fun shareTheLog() {
+        // FileProvider checks roots with a literal '/', which never matches Windows paths; CI runs it.
+        assumeFalse(File.separatorChar == '\\')
         AppLog.logger.flush()
         val chooser = shareLogIntent(app, AppLog.logger.file.file)
         assertEquals(Intent.ACTION_CHOOSER, chooser.action)
