@@ -154,8 +154,9 @@ yellow cross, yellow edges, yellow corners into place, yellow corners turned.
 - `Cube3D` draws the projected quads on a Compose `Canvas`; drag turns the view (`CubeViewState`),
   tap returns a sticker index, `marked` stickers get a red outline. Colours are fixed real-cube
   colours (`StickerColors`), not themed.
-- `CubeAnimator` queues moves and animates them (300 ms quarter, 450 ms half, scaled by the phone's
-  animator scale; instant when animations are off).
+- `CubeAnimator` queues moves and animates them (300 ms quarter; a half turn is two quarter steps
+  with a pause, `onHalfway` between them; scaled by the phone's animator scale; instant when
+  animations are off).
 - Hold orientations per face (`FaceView` in `cube`) drive the manual input's preview and later
   the scanner's guidance.
 

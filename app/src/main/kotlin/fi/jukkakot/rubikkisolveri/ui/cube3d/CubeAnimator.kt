@@ -17,12 +17,14 @@ import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.Move
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Plays moves on a cube one after another. [cube] is the state before the move in progress
- * ([move], [progress] 0..1); when a move finishes it is applied to [cube]. [durationScale] is the
- * phone's animator scale: 0 applies moves at once.
+ * Plays moves on a cube one after another. [cube] is the state before the step in progress
+ * ([move], [progress] 0..1); when a step finishes it is applied to [cube]. A half turn plays as two
+ * quarter steps, so [move] is then the quarter move. [durationScale] is the phone's animator
+ * scale: 0 applies moves at once.
  */
 @Stable
 class CubeAnimator(initial: Cube, private val scope: CoroutineScope, private val durationScale: Float = 1f) {
@@ -44,6 +46,9 @@ class CubeAnimator(initial: Cube, private val scope: CoroutineScope, private val
     var target: Cube by mutableStateOf(initial)
         private set
 
+    /** Called when the first quarter step of a half turn ends; the cube then shows that state. */
+    var onHalfway: ((Move) -> Unit)? = null
+
     private var generation = 0
     private val queue = Channel<Pair<Int, Pair<Move, Float>>>(Channel.UNLIMITED)
 
@@ -52,18 +57,24 @@ class CubeAnimator(initial: Cube, private val scope: CoroutineScope, private val
             for ((gen, item) in queue) {
                 if (gen != generation) continue
                 val (next, speed) = item
-                val millis = ((if (next.quarterTurns == 2) HALF_MS else QUARTER_MS) * durationScale / speed).toInt()
-                if (millis > 0) {
-                    move = next
-                    animatable.snapTo(0f)
-                    animatable.animateTo(1f, tween(millis, easing = FastOutSlowInEasing))
-                }
-                if (gen == generation) {
-                    cube = cube.apply(next)
+                val millis = (QUARTER_MS * durationScale / speed).toInt()
+                // A half turn plays as two quarter steps the same way with a pause between.
+                val steps = if (millis > 0 && next.quarterTurns == 2) List(2) { Move(next.layer, 1) } else listOf(next)
+                for ((i, step) in steps.withIndex()) {
+                    if (i > 0) delay((STEP_PAUSE_MS * durationScale / speed).toLong())
+                    if (gen != generation) break
+                    if (millis > 0) {
+                        move = step
+                        animatable.snapTo(0f)
+                        animatable.animateTo(1f, tween(millis, easing = FastOutSlowInEasing))
+                    }
+                    if (gen != generation) break
+                    cube = cube.apply(step)
                     move = null
                     animatable.snapTo(0f)
-                    pending--
+                    if (i < steps.lastIndex) onHalfway?.invoke(next)
                 }
+                if (gen == generation) pending--
             }
         }
     }
@@ -90,7 +101,7 @@ class CubeAnimator(initial: Cube, private val scope: CoroutineScope, private val
 
     companion object {
         const val QUARTER_MS = 300
-        const val HALF_MS = 450
+        const val STEP_PAUSE_MS = 250
     }
 }
 

@@ -224,7 +224,7 @@ private fun Stepper(
 ) {
     val moves = plan.moves
     val haptics = LocalHapticFeedback.current
-    val state = rememberStepperState(start, moves, onDemoEnd = { haptics.performHapticFeedback(HapticFeedbackType.SegmentTick) })
+    val state = rememberStepperState(start, moves, onDemoTick = { haptics.performHapticFeedback(HapticFeedbackType.SegmentTick) })
     val index = state.index
     val now = state.cubeAt(index)
     val startedAt = remember { System.currentTimeMillis() }

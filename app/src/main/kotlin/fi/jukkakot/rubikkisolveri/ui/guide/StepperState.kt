@@ -30,7 +30,7 @@ class StepperState(
     initialIndex: Int,
     val animator: CubeAnimator,
     private val scope: CoroutineScope,
-    private val onDemoEnd: () -> Unit = {},
+    private val onDemoTick: () -> Unit = {},
 ) {
     var index by mutableIntStateOf(initialIndex)
         private set
@@ -40,8 +40,16 @@ class StepperState(
 
     fun cubeAt(i: Int): Cube = start.apply(moves.take(i))
 
+    /** True while a demo plays: its half turn ticks after the first quarter step. */
+    private var demoing = false
+
+    init {
+        animator.onHalfway = { if (demoing) onDemoTick() }
+    }
+
     /** A demo may still be running or waiting: start from the real state of this step. */
     private fun settle() {
+        demoing = false
         if (animator.target != cubeAt(index) || animator.pending > 0) animator.snapTo(cubeAt(index))
     }
 
@@ -64,9 +72,11 @@ class StepperState(
         settle()
         val shownAt = index
         animator.play(move)
+        demoing = true
         scope.launch {
             snapshotFlow { animator.pending }.first { it == 0 }
-            onDemoEnd()
+            demoing = false
+            onDemoTick()
             delay(DEMO_PAUSE_MS)
             if (index == shownAt && animator.pending == 0) animator.snapTo(cubeAt(index))
         }
@@ -88,11 +98,11 @@ class StepperState(
 }
 
 @Composable
-fun rememberStepperState(start: Cube, moves: List<Move>, onDemoEnd: () -> Unit = {}): StepperState {
+fun rememberStepperState(start: Cube, moves: List<Move>, onDemoTick: () -> Unit = {}): StepperState {
     var savedIndex by rememberSaveable { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
     val animator = rememberCubeAnimator(start.apply(moves.take(savedIndex)))
-    val state = remember { StepperState(start, moves, savedIndex, animator, scope, onDemoEnd) }
+    val state = remember { StepperState(start, moves, savedIndex, animator, scope, onDemoTick) }
     LaunchedEffect(state.index) {
         savedIndex = state.index
         state.autoDemo()

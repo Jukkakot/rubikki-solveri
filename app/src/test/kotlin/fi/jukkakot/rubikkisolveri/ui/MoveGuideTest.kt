@@ -29,7 +29,7 @@ class MoveGuideTest {
 
     private fun stepper() {
         compose.mainClock.autoAdvance = false
-        compose.setContent { state = rememberStepperState(start, moves, onDemoEnd = { demos++ }) }
+        compose.setContent { state = rememberStepperState(start, moves, onDemoTick = { demos++ }) }
         compose.mainClock.advanceTimeByFrame()
     }
 

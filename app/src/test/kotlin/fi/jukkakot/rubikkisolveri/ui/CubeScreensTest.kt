@@ -151,6 +151,48 @@ class CubeAnimatorTest {
     }
 
     @Test
+    fun halfTurnPlaysAsTwoQuarterSteps() {
+        start()
+        var halfways = 0
+        compose.runOnIdle {
+            animator.onHalfway = { halfways++ }
+            animator.play(Notation.parse("R2 U"))
+        }
+        compose.mainClock.advanceTimeBy(150)
+        compose.runOnIdle {
+            assertEquals(Notation.parse("R").single(), animator.move)
+            assertEquals(Cube.solved(), animator.cube)
+        }
+        compose.mainClock.advanceTimeBy(250)
+        compose.runOnIdle {
+            assertNull(animator.move, "pause between the steps")
+            assertEquals(Cube.solved().apply("R"), animator.cube)
+            assertEquals(1, halfways)
+            assertEquals(2, animator.pending)
+        }
+        compose.mainClock.advanceTimeBy(3000)
+        compose.runOnIdle {
+            assertEquals(Cube.solved().apply("R2 U"), animator.cube)
+            assertEquals(0, animator.pending)
+            assertEquals(1, halfways)
+        }
+    }
+
+    @Test
+    fun snapMidHalfTurn() {
+        start()
+        compose.runOnIdle { animator.play(Notation.parse("R2 U")) }
+        compose.mainClock.advanceTimeBy(400)
+        val snapped = Cube.solved().apply("F")
+        compose.runOnIdle { animator.snapTo(snapped) }
+        compose.mainClock.advanceTimeBy(3000)
+        compose.runOnIdle {
+            assertEquals(snapped, animator.cube)
+            assertEquals(0, animator.pending)
+        }
+    }
+
+    @Test
     fun snapDropsQueuedMoves() {
         start()
         compose.runOnIdle {
