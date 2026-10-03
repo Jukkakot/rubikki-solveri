@@ -6,6 +6,7 @@ import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.CubeEditor
 import fi.jukkakot.rubikkisolveri.cube.FaceView
 import fi.jukkakot.rubikkisolveri.cube.Validity
+import kotlin.math.hypot
 
 /** What the latest frame meant for the scan. */
 sealed interface ScanEvent {
@@ -20,6 +21,9 @@ sealed interface ScanEvent {
 
     /** The camera still sees the face accepted last: the user should turn the cube. */
     data object PreviousFace : ScanEvent
+
+    /** The grid does not look like cube stickers (a desk, a hand): nothing is captured automatically. */
+    data object NoCube : ScanEvent
 
     /** [face] was captured and awaits [ScanSession.accept] or [ScanSession.retake]. */
     data class Captured(val face: FaceView) : ScanEvent
@@ -90,6 +94,10 @@ class ScanSession(
         if (previous != null && looksAlike(labs, previous.map { it.toLab() })) {
             resetStreak()
             return ScanEvent.PreviousFace
+        }
+        if (!looksLikeCube(labs)) {
+            resetStreak()
+            return ScanEvent.NoCube
         }
         val steady = streakLabs?.let { looksAlike(labs, it) } == true
         if (!steady) {
@@ -191,6 +199,14 @@ class ScanSession(
         /** Largest colour difference per cell that still counts as the same view. */
         const val STEADY_DISTANCE = 12.0
         private const val CENTRE = 4
+
+        /** A sticker is clearly coloured (blue is dark but saturated) or bright (white). */
+        const val MIN_CHROMA = 20.0
+        const val MIN_WHITE_LIGHTNESS = 55.0
+
+        /** All cells but at most one (glare, a shadow) read as stickers. */
+        fun looksLikeCube(labs: List<Lab>): Boolean =
+            labs.count { hypot(it.a, it.b) < MIN_CHROMA && it.l < MIN_WHITE_LIGHTNESS } <= 1
 
         /** Every cell of [a] is within [STEADY_DISTANCE] of the same cell of [b]. */
         private fun looksAlike(a: List<Lab>, b: List<Lab>): Boolean = a.indices.all { a[it].distance(b[it]) < STEADY_DISTANCE }

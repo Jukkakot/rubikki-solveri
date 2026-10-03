@@ -28,8 +28,8 @@ stickerless cubes and loose alignment); full-resolution photos; uploading anythi
   ARGB pixels of the grid square (nearest neighbour through `toFrame`), so it is unit-testable and
   matches exactly what is sampled. `CameraPreview` keeps the latest one per frame (≈14 k pixel reads,
   negligible) in a holder the scan screen reads at capture time.
-- **Files:** `files/logs/scan/<yyyyMMdd-HHmmss>-<face>.png`, newest 12 kept, written off the main
-  thread. New log event `scan.capture face=… picture=… rgb=…` at every capture (auto or button),
+- **Files:** `files/logs/scan/<yyyyMMdd-HHmmss>-<face>.png`, newest 12 kept, written on capture
+  (a 120×120 PNG takes a few milliseconds). New log event `scan.capture face=… picture=… rgb=…` at every capture (auto or button),
   so retakes are visible too; `scan.face` on accept stays.
 - **Share:** `ACTION_SEND_MULTIPLE`, type `*/*`, the log plus the pictures; with no pictures it is
   the same single-file share as before. Clear deletes the `scan/` folder. The pictures exist only on

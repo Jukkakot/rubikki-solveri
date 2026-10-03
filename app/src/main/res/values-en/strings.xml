@@ -106,6 +106,7 @@
     <string name="scan_review_note">The colours are worked out at the end from the whole cube.</string>
     <string name="scan_review_centre">The centre read as %1$s. If this is the right side anyway, just go on.</string>
     <string name="scan_status_centre">The centre looks %1$s. If this is the right side, hold still.</string>
+    <string name="scan_status_no_cube">No cube in the grid. Bring a side of the cube into the grid.</string>
     <string name="scan_status_turn">Turn the cube: the camera still sees the previous side.</string>
     <string name="scan_accept">Good, next</string>
     <string name="scan_retake">Scan again</string>

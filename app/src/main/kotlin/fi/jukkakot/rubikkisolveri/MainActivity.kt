@@ -19,6 +19,7 @@ import fi.jukkakot.rubikkisolveri.progress.RoomProgressRepository
 import fi.jukkakot.rubikkisolveri.settings.LanguageSetting
 import fi.jukkakot.rubikkisolveri.settings.SettingsRepository
 import fi.jukkakot.rubikkisolveri.settings.ThemeMode
+import fi.jukkakot.rubikkisolveri.log.ScanPictures
 import fi.jukkakot.rubikkisolveri.ui.log.shareLogIntent
 import fi.jukkakot.rubikkisolveri.ui.nav.AppActions
 import fi.jukkakot.rubikkisolveri.ui.nav.RubikkiNavHost
@@ -69,12 +70,13 @@ class MainActivity : AppCompatActivity() {
                         clearLog = {
                             logger.flush()
                             logger.file.clear()
+                            ScanPictures.of(this).clear()
                             logger.info(Evt.LOG_CLEARED)
                         },
                         shareLog = {
                             logger.info(Evt.LOG_SHARED)
                             logger.flush()
-                            startActivity(shareLogIntent(this, logger.file.file))
+                            startActivity(shareLogIntent(this, logger.file.file, ScanPictures.of(this).list()))
                         },
                         crashedLastTime = app.crashedLastTime,
                         onCrashNoticeShown = app::crashNoticeShown,

@@ -115,6 +115,22 @@ class FrameSamplerTest {
         val frame = RgbaFrame(w, half.height, w * 4, bytes, 0, cropLeft = half.width, cropRight = w)
         assertEquals(faceColors, FrameSampler.sample(frame))
     }
+
+    @Test
+    fun pictureShowsTheGridUpright() {
+        val size = 30
+        for (rotation in listOf(0, 90, 180, 270)) {
+            val picture = FrameSampler.picture(sensorFrame(rotation), size)
+            assertEquals(size * size, picture.size)
+            // The middle of each cell has that cell's colour.
+            for (cell in 0 until 9) {
+                val x = (cell % 3) * 10 + 5
+                val y = (cell / 3) * 10 + 5
+                val c = faceColors[cell]
+                assertEquals((0xff shl 24) or (c.r shl 16) or (c.g shl 8) or c.b, picture[y * size + x], "rotation $rotation cell $cell")
+            }
+        }
+    }
 }
 
 class ClassifierTest {
@@ -338,5 +354,31 @@ class ScanSessionTest {
         session.onFrame(face(FaceView.FRONT), 0)
         assertEquals(ScanEvent.Captured(FaceView.FRONT), session.captureNow())
         assertEquals(FaceView.FRONT, session.review?.first)
+    }
+
+    @Test
+    fun noCubeInTheGrid() {
+        // A dark mouse pad and a grey desk, held still: never captured automatically.
+        for (surface in listOf(Rgb(35, 35, 40), Rgb(120, 115, 110))) {
+            val session = ScanSession()
+            val samples = List(9) { surface }
+            repeat(30) { assertEquals(ScanEvent.NoCube, session.onFrame(samples, it * 100L), "$surface") }
+            assertEquals(null, session.review)
+            // The capture button still takes it.
+            assertEquals(ScanEvent.Captured(FaceView.FRONT), session.captureNow())
+        }
+    }
+
+    @Test
+    fun cubeFacesLookLikeACube() {
+        val session = ScanSession()
+        session.capture(FaceView.FRONT, face(FaceView.FRONT))
+        // A solved white face and one sticker in shadow still pass.
+        val white = List(9) { ColorClassifier.DEFAULT_PALETTE.getValue(CubeColor.WHITE) }
+        assertTrue(ScanSession.looksLikeCube(white.map { it.toLab() }))
+        val shadow = face(FaceView.RIGHT).toMutableList().also { it[0] = Rgb(40, 40, 40) }
+        assertTrue(ScanSession.looksLikeCube(shadow.map { it.toLab() }))
+        val twoShadows = shadow.also { it[1] = Rgb(40, 40, 40) }
+        assertTrue(!ScanSession.looksLikeCube(twoShadows.map { it.toLab() }))
     }
 }

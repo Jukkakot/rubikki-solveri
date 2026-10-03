@@ -108,6 +108,7 @@
     <string name="scan_review_note">Värit tulkitaan lopuksi koko kuution perusteella.</string>
     <string name="scan_review_centre">Keskiö luettiin: %1$s. Jos tämä silti on oikea puoli, jatka vain.</string>
     <string name="scan_status_centre">Keskiö näyttää: %1$s. Jos tämä on oikea puoli, pidä paikallaan.</string>
+    <string name="scan_status_no_cube">Ruudukossa ei näy kuutiota. Tuo kuution puoli ruudukkoon.</string>
     <string name="scan_status_turn">Käännä kuutiota: kamera näkee vielä edellisen puolen.</string>
     <string name="scan_accept">Hyvä, seuraava</string>
     <string name="scan_retake">Kuvaa uudelleen</string>

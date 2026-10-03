@@ -35,12 +35,13 @@ class ScanScreenTest {
 
     private val frames = MutableSharedFlow<List<Rgb>>(extraBufferCapacity = 64)
     private var outcome: ScanOutcome? = null
+    private val saved = ArrayList<String>()
     private val cube = Cube.solved().apply("R U F' D2 L B")
 
     private fun scan() {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0, preview = {})
+                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0, savePicture = { saved += it; "$it.png" }, preview = {})
             }
         }
     }
@@ -52,6 +53,22 @@ class ScanScreenTest {
             compose.runOnIdle { frames.tryEmit(faceSamples(view)) }
             compose.waitForIdle()
         }
+    }
+
+    @Test
+    fun noCubeInTheGrid() {
+        scan()
+        repeat(3) {
+            compose.runOnIdle { frames.tryEmit(List(9) { Rgb(35, 35, 40) }) }
+            compose.waitForIdle()
+        }
+        compose.onNodeWithText("Ruudukossa ei näy kuutiota. Tuo kuution puoli ruudukkoon.").assertIsDisplayed()
+        compose.onNodeWithText("Etupuoli (1/6)").assertIsDisplayed()
+        assertTrue(saved.isEmpty())
+        // The capture button still takes it, and its picture is saved.
+        compose.onNodeWithText("Ota kuva").performClick()
+        compose.onNodeWithText("Hyvä, seuraava").assertIsDisplayed()
+        assertEquals(listOf("F"), saved)
     }
 
     @Test

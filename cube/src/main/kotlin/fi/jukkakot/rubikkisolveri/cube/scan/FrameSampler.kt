@@ -74,5 +74,26 @@ object FrameSampler {
         }
     }
 
+    /**
+     * The grid square as seen on screen, [size]×[size] pixels row by row as ARGB (nearest pixel),
+     * for a picture of what was sampled.
+     */
+    fun picture(frame: RgbaFrame, size: Int = PICTURE_SIZE): IntArray {
+        val cw = frame.cropRight - frame.cropLeft
+        val ch = frame.cropBottom - frame.cropTop
+        val side = GRID_SIZE * minOf(cw, ch)
+        val left = frame.cropLeft + (cw - side) / 2
+        val top = frame.cropTop + (ch - side) / 2
+        return IntArray(size * size) { i ->
+            val (fx, fy) = toFrame((i % size + 0.5f) / size, (i / size + 0.5f) / size, frame.rotation)
+            val x = (left + fx * side).toInt().coerceIn(0, frame.width - 1)
+            val y = (top + fy * side).toInt().coerceIn(0, frame.height - 1)
+            val p = frame.pixel(x, y)
+            (0xff shl 24) or (p.r shl 16) or (p.g shl 8) or p.b
+        }
+    }
+
+    const val PICTURE_SIZE = 120
+
     fun median(values: List<Int>): Int = values.sorted()[values.size / 2]
 }

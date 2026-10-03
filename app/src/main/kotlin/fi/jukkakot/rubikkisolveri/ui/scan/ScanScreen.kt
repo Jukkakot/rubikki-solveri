@@ -47,6 +47,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -62,6 +63,8 @@ import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanSession
 import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.Evt
+import fi.jukkakot.rubikkisolveri.log.ScanPictures
+import java.util.concurrent.atomic.AtomicReference
 import fi.jukkakot.rubikkisolveri.ui.common.colorName
 import fi.jukkakot.rubikkisolveri.ui.common.faceName
 import fi.jukkakot.rubikkisolveri.ui.common.holdHint
@@ -82,6 +85,9 @@ fun ScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome)
         var torch by remember { mutableStateOf(false) }
         var lockExposure by remember { mutableStateOf(false) }
         var cameraFailed by remember { mutableStateOf(false) }
+        val context = LocalContext.current
+        val pictures = remember { ScanPictures.of(context) }
+        val latestPicture = remember { AtomicReference<IntArray?>(null) }
         ScanContent(
             frames = frames,
             torch = torch,
@@ -91,11 +97,13 @@ fun ScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome)
             onResult = onResult,
             cameraFailed = cameraFailed,
             onLockExposure = { lockExposure = it },
+            savePicture = { face -> latestPicture.get()?.let { pictures.save(face, it, FrameSampler.PICTURE_SIZE) } },
             preview = { modifier ->
                 CameraPreview(
                     torch = torch,
                     lockExposure = lockExposure,
                     onSamples = { frames.tryEmit(it) },
+                    onPicture = { latestPicture.set(it) },
                     onError = { cameraFailed = true },
                     modifier = modifier,
                 )
@@ -117,6 +125,7 @@ fun ScanContent(
     cameraFailed: Boolean = false,
     holdMillis: Long = ScanSession.HOLD_MILLIS,
     onLockExposure: (Boolean) -> Unit = {},
+    savePicture: (face: String) -> String? = { null },
     preview: @Composable (Modifier) -> Unit,
 ) {
     val session = remember { ScanSession(holdMillis = holdMillis) }
@@ -136,6 +145,14 @@ fun ScanContent(
             review = session.review?.second
             reviewHint = session.reviewCentreLooksLike
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+            val picture = runCatching { savePicture(e.face.face.name) }
+                .onFailure { AppLog.logger.error(Evt.SCAN_ERROR, it, "picture") }.getOrNull()
+            AppLog.info(
+                Evt.SCAN_CAPTURE, null,
+                "face" to e.face.face.name,
+                "picture" to picture,
+                "rgb" to session.review?.second?.joinToString(",") { it.toHex() },
+            )
         }
     }
 
@@ -303,6 +320,7 @@ private fun OnCamera(modifier: Modifier, scrim: Boolean = true, content: @Compos
 @Composable
 private fun statusText(event: ScanEvent): String = when (event) {
     is ScanEvent.PreviousFace -> stringResource(R.string.scan_status_turn)
+    is ScanEvent.NoCube -> stringResource(R.string.scan_status_no_cube)
     is ScanEvent.Holding -> event.centreLooksLike
         ?.let { stringResource(R.string.scan_status_centre, stringResource(colorName(it))) }
         ?: stringResource(R.string.scan_status_hold)

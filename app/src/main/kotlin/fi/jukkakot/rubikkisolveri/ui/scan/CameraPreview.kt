@@ -55,6 +55,7 @@ fun CameraPreview(
     onError: (Throwable) -> Unit,
     modifier: Modifier = Modifier,
     lockExposure: Boolean = false,
+    onPicture: ((IntArray) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -86,6 +87,7 @@ fun CameraPreview(
                     crop.left, crop.top, crop.right, crop.bottom,
                 )
                 onSamples(FrameSampler.sample(frame))
+                onPicture?.invoke(FrameSampler.picture(frame))
             } catch (e: Exception) {
                 AppLog.logger.error(Evt.SCAN_ERROR, e)
             } finally {

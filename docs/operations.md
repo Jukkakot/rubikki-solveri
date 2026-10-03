@@ -52,18 +52,23 @@ Android Studio device menu → **Pair Devices Using Wi-Fi** and scan the QR code
 
 ## Tuning the camera scan — Implemented
 
-The scan logs numbers, never pictures:
+The scan logs the readings and keeps a small picture of the grid for every capture:
 
-- `scan.face face=F rgb=…,…` — the nine accepted readings of a face (hex RGB, row by row as seen),
-  `live=` the colours shown in the review and `fixed=` the user's taps there (cell and colour
-  letter, e.g. `0R`).
+- `scan.capture face=F picture=20261003-104512-123-F.png rgb=…,…` — every capture (automatic or
+  the button, retakes too): the picture's file name and the nine readings (hex RGB, row by row).
+- `scan.face face=F rgb=…,… centreLooksLike=R` — an accepted face; `centreLooksLike` when the
+  centre read as another colour.
 - `scan.lock lock=true` — exposure and white balance locked after the first face.
 - `scan.done valid=… validity=… uncertain=N cube=…` — the result (`cube` is the 54 colour letters,
   `.` for unknown).
 
-If the scan misreads colours: scan once, Settings → Log → Share, and give the log to Claude. The
-readings are enough to replay the classification in a unit test and adjust
-`ColorClassifier.DEFAULT_PALETTE` (live dots and the centre check) or `UNCERTAIN_BELOW`.
+Pictures (120×120 PNG of the grid area) live in `files/logs/scan/` on the phone, newest 12 kept;
+Clear in the log screen deletes them. They leave the phone only when the log is shared.
+
+If the scan misbehaves: scan once, Settings → Log → Share → **Drive** (the log and the pictures go
+together), then tell Claude; Claude fetches them with the Google Drive connector. The readings
+replay in a unit test to tune `ColorClassifier`, the "looks like a cube" thresholds
+(`ScanSession.MIN_CHROMA`, `MIN_WHITE_LIGHTNESS`) or `STEADY_DISTANCE`.
 
 ## Data on the phone — Implemented
 
