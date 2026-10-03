@@ -31,7 +31,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 22 | `about-log-polish` | done | About shows only the version and the one-line description; log lines coloured by level, times in the phone's local time and format (gallery feedback 3, 4) |
 | 22b | `turn-steps` | done | Solver turns animated in steps: a quarter turn as one clear step, a half turn as two quarter steps with a pause, so it is obvious how far to turn (user priority 2026-10-03: more important than polish) |
 | 23 | `look-refresh` | done | Karkki look (shapes, Fredoka/Nunito) on Material You colours; scan and solve screens restyled after mockup A; scan screens always dark |
-| 24 | `home-design` | planned | A proper home screen, right after the look refresh (gallery feedback 1) |
+| 24 | `home-design` | done | Home screen with a spinning 3D cube, scan as the one primary action, a 2×2 tile grid and a best-time line (gallery feedback 1) |
 
 ## Backlog
 

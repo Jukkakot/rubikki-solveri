@@ -29,7 +29,7 @@ Modules: app only (no cube module changes).
 
 ### Modified Capabilities
 
-- `app-shell`: the Home screen requirement is replaced by "Home screen layout" ( with hero cube, one primary action, feature
+- `app-shell`: the Home screen requirement is replaced by "Home screen layout" (hero cube, one primary action, feature
   tiles, solve summary; the "coming later" scenario removed).
 
 ## Impact

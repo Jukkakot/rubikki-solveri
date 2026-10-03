@@ -23,6 +23,10 @@ import fi.jukkakot.rubikkisolveri.ui.nav.SolveRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.ScanRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.LessonsRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.TimerRoute
+import fi.jukkakot.rubikkisolveri.ui.nav.FreeCubeRoute
+import fi.jukkakot.rubikkisolveri.progress.InMemoryProgressRepository
+import fi.jukkakot.rubikkisolveri.progress.ProgressRepository
+import kotlinx.coroutines.runBlocking
 import fi.jukkakot.rubikkisolveri.ui.nav.RubikkiNavHost
 import fi.jukkakot.rubikkisolveri.ui.nav.SettingsRoute
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
@@ -56,7 +60,7 @@ class ShellTest {
     private val notationChoices = mutableListOf<Boolean>()
     private var logLines = mutableListOf("2026-10-02T12:00:00Z INFO app.start ver=test")
 
-    private fun start(crashedLastTime: Boolean = false) {
+    private fun start(crashedLastTime: Boolean = false, progress: ProgressRepository = InMemoryProgressRepository()) {
         compose.setContent {
             nav = TestNavHostController(LocalContext.current).apply {
                 navigatorProvider.addNavigator(ComposeNavigator())
@@ -76,6 +80,8 @@ class ShellTest {
                         onCrashNoticeShown = {},
                         version = "test",
                         onShowNotation = { notationChoices += it },
+                        homeSpin = false,
+                        progress = progress,
                     ),
                 )
             }
@@ -98,15 +104,31 @@ class ShellTest {
     @Test
     fun openLessons() {
         start()
-        compose.onNodeWithText("Opettele ratkaisemaan").performClick()
+        compose.onNodeWithText("Opettele").performClick()
         assertTrue(isOn(LessonsRoute))
     }
 
     @Test
     fun openTheTimer() {
         start()
-        compose.onNodeWithText("Ajanotto ja tilastot").performClick()
+        compose.onNodeWithText("Ajanotto").performClick()
         assertTrue(isOn(TimerRoute))
+    }
+
+    @Test
+    fun openTheFreeCube() {
+        start()
+        compose.onNodeWithText("Vapaa kuutio").performClick()
+        assertTrue(isOn(FreeCubeRoute()))
+    }
+
+    @Test
+    fun homeSummaryOnlyWithTimedSolves() {
+        val progress = InMemoryProgressRepository()
+        start(progress = progress)
+        compose.onNodeWithText("ratkaisu", substring = true).assertDoesNotExist()
+        runBlocking { progress.addTimed(42_310, "R U") }
+        compose.onNodeWithText("1 ratkaisu", substring = true).assertExists()
     }
 
     @Test
@@ -119,7 +141,7 @@ class ShellTest {
     @Test
     fun openManualInput() {
         start()
-        compose.onNodeWithText("Syötä värit käsin").performClick()
+        compose.onNodeWithText("Syötä käsin").performClick()
         assertTrue(isOn(ManualInputRoute()))
         compose.onNodeWithText("Etupuoli (1/6)").assertIsDisplayed()
     }
@@ -127,7 +149,7 @@ class ShellTest {
     @Test
     fun validCubeOpensItsSolution() {
         start()
-        compose.onNodeWithText("Syötä värit käsin").performClick()
+        compose.onNodeWithText("Syötä käsin").performClick()
         compose.onNodeWithContentDescription("Lisää").performClick()
         compose.onNodeWithText("Täytä ratkaistuna").performClick()
         compose.onNodeWithText("Tarkista").performClick()
@@ -281,7 +303,7 @@ class EnglishTextsTest {
                 }
                 RubikkiNavHost(
                     nav,
-                    AppActions(ThemeMode.SYSTEM, {}, AppLanguage.ENGLISH, {}, { emptyList() }, {}, {}, false, {}, "test"),
+                    AppActions(ThemeMode.SYSTEM, {}, AppLanguage.ENGLISH, {}, { emptyList() }, {}, {}, false, {}, "test", homeSpin = false),
                 )
             }
         }

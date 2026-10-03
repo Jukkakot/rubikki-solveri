@@ -194,7 +194,7 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 
 | Route | Screen | Notes |
 |---|---|---|
-| `HomeRoute` | Home | entries: scan, manual input, learn, free cube |
+| `HomeRoute` | Home | spinning hero cube; scan as the primary button; tiles: manual input, learn, timer, free cube; best-time summary |
 | `LessonsRoute`, `LessonRoute(index)` | Lessons | basics + 7 stages, algorithm demos |
 | `PracticeRoute(stage, seed)` | Practice | the solution screen limited to one stage |
 | `TimerRoute`, `HistoryRoute`, `ScrambleGuideRoute(moves)` | Timer, history, guided scramble | |

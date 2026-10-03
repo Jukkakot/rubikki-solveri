@@ -4,8 +4,7 @@
     <string name="app_name" translatable="false">Rubikki Solveri</string>
     <string name="home_tagline">Skannaa kuutio ja opettele ratkaisemaan se.</string>
     <string name="home_scan">Skannaa kuutio</string>
-    <string name="home_manual">Syötä värit käsin</string>
-    <string name="coming_soon">Tulossa</string>
+    <string name="home_manual">Syötä käsin</string>
     <string name="settings">Asetukset</string>
     <string name="back">Takaisin</string>
     <string name="settings_language">Kieli</string>
@@ -179,7 +178,7 @@
     <string name="note_place_corners">Vie keltaiset kulmat oikeille paikoilleen.</string>
     <string name="note_yellow_corner">Käännä oikealla edessä oleva kulma keltainen ylös toistamalla R\' D\' R D. Käännä sitten vain yläpuolta seuraavaan kulmaan.</string>
     <string name="note_final_turn">Viimeinen yläpuolen käännös – valmis!</string>
-    <string name="home_learn">Opettele ratkaisemaan</string>
+    <string name="home_learn">Opettele</string>
     <string name="lessons_title">Oppitunnit</string>
     <string name="lesson_basics">Kuution perusteet</string>
     <string name="lesson_basics_summary">Palat, keskiöt, siirtojen nimet ja miten kuutiota pidetään.</string>
@@ -225,7 +224,7 @@
     <string name="practice_title">Harjoitus: %1$s</string>
     <string name="practice_done">Vaihe valmis!</string>
     <string name="practice_new">Uusi harjoitus</string>
-    <string name="home_timer">Ajanotto ja tilastot</string>
+    <string name="home_timer">Ajanotto</string>
     <string name="timer_title">Ajanotto</string>
     <string name="timer_new_scramble">Uusi sekoitus</string>
     <string name="timer_guided_scramble">Sekoita oppaan avulla</string>
@@ -273,5 +272,11 @@
     <plurals name="check_faces_left">
         <item quantity="one">Tarkistamatta vielä %d puoli</item>
         <item quantity="other">Tarkistamatta vielä %d puolta</item>
+    </plurals>
+    <string name="home_cube_description">Kuutio, jota voi kääntää vetämällä</string>
+    <string name="home_summary">Paras %1$s · %2$s</string>
+    <plurals name="home_solve_count">
+        <item quantity="one">%d ratkaisu</item>
+        <item quantity="other">%d ratkaisua</item>
     </plurals>
 </resources>

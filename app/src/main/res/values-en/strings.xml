@@ -2,8 +2,7 @@
 <resources>
     <string name="home_tagline">Scan your cube and learn to solve it.</string>
     <string name="home_scan">Scan the cube</string>
-    <string name="home_manual">Enter colours by hand</string>
-    <string name="coming_soon">Coming soon</string>
+    <string name="home_manual">Enter by hand</string>
     <string name="settings">Settings</string>
     <string name="back">Back</string>
     <string name="settings_language">Language</string>
@@ -177,7 +176,7 @@
     <string name="note_place_corners">Put the yellow corners into their places.</string>
     <string name="note_yellow_corner">Turn the front-right corner yellow up by repeating R\' D\' R D. Then turn only the top to the next corner.</string>
     <string name="note_final_turn">A last turn of the top – done!</string>
-    <string name="home_learn">Learn to solve</string>
+    <string name="home_learn">Learn</string>
     <string name="lessons_title">Lessons</string>
     <string name="lesson_basics">Cube basics</string>
     <string name="lesson_basics_summary">Pieces, centres, move names and how to hold the cube.</string>
@@ -223,7 +222,7 @@
     <string name="practice_title">Practice: %1$s</string>
     <string name="practice_done">Stage done!</string>
     <string name="practice_new">New position</string>
-    <string name="home_timer">Timer and statistics</string>
+    <string name="home_timer">Timer</string>
     <string name="timer_title">Timer</string>
     <string name="timer_new_scramble">New scramble</string>
     <string name="timer_guided_scramble">Scramble with the guide</string>
@@ -271,5 +270,11 @@
     <plurals name="check_faces_left">
         <item quantity="one">%d face left to check</item>
         <item quantity="other">%d faces left to check</item>
+    </plurals>
+    <string name="home_cube_description">A cube you can turn by dragging</string>
+    <string name="home_summary">Best %1$s · %2$s</string>
+    <plurals name="home_solve_count">
+        <item quantity="one">%d solve</item>
+        <item quantity="other">%d solves</item>
     </plurals>
 </resources>

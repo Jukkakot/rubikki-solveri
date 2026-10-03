@@ -224,20 +224,29 @@ class ScreenshotTest {
         )
     }
 
-    @Test
-    fun home() = shot("home") {
+    @Composable
+    private fun Home() {
         fi.jukkakot.rubikkisolveri.ui.home.HomeScreen(
+            primary = fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_scan, R.drawable.ic_camera) {},
             entries = listOf(
-                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_scan) {},
-                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_manual) {},
-                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_learn) {},
-                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_timer) {},
-                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_free_cube) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_manual, R.drawable.ic_palette) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_learn, R.drawable.ic_school) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_timer, R.drawable.ic_timer) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_free_cube, R.drawable.ic_cube) {},
             ),
             onOpenSettings = {}, crashedLastTime = false, onShowLog = {}, onCrashNoticeShown = {},
             version = "1.0.51-0365b23 · 3.10.2026 11.30",
+            summary = fi.jukkakot.rubikkisolveri.ui.home.HomeSummary(best = 42_310, count = 12),
+            spin = false,
         )
     }
+
+    @Test
+    fun home() = shot("home") { Home() }
+
+    @Test
+    @Config(qualifiers = "fi-w891dp-h411dp-land-xxhdpi")
+    fun homeLandscape() = shot("home-landscape") { Home() }
 
     @Test
     fun settings() = shot("settings") {

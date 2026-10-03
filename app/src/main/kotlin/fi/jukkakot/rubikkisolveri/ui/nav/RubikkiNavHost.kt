@@ -41,6 +41,7 @@ import fi.jukkakot.rubikkisolveri.R
 import fi.jukkakot.rubikkisolveri.settings.AppLanguage
 import fi.jukkakot.rubikkisolveri.settings.ThemeMode
 import fi.jukkakot.rubikkisolveri.ui.home.HomeEntry
+import fi.jukkakot.rubikkisolveri.ui.home.HomeSummary
 import fi.jukkakot.rubikkisolveri.ui.home.HomeScreen
 import fi.jukkakot.rubikkisolveri.ui.log.LogScreen
 import fi.jukkakot.rubikkisolveri.ui.settings.SettingsScreen
@@ -61,6 +62,8 @@ class AppActions(
     val showNotation: Boolean = false,
     val onShowNotation: (Boolean) -> Unit = {},
     val progress: ProgressRepository = InMemoryProgressRepository(),
+    /** The idle spin of the home cube; off in tests, whose clock would never go idle. */
+    val homeSpin: Boolean = true,
 )
 
 @Composable
@@ -68,16 +71,19 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
     val scope = rememberCoroutineScope()
     NavHost(navController = navController, startDestination = HomeRoute) {
         composable<HomeRoute> {
+            val timed by actions.progress.timedSolves.collectAsStateWithLifecycle(emptyList())
             HomeScreen(
+                primary = HomeEntry(R.string.home_scan, R.drawable.ic_camera) { navController.navigate(ScanRoute()) },
                 entries = listOf(
-                    HomeEntry(R.string.home_scan, onOpen = { navController.navigate(ScanRoute()) }),
-                    HomeEntry(R.string.home_manual, onOpen = { navController.navigate(ManualInputRoute()) }),
-                    HomeEntry(R.string.home_learn, onOpen = { navController.navigate(LessonsRoute) }),
-                    HomeEntry(R.string.home_timer, onOpen = { navController.navigate(TimerRoute) }),
-                    HomeEntry(R.string.home_free_cube, onOpen = { navController.navigate(FreeCubeRoute()) }),
+                    HomeEntry(R.string.home_manual, R.drawable.ic_palette) { navController.navigate(ManualInputRoute()) },
+                    HomeEntry(R.string.home_learn, R.drawable.ic_school) { navController.navigate(LessonsRoute) },
+                    HomeEntry(R.string.home_timer, R.drawable.ic_timer) { navController.navigate(TimerRoute) },
+                    HomeEntry(R.string.home_free_cube, R.drawable.ic_cube) { navController.navigate(FreeCubeRoute()) },
                 ),
                 onOpenSettings = { navController.navigate(SettingsRoute) },
                 version = actions.version,
+                summary = HomeSummary.of(timed.map { it.result }),
+                spin = actions.homeSpin,
                 crashedLastTime = actions.crashedLastTime,
                 onShowLog = { navController.navigate(LogRoute) },
                 onCrashNoticeShown = actions.onCrashNoticeShown,
