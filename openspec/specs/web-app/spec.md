@@ -95,6 +95,9 @@ be dark.
 
 ### Requirement: Camera in the browser
 The scan and camera follow SHALL use the device's back camera when there is one, else any camera.
+When the device has several back cameras and the browser's choice has no torch, the other back
+cameras SHALL be tried once and the first with a torch used; the camera chosen SHALL be remembered
+for later scans and named in the log.
 The browser's camera permission prompt SHALL be shown when the user opens the scan; if access is
 denied, the screen SHALL explain how to allow the camera in the browser's site settings and offer
 manual input instead. The torch button SHALL be shown only when the camera supports a torch. When
@@ -105,6 +108,10 @@ supported.
 #### Scenario: Scan in the phone's browser
 - **WHEN** the user opens the scan in Chrome on the phone and allows the camera
 - **THEN** the back camera's picture fills the scan view with the grid and the live colour dots, and faces are captured and checked as in the phone app
+
+#### Scenario: Back camera with a torch
+- **WHEN** the phone has several back cameras and the browser opens one without a torch
+- **THEN** the scan switches to a back camera that has one, shows the torch button, and opens that camera directly next time
 
 #### Scenario: Camera denied
 - **WHEN** the user blocks the camera for the page

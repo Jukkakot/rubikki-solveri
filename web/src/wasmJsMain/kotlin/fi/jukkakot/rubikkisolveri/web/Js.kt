@@ -32,5 +32,6 @@ external fun cameraPreviewHeight(): Int
 external fun cameraPreviewData(): Int8Array
 external fun cameraAnalysisData(): Int8Array
 external fun cameraTorchSupported(): Boolean
+external fun cameraInfo(): String
 external fun cameraSetTorch(on: Boolean)
 external fun cameraLockExposure(lock: Boolean): String

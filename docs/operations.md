@@ -69,6 +69,9 @@ The scan logs the readings and keeps a small picture of the grid for every captu
   the nine readings as seen (hex RGB, row by row).
 - `scan.face face=F rgb=…,… recognised=F` — an accepted face, provisionally named by its centre
   (the final names are decided at the end, see `renamed`).
+- `scan.permission granted=true status=ok camera="camera2 0, facing back; torch=true; tried=2"` —
+  browser version: the camera opened, whether it has a torch, and how many back cameras were tried
+  to find one with a torch (`remembered` = the camera found earlier, opened directly).
 - `scan.lock lock=true` — exposure and white balance locked when the first face is captured
   (`lock=false` when no face is done again).
 - `scan.stall where=camera|ui ms=…` — the camera frames or the screen stopped for that long; a

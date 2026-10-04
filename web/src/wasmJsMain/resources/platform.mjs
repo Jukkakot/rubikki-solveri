@@ -29,7 +29,7 @@ export function persistStorage() {
 // is drawn twice: the visible part scaled down for the preview (canvas A) and the grid's square at
 // a fixed size for the colour reading (canvas B). Kotlin passes the visible part (cover crop).
 
-const cam = { stream: null, starting: null, users: 0, video: null, lastTime: -1, fresh: false };
+const cam = { stream: null, starting: null, users: 0, video: null, lastTime: -1, fresh: false, info: '' };
 const canvasA = document.createElement('canvas');
 const canvasB = document.createElement('canvas');
 const ctxA = canvasA.getContext('2d', { willReadFrequently: true });
@@ -59,6 +59,107 @@ function watchFrames(video) {
   video.requestVideoFrameCallback(tick);
 }
 
+// Phones have several back cameras and the browser's pick may have no torch, so the first time
+// the other back cameras are tried and the first with a torch is kept. The camera found is
+// remembered, so later scans open it directly without trying the others again.
+
+const CAMERA_KEY = 'camera.device';
+const FRONT = /front|user|selfie|etu/i;
+
+function openCamera(choice) {
+  return navigator.mediaDevices.getUserMedia({
+    video: { ...choice, width: { ideal: 1280 }, height: { ideal: 720 } },
+    audio: false,
+  });
+}
+
+function stopStream(stream) {
+  stream.getTracks().forEach((t) => t.stop());
+}
+
+function trackOf(stream) {
+  return stream.getVideoTracks()[0];
+}
+
+function hasTorch(stream) {
+  const t = trackOf(stream);
+  try { return !!(t && t.getCapabilities && t.getCapabilities().torch); } catch (e) { return false; }
+}
+
+/** Some browsers report the torch a moment after the camera opens. */
+async function torchOf(stream) {
+  if (hasTorch(stream)) return true;
+  await new Promise((r) => setTimeout(r, 300));
+  return hasTorch(stream);
+}
+
+function deviceOf(stream) {
+  const t = trackOf(stream);
+  try { return (t && t.getSettings && t.getSettings().deviceId) || ''; } catch (e) { return ''; }
+}
+
+function facesUser(stream) {
+  const t = trackOf(stream);
+  try { return (t && t.getSettings && t.getSettings().facingMode) === 'user'; } catch (e) { return false; }
+}
+
+function remember(stream, tried) {
+  const t = trackOf(stream);
+  cam.info = `${(t && t.label) || '?'}; torch=${hasTorch(stream)}; tried=${tried}`;
+  try { localStorage.setItem(CAMERA_KEY, deviceOf(stream)); } catch (e) { /* not remembered */ }
+}
+
+async function openBackCamera() {
+  let saved = null;
+  try { saved = localStorage.getItem(CAMERA_KEY); } catch (e) { /* none */ }
+  if (saved) {
+    try {
+      const stream = await openCamera({ deviceId: { exact: saved } });
+      const t = trackOf(stream);
+      cam.info = `${(t && t.label) || '?'}; torch=${await torchOf(stream)}; remembered`;
+      return stream;
+    } catch (e) {
+      try { localStorage.removeItem(CAMERA_KEY); } catch (e2) { /* ignore */ }
+    }
+  }
+  let stream = await openCamera({ facingMode: { ideal: 'environment' } });
+  if (await torchOf(stream) || !navigator.mediaDevices.enumerateDevices) {
+    remember(stream, 1);
+    return stream;
+  }
+  const first = deviceOf(stream);
+  let others = [];
+  try {
+    others = (await navigator.mediaDevices.enumerateDevices())
+      .filter((d) => d.kind === 'videoinput' && d.deviceId && d.deviceId !== first && !FRONT.test(d.label));
+  } catch (e) { /* only the first camera */ }
+  if (!first || others.length === 0) {
+    remember(stream, 1);
+    return stream;
+  }
+  // Phones open one camera at a time: close the first while trying the others.
+  stopStream(stream);
+  let tried = 1;
+  for (const d of others) {
+    let other;
+    try { other = await openCamera({ deviceId: { exact: d.deviceId } }); } catch (e) { continue; }
+    tried++;
+    if (!facesUser(other) && await torchOf(other)) {
+      remember(other, tried);
+      return other;
+    }
+    stopStream(other);
+  }
+  stream = await openCamera({ deviceId: { exact: first } });
+  remember(stream, tried);
+  return stream;
+}
+
+/** The camera in use, for the log: its name, whether it has a torch and how it was chosen. */
+export function cameraInfo() {
+  return cam.info || '';
+}
+
 /** Starts the back camera (or any) for one more user; [done] gets "ok" or the error's name. */
 export function cameraAcquire(done) {
   cam.users++;
@@ -68,10 +169,7 @@ export function cameraAcquire(done) {
       done('NotSupportedError');
       return;
     }
-    cam.starting = navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false,
-    }).then((stream) => {
+    cam.starting = openBackCamera().then((stream) => {
       cam.stream = stream;
       if (!cam.video) {
         // Off screen but rendered (display:none stops frames in Safari).

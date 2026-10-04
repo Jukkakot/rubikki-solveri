@@ -88,7 +88,7 @@ private fun WebCameraGate(
         var live = true
         cameraAcquire { status ->
             if (live) access = if (status == "ok") Access.Granted else Access.Refused(status)
-            AppLog.info(Evt.SCAN_PERMISSION, null, "granted" to (status == "ok"), "status" to status)
+            AppLog.info(Evt.SCAN_PERMISSION, null, "granted" to (status == "ok"), "status" to status, "camera" to cameraInfo().ifEmpty { null })
         }
         onDispose {
             live = false
