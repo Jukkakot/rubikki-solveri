@@ -13,9 +13,9 @@ faces away from the viewer, the mirror SHALL NOT be drawn. The mirror SHALL NOT 
 - **WHEN** a turn of the back is presented
 - **THEN** the mirror shows the back layer highlighted and turning while the main cube stays in the holding view
 
-#### Scenario: Dragging turns the mirror too
+#### Scenario: Mirror stays still
 - **WHEN** the user drags the main cube a little
-- **THEN** the mirror turns with the scene and still shows the cube's true reflection
+- **THEN** the mirror stays still relative to the cube (it turns with the scene) and still shows the cube's true reflection
 
 #### Scenario: Mirror seen from behind
 - **WHEN** the user drags the cube round so the mirror's glass faces away
