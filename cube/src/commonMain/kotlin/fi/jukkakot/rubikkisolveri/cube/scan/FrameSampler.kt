@@ -35,7 +35,7 @@ object FrameSampler {
     const val GRID_SIZE = 0.72f
 
     /** Middle part of each cell that is read (avoids the gaps between stickers). */
-    private const val CELL_MIDDLE = 0.4f
+    private const val CELL_MIDDLE = 0.6f
 
     /**
      * Maps a point of the grid square as seen on screen ([u] right, [v] down, 0..1) to the same
@@ -48,7 +48,10 @@ object FrameSampler {
         else -> 1 - v to u
     }
 
-    /** The nine readings of the grid, row by row as seen on screen. */
+    /**
+     * The nine readings of the grid, row by row as seen on screen: per cell and channel the mean of
+     * the middle half of the values ([trimmedMean]), so a highlight or a dark corner does not decide it.
+     */
     fun sample(frame: RgbaFrame): List<Rgb> {
         val cw = frame.cropRight - frame.cropLeft
         val ch = frame.cropBottom - frame.cropTop
@@ -74,7 +77,7 @@ object FrameSampler {
                 gs += p.g
                 bs += p.b
             }
-            Rgb(median(rs), median(gs), median(bs))
+            Rgb(trimmedMean(rs), trimmedMean(gs), trimmedMean(bs))
         }
     }
 
@@ -221,4 +224,13 @@ object FrameSampler {
     fun looksLikeCube(picture: IntArray, size: Int = PICTURE_SIZE): Boolean = check(picture, size).looksLikeCube
 
     fun median(values: List<Int>): Int = values.sorted()[values.size / 2]
+
+    /** Mean of the values between the 25th and 75th percentile. */
+    fun trimmedMean(values: List<Int>): Int {
+        val sorted = values.sorted()
+        val from = sorted.size / 4
+        val to = maxOf(from + 1, sorted.size - sorted.size / 4)
+        val middle = sorted.subList(from, to)
+        return (middle.sum().toDouble() / middle.size).let { kotlin.math.round(it).toInt() }
+    }
 }

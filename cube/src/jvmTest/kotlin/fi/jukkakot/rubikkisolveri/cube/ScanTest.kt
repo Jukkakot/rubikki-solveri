@@ -315,14 +315,18 @@ class ScanSessionTest {
 
     @Test
     fun warmRedLeftAsTheLeftFace() {
-        // The user does not fix it: the red face is stored as the left one. The search undoes it.
+        // The red face is stored as the left one and the orange one as the right. The end undoes it.
         val session = ScanSession()
-        session.scanFace(FaceView.FRONT, samples = reddishFace(FaceView.FRONT, cube))
-        session.scanFace(FaceView.LEFT, samples = reddishFace(FaceView.RIGHT, cube))
-        session.scanFace(FaceView.RIGHT, samples = reddishFace(FaceView.LEFT, cube))
-        for (view in listOf(FaceView.BACK, FaceView.TOP, FaceView.BOTTOM)) {
-            session.scanFace(view, samples = reddishFace(view, cube))
+        fun store(view: FaceView, samples: List<Rgb>) {
+            session.onFrame(samples, 0)
+            session.captureNow()
+            session.choose(view)
+            session.accept()
         }
+        store(FaceView.FRONT, reddishFace(FaceView.FRONT, cube))
+        store(FaceView.LEFT, reddishFace(FaceView.RIGHT, cube))
+        store(FaceView.RIGHT, reddishFace(FaceView.LEFT, cube))
+        for (view in listOf(FaceView.BACK, FaceView.TOP, FaceView.BOTTOM)) store(view, reddishFace(view, cube))
         val outcome = session.outcome()
         assertEquals(cube, outcome.editor.toCube())
         assertEquals(Face.L, outcome.from[Face.R])

@@ -42,6 +42,63 @@ object ColorClassifier {
         return refs.entries.sortedBy { it.value.distance(lab) }.map { it.key }
     }
 
+    /** Most a reading is brightened by [scaled] (so noise in near-black is not blown up). */
+    const val MAX_GAIN = 6.0
+
+    /** [rgb] brightened so its brightest channel is 255 (gain at most [MAX_GAIN]): its colour without its brightness. */
+    fun scaled(rgb: Rgb): Rgb {
+        val top = maxOf(rgb.r, rgb.g, rgb.b)
+        val gain = if (top == 0) 1.0 else minOf(255.0 / top, MAX_GAIN)
+        fun ch(v: Int) = (v * gain).toInt().coerceIn(0, 255)
+        return Rgb(ch(rgb.r), ch(rgb.g), ch(rgb.b))
+    }
+
+    private val scaledDefaults = DEFAULT_PALETTE.mapValues { scaled(it.value).toLab() }
+
+    /**
+     * Distance of [rgb] from each colour regardless of brightness ([scaled] on both sides). References
+     * are the readings [known] for a colour (the cube's own centres), the default palette otherwise.
+     * Used for naming centres, where a dim light must not make a dark colour look white.
+     */
+    fun centreDistances(rgb: Rgb, known: Map<CubeColor, Rgb> = emptyMap()): Map<CubeColor, Double> {
+        val lab = scaled(rgb).toLab()
+        return scaledDefaults.mapValues { (color, default) -> (known[color]?.let { scaled(it).toLab() } ?: default).distance(lab) }
+    }
+
+    /** All colours, the closest to the centre reading [rgb] first ([centreDistances]). */
+    fun rankedCentre(rgb: Rgb, known: Map<CubeColor, Rgb> = emptyMap()): List<CubeColor> =
+        centreDistances(rgb, known).entries.sortedBy { it.value }.map { it.key }
+
+    /**
+     * Ways to name six centre readings [centres] (one per captured face) with the six colours, the
+     * best fit first ([centreDistances] to the default palette, summed), at most [limit]. A naming
+     * lists the colour of each centre in order. [preferred] (the names given while scanning) wins a tie.
+     */
+    fun centreNamings(centres: List<Rgb>, preferred: List<CubeColor>? = null, limit: Int = 12): List<List<CubeColor>> {
+        require(centres.size == 6)
+        val colors = CubeColor.entries
+        val cost = centres.mapIndexed { i, rgb ->
+            val d = centreDistances(rgb)
+            DoubleArray(6) { c -> d.getValue(colors[c]) + if (preferred != null && preferred[i] != colors[c]) TIE else 0.0 }
+        }
+        val all = ArrayList<Pair<Double, IntArray>>(720)
+        fun permute(perm: IntArray, k: Int) {
+            if (k == 6) {
+                all += perm.indices.sumOf { cost[it][perm[it]] } to perm.copyOf()
+                return
+            }
+            for (i in k until 6) {
+                perm[k] = perm[i].also { perm[i] = perm[k] }
+                permute(perm, k + 1)
+                perm[k] = perm[i].also { perm[i] = perm[k] }
+            }
+        }
+        permute(IntArray(6) { it }, 0)
+        return all.sortedBy { it.first }.take(limit).map { (_, perm) -> perm.map { colors[it] } }
+    }
+
+    private const val TIE = 1e-6
+
     /**
      * Classifies all 54 readings (URFDLB order) by the cube's own centres: every colour gets
      * exactly nine stickers (balanced assignment), references refined to the mean of their nine.

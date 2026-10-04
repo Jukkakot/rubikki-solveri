@@ -42,6 +42,10 @@ data class ScanOutcome(
     val rotations: Map<Face, Int> = emptyMap(),
     val from: Map<Face, Face> = emptyMap(),
 ) {
+    /** Faces whose capture ended up on another face, as "captured>used" (for the log), or null. */
+    val renamed: String?
+        get() = Face.entries.filter { (from[it] ?: it) != it }.joinToString(",") { "${from.getValue(it).name}>${it.name}" }.ifEmpty { null }
+
     /** Valid and no doubtful sticker: go straight to the solution. */
     val isConfident: Boolean get() = validity.isValid && uncertain.isEmpty()
 
@@ -166,11 +170,36 @@ class ScanSession(
         resetStreak()
     }
 
+    /**
+     * The colours from all six faces. The six centres are named together ([ColorClassifier.centreNamings]),
+     * which may rename faces taken wrong while scanning; when that naming gives no solvable cube, the
+     * next-best namings are tried and the first solvable one is used (else the best one is kept).
+     */
     fun outcome(): ScanOutcome {
         check(isDone && only == null) { "Scan not finished" }
-        val seen = Face.entries.flatMap { captured.getValue(FaceView.of(it)) }
+        val views = captured.keys.toList()
+        val namings = ColorClassifier.centreNamings(
+            views.map { captured.getValue(it)[CENTRE] },
+            views.map { it.centreColor(scheme) },
+            MAX_NAMINGS,
+        )
+        var first: ScanOutcome? = null
+        for (naming in namings) {
+            // The capture named with a face's centre colour goes to that face. Renaming an opposite
+            // pair is itself another naming, so only the best naming tries it (keeps the time down).
+            val viewOf = Face.entries.associateWith { face -> views[naming.indexOf(scheme[face])] }
+            val result = outcomeFor(viewOf, renamePairs = first == null)
+            if (result.validity.isValid) return result
+            if (first == null) first = result
+        }
+        return first!!
+    }
+
+    /** The outcome with, on each face, the capture of the view [viewOf] gives it. */
+    private fun outcomeFor(viewOf: Map<Face, FaceView>, renamePairs: Boolean): ScanOutcome {
+        val seen = Face.entries.flatMap { captured.getValue(viewOf.getValue(it)) }
         val classification = ColorClassifier.classify(seen, scheme)
-        val found = RotationSearch.search(classification.colors, scheme, seen)
+        val found = RotationSearch.search(classification.colors, scheme, seen, renamePairs)
         val uncertainSeen = classification.uncertain()
         val uncertain = (0 until seen.size).filter { i ->
             found.source[i] in uncertainSeen || (i % 9 != CENTRE && Face.entries[i / 9] in found.ambiguous)
@@ -181,7 +210,7 @@ class ScanSession(
             validity = found.validity,
             samples = found.source.map { seen[it] },
             rotations = found.rotations,
-            from = found.from,
+            from = found.from.mapValues { (_, slot) -> viewOf.getValue(slot).face },
         )
     }
 
@@ -193,10 +222,11 @@ class ScanSession(
         return ScanEvent.Captured(face)
     }
 
-    /** The face not yet scanned whose centre colour [centre] reads closest to. */
+    /** The face not yet scanned whose centre colour [centre] reads closest to, regardless of brightness. */
     private fun recognise(centre: Rgb): FaceView? {
         val left = remaining
-        val color = ColorClassifier.ranked(centre, refs).firstOrNull { c -> left.any { it.centreColor(scheme) == c } }
+        val known = captured.entries.associate { (view, samples) -> view.centreColor(scheme) to samples[CENTRE] }
+        val color = ColorClassifier.rankedCentre(centre, known).firstOrNull { c -> left.any { it.centreColor(scheme) == c } }
         return left.firstOrNull { it.centreColor(scheme) == color }
     }
 
@@ -232,6 +262,9 @@ class ScanSession(
         /** Largest colour difference per cell that still counts as the same view. */
         const val STEADY_DISTANCE = 12.0
         private const val CENTRE = 4
+
+        /** Most centre namings tried at the end ([outcome]). */
+        const val MAX_NAMINGS = 12
 
         /** Every cell of [a] is within [STEADY_DISTANCE] of the same cell of [b]. */
         private fun looksAlike(a: List<Lab>, b: List<Lab>): Boolean = a.indices.all { a[it].distance(b[it]) < STEADY_DISTANCE }

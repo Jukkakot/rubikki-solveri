@@ -52,11 +52,17 @@ object RotationSearch {
      * a mirror is undone by renaming any one pair (two mirrors make a turn of the whole cube), so
      * every single pair gives a solvable cube. The pair whose readings fit the default palette better
      * renamed is taken; without readings, red/orange before white/yellow before green/blue.
+     * With [renamePairs] false, only the rotations are tried.
      */
-    fun search(colors: List<CubeColor>, scheme: ColorScheme = ColorScheme.STANDARD, samples: List<Rgb>? = null): RotationResult {
+    fun search(
+        colors: List<CubeColor>,
+        scheme: ColorScheme = ColorScheme.STANDARD,
+        samples: List<Rgb>? = null,
+        renamePairs: Boolean = true,
+    ): RotationResult {
         require(colors.size == Stickers.COUNT)
         val plain = best(colors, emptyList(), scheme)
-        if (plain.validity.isValid) return plain
+        if (plain.validity.isValid || !renamePairs) return plain
         val pairs = listOf(Face.R, Face.U, Face.F).sortedByDescending { renameGain(colors, samples, scheme[it], scheme[it.opposite]) }
         for (pair in pairs) {
             val renamed = best(colors, listOf(pair), scheme)
