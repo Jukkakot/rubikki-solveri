@@ -1,15 +1,15 @@
 package fi.jukkakot.rubikkisolveri.cube.solve
 
-import cs.min2phase.Search
-import cs.min2phase.Tools
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeCheck
 import fi.jukkakot.rubikkisolveri.cube.Move
 import fi.jukkakot.rubikkisolveri.cube.Notation
 import fi.jukkakot.rubikkisolveri.cube.Sequences
 import fi.jukkakot.rubikkisolveri.cube.Validity
+import fi.jukkakot.rubikkisolveri.cube.solve.min2phase.Search
+import fi.jukkakot.rubikkisolveri.cube.solve.min2phase.Tools
 import kotlin.random.Random
-import kotlin.random.asJavaRandom
+import kotlin.time.TimeSource
 
 sealed interface SolveResult {
     /** [moves] solve the cube (face turns only, as the cube is held). */
@@ -23,8 +23,8 @@ sealed interface SolveResult {
 }
 
 /**
- * Shortest practical solutions with the two-phase algorithm (min2phase, vendored under its MIT
- * licence in `cs.min2phase`). The tables take a moment to build: call [warmUp] early on a
+ * Shortest practical solutions with the two-phase algorithm (min2phase, ported to Kotlin under its
+ * MIT licence in `solve.min2phase`). The tables take a moment to build: call [warmUp] early on a
  * background thread; [solve] waits for it.
  */
 object TwoPhaseSolver {
@@ -46,11 +46,11 @@ object TwoPhaseSolver {
     fun solve(cube: Cube): SolveResult {
         val validity = CubeCheck.validity(cube)
         if (!validity.isValid) return SolveResult.Invalid(validity)
-        val start = System.nanoTime()
+        val start = TimeSource.Monotonic.markNow()
         warmUp()
         if (cube.isSolved) return SolveResult.Solved(emptyList(), 0)
         val text = Search().solution(cube.toFaceletString(), MAX_LENGTH, PROBE_LIMIT, IMPROVE_PROBES, 0)
-        val millis = (System.nanoTime() - start) / 1_000_000
+        val millis = start.elapsedNow().inWholeMilliseconds
         if (text.startsWith("Error")) return SolveResult.Failed(text)
         return SolveResult.Solved(Notation.parse(text), millis)
     }
@@ -61,8 +61,7 @@ object TwoPhaseSolver {
      */
     fun randomStateScramble(random: Random = Random.Default): List<Move> {
         warmUp()
-        Tools.setRandomSource(random.asJavaRandom())
-        val state = Tools.randomCube()
+        val state = Tools.randomCube(random)
         val text = Search().solution(state, MAX_LENGTH, PROBE_LIMIT, MIN_PROBES, 0)
         return Sequences.inverse(Notation.parse(text))
     }

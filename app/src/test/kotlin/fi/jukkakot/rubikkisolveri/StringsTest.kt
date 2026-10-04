@@ -18,7 +18,7 @@ class StringsTest {
     @Test
     fun shownLicenceMatchesTheVendoredOne() {
         assertEquals(
-            File("../cube/src/jvmMain/java/cs/min2phase/LICENSE").readText(),
+            File("../cube/src/commonMain/kotlin/fi/jukkakot/rubikkisolveri/cube/solve/min2phase/LICENSE").readText(),
             File("src/main/res/raw/min2phase_license.txt").readText(),
         )
     }

@@ -34,8 +34,10 @@ into `cube`, so it is tested by plain JVM unit tests.
 
 ## Solver — Implemented
 
-- `cs.min2phase` (in `cube/src/main/java`): the two-phase solver, vendored unmodified under its
-  MIT licence option (`LICENSE` there names the upstream commit).
+- `solve/min2phase` (in `cube/src/commonMain`): the two-phase solver min2phase, ported to Kotlin
+  under its MIT licence option (`LICENSE` there names the upstream commit) so it also runs in the
+  browser. The Java original stays in `cube/src/jvmTest/java` as the oracle: `Min2phasePortTest`
+  checks 1 000 random cubes give identical solutions.
 - `solve/TwoPhaseSolver`: checks validity, then `Search().solution(facelets, 21, 100 000 probes,
   1000 min probes)`: ≤ 21 moves, about 19 on average, ~25 ms on a desktop. `warmUp()` builds the
   tables (called from `RubikkiApp` on a background thread). `randomStateScramble()` for practice.

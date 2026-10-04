@@ -14,9 +14,9 @@ Chromium needs `locale: 'fi-FI'`; Playwright's browser is at `/opt/pw-browsers` 
 
 ## 2. min2phase in Kotlin
 
-- [ ] 2.1 Port `CubieCube`, `CoordCube`, `Util`, `Tools`, `Search` to Kotlin in `cube/src/commonMain/kotlin/fi/jukkakot/rubikkisolveri/cube/solve/min2phase/` (design §2: same structure and init order, `ushr`, explicit `toByte()/toChar()/toLong()`), MIT header + `LICENSE` copy naming the upstream commit. Verify: `:cube:compileKotlinWasmJs` and `:cube:compileKotlinJvm` green
-- [ ] 2.2 Move the Java original to `cube/src/jvmTest/java/cs/min2phase/`; `TwoPhaseSolver` back to `commonMain` using the port (`kotlin.time` for the timing). Verify: `./gradlew :cube:jvmTest` green
-- [ ] 2.3 `Min2phasePortTest` (jvmTest): 1 000 random-state cubes from fixed seeds + every scan fixture, solved by Java and Kotlin with the app's parameters (21 moves, 100 000 / 1 000 probes) → identical strings; `Tools.randomCube` identical for 100 seeds; table-init time printed. Verify: test green; a deliberately broken port line (local experiment, reverted) makes it fail
+- [x] 2.1 Port `CubieCube`, `CoordCube`, `Util`, `Tools`, `Search` to Kotlin in `cube/src/commonMain/kotlin/fi/jukkakot/rubikkisolveri/cube/solve/min2phase/` (design §2: same structure and init order, `ushr`, explicit `toByte()/toChar()/toLong()`), MIT header + `LICENSE` copy naming the upstream commit. Verify: `:cube:compileKotlinWasmJs` and `:cube:compileKotlinJvm` green
+- [x] 2.2 Move the Java original to `cube/src/jvmTest/java/cs/min2phase/`; `TwoPhaseSolver` back to `commonMain` using the port (`kotlin.time` for the timing). Verify: `./gradlew :cube:jvmTest` green
+- [x] 2.3 `Min2phasePortTest` (jvmTest): 1 000 random-state cubes from fixed seeds + every scan fixture, solved by Java and Kotlin with the app's parameters (21 moves, 100 000 / 1 000 probes) → identical strings; `Tools.randomCube` identical for 100 seeds; table-init time printed. Verify: test green; a deliberately broken port line (local experiment, reverted) makes it fail
 - [ ] 2.4 Point the app's min2phase licence text and `StringsTest`'s identity check at the new `LICENSE`. Docs: architecture "Solver" section (ported, oracle test). Verify: `./gradlew :app:testDebugUnitTest` green
 
 ## 3. `shared` module and resources
