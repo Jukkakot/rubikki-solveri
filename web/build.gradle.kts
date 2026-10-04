@@ -97,6 +97,8 @@ kotlin {
             dependencies {
                 implementation(project(":shared"))
                 implementation(libs.kotlinx.browser)
+                // The log and the scan pictures as one zip when the browser refuses to share files.
+                implementation(npm("fflate", "0.8.2"))
             }
         }
     }

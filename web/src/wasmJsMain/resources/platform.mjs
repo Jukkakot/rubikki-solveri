@@ -2,6 +2,8 @@
 // on it). Kotlin imports these through @JsModule("./platform.mjs"); only strings, numbers,
 // booleans and JS objects cross the boundary.
 
+import { zipSync } from 'fflate';
+
 // --- Storage -------------------------------------------------------------------------------------
 
 export function storageGet(key) {
@@ -224,47 +226,47 @@ export function formatDateTime(epochMillis, language, timeOnly) {
 
 /**
  * Shares the log text and the PNG pictures (names and base64 data, one per line) through the share
- * sheet when the browser can share files; a refused share (Samsung Internet says it can, then
- * refuses) is retried with the log alone, then the log is downloaded as a text file. [report] gets
- * the outcome (shared, log-only, downloaded, cancelled) and the last refusal ("" when none).
+ * sheet when the browser can share files. When it cannot, or refuses, one zip with the log and the
+ * pictures is downloaded instead (a refused share uses up the tap, so a second share cannot work).
+ * [report]
+ * gets the outcome (shared, downloaded, cancelled) and the refusal ("" when none).
  */
 export function shareOrDownload(logName, logText, pictureNames, pictureData, report) {
-  const files = [new File([logText], logName, { type: 'text/plain' })];
+  const logBytes = new TextEncoder().encode(logText);
   const names = pictureNames ? pictureNames.split('\n') : [];
   const data = pictureData ? pictureData.split('\n') : [];
-  names.forEach((name, i) => {
-    const bytes = Uint8Array.from(atob(data[i]), (c) => c.charCodeAt(0));
-    files.push(new File([bytes], name, { type: 'image/png' }));
-  });
-  const share = (list) => {
-    try {
-      if (navigator.canShare && navigator.share && navigator.canShare({ files: list })) {
-        return navigator.share({ files: list, title: logName });
-      }
-      return Promise.reject(new Error('cannot share files'));
-    } catch (e) {
-      return Promise.reject(e);
-    }
+  const pictures = names.map((name, i) => [name, Uint8Array.from(atob(data[i]), (c) => c.charCodeAt(0))]);
+  // Chromium shares at most 10 files at once (more is refused, which also uses up the tap): the log
+  // and the newest 9 pictures (oldest first in the list). The zip fallback has them all.
+  const files = [new File([logBytes], logName, { type: 'text/plain' })]
+    .concat(pictures.slice(-9).map(([name, bytes]) => new File([bytes], name, { type: 'image/png' })));
+  const fallback = (error) => {
+    const entries = { [logName]: [logBytes, { level: 0 }] };
+    pictures.forEach(([name, bytes]) => { entries[name] = [bytes, { level: 0 }]; });
+    const zipName = logName.replace(/\.txt$/, '') + '.zip';
+    download(new Blob([zipSync(entries)], { type: 'application/zip' }), zipName);
+    report('downloaded', error);
   };
-  const describe = (e) => (e && (e.name + ': ' + e.message)) || String(e);
-  const cancelled = (e) => e && e.name === 'AbortError';
-  share(files)
+  let canShare = false;
+  try {
+    canShare = !!(navigator.canShare && navigator.share && navigator.canShare({ files }));
+  } catch (e) {
+    canShare = false;
+  }
+  if (!canShare) {
+    fallback('cannot share files');
+    return;
+  }
+  navigator.share({ files, title: logName })
     .then(() => report('shared', ''))
-    .catch((first) => {
-      if (cancelled(first)) return report('cancelled', '');
-      const retry = files.length > 1 ? share([files[0]]) : Promise.reject(first);
-      return retry
-        .then(() => report('log-only', describe(first)))
-        .catch((second) => {
-          if (cancelled(second)) return report('cancelled', describe(first));
-          download(files[0], logName);
-          report('downloaded', describe(second));
-        });
+    .catch((e) => {
+      if (e && e.name === 'AbortError') report('cancelled', '');
+      else fallback((e && (e.name + ': ' + e.message)) || String(e));
     });
 }
 
-function download(file, name) {
-  const url = URL.createObjectURL(file);
+function download(blob, name) {
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = name;
