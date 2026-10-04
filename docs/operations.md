@@ -93,6 +93,29 @@ With the phone on wireless debugging Claude can also pull them directly:
   app deletes it; Android backup is off (`allowBackup=false`), so it is not copied anywhere.
 - Schema changes need a Room migration (schemas are exported to `app/schemas`).
 
+## Browser version — Implemented
+
+- Address: https://jukkakot.github.io/rubikki-solveri/ (published by the Pages workflow, see
+  Builds). Same features as the phone app; Karkki colours instead of Material You.
+- **Add to the S24's home screen (Chrome):** open the address → ⋮ (top right) → **Add to home
+  screen** → **Install** (Finnish Chrome: **Lisää aloitusnäytölle** → **Asenna**). The icon
+  "Rubikki" opens the app full screen. On an iPhone (Safari): Share → **Add to Home Screen**.
+- **Offline:** after one complete visit the app opens without a network (service worker
+  `sw.js`, files listed in `precache.json`). A new build is used at the latest on the second
+  start after it was published; the home screen's version line ("Koottu …") tells which build runs.
+- **Data** stays in that browser (localStorage keys `rubikki.*`): settings, solves, practice,
+  the log and the newest 12 scan pictures. It is separate from the phone app and from other
+  browsers. Clearing the site's data (Chrome: ⋮ → Settings → Site settings → All sites →
+  jukkakot.github.io → **Delete data**) deletes it.
+- **Logs:** Settings → Log → share button: on the phone the share sheet with the log and the scan
+  pictures; on a computer the log is downloaded as `rubikki-log-<time>.txt`. The browser console
+  shows the same lines.
+- **Speed check:** open the address with `?selftest` at the end: the console prints
+  `SELFTEST ok warmup=… solve=…` (milliseconds) and the app log keeps the line.
+- Locally: `./gradlew :web:wasmJsBrowserDistribution`, then
+  `node web/smoke/serve.mjs web/build/dist/wasmJs/productionExecutable` and open
+  http://127.0.0.1:8080/ (camera needs `localhost`/`127.0.0.1` or https).
+
 ## Release — Implemented
 
 The release APK is shrunk with R8 (about 4.5 MB). Versions: build number = number of commits, name

@@ -57,6 +57,29 @@ val generateBuildInfo = tasks.register<GenerateBuildInfo>("generateBuildInfo") {
     resourceDir.set(layout.buildDirectory.dir("generated/buildinfo/resources"))
 }
 
+/** Lists the distribution's files in `precache.json`, which the service worker caches for offline use. */
+abstract class WritePrecache : DefaultTask() {
+    @get:Internal abstract val distribution: DirectoryProperty
+
+    @TaskAction
+    fun write() {
+        val dir = distribution.get().asFile
+        val keep = Regex(""".*\.(html|js|mjs|wasm|webmanifest|png|ttf|xml|txt|cvr|json)$""")
+        val files = dir.walkTopDown().filter { it.isFile }
+            .map { it.relativeTo(dir).invariantSeparatorsPath }
+            .filter { keep.matches(it) && it != "precache.json" && it != "sw.js" && !it.endsWith(".map") && !it.endsWith("LICENSE.txt") }
+            .sorted().toList()
+        dir.resolve("precache.json").writeText((listOf("./") + files).joinToString(",\n", "[\n", "\n]\n") { "  \"$it\"" })
+    }
+}
+
+val writePrecache = tasks.register<WritePrecache>("writePrecache") {
+    distribution.set(layout.buildDirectory.dir("dist/wasmJs/productionExecutable"))
+    outputs.upToDateWhen { false }
+}
+
+tasks.matching { it.name == "wasmJsBrowserDistribution" }.configureEach { finalizedBy(writePrecache) }
+
 kotlin {
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {

@@ -51,8 +51,8 @@ Chromium needs `locale: 'fi-FI'`; Playwright's browser is at `/opt/pw-browsers` 
 
 ## 7. Install and offline
 
-- [ ] 7.1 `scripts/web-icons.py` + committed icons, `manifest.webmanifest`, `sw.js` with the version placeholder, the `precache.json` Gradle task wired after the distribution task, service-worker registration in `index.html`. Verify: Playwright: first visit, then `context.setOffline(true)` and reload → home appears; Chromium's manifest check (`page.evaluate` fetch of the manifest + icons all 200)
-- [ ] 7.2 Docs: `docs/operations.md` new "Browser version" section (address, add to home screen on the S24 in Chrome: ⋮ → Add to home screen → Install; offline; data per browser; clearing site data deletes it; logs via the share button). Verify: steps name exact menu labels
+- [x] 7.1 `scripts/web-icons.py` + committed icons, `manifest.webmanifest`, `sw.js` with the version placeholder, the `precache.json` Gradle task wired after the distribution task, service-worker registration in `index.html`. Verify: Playwright: first visit, then `context.setOffline(true)` and reload → home appears; Chromium's manifest check (`page.evaluate` fetch of the manifest + icons all 200)
+- [x] 7.2 Docs: `docs/operations.md` new "Browser version" section (address, add to home screen on the S24 in Chrome: ⋮ → Add to home screen → Install; offline; data per browser; clearing site data deletes it; logs via the share button). Verify: steps name exact menu labels
 
 ## 8. Publishing
 
