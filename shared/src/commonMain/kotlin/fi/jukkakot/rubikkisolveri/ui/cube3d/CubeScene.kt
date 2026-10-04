@@ -45,6 +45,13 @@ object CubeScene {
     /** The default view: looking at the top, front and right faces. */
     val DEFAULT_VIEW: Quat = viewFor(Quat.IDENTITY)
 
+    /**
+     * The mirror cube's view in the fast method's guide: from behind and the left, a little from
+     * above (back, left and top visible); drawn flipped left to right. Tunable after a try on the phone.
+     */
+    val MIRROR_VIEW: Quat = Quat.axisAngle(V3(1f, 0f, 0f), (24 * PI / 180).toFloat()) *
+        Quat.axisAngle(V3(0f, 1f, 0f), (148 * PI / 180).toFloat())
+
     /** The default tilt applied after a hold rotation, so three faces are always visible. */
     fun viewFor(hold: Quat): Quat =
         Quat.axisAngle(V3(1f, 0f, 0f), (24 * PI / 180).toFloat()) *

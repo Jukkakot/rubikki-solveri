@@ -35,8 +35,10 @@ small rounded `surfaceContainerHigh` card with the label "Peili" / "Mirror" (`mi
 colours, `move`, `progress`, `highlight` and `arrow` as the main cube; `draggable = false`; fixed
 view from behind and the left, a little from above (yaw 148° + the holding tilt, pitch 24°: back,
 left and top visible), drawn with `graphicsLayer { scaleX = -1f }` so it reads like a mirror
-(constant `MIRROR_VIEW`, tunable after the user tries it). The main cube keeps its full size; the
-mirror overlaps the box's empty corner (the cube's projection leaves the corners free).
+(constant `MIRROR_VIEW`, tunable after the user tries it). The main cube keeps its full size.
+Changed during implementation: at 34 % the mirror covered the front face's bottom-left stickers,
+so the mirror is 28 % wide and the main cube is shifted right by 10 % of the box (into the free
+space on its right) whenever the mirror shows.
 
 ### 3. Words for the holding view (fast method only)
 

@@ -90,6 +90,13 @@ class CubeViewState(initial: Quat = CubeScene.DEFAULT_VIEW) {
         rotation = (pitch * yaw * rotation).normalized()
     }
 
+    /** Whether the view is within 2° of [target]. */
+    fun isAt(target: Quat): Boolean {
+        val r = rotation
+        val dot = kotlin.math.abs(r.w * target.w + r.x * target.x + r.y * target.y + r.z * target.z).coerceAtMost(1f)
+        return 2 * kotlin.math.acos(dot) < (2 * PI / 180).toFloat()
+    }
+
     suspend fun animateTo(target: Quat, millis: Int = 450) {
         val from = rotation
         val t = Animatable(0f)

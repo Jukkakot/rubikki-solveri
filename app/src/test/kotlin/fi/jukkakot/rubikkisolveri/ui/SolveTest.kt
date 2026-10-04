@@ -79,7 +79,7 @@ class SolveTest {
         compose.onNodeWithText("Siirto 2/2").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("Edellinen").performScrollTo().performClick()
         compose.onNodeWithText("Siirto 1/2").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Käännä yläpuolta vastapäivään (katsottuna ylhäältä).").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Käännä yläkerrosta oikealle.").performScrollTo().assertIsDisplayed()
     }
 
     @Test

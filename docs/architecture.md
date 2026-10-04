@@ -200,10 +200,20 @@ yellow cross, yellow edges, yellow corners into place, yellow corners turned.
   snap back) and an automatic demo 500 ms after each new step (skipped when animations are off).
 - `GuideCube`: `Cube3D` with the turning layer highlighted (other stickers mixed 60 % to grey), the
   direction arrow (`CubeScene.arrow`: an arc on the turning face, sweep = the move's angle, middle
-  towards the camera) while the cube is still, and the view from `CubeScene.guideView(move)` —
-  the hold never changes, only the camera: default for U/F/R, from the left for L, from behind for
-  B, from below for D.
+  towards the camera) while the cube is still. Two view modes, chosen by `SolveScreen` from the method:
+  - **Learn** (`steady = false`): the view from `CubeScene.guideView(move)` — the hold never
+    changes, only the camera: default for U/F/R, from the left for L, from behind for B, from below
+    for D.
+  - **Fast** (`steady = true`, also the timer's guided scramble and its camera follow): the view
+    stays at `CubeScene.DEFAULT_VIEW`; nothing turns it but the user's drag. A reset button
+    (`ic_reset_view`) shows while `CubeViewState.isAt(DEFAULT_VIEW)` is false. The guide (not camera
+    follow) adds a mirror cube (`CubeScene.MIRROR_VIEW`, drawn flipped, not draggable) in the
+    bottom-start corner; the main cube shifts right so the mirror covers none of it. Why: the
+    swinging view looked like the cube being turned and cost the user time after every L/B/D move.
 - `MoveWordsText`: the move in words, and its notation when Settings → Show move notation is on.
+  Two wordings (`ui/common/MoveWords`): `parts` names side, direction and viewpoint (learn, lessons);
+  `steadyParts` describes the move as seen in the holding view (fast: top left/right, sides up/down,
+  back by its top row, front clockwise).
 - Haptics: `Confirm` on done, `SegmentTick` at the end of each demo.
 
 ## Camera follow — Implemented

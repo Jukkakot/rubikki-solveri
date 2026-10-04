@@ -145,6 +145,16 @@ class ScreenshotTest {
         SolveScreen(Cube.solved().apply("R2 U' R"), onBack = {}, onHome = {}, planner = INLINE_PLANNER)
     }
 
+    /** The fast method's guide cube dragged off the holding view: the reset button shows. */
+    @Test
+    fun guideDragged() = shot("guide-dragged") {
+        val state = fi.jukkakot.rubikkisolveri.ui.guide.rememberStepperState(Cube.solved().apply("B'"), Notation.parse("B"))
+        val view = androidx.compose.runtime.remember {
+            fi.jukkakot.rubikkisolveri.ui.cube3d.CubeViewState().apply { drag(-300f, 0f, 1000f) }
+        }
+        fi.jukkakot.rubikkisolveri.ui.guide.GuideCube(state, steady = true, mirror = true, viewState = view)
+    }
+
     @Test
     fun follow() = shot("follow") {
         val start = Cube.solved().apply("R'")

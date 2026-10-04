@@ -54,10 +54,10 @@ import kotlin.math.sin
 
 /**
  * Camera mode of the stepper: the camera with the grid, the current move drawn on the front face,
- * a small 3D guide in the corner, and automatic advance when the front shows the move was made.
+ * a small 3D guide in the corner ([steady] in the fast method, without a mirror), and automatic advance when the front shows the move was made.
  */
 @Composable
-fun FollowPanel(state: StepperState, frames: Flow<List<Rgb>>, preview: @Composable (Modifier) -> Unit) {
+fun FollowPanel(state: StepperState, frames: Flow<List<Rgb>>, steady: Boolean = false, preview: @Composable (Modifier) -> Unit) {
     val tracker = remember { FollowTracker() }
     var event by remember { mutableStateOf<FollowEvent>(FollowEvent.Waiting) }
     var live by remember { mutableStateOf<List<CubeColor>?>(null) }
@@ -83,13 +83,13 @@ fun FollowPanel(state: StepperState, frames: Flow<List<Rgb>>, preview: @Composab
             preview(Modifier.fillMaxSize())
             FollowOverlay(live, move?.let(FrontArrow::of), Modifier.fillMaxSize())
             Box(Modifier.align(Alignment.BottomEnd).fillMaxWidth(0.3f).padding(6.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x99000000))) {
-                GuideCube(state)
+                GuideCube(state, steady = steady)
             }
         }
         val message = when (val e = event) {
             is FollowEvent.HoldFront -> stringResource(Res.string.follow_hold)
             FollowEvent.NotVisible -> stringResource(Res.string.follow_not_visible)
-            is FollowEvent.WrongMove -> stringResource(Res.string.follow_wrong, moveDescription(e.fix))
+            is FollowEvent.WrongMove -> stringResource(Res.string.follow_wrong, moveDescription(e.fix, steady = steady))
             else -> stringResource(Res.string.follow_waiting)
         }
         Text(

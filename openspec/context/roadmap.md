@@ -35,11 +35,14 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 25 | `lesson-visuals` | done | Lessons as swipe pages with pictures: grey goal cube per stage, case pictures instead of "how" text, algorithm pages that show what moves, goal card in practice and guided solve |
 | 26 | `phone-install` | done | Every green push publishes a signed APK at one fixed address (signed with the Android Studio key so it updates the installed app and keeps its data); About → "Lataa uusin versio" |
 | 27 | `web-app` | done | The same app in the browser (GitHub Pages, installable, offline) from one Kotlin Multiplatform code base: cube multiplatform with min2phase ported to Kotlin, screens in a shared Compose Multiplatform module, Android app unchanged |
-| 28 | `steady-cube` | specced | Shortest-solution guide never turns the view: holding view, a small mirror cube, words for that view, reset button after dragging (user priority 2026-10-04; learn method unchanged) |
+| 28 | `steady-cube` | done | Shortest-solution guide never turns the view: holding view, a small mirror cube, words for that view, reset button after dragging (user priority 2026-10-04; learn method unchanged) |
 
 ## Backlog
 
 Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
+
+- camera follow: notice when the cube is held differently, or keep helping in any orientation
+  (after the user has tried camera follow; from `steady-cube`).
 
 - `web-solver-worker`: run the solver in a Web Worker (a second instance of the wasm module) if the
   phone's browser is slow: warm-up over 4 s or a solve over 2 s measured with `?selftest`
