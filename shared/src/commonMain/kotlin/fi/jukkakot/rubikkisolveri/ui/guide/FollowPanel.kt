@@ -55,16 +55,25 @@ import kotlin.math.sin
 /**
  * Camera mode of the stepper: the camera with the grid, the current move drawn on the front face,
  * a small 3D guide in the corner ([steady] in the fast method, without a mirror), and automatic advance when the front shows the move was made.
+ * [frames] are the grid readings and whether the grid shows a cube face ([FrameSampler.looksLikeCube]);
+ * frames without a face are ignored.
  */
 @Composable
-fun FollowPanel(state: StepperState, frames: Flow<List<Rgb>>, steady: Boolean = false, preview: @Composable (Modifier) -> Unit) {
+fun FollowPanel(state: StepperState, frames: Flow<Pair<List<Rgb>, Boolean>>, steady: Boolean = false, preview: @Composable (Modifier) -> Unit) {
     val tracker = remember { FollowTracker() }
     var event by remember { mutableStateOf<FollowEvent>(FollowEvent.Waiting) }
     var live by remember { mutableStateOf<List<CubeColor>?>(null) }
+    var cubeInGrid by remember { mutableStateOf(true) }
     val haptics = LocalHapticFeedback.current
     LaunchedEffect(state) {
-        frames.collect { samples ->
+        frames.collect { (samples, face) ->
             val move = state.current ?: return@collect
+            cubeInGrid = face
+            if (!face) {
+                // Not a cube face in the grid: no advance, no learning; the dots still show.
+                live = tracker.calibration.read(samples)
+                return@collect
+            }
             val e = tracker.onFrame(state.cubeAt(state.index), move, samples)
             live = tracker.live
             if (e != event && e !is FollowEvent.Waiting) AppLog.info(Evt.FOLLOW_EVENT, null, "move" to move.toString(), "event" to e.toString())
@@ -86,7 +95,7 @@ fun FollowPanel(state: StepperState, frames: Flow<List<Rgb>>, steady: Boolean = 
                 GuideCube(state, steady = steady)
             }
         }
-        val message = when (val e = event) {
+        val message = if (!cubeInGrid) stringResource(Res.string.follow_bring_cube) else when (val e = event) {
             is FollowEvent.HoldFront -> stringResource(Res.string.follow_hold)
             FollowEvent.NotVisible -> stringResource(Res.string.follow_not_visible)
             is FollowEvent.WrongMove -> stringResource(Res.string.follow_wrong, moveDescription(e.fix, steady = steady))
@@ -95,7 +104,7 @@ fun FollowPanel(state: StepperState, frames: Flow<List<Rgb>>, steady: Boolean = 
         Text(
             message,
             style = MaterialTheme.typography.titleMedium,
-            color = if (event is FollowEvent.WrongMove) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+            color = if (cubeInGrid && event is FollowEvent.WrongMove) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(top = 8.dp),
         )
     }

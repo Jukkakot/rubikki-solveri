@@ -18,7 +18,7 @@ not light).
 For each cell's middle (the same 40 % middle as `gapContrast`): median Lab and spread. A cell is a
 sticker when:
 - spread ≤ 4.0 (`MAX_STICKER_SPREAD`), and
-- either chroma ≥ 30 and L ≥ 15 (a coloured sticker), or chroma ≤ 18 and L ≥ 50 (white).
+- either chroma ≥ 30 and L ≥ 15 (a coloured sticker), or chroma ≤ 21 and L ≥ 50 (white). (Implementation: 18 was too tight, the blue-cast white centre of the 2026-10-03 phone pictures reads chroma 18.4; the beige room cells read 24 and still fail.)
 
 `looksLikeCube` = all nine cells are stickers and the gap check passes. Thresholds are constants in
 `FrameSampler`, chosen with margin from the numbers above, tuned after the user's next try.

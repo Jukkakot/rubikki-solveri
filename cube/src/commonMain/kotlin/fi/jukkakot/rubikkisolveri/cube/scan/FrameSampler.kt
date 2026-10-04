@@ -2,6 +2,7 @@ package fi.jukkakot.rubikkisolveri.cube.scan
 
 import kotlin.math.cbrt
 import kotlin.math.pow
+import kotlin.math.sqrt
 
 /**
  * One camera frame as RGBA bytes. [cropLeft]..[cropBottom] is the part visible on screen and
@@ -101,23 +102,57 @@ object FrameSampler {
     /** A cell looks like a sticker when its middle is this much lighter (Lab L) than its gap. */
     const val MIN_GAP_CONTRAST = 15.0
 
-    /** At least this many of the nine cells must look like stickers. */
+    /** At least this many of the nine cells must have a dark gap around them. */
     const val MIN_STICKER_CELLS = 6
+
+    /** A sticker's middle is one even colour: median distance (Lab) from its median colour. */
+    const val MAX_STICKER_SPREAD = 4.0
+
+    /** A coloured sticker has at least this chroma and lightness (dark reds included). */
+    const val MIN_COLOUR_CHROMA = 30.0
+    const val MIN_COLOUR_LIGHTNESS = 15.0
+
+    /** A white sticker is nearly grey (a blue cast reads up to chroma 19) and at least this light (evening whites read L ≈ 58). */
+    const val MAX_WHITE_CHROMA = 21.0
+    const val MIN_WHITE_LIGHTNESS = 50.0
+
+    /** What a grid picture shows: per cell [gapContrast] and whether it looks like a sticker. */
+    class GridCheck(val gapContrast: List<Double>, val stickerCells: List<Boolean>) {
+        /** A cube face: every cell is a sticker and enough cells have a dark gap around them. */
+        val looksLikeCube: Boolean
+            get() = stickerCells.all { it } && gapContrast.count { it >= MIN_GAP_CONTRAST } >= MIN_STICKER_CELLS
+    }
 
     /**
      * Per cell of a grid [picture] ([size]×[size] ARGB): the median lightness of the cell's middle
      * minus the darkest tenth of its outer edge. Stickers on a cube have dark gaps around them; a
      * desk or a sheet of paper does not, whatever its colour.
      */
-    fun gapContrast(picture: IntArray, size: Int = PICTURE_SIZE): List<Double> {
-        // Runs on every camera frame: primitive arrays only, lightness through a lookup table.
+    fun gapContrast(picture: IntArray, size: Int = PICTURE_SIZE): List<Double> = check(picture, size).gapContrast
+
+    /**
+     * Per cell of a grid [picture]: whether its middle is one even cube colour (clearly coloured, or
+     * light and nearly grey for white). Dark, grey, beige and brown cells, patterns and cells on a
+     * gap between stickers are not.
+     */
+    fun stickerCells(picture: IntArray, size: Int = PICTURE_SIZE): List<Boolean> = check(picture, size).stickerCells
+
+    /** Both per-cell checks of a grid [picture] in one pass. */
+    fun check(picture: IntArray, size: Int = PICTURE_SIZE): GridCheck {
+        // Runs on every camera frame: primitive arrays only, sRGB through a lookup table.
         val cell = size / 3
         val m0 = cell * 3 / 10
         val m1 = cell - m0
         val edge = cell / 5
-        val mid = DoubleArray((m1 - m0) * (m1 - m0))
+        val n = (m1 - m0) * (m1 - m0)
+        val ls = DoubleArray(n)
+        val aa = DoubleArray(n)
+        val bb = DoubleArray(n)
+        val scratch = DoubleArray(n)
         val ring = DoubleArray(cell * cell)
-        return (0 until 9).map { i ->
+        val gaps = ArrayList<Double>(9)
+        val stickers = ArrayList<Boolean>(9)
+        for (i in 0 until 9) {
             val left = (i % 3) * cell
             val top = (i / 3) * cell
             var nm = 0
@@ -126,14 +161,49 @@ object FrameSampler {
                 val inMiddle = x in m0 until m1 && y in m0 until m1
                 val onEdge = x < edge || y < edge || x >= cell - edge || y >= cell - edge
                 if (!inMiddle && !onEdge) continue
-                val l = lightness(picture[(top + y) * size + left + x])
-                if (inMiddle) mid[nm++] = l else ring[nr++] = l
+                val argb = picture[(top + y) * size + left + x]
+                if (inMiddle) lab(argb, ls, aa, bb, nm++) else ring[nr++] = lightness(argb)
             }
-            mid.sort(0, nm)
             ring.sort(0, nr)
-            mid[nm / 2] - ring[nr / 10]
+            val l = median(ls, scratch, nm)
+            val a = median(aa, scratch, nm)
+            val b = median(bb, scratch, nm)
+            for (k in 0 until nm) {
+                val dl = ls[k] - l
+                val da = aa[k] - a
+                val db = bb[k] - b
+                scratch[k] = sqrt(dl * dl + da * da + db * db)
+            }
+            scratch.sort(0, nm)
+            val spread = scratch[nm / 2]
+            val chroma = sqrt(a * a + b * b)
+            gaps += l - ring[nr / 10]
+            stickers += spread <= MAX_STICKER_SPREAD &&
+                (chroma >= MIN_COLOUR_CHROMA && l >= MIN_COLOUR_LIGHTNESS || chroma <= MAX_WHITE_CHROMA && l >= MIN_WHITE_LIGHTNESS)
         }
+        return GridCheck(gaps, stickers)
     }
+
+    private fun median(values: DoubleArray, scratch: DoubleArray, n: Int): Double {
+        values.copyInto(scratch, 0, 0, n)
+        scratch.sort(0, n)
+        return scratch[n / 2]
+    }
+
+    /** CIE Lab of an ARGB pixel (same as [Rgb.toLab]) into index [i] of [l], [a] and [b]. */
+    private fun lab(argb: Int, l: DoubleArray, a: DoubleArray, b: DoubleArray, i: Int) {
+        val r = LINEAR[(argb shr 16) and 0xff]
+        val g = LINEAR[(argb shr 8) and 0xff]
+        val bl = LINEAR[argb and 0xff]
+        val fx = labF((0.4124 * r + 0.3576 * g + 0.1805 * bl) / 0.95047)
+        val fy = labF(0.2126 * r + 0.7152 * g + 0.0722 * bl)
+        val fz = labF((0.0193 * r + 0.1192 * g + 0.9505 * bl) / 1.08883)
+        l[i] = 116 * fy - 16
+        a[i] = 500 * (fx - fy)
+        b[i] = 200 * (fy - fz)
+    }
+
+    private fun labF(t: Double): Double = if (t > 216.0 / 24389) cbrt(t) else (24389.0 / 27 * t + 16) / 116
 
     /** sRGB channel value to linear light. */
     private val LINEAR = DoubleArray(256) { c ->
@@ -144,13 +214,11 @@ object FrameSampler {
     /** CIE L* of an ARGB pixel (same as [Rgb.toLab]'s `l`). */
     fun lightness(argb: Int): Double {
         val y = 0.2126 * LINEAR[(argb shr 16) and 0xff] + 0.7152 * LINEAR[(argb shr 8) and 0xff] + 0.0722 * LINEAR[argb and 0xff]
-        val f = if (y > 216.0 / 24389) cbrt(y) else (24389.0 / 27 * y + 16) / 116
-        return 116 * f - 16
+        return 116 * labF(y) - 16
     }
 
-    /** The grid [picture] shows cube stickers: enough cells have a dark gap around a lighter middle. */
-    fun looksLikeCube(picture: IntArray, size: Int = PICTURE_SIZE): Boolean =
-        gapContrast(picture, size).count { it >= MIN_GAP_CONTRAST } >= MIN_STICKER_CELLS
+    /** The grid [picture] shows a cube face (see [GridCheck.looksLikeCube]). */
+    fun looksLikeCube(picture: IntArray, size: Int = PICTURE_SIZE): Boolean = check(picture, size).looksLikeCube
 
     fun median(values: List<Int>): Int = values.sorted()[values.size / 2]
 }

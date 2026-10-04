@@ -125,7 +125,7 @@
     <string name="scan_redo">Uudelleen</string>
     <string name="scan_review_note">Värit tulkitaan lopuksi koko kuution perusteella.</string>
     <string name="scan_status_centre">Keskiö näyttää: %1$s. Pidä paikallaan.</string>
-    <string name="scan_status_no_cube">Ruudukossa ei näy kuutiota. Tuo kuution puoli ruudukkoon.</string>
+    <string name="scan_status_no_cube">Tuo kuutio ruudukkoon: jokainen ruutu yhdelle tarralle.</string>
     <string name="scan_status_turn">Tämä puoli on jo kuvattu – käännä kuutiota toiseen puoleen.</string>
     <string name="scan_accept">Hyvä, seuraava</string>
     <string name="scan_retake">Kuvaa uudelleen</string>
@@ -159,6 +159,7 @@
     <string name="follow_waiting">Tee siirto – sovellus huomaa sen itse.</string>
     <string name="follow_not_visible">Tätä siirtoa ei näe edestä. Paina Tein sen, kun olet kääntänyt.</string>
     <string name="follow_wrong">Käännös meni toisin. Korjaa ensin: %1$s</string>
+    <string name="follow_bring_cube">Tuo kuutio ruudukkoon.</string>
     <string name="follow_double">2×</string>
     <string name="color_gen_white">valkoisen</string>
     <string name="color_gen_yellow">keltaisen</string>

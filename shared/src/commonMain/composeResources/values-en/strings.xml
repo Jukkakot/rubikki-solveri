@@ -124,7 +124,7 @@
     <string name="scan_redo">Redo</string>
     <string name="scan_review_note">The colours are worked out at the end from the whole cube.</string>
     <string name="scan_status_centre">The centre looks like: %1$s. Hold still.</string>
-    <string name="scan_status_no_cube">No cube in the grid. Bring a side of the cube into the grid.</string>
+    <string name="scan_status_no_cube">Bring the cube into the grid: one sticker per square.</string>
     <string name="scan_status_turn">This side is already scanned – turn the cube to another side.</string>
     <string name="scan_accept">Good, next</string>
     <string name="scan_retake">Scan again</string>
@@ -158,6 +158,7 @@
     <string name="follow_waiting">Make the move – the app notices it by itself.</string>
     <string name="follow_not_visible">This move cannot be seen from the front. Tap Done when you have turned it.</string>
     <string name="follow_wrong">That turn went differently. Fix it first: %1$s</string>
+    <string name="follow_bring_cube">Bring the cube into the grid.</string>
     <string name="follow_double">2×</string>
     <string name="color_gen_white">white</string>
     <string name="color_gen_yellow">yellow</string>

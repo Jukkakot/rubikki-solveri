@@ -30,7 +30,7 @@ class FollowTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private val frames = MutableSharedFlow<List<Rgb>>(extraBufferCapacity = 64)
+    private val frames = MutableSharedFlow<Pair<List<Rgb>, Boolean>>(extraBufferCapacity = 64)
 
     // Solving "R U" gives U' R'.
     private val cube = Cube.solved().apply("R U")
@@ -47,9 +47,9 @@ class FollowTest {
         }
     }
 
-    private fun show(state: Cube, times: Int = 4) {
+    private fun show(state: Cube, times: Int = 4, face: Boolean = true) {
         repeat(times) {
-            compose.runOnIdle { frames.tryEmit(front(state).map { ColorClassifier.DEFAULT_PALETTE.getValue(it) }) }
+            compose.runOnIdle { frames.tryEmit(front(state).map { ColorClassifier.DEFAULT_PALETTE.getValue(it) } to face) }
             compose.waitForIdle()
         }
     }
@@ -76,5 +76,20 @@ class FollowTest {
         // Next move is R'; turning R instead is noticed.
         show(cube.apply("U' R"))
         compose.onNodeWithText("Käännös meni toisin", substring = true).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun framesWithoutAFaceAreIgnored() {
+        shadowOf(ApplicationProvider.getApplicationContext<Application>()).grantPermissions(Manifest.permission.CAMERA)
+        solve()
+        compose.onNodeWithContentDescription("Seuraa kameralla").performClick()
+        show(cube)
+        // The move made, but the grid does not show a face: no advance.
+        show(cube.apply("U'"), face = false)
+        compose.onNodeWithText("Siirto 1/2").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Tuo kuutio ruudukkoon", substring = true).performScrollTo().assertIsDisplayed()
+        // Back in the grid: following goes on.
+        show(cube.apply("U'"))
+        compose.onNodeWithText("Siirto 2/2").performScrollTo().assertIsDisplayed()
     }
 }

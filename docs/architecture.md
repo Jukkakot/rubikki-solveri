@@ -78,9 +78,11 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
    by its centre colour before `accept`. Readings are stored as seen. Steady = every cell within ΔE 12
    (`STEADY_DISTANCE`) for 1.5 s and 3 frames → capture the per-cell median, then review (raw
    colours, "Good, next" / "Scan again"; no tap-to-fix). Stops: an accepted face in view in any of
-   its four rotations (`AlreadyScanned`), and a grid that does not look like stickers (`NoCube`, decided by
-   `FrameSampler.looksLikeCube` on the grid picture: in ≥ 6 cells the middle is ≥ 15 L lighter than
-   the darkest tenth of the cell's edge, i.e. dark gaps between stickers; colour plays no part). Redo takes back the face accepted last; capture button. Live dots show the raw camera colour.
+   its four rotations (`AlreadyScanned`), and a grid that is not a cube face (`NoCube`, decided by
+   `FrameSampler.check` on the grid picture: every cell's middle must be one even cube colour
+   (coloured, or light and nearly grey for white; thresholds in `FrameSampler`, set from the user's
+   pictures of 2026-10-04) and enough cells need dark gaps around them; no picture yet = not a cube).
+   Each grid cell that looks like a sticker gets a green outline. The capture button ignores the check. Redo takes back the face accepted last; capture button. Live dots show the raw camera colour.
    Exposure/white balance lock at the first capture (`index > 0 || review != null`); capture
    pictures are written on `Dispatchers.IO`; `scan.stall` logs camera gaps ≥ 300 ms and UI frames
    ≥ 150 ms apart.
@@ -230,6 +232,8 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 - `FrontArrow.of(move)`: the 2D arrow on the front face (rows left/right, columns up/down, front
   round, "2×" for half turns, none for B/S/rotations); `FollowPanel` draws it over the scan grid
   with the 3D guide cube in the corner.
+- Frames whose grid picture is not a cube face (the scan's `FrameSampler.looksLikeCube`) skip
+  `FollowTracker` entirely (no advance, no learning) and the panel asks to bring the cube into the grid.
 - `CameraPermissionGate` is shared with the scan.
 
 ## Screens — Implemented

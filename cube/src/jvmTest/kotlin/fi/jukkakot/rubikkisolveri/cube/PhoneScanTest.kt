@@ -29,6 +29,7 @@ class PhoneScanTest {
         for (face in listOf("F", "R", "B", "L", "U", "D")) {
             val contrast = FrameSampler.gapContrast(picture(face))
             assertTrue(contrast.all { it >= FrameSampler.MIN_GAP_CONTRAST }, "$face $contrast")
+            assertTrue(FrameSampler.looksLikeCube(picture(face)), "$face ${FrameSampler.stickerCells(picture(face))}")
         }
     }
 

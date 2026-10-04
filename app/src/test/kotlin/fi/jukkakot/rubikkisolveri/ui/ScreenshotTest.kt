@@ -160,7 +160,7 @@ class ScreenshotTest {
         val start = Cube.solved().apply("R'")
         val state = fi.jukkakot.rubikkisolveri.ui.guide.rememberStepperState(start, Notation.parse("R"))
         val frames = kotlinx.coroutines.flow.MutableStateFlow(
-            fi.jukkakot.rubikkisolveri.cube.follow.front(start).map { fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier.DEFAULT_PALETTE.getValue(it) },
+            fi.jukkakot.rubikkisolveri.cube.follow.front(start).map { fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier.DEFAULT_PALETTE.getValue(it) } to true,
         )
         androidx.compose.foundation.layout.Column(Modifier.background(androidx.compose.ui.graphics.Color.White)) {
             fi.jukkakot.rubikkisolveri.ui.guide.FollowPanel(state, frames) {
@@ -236,7 +236,9 @@ class ScreenshotTest {
         )
         fi.jukkakot.rubikkisolveri.ui.scan.ScanContent(
             frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {},
-            preview = { androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530)))) },
+            // The cube's bottom row below the grid: those cells are not stickers.
+            gridCheck = { fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler.GridCheck(List(9) { 30.0 }, List(9) { it < 6 }) },
+            preview ={ androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530)))) },
         )
     } }
 

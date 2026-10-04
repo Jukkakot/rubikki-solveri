@@ -81,6 +81,9 @@ import fi.jukkakot.rubikkisolveri.ui.guide.StepperState
 import fi.jukkakot.rubikkisolveri.ui.guide.rememberStepperState
 import fi.jukkakot.rubikkisolveri.ui.scan.CameraPermissionGate
 import fi.jukkakot.rubikkisolveri.ui.scan.CameraPreview
+import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -364,11 +367,20 @@ private fun StageCard(steps: List<Step>, index: Int) {
 
 /** Camera mode with the real camera. */
 @Composable
+@OptIn(ExperimentalAtomicApi::class)
 private fun DefaultFollowPanel(state: StepperState, steady: Boolean) {
     val frames = remember {
-        MutableSharedFlow<List<Rgb>>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        MutableSharedFlow<Pair<List<Rgb>, Boolean>>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     }
+    // Whether the latest grid picture shows a cube face; the picture comes just before its readings.
+    val face = remember { AtomicBoolean(false) }
     FollowPanel(state, frames, steady) { modifier ->
-        CameraPreview(torch = false, onSamples = { frames.tryEmit(it) }, onError = {}, modifier = modifier)
+        CameraPreview(
+            torch = false,
+            onSamples = { frames.tryEmit(it to face.load()) },
+            onPicture = { face.store(FrameSampler.looksLikeCube(it)) },
+            onError = {},
+            modifier = modifier,
+        )
     }
 }

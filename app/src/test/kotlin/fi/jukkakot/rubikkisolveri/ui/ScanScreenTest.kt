@@ -15,6 +15,7 @@ import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.FaceView
 import fi.jukkakot.rubikkisolveri.cube.Stickers
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
+import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.cube.scan.RotationSearch
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanCheck
@@ -48,7 +49,7 @@ class ScanScreenTest {
     private fun scan() {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0, savePicture = { saved += it; "$it.png" }, looksLikeCube = { cubeInView }, onLockExposure = { locks += it }, preview = {})
+                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0, savePicture = { saved += it; "$it.png" }, gridCheck = { FrameSampler.GridCheck(List(9) { 30.0 }, List(9) { cubeInView || it != 4 }) }, onLockExposure = { locks += it }, preview = {})
             }
         }
     }
@@ -84,7 +85,7 @@ class ScanScreenTest {
             compose.runOnIdle { frames.tryEmit(List(9) { Rgb(150, 145, 138) }) }
             compose.waitForIdle()
         }
-        compose.onNodeWithText("Ruudukossa ei näy kuutiota. Tuo kuution puoli ruudukkoon.").assertIsDisplayed()
+        compose.onNodeWithText("Tuo kuutio ruudukkoon", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
         assertTrue(saved.isEmpty())
         // The capture button still takes it, and its picture is saved.

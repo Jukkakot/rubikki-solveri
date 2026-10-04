@@ -113,8 +113,8 @@ fun ScanScreen(
         var torchAvailable by remember { mutableStateOf(false) }
         var lockExposure by remember { mutableStateOf(false) }
         var cameraFailed by remember { mutableStateOf(false) }
-        // The latest grid picture and whether it shows cube stickers (worked out on the camera thread).
-        val latestPicture = remember { AtomicReference<Pair<IntArray, Boolean>?>(null) }
+        // The latest grid picture and which of its cells look like stickers (worked out on the camera thread).
+        val latestPicture = remember { AtomicReference<Pair<IntArray, FrameSampler.GridCheck>?>(null) }
         // The picture of each accepted face as seen, for the check after an unsure scan, and the
         // picture of the capture under review.
         val facePictures = remember { HashMap<Face, IntArray>() }
@@ -156,13 +156,13 @@ fun ScanScreen(
                     }
                 }
             },
-            looksLikeCube = { latestPicture.load()?.second ?: true },
+            gridCheck = { latestPicture.load()?.second },
             preview = { modifier ->
                 CameraPreview(
                     torch = torch,
                     lockExposure = lockExposure,
                     onSamples = { frames.tryEmit(it) },
-                    onPicture = { latestPicture.store(it to FrameSampler.looksLikeCube(it)) },
+                    onPicture = { latestPicture.store(it to FrameSampler.check(it)) },
                     onTorchAvailable = { torchAvailable = it },
                     onError = { cameraFailed = true },
                     modifier = modifier,
@@ -187,7 +187,7 @@ fun ScanContent(
     onLockExposure: (Boolean) -> Unit = {},
     savePicture: (face: String) -> String? = { null },
     keepPicture: (FaceView) -> Unit = {},
-    looksLikeCube: () -> Boolean = { true },
+    gridCheck: () -> FrameSampler.GridCheck? = { CUBE_IN_VIEW },
     watchStalls: Boolean = false,
     only: FaceView? = null,
     onFace: (FaceView, List<Rgb>) -> Unit = { _, _ -> },
@@ -197,6 +197,7 @@ fun ScanContent(
     val session = remember { ScanSession(holdMillis = holdMillis, only = only) }
     var event by remember { mutableStateOf<ScanEvent>(ScanEvent.Waiting) }
     var live by remember { mutableStateOf<List<Rgb>?>(null) }
+    var stickers by remember { mutableStateOf<List<Boolean>?>(null) }
     var index by remember { mutableIntStateOf(0) }
     var review by remember { mutableStateOf<List<Rgb>?>(null) }
     var reviewFace by remember { mutableStateOf<FaceView?>(null) }
@@ -270,7 +271,12 @@ fun ScanContent(
 
     LaunchedEffect(session) {
         frames.collect { samples ->
-            if (!session.isDone && session.review == null) handle(session.onFrame(samples, elapsedMillis(), looksLikeCube()))
+            if (!session.isDone && session.review == null) {
+                // No grid picture yet: not a cube yet.
+                val check = gridCheck()
+                stickers = check?.stickerCells
+                handle(session.onFrame(samples, elapsedMillis(), check?.looksLikeCube == true))
+            }
         }
     }
     // From the first capture on (the cube held still, the camera settled on it), keep exposure and
@@ -361,7 +367,7 @@ fun ScanContent(
                     val read = review
                     if (read == null) {
                         val holding = event as? ScanEvent.Holding
-                        GridOverlay(live, holding?.recognised?.centreColor(), Modifier.fillMaxSize())
+                        GridOverlay(live, stickers, holding?.recognised?.centreColor(), Modifier.fillMaxSize())
                         OnCamera(Modifier.align(Alignment.BottomCenter)) {
                             Text(statusText(event, only), color = Color.White, style = MaterialTheme.typography.titleSmall)
                             LinearProgressIndicator(
@@ -454,7 +460,7 @@ private fun statusText(event: ScanEvent, only: FaceView?): String = when (event)
  * round the centre in the colour of the face it looks like ([centre]), if any.
  */
 @Composable
-private fun GridOverlay(live: List<Rgb>?, centre: CubeColor?, modifier: Modifier) {
+private fun GridOverlay(live: List<Rgb>?, stickers: List<Boolean>?, centre: CubeColor?, modifier: Modifier) {
     Canvas(modifier) {
         val side = FrameSampler.GRID_SIZE * size.minDimension
         val left = (size.width - side) / 2
@@ -466,6 +472,16 @@ private fun GridOverlay(live: List<Rgb>?, centre: CubeColor?, modifier: Modifier
             drawLine(Color.White, Offset(left + cell * i, top), Offset(left + cell * i, top + side), strokeWidth = 2.dp.toPx())
             drawLine(Color.White, Offset(left, top + cell * i), Offset(left + side, top + cell * i), strokeWidth = 2.dp.toPx())
         }
+        // Cells that look like a sticker get a green outline, so the user sees which part is off.
+        val inset = 3.dp.toPx()
+        stickers?.forEachIndexed { i, sticker ->
+            if (sticker) {
+                drawRect(
+                    STICKER_GREEN, Offset(left + cell * (i % 3) + inset, top + cell * (i / 3) + inset),
+                    Size(cell - 2 * inset, cell - 2 * inset), style = Stroke(3.dp.toPx()),
+                )
+            }
+        }
         if (centre != null) drawCircle(StickerColors.of(centre), radius = cell * 0.42f, center = Offset(left + cell * 1.5f, top + cell * 1.5f), style = Stroke(4.dp.toPx()))
         live?.forEachIndexed { i, color ->
             val c = Offset(left + cell * (i % 3 + 0.5f), top + cell * (i / 3 + 0.5f))
@@ -474,6 +490,12 @@ private fun GridOverlay(live: List<Rgb>?, centre: CubeColor?, modifier: Modifier
         }
     }
 }
+
+/** Fixed, not a theme colour: drawn on the camera image in both themes. */
+private val STICKER_GREEN = Color(0xFF4CAF50)
+
+/** What [ScanContent] assumes without a camera: every cell a sticker. */
+private val CUBE_IN_VIEW = FrameSampler.GridCheck(List(9) { 100.0 }, List(9) { true })
 
 /** The captured face as the camera saw it: nine large tiles in the grid over a dimmed preview. */
 @Composable
