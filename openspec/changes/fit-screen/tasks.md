@@ -6,7 +6,7 @@
 - [x] 1.2 Stepper on `FitColumn`: step count on the progress row, hold line in `bodySmall`, 8 dp spacing, method choice without extra padding; `GuideCube` sized by its slot (mirror and reset scale with it)
 - [x] 1.3 Camera follow: the camera box (3:4) in the slot
 - [x] 1.4 Compose tests in `app` at about 411 × 560 dp: "Tein sen" and the move text displayed without scrolling, and the cube's size is the same after a step; at 411 × 891 dp the cube is full width
-- [ ] 1.5 Learn method at 411 × 560 dp: the stage card leaves ~106 dp for the cube (under the 200 dp floor), so the screen scrolls; open question to the user
+- [x] 1.5 Learn method at 411 × 560 dp scrolls (stage card leaves ~106 dp): accepted by the user 2026-10-04, spec says so
 
 ## 2. Other screens
 

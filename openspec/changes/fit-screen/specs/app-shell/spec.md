@@ -7,7 +7,8 @@ app and in the phone's browser. Spacing and secondary text SHALL be compact; the
 element (3D cube, camera view, timer area, lesson picture) SHALL take the height that is left and
 SHALL NOT grow larger than its full width allows. During a solution the cube's size SHALL NOT
 change from move to move. Only when the big element would become too small to use SHALL the screen
-scroll instead. Settings and About MAY scroll; landscape is unchanged.
+scroll instead. Settings and About MAY scroll; landscape is unchanged. The learn method's
+solution screen MAY scroll on short screens (its stage card leaves the cube too little height).
 
 #### Scenario: Short browser window
 - **WHEN** the solution screen is shown in a phone browser with about 560 dp of height
