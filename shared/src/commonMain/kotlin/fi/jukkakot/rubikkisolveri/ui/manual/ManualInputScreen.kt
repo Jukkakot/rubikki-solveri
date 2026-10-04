@@ -32,6 +32,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.rememberCoroutineScope
 import org.jetbrains.compose.resources.pluralStringResource
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
@@ -151,6 +152,7 @@ fun ManualInputScreen(
     // Every face checked: a solvable cube opens its solution, otherwise the faces to look at again.
     fun judge(next: ScanCheck) {
         scope.launch {
+            withFrameNanos { } // the spinner first: in the browser the check runs on the one thread
             val result = withContext(Dispatchers.Default) { next.verdict() }
             when (result) {
                 is Verdict.Solvable -> {

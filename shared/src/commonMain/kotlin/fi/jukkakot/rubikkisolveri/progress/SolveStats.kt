@@ -1,7 +1,9 @@
 package fi.jukkakot.rubikkisolveri.progress
 
 import kotlin.math.roundToLong
+import kotlinx.serialization.Serializable
 
+@Serializable
 enum class Penalty { NONE, PLUS_TWO, DNF }
 
 /** A timed solve as the statistics see it. */

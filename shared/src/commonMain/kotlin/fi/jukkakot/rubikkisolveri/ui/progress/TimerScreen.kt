@@ -1,5 +1,13 @@
 package fi.jukkakot.rubikkisolveri.ui.progress
 
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import fi.jukkakot.rubikkisolveri.ui.elapsedMillis
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -86,6 +94,30 @@ fun TimerScreen(
     val solves by progress.timedSolves.collectAsStateWithLifecycle(emptyList())
     val scope = rememberCoroutineScope()
 
+    // A finger on the area or the space bar (a keyboard on a computer or a phone): same timer.
+    fun press() {
+        val stopped = timer.press()
+        phase = timer.phase
+        shown = timer.display()
+        if (stopped != null) {
+            val text = scramble?.let(Notation::format).orEmpty()
+            scope.launch { progress.addTimed(stopped, text) }
+            scrambleNo++
+        }
+    }
+
+    fun release() {
+        timer.release()
+        phase = timer.phase
+    }
+
+    val focus = remember { FocusRequester() }
+    var spaceDown by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        withFrameMillis { } // Scaffold places its content during layout: the requester is attached after a frame.
+        runCatching { focus.requestFocus() }
+    }
+
     LaunchedEffect(scrambleNo) {
         scramble = null
         scramble = scrambles()
@@ -119,7 +151,25 @@ fun TimerScreen(
         },
     ) { padding ->
         Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
+            Modifier.fillMaxSize().padding(padding)
+                .focusRequester(focus)
+                .onKeyEvent { event ->
+                    if (event.key != Key.Spacebar) return@onKeyEvent false
+                    when (event.type) {
+                        // Holding the key repeats key-downs: only the first one counts.
+                        KeyEventType.KeyDown -> if (!spaceDown) {
+                            spaceDown = true
+                            press()
+                        }
+                        KeyEventType.KeyUp -> if (spaceDown) {
+                            spaceDown = false
+                            release()
+                        }
+                    }
+                    true
+                }
+                .focusable()
+                .verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Card(Modifier.fillMaxWidth()) {
@@ -150,17 +200,9 @@ fun TimerScreen(
                     .pointerInput(Unit) {
                         awaitEachGesture {
                             awaitFirstDown()
-                            val stopped = timer.press()
-                            phase = timer.phase
-                            shown = timer.display()
-                            if (stopped != null) {
-                                val text = scramble?.let(Notation::format).orEmpty()
-                                scope.launch { progress.addTimed(stopped, text) }
-                                scrambleNo++
-                            }
+                            press()
                             waitForUpOrCancellation()
-                            timer.release()
-                            phase = timer.phase
+                            release()
                         }
                     },
                 contentAlignment = Alignment.Center,

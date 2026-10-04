@@ -14,3 +14,6 @@ keystore.properties
 
 # Android Studio daemon JVM pin (CI uses JDK 21)
 gradle/gradle-daemon-jvm.properties
+
+# npm (web/smoke)
+node_modules/

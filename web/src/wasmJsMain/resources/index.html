@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#1E2A3A">
+  <meta name="description" content="Rubikki Solveri: skannaa kuutio ja opettele ratkaisemaan se.">
+  <title>Rubikki Solveri</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #1E2A3A; }
+    #app { position: fixed; inset: 0; }
+    .note {
+      position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 12px; padding: 24px; box-sizing: border-box; text-align: center;
+      color: #E2E2E9; font: 18px/1.4 system-ui, sans-serif;
+    }
+    .note .cube { font-size: 56px; }
+    @media (prefers-color-scheme: light) {
+      html, body { background: #F9F9FF; }
+      .note { color: #191C20; }
+    }
+  </style>
+  <script>
+    // The app starts in Finnish whatever the browser's language; settings can switch it (stored).
+    // Compose resources and Intl read navigator.language(s), so they are overridden before Kotlin runs.
+    (function () {
+      var lang = 'fi';
+      try { lang = localStorage.getItem('rubikki.language') || 'fi'; } catch (e) { /* storage blocked */ }
+      try {
+        Object.defineProperty(navigator, 'language', { get: function () { return lang; } });
+        Object.defineProperty(navigator, 'languages', { get: function () { return [lang]; } });
+      } catch (e) { /* read-only in this browser: its own language is used */ }
+      document.documentElement.lang = lang;
+      window.rubikkiLanguage = lang;
+    })();
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="loading" class="note"><div class="cube">🧊</div><div>Ladataan… / Loading…</div></div>
+  <script>
+    // Kotlin/Wasm needs WebAssembly GC (Chrome 119, Firefox 120, Safari 18.2). Without it the
+    // page explains instead of staying blank. The probe is wasm-feature-detect's "gc" check.
+    (function () {
+      var ok = false;
+      try {
+        ok = typeof WebAssembly === 'object' &&
+          WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 95, 1, 120, 0]));
+      } catch (e) { ok = false; }
+      if (!ok) {
+        document.getElementById('loading').innerHTML =
+          '<div class="cube">🧊</div>' +
+          '<div>Selaimesi on liian vanha tälle sovellukselle. Päivitä selain (Chrome, Edge, Firefox tai Safari 18.2+).</div>' +
+          '<div>Your browser is too old for this app. Please update it (Chrome, Edge, Firefox or Safari 18.2+).</div>';
+        return;
+      }
+      var s = document.createElement('script');
+      s.src = 'rubikki.js';
+      document.body.appendChild(s);
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+      }
+    })();
+  </script>
+</body>
+</html>

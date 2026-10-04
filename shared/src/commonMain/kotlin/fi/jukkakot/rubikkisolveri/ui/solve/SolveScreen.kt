@@ -31,6 +31,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -122,7 +123,11 @@ fun plan(cube: Cube, method: SolveMethod): SolvePlan {
     }
 }
 
-val BACKGROUND_PLANNER: Planner = { cube, method -> withContext(Dispatchers.Default) { plan(cube, method) } }
+// One frame first, so "computing" is on screen before the browser (one thread) starts the search.
+val BACKGROUND_PLANNER: Planner = { cube, method ->
+    withFrameNanos { }
+    withContext(Dispatchers.Default) { plan(cube, method) }
+}
 
 /** Finds a solution for [cube] in the background (shortest or step by step), then steps through it. */
 @OptIn(ExperimentalMaterial3Api::class)

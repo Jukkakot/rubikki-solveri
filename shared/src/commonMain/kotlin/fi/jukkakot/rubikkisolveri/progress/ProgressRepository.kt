@@ -1,8 +1,10 @@
 package fi.jukkakot.rubikkisolveri.progress
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 import kotlin.time.Clock
 
+@Serializable
 data class TimedSolve(
     val id: Long = 0,
     val finishedAt: Long,
@@ -13,6 +15,7 @@ data class TimedSolve(
     val result: TimedResult get() = TimedResult(millis, penalty)
 }
 
+@Serializable
 data class GuidedSolve(
     val id: Long = 0,
     val finishedAt: Long,
@@ -21,6 +24,7 @@ data class GuidedSolve(
     val durationMillis: Long,
 )
 
+@Serializable
 data class PracticeSession(
     val id: Long = 0,
     val finishedAt: Long,

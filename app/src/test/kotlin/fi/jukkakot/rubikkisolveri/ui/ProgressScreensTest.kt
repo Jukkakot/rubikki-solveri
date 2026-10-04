@@ -1,7 +1,11 @@
 package fi.jukkakot.rubikkisolveri.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -50,6 +54,30 @@ class ProgressScreensTest {
         compose.onNodeWithText("Ka5").performScrollTo()
         compose.onNodeWithText("11.00").assertExists()
         compose.onNodeWithText("9.00").assertExists()
+    }
+
+    @Test
+    @OptIn(ExperimentalTestApi::class)
+    fun spaceBarTimesASolve() {
+        var now = 0L
+        compose.setContent {
+            RubikkiTheme(dynamicColor = false) {
+                TimerScreen(repo, onBack = {}, onHistory = {}, onGuidedScramble = {}, scrambles = { Notation.parse("R U") }, now = { now })
+            }
+        }
+        compose.waitForIdle() // the screen takes the keyboard focus
+        assertEquals(1, compose.onAllNodes(androidx.compose.ui.test.isFocused()).fetchSemanticsNodes().size, "focused")
+        // A running timer asks for every frame, which the test clock cannot idle on.
+        compose.mainClock.autoAdvance = false
+        compose.onRoot().performKeyInput { keyDown(Key.Spacebar) }
+        now = 600
+        compose.onRoot().performKeyInput { keyUp(Key.Spacebar) }
+        now = 1_834
+        compose.onRoot().performKeyInput { keyDown(Key.Spacebar) }
+        compose.onRoot().performKeyInput { keyUp(Key.Spacebar) }
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        assertEquals(listOf(1_234L), runBlocking { repo.timedSolves.first() }.map { it.millis })
     }
 
     @Test

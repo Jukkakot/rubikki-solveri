@@ -305,6 +305,9 @@ minnekään.") and the version line `1.0.<count>-<sha> · Koottu <date>`; the do
   already show a "computing" state while waiting.
 - Before each heavy call (solve, `RotationSearch`, `MisreadSearch`) the screen yields one frame
   (`withFrameNanos`) so the spinner is drawn first.
+- Measured with `?selftest` (production build, headless Chromium on the author's Windows desktop,
+  2026-10-04): `warmup=190 solve=226 beginner=16 rotation=126` ms (solve = slowest of three).
+  The phone's browser is still to be measured by the user (About → the version line is the build).
 
 ## Risks / Trade-offs
 
