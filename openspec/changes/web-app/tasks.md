@@ -62,5 +62,5 @@ Chromium needs `locale: 'fi-FI'`; Playwright's browser is at `/opt/pw-browsers` 
 
 ## 9. Integration and roadmap
 
-- [ ] 9.1 Full run: `./gradlew test lint assembleDebug assembleRelease :web:wasmJsBrowserDistribution` and the smoke test. Verify: all green
-- [ ] 9.2 `openspec/context/product.md`: platform decision now "Android app and browser version from one Kotlin Multiplatform code base (2026-10-04)"; `openspec/context/nfr.md` if it states Android-only limits; roadmap item 27 `web-app` done, backlog note "solver Web Worker if the phone browser is slow". Verify: `openspec validate web-app` passes
+- [x] 9.1 Full run: `./gradlew test lint assembleDebug assembleRelease :web:wasmJsBrowserDistribution` and the smoke test. Verify: all green
+- [x] 9.2 `openspec/context/product.md`: platform decision now "Android app and browser version from one Kotlin Multiplatform code base (2026-10-04)"; `openspec/context/nfr.md` if it states Android-only limits; roadmap item 27 `web-app` done, backlog note "solver Web Worker if the phone browser is slow". Verify: `openspec validate web-app` passes

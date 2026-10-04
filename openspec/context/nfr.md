@@ -3,8 +3,11 @@
 Apply to every change. Designs and task lists must show how they are met.
 
 ## Budget and platform
-- 0 €: no server, no paid API, no store account. Everything runs on the phone, offline.
+- 0 €: no server, no paid API, no store account. Everything runs on the phone (or in the browser,
+  served as static files by GitHub Pages), offline.
 - Android 12 (API 31) and newer; reference device Samsung Galaxy S24. Phones only, portrait first.
+  The browser version: current Chrome, Edge, Firefox, Safari 18.2+; on wide screens a phone-width
+  column.
 - Only the author uses the app: no onboarding for strangers, no accounts, no analytics.
 
 ## Performance (reference device)

@@ -8,7 +8,9 @@ method stage by stage so you learn to solve it yourself.
 
 ## Decided (2026-10-02)
 
-- **Platform:** Android only, native: Kotlin + Jetpack Compose, Material 3, modern Android look.
+- **Platform:** Android app and browser version from one Kotlin Multiplatform code base
+  (2026-10-04): Kotlin + Compose Multiplatform, Material 3, modern Android look; Material You
+  colours on the phone, the Karkki fallback colours in the browser.
 - **Cube:** the standard 3×3.
 - **First solver:** a third-party two-phase (Kociemba) solver library, shortest practical solution
   (about 20 moves). A human-method solver of our own comes later.

@@ -1,16 +1,18 @@
 schema: spec-driven
 
 context: |
-  Rubikki Solveri: Android app that scans a real 3x3 Rubik's Cube with the
-  camera and helps the user solve it - first the shortest solution move by
-  move, later a human method taught stage by stage. Runs fully on the phone.
+  Rubikki Solveri: Android app (and the same app in the browser) that scans a
+  real 3x3 Rubik's Cube with the camera and helps the user solve it - the
+  shortest solution move by move, or a human method taught stage by stage.
+  Runs fully on the device, offline.
 
-  Stack: Kotlin, Jetpack Compose, Material 3, Gradle (Kotlin DSL). Android only.
-  Planned modules: a pure Kotlin cube module (state, moves, validity, solvers;
-  no Android imports) and the app module (screens, camera, 3D view).
+  Stack: Kotlin Multiplatform, Compose Multiplatform, Material 3, Gradle
+  (Kotlin DSL). Modules: cube (pure Kotlin logic and solvers, JVM + Wasm),
+  shared (all screens, texts, theme; Android + Wasm), app (Android shell:
+  Room, DataStore, CameraX, file log), web (browser shell, Kotlin/Wasm).
 
-  Always: English identifiers; UI text in Finnish and English (Android string
-  resources); light and dark theme; prefer established libraries over
+  Always: English identifiers; UI text in Finnish and English (Compose
+  resources in shared); light and dark theme; prefer established libraries over
   hand-written plumbing; every move shown must be unmistakable for a beginner;
   budget 0 EUR (no server, no paid API).
 

@@ -34,10 +34,14 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 24 | `home-design` | done | Home screen with a spinning 3D cube, scan as the one primary action, a 2×2 tile grid and a best-time line (gallery feedback 1) |
 | 25 | `lesson-visuals` | done | Lessons as swipe pages with pictures: grey goal cube per stage, case pictures instead of "how" text, algorithm pages that show what moves, goal card in practice and guided solve |
 | 26 | `phone-install` | done | Every green push publishes a signed APK at one fixed address (signed with the Android Studio key so it updates the installed app and keeps its data); About → "Lataa uusin versio" |
-| 27 | `web-app` | specced | The same app in the browser (GitHub Pages, installable, offline) from one Kotlin Multiplatform code base: cube multiplatform with min2phase ported to Kotlin, screens in a shared Compose Multiplatform module, Android app unchanged |
+| 27 | `web-app` | done | The same app in the browser (GitHub Pages, installable, offline) from one Kotlin Multiplatform code base: cube multiplatform with min2phase ported to Kotlin, screens in a shared Compose Multiplatform module, Android app unchanged |
 
 ## Backlog
 
 Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
+
+- `web-solver-worker`: run the solver in a Web Worker (a second instance of the wasm module) if the
+  phone's browser is slow: warm-up over 4 s or a solve over 2 s measured with `?selftest`
+  (web-app design, Risks).
 
 - `solve-challenge`: learning mode on the solve screen: show the position to reach next, the user tries it themselves, a "hint" button reveals the moves step by step; the target shown as the turnable 3D cube
