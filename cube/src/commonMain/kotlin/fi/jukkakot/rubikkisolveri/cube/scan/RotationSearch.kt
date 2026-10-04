@@ -34,7 +34,7 @@ object RotationSearch {
     /** The reading index (0…8, as seen) that lands on net position [n] when the face is turned [k] quarter turns clockwise. */
     fun turnIndex(n: Int, k: Int): Int {
         var at = n
-        repeat(Math.floorMod(k, 4)) { at = (2 - at % 3) * 3 + at / 3 }
+        repeat(k.mod(4)) { at = (2 - at % 3) * 3 + at / 3 }
         return at
     }
 

@@ -1,5 +1,8 @@
 package fi.jukkakot.rubikkisolveri.cube.scan
 
+import kotlin.math.cbrt
+import kotlin.math.pow
+
 /**
  * One camera frame as RGBA bytes. [cropLeft]..[cropBottom] is the part visible on screen and
  * [rotation] (0, 90, 180, 270) the clockwise turn that makes the frame upright on screen.
@@ -126,8 +129,8 @@ object FrameSampler {
                 val l = lightness(picture[(top + y) * size + left + x])
                 if (inMiddle) mid[nm++] = l else ring[nr++] = l
             }
-            java.util.Arrays.sort(mid, 0, nm)
-            java.util.Arrays.sort(ring, 0, nr)
+            mid.sort(0, nm)
+            ring.sort(0, nr)
             mid[nm / 2] - ring[nr / 10]
         }
     }
@@ -135,13 +138,13 @@ object FrameSampler {
     /** sRGB channel value to linear light. */
     private val LINEAR = DoubleArray(256) { c ->
         val v = c / 255.0
-        if (v <= 0.04045) v / 12.92 else Math.pow((v + 0.055) / 1.055, 2.4)
+        if (v <= 0.04045) v / 12.92 else ((v + 0.055) / 1.055).pow(2.4)
     }
 
     /** CIE L* of an ARGB pixel (same as [Rgb.toLab]'s `l`). */
     fun lightness(argb: Int): Double {
         val y = 0.2126 * LINEAR[(argb shr 16) and 0xff] + 0.7152 * LINEAR[(argb shr 8) and 0xff] + 0.0722 * LINEAR[argb and 0xff]
-        val f = if (y > 216.0 / 24389) Math.cbrt(y) else (24389.0 / 27 * y + 16) / 116
+        val f = if (y > 216.0 / 24389) cbrt(y) else (24389.0 / 27 * y + 16) / 116
         return 116 * f - 16
     }
 

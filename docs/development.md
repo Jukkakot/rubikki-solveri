@@ -9,6 +9,10 @@
   command-line tools, platforms and build tools into `/opt/android-sdk` and writes
   `local.properties`). Cloud sessions run it automatically from the SessionStart hook.
 - Versions live in `gradle/libs.versions.toml`; the Gradle wrapper pins Gradle itself.
+- **Kotlin/Wasm (browser) builds** use npm (`kotlin.js.yarn=false` in `gradle.properties`): the
+  yarn path downloads a karma fork from `codeload.github.com`, which the cloud container blocks.
+  The wasm compiler needs `kotlin.daemon.jvmargs=-Xmx3g`. Maven Central sometimes answers 429 in
+  the container: just rerun.
 
 ## Checks — Implemented
 
@@ -18,7 +22,8 @@ Run before every commit (CI runs the same):
 ./gradlew test lint assembleDebug
 ```
 
-- `test`: `cube` JVM tests and `app` unit tests. App tests run on the JVM with Robolectric
+- `test`: `cube` JVM tests (`./gradlew :cube:jvmTest`; `cube` is Kotlin Multiplatform, its code
+  also compiles for the browser: `./gradlew :cube:compileKotlinWasmJs`) and `app` unit tests. App tests run on the JVM with Robolectric
   (Compose UI tests included); the default test locale is Finnish (`robolectric.properties`), a
   test can switch with `@Config(qualifiers = "en")`.
 - `lint`: Android lint, warnings are errors. Dependency-version checks are off (updated by hand).

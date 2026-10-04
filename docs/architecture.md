@@ -7,7 +7,7 @@ roadmap change.
 
 | Module | Kind | Holds |
 |---|---|---|
-| `cube` | Kotlin/JVM library, no Android imports | Cube state, moves, validity, colour classification, solvers |
+| `cube` | Kotlin Multiplatform library (JVM + browser/Wasm), no Android imports | Cube state, moves, validity, colour classification, solvers |
 | `app` | Android application (Compose) | Screens, navigation, settings, logging, camera, 3D view |
 
 `app` depends on `cube`, never the other way. Anything that can be computed without a phone goes

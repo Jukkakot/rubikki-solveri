@@ -7,10 +7,10 @@ Chromium needs `locale: 'fi-FI'`; Playwright's browser is at `/opt/pw-browsers` 
 
 ## 1. `cube` becomes multiplatform
 
-- [ ] 1.1 Gradle plumbing: add `kotlin-multiplatform`, `android-kmp-library`, `compose-multiplatform` plugins and the libraries from design §Context to `gradle/libs.versions.toml`; root `build.gradle.kts` `apply false` entries; `gradle.properties` additions (design §3). Verify: `./gradlew help` configures
-- [ ] 1.2 Convert `cube/build.gradle.kts` to KMP (`jvm()`, `wasmJs { browser() }`, `jvmToolchain(21)`, junit/kotlin-test in `jvmTest`); `git mv` `src/main/kotlin` → `src/commonMain/kotlin`, `src/main/java` → `src/jvmMain/java` (temporary), `src/test/*` → `src/jvmTest/*`; move `TwoPhaseSolver.kt` to `jvmMain` temporarily; replace the six JVM calls (design §2). Verify: `./gradlew :cube:jvmTest :cube:compileKotlinWasmJs` green, same test count as before (record it first with `./gradlew :cube:test` on the old layout)
-- [ ] 1.3 Fix the app's licence test path and run the Android build. Verify: `./gradlew :app:testDebugUnitTest assembleDebug` green
-- [ ] 1.4 Docs: `docs/architecture.md` Modules table (cube = KMP jvm + wasmJs) and `docs/development.md` (how to run `:cube:jvmTest`, container notes). Verify: commands in the docs run as written
+- [x] 1.1 Gradle plumbing: add `kotlin-multiplatform`, `android-kmp-library`, `compose-multiplatform` plugins and the libraries from design §Context to `gradle/libs.versions.toml`; root `build.gradle.kts` `apply false` entries; `gradle.properties` additions (design §3). Verify: `./gradlew help` configures
+- [x] 1.2 Convert `cube/build.gradle.kts` to KMP (`jvm()`, `wasmJs { browser() }`, `jvmToolchain(21)`, junit/kotlin-test in `jvmTest`); `git mv` `src/main/kotlin` → `src/commonMain/kotlin`, `src/main/java` → `src/jvmMain/java` (temporary), `src/test/*` → `src/jvmTest/*`; move `TwoPhaseSolver.kt` to `jvmMain` temporarily; replace the six JVM calls (design §2). Verify: `./gradlew :cube:jvmTest :cube:compileKotlinWasmJs` green, same test count as before (record it first with `./gradlew :cube:test` on the old layout)
+- [x] 1.3 Fix the app's licence test path and run the Android build. Verify: `./gradlew :app:testDebugUnitTest assembleDebug` green
+- [x] 1.4 Docs: `docs/architecture.md` Modules table (cube = KMP jvm + wasmJs) and `docs/development.md` (how to run `:cube:jvmTest`, container notes). Verify: commands in the docs run as written
 
 ## 2. min2phase in Kotlin
 

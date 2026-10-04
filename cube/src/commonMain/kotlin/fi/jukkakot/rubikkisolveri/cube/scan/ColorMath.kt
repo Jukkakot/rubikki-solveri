@@ -6,7 +6,7 @@ import kotlin.math.sqrt
 
 /** A camera reading, 0..255 per channel. */
 data class Rgb(val r: Int, val g: Int, val b: Int) {
-    fun toHex(): String = "%02x%02x%02x".format(r, g, b)
+    fun toHex(): String = listOf(r, g, b).joinToString("") { it.toString(16).padStart(2, '0') }
 
     fun toLab(): Lab {
         fun linear(c: Int): Double {
