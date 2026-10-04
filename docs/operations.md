@@ -19,34 +19,31 @@ Three ways:
 1. **The download link** (everyday): open
    https://github.com/Jukkakot/rubikki-solveri/releases/latest/download/rubikki-solveri.apk on the
    phone, or in the app Settings → About → **Lataa uusin versio**. Steps below under Release → 4.
-2. **From Android Studio** (during development): phone connected with USB debugging on, pick the
-   phone in the device menu, press Run ▶. Both ways use the same key, so they update each other.
+2. **From Android Studio** (during development): phone connected over Wi-Fi (wireless
+   debugging), pick the phone in the device menu, press Run ▶ (steps below). Both ways use the same key, so they update each other.
 3. **From a CI artifact:** download the debug APK zip from a CI run, unzip, copy it to the phone.
    It is signed with that runner's own debug key, so it does **not** install over the others
    without an uninstall (which deletes the history) — avoid.
 
-### First time: Android Studio on Windows and the Galaxy S24
+### Android Studio and the Galaxy S24 over Wi-Fi
 
-1. Download Android Studio from https://developer.android.com/studio → "Download Android Studio",
-   accept the terms, run the installer with the defaults (keep "Android Virtual Device" ticked; it
-   does no harm).
-2. Start Android Studio → the setup wizard → **Standard** → accept every licence (click each
-   licence on the left, then "Accept") → Finish. It downloads the SDK (a few GB).
-3. Get the code: on the welcome screen **Clone Repository** → URL
-   `https://github.com/Jukkakot/rubikki-solveri.git` → pick a folder → Clone → "Trust Project".
-   Wait until the Gradle sync at the bottom finishes (first time several minutes).
-4. Phone, once: **Settings → About phone → Software information**, tap **Build number** seven
-   times (enter your PIN) → "Developer mode has been turned on".
-5. Phone: **Settings → Developer options** → turn on **USB debugging**.
-6. Connect the phone with a USB-C cable. On the phone allow "Allow USB debugging?" (tick "Always
-   allow from this computer"). If Windows asks for a driver, install Samsung's USB driver from
-   https://developer.samsung.com/android-usb-driver.
-7. In Android Studio's toolbar the device menu now shows "Samsung SM-S921…"; the run
-   configuration next to it says **app**. Press the green **Run ▶**. The app opens on the phone.
-8. Later updates: **Git → Pull** (or the blue arrow), then Run ▶ again.
+Assumes Android Studio is installed and the phone is already paired with it over Wi-Fi (wireless
+debugging).
 
-Wireless instead of the cable (optional): Developer options → **Wireless debugging** on, then in
-Android Studio device menu → **Pair Devices Using Wi-Fi** and scan the QR code with the phone.
+1. Start Android Studio and open the project (welcome screen → **rubikki-solveri**, or
+   **File → Open Recent**). Wait until the Gradle sync at the bottom finishes.
+2. Get the newest code: **Git → Pull…** → **Pull** (or the blue down arrow in the toolbar).
+3. Phone: same Wi-Fi as the computer, screen unlocked. If the device menu in the toolbar does not
+   show "Samsung SM-S921…": on the phone **Settings → Developer options → Wireless debugging** on
+   (it switches off by itself after a while or on another network), then in Android Studio's
+   device menu pick the phone again (or **Pair Devices Using Wi-Fi** and scan the QR code if it
+   asks to pair anew).
+4. The run configuration next to the device menu says **app**. Press the green **Run ▶**. The app
+   installs as an update (the history stays) and opens on the phone.
+5. Later updates: steps 2–4 again.
+
+If Wi-Fi gives trouble, a USB-C cable also works: **Developer options → USB debugging** on, plug
+in, allow "Allow USB debugging?" on the phone, then Run ▶.
 
 ## Logs and debugging on the phone — Implemented
 
