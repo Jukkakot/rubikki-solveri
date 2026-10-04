@@ -6,7 +6,7 @@ turn so that the turning side is visible: top, front and right from the front-ri
 front-left, back from behind, bottom from below. Changes of view SHALL animate. In the fast method
 the steady view applies instead.
 
-#### Scenario: Back move in the learn method
+#### Scenario: Back move
 - **WHEN** a turn of the back is presented in the learn method
 - **THEN** the view swings round so that the back face is visible
 
@@ -18,7 +18,7 @@ follow, the guide cube SHALL always be shown in the holding position (white on t
 seen from the front a little from the right and above), for every move. The view SHALL never turn
 by itself; only the user's drag turns it. The turning layer SHALL stay highlighted.
 
-#### Scenario: Back move
+#### Scenario: Back move stays in view
 - **WHEN** a turn of the back is presented in the fast method
 - **THEN** the cube stays in the same view as for the previous move, with the back layer highlighted
 

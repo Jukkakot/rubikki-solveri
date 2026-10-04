@@ -20,6 +20,6 @@ top, green in front) SHALL be stated on the screen.
 - **WHEN** the current move is a clockwise turn of the front (F) in the fast method
 - **THEN** it reads "Turn the front side clockwise"
 
-#### Scenario: Describe a move in the learn method
+#### Scenario: Describe a move
 - **WHEN** the current move is a counter-clockwise turn of the top in the learn method
 - **THEN** it reads "Turn the top counter-clockwise (as seen from above)"
