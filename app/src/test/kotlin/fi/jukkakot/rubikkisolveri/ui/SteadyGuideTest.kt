@@ -10,12 +10,15 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.Notation
+import fi.jukkakot.rubikkisolveri.cube.Sequences
 import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeScene
 import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeViewState
 import fi.jukkakot.rubikkisolveri.ui.guide.GUIDE_CUBE_TAG
 import fi.jukkakot.rubikkisolveri.ui.guide.GuideCube
 import fi.jukkakot.rubikkisolveri.ui.guide.StepperState
 import fi.jukkakot.rubikkisolveri.ui.guide.rememberStepperState
+import fi.jukkakot.rubikkisolveri.ui.solve.SolveMethod
+import fi.jukkakot.rubikkisolveri.ui.solve.SolvePlan
 import fi.jukkakot.rubikkisolveri.ui.solve.SolveScreen
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
 import org.junit.Rule
@@ -23,67 +26,55 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
-/** The fast method's steady guide cube: no swinging view, the mirror, the reset button. */
+/** The guide cube's one view: never turning by itself, the reset button after a drag, in both methods. */
 @RunWith(RobolectricTestRunner::class)
 class SteadyGuideTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private val start = Cube.solved().apply("B' R'")
+    private val moves = Notation.parse("R B L D")
+    private val start = Cube.solved().apply(Sequences.inverse(moves))
     private lateinit var state: StepperState
     private val view = CubeViewState(CubeScene.DEFAULT_VIEW)
 
-    private fun guide(steady: Boolean) {
+    private fun guide() {
         compose.mainClock.autoAdvance = false
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                state = rememberStepperState(start, Notation.parse("R B"))
-                GuideCube(state, steady = steady, mirror = steady, viewState = view)
+                state = rememberStepperState(start, moves)
+                GuideCube(state, mirror = true, viewState = view)
             }
         }
         compose.mainClock.advanceTimeBy(1000)
     }
 
-    private fun stepToBack() {
+    private fun step() {
         compose.runOnIdle { state.done() }
         compose.mainClock.advanceTimeBy(3000)
     }
 
-    private fun shown(text: String) = compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
     private fun resetShown() = compose.onAllNodesWithContentDescription("Palauta asento").fetchSemanticsNodes().isNotEmpty()
 
     @Test
-    fun fastMethodKeepsTheViewAndShowsTheMirror() {
-        guide(steady = true)
-        val before = view.rotation
-        stepToBack()
-        compose.runOnIdle {
-            assertEquals(1, state.index)
-            assertEquals(before, view.rotation)
+    fun theViewStaysOverRBLAndD() {
+        guide()
+        repeat(3) {
+            step()
+            compose.runOnIdle { assertEquals(CubeScene.DEFAULT_VIEW, view.rotation) }
         }
-        assertTrue(shown("Peili"))
+        compose.runOnIdle { assertEquals(3, state.index) }
         assertTrue(!resetShown())
     }
 
     @Test
-    fun learnMethodSwingsAndHasNoMirror() {
-        guide(steady = false)
-        val before = view.rotation
-        stepToBack()
-        compose.runOnIdle { assertNotEquals(before, view.rotation) }
-        assertTrue(!shown("Peili"))
-    }
-
-    @Test
     fun dragShowsResetAndResetHidesIt() {
-        guide(steady = true)
+        guide()
         compose.onNodeWithTag(GUIDE_CUBE_TAG).performTouchInput { swipeLeft() }
         compose.mainClock.advanceTimeBy(500)
         assertTrue(resetShown())
-        stepToBack()
+        step()
         assertTrue(resetShown(), "the next move keeps the user's view")
         compose.onNodeWithContentDescription("Palauta asento").performClick()
         compose.mainClock.advanceTimeBy(1000)
@@ -92,13 +83,17 @@ class SteadyGuideTest {
     }
 
     @Test
-    fun solveScreenFastMethodShowsTheMirror() {
+    fun learnMethodHasTheResetButton() {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                SolveScreen(Cube.solved().apply("R"), onBack = {}, onHome = {}, planner = INLINE_PLANNER)
+                SolveScreen(
+                    start, onBack = {}, onHome = {}, planner = { _, _ -> SolvePlan.Ready(moves, null) },
+                    initialMethod = SolveMethod.LEARN,
+                )
             }
         }
-        compose.waitUntil(10_000) { shown("Siirto 1/1") }
-        assertTrue(shown("Peili"))
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Siirto 1/4").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag(GUIDE_CUBE_TAG).performTouchInput { swipeLeft() }
+        compose.waitUntil(5_000) { resetShown() }
     }
 }

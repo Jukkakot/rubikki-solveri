@@ -25,7 +25,7 @@ highlighted.
 
 ### Requirement: Mirror
 In the guide of both methods (not in camera follow), the 3D scene SHALL show a framed mirror
-behind the guide cube, up and to the left of it, turned so that in the holding view the cube's
+behind the guide cube, above it and a little to the left, turned so that in the holding view the cube's
 reflection is seen in the middle of the glass. The reflection SHALL be a true reflection of the
 cube in the mirror's plane (showing sides the main view hides, such as the back), with the same
 colours, highlight, arrow and turning animation as the cube. The mirror SHALL stay in place on

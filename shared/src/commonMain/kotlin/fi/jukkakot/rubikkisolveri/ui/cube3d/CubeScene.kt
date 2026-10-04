@@ -46,11 +46,46 @@ object CubeScene {
     val DEFAULT_VIEW: Quat = viewFor(Quat.IDENTITY)
 
     /**
-     * The mirror cube's view in the fast method's guide: from behind and the left, a little from
-     * above (back, left and top visible); drawn flipped left to right. Tunable after a try on the phone.
+     * The mirror on the wall behind the cube, fixed in camera space (x right, y up, z towards the
+     * camera): its centre above the cube, a little to the left and behind it (so the mirror shows the
+     * back nearly square on), its glass half width and height, and the frame's width. Tunable after
+     * a try on the phone.
      */
-    val MIRROR_VIEW: Quat = Quat.axisAngle(V3(1f, 0f, 0f), (24 * PI / 180).toFloat()) *
-        Quat.axisAngle(V3(0f, 1f, 0f), (148 * PI / 180).toFloat())
+    val MIRROR_CENTRE = V3(-1f, 4.4f, -4f)
+    private const val MIRROR_HALF_WIDTH = 2.1f
+    private const val MIRROR_HALF_HEIGHT = 1.8f
+    private const val MIRROR_FRAME = 0.25f
+
+    /** How much darker the reflection is than the cube, so the two are told apart. */
+    private const val MIRROR_SHADE = 0.85f
+
+    /** The mirror's normal: the ray from the camera to the mirror's centre reflects to the cube's centre. */
+    val MIRROR_NORMAL: V3 = run {
+        val toCamera = (V3(0f, 0f, CAMERA_DISTANCE) - MIRROR_CENTRE).normalized()
+        val toCube = (V3.ZERO - MIRROR_CENTRE).normalized()
+        (toCamera + toCube).normalized()
+    }
+
+    /** Reflects camera-space point [p] in the mirror's plane. */
+    fun reflect(p: V3): V3 = p - MIRROR_NORMAL * (2f * ((p - MIRROR_CENTRE) dot MIRROR_NORMAL))
+
+    /** Reflects camera-space direction [v] in the mirror's plane. */
+    fun reflectDirection(v: V3): V3 = v - MIRROR_NORMAL * (2f * (v dot MIRROR_NORMAL))
+
+    /** The mirror's glass, or with [frame] the outer edge of its frame, as four camera-space corners. */
+    fun mirrorCorners(frame: Boolean): List<V3> {
+        val right = (V3(0f, 1f, 0f) cross MIRROR_NORMAL).normalized()
+        val up = MIRROR_NORMAL cross right
+        val extra = if (frame) MIRROR_FRAME else 0f
+        return square(MIRROR_CENTRE, right * (MIRROR_HALF_WIDTH + extra), up * (MIRROR_HALF_HEIGHT + extra), 1f)
+    }
+
+    /** The mirror's glass or frame on screen: x and y of its four corners. */
+    fun projectMirror(frame: Boolean, width: Float, height: Float): Pair<FloatArray, FloatArray> {
+        val fit = fit(width, height, mirror = true)
+        val corners = mirrorCorners(frame)
+        return FloatArray(4) { fit.x(corners[it]) } to FloatArray(4) { fit.y(corners[it]) }
+    }
 
     /** The default tilt applied after a hold rotation, so three faces are always visible. */
     fun viewFor(hold: Quat): Quat =
@@ -118,41 +153,74 @@ object CubeScene {
 
     // The farthest any cube point can project from the centre is 0.302·scale (a point at the
     // cube's corner radius 2.6, seen at the worst angle); this keeps it inside 85 % of the half size.
-    private fun scaleFor(width: Float, height: Float) = minOf(width, height) / 2f * 0.85f / 0.302f
+    private const val CUBE_REACH = 0.302f
 
-    /** Screen position (x right, y down) of world point [p] seen through [view]. */
-    fun projectPoint(p: V3, view: Quat, width: Float, height: Float): Pair<Float, Float> {
-        val c = view.rotate(p)
-        val s = scaleFor(width, height) / (CAMERA_DISTANCE - c.z)
-        return (width / 2f + c.x * s) to (height / 2f - c.y * s)
+    /** Scale and screen centre of the projection. */
+    class Fit(val scale: Float, val cx: Float, val cy: Float) {
+        fun x(c: V3) = cx + c.x * scale / (CAMERA_DISTANCE - c.z)
+        fun y(c: V3) = cy - c.y * scale / (CAMERA_DISTANCE - c.z)
+    }
+
+    /**
+     * The projection for a [width]×[height] canvas: the cube alone, or with [mirror] the cube and
+     * the mirror together. It never depends on the view, so dragging does not zoom.
+     */
+    fun fit(width: Float, height: Float, mirror: Boolean = false): Fit {
+        if (!mirror) return Fit(minOf(width, height) / 2f * 0.85f / CUBE_REACH, width / 2f, height / 2f)
+        var left = -CUBE_REACH
+        var right = CUBE_REACH
+        var bottom = -CUBE_REACH
+        var top = CUBE_REACH
+        for (c in mirrorCorners(frame = true)) {
+            val k = 1f / (CAMERA_DISTANCE - c.z)
+            left = minOf(left, c.x * k)
+            right = maxOf(right, c.x * k)
+            bottom = minOf(bottom, c.y * k)
+            top = maxOf(top, c.y * k)
+        }
+        val scale = minOf(width / (right - left), height / (top - bottom)) * 0.95f
+        return Fit(scale, width / 2f - (left + right) / 2f * scale, height / 2f + (top + bottom) / 2f * scale)
+    }
+
+    /**
+     * Screen position (x right, y down) of world point [p] seen through [view]; [reflected] gives
+     * its image in the mirror.
+     */
+    fun projectPoint(p: V3, view: Quat, width: Float, height: Float, mirror: Boolean = false, reflected: Boolean = false): Pair<Float, Float> {
+        val fit = fit(width, height, mirror || reflected)
+        val c = view.rotate(p).let { if (reflected) reflect(it) else it }
+        return fit.x(c) to fit.y(c)
     }
 
     /**
      * Projects [quads] seen through [view] onto a canvas of [width]×[height], dropping faces that
      * look away from the camera, in drawing order (far cubies first). Quads outside [highlight]'s
-     * layers are marked dimmed.
+     * layers are marked dimmed. [mirror] fits the projection to the cube and the mirror;
+     * [reflected] projects the cube's image in the mirror instead (a little darker).
      */
-    fun project(quads: List<Quad>, view: Quat, width: Float, height: Float, highlight: Move? = null): List<ProjectedQuad> {
+    fun project(
+        quads: List<Quad>, view: Quat, width: Float, height: Float, highlight: Move? = null,
+        mirror: Boolean = false, reflected: Boolean = false,
+    ): List<ProjectedQuad> {
         val camera = V3(0f, 0f, CAMERA_DISTANCE)
-        val scale = scaleFor(width, height)
-        val cx = width / 2f
-        val cy = height / 2f
+        val fit = fit(width, height, mirror || reflected)
         val visible = ArrayList<Triple<Float, Int, ProjectedQuad>>(quads.size)
         for ((order, q) in quads.withIndex()) {
-            val normal = view.rotate(q.normal)
-            val corners = q.corners.map(view::rotate)
+            var normal = view.rotate(q.normal)
+            var corners = q.corners.map(view::rotate)
+            var cubie = view.rotate(q.cubie)
+            if (reflected) {
+                // A reflection flips handedness: reversing the corners keeps their winding on screen.
+                normal = reflectDirection(normal)
+                corners = corners.map(::reflect).asReversed()
+                cubie = reflect(cubie)
+            }
             val mid = (corners[0] + corners[2]) * 0.5f
             if ((normal dot (camera - mid)) <= 0f) continue
-            val xs = FloatArray(4)
-            val ys = FloatArray(4)
-            for (i in 0 until 4) {
-                val c = corners[i]
-                val s = scale / (CAMERA_DISTANCE - c.z)
-                xs[i] = cx + c.x * s
-                ys[i] = cy - c.y * s
-            }
-            val light = 0.8f + 0.2f * maxOf(0f, normal dot LIGHT)
-            val depth = (camera - view.rotate(q.cubie)).length
+            val xs = FloatArray(4) { fit.x(corners[it]) }
+            val ys = FloatArray(4) { fit.y(corners[it]) }
+            val light = (0.8f + 0.2f * maxOf(0f, normal dot LIGHT)) * (if (reflected) MIRROR_SHADE else 1f)
+            val depth = (camera - cubie).length
             val dimmed = highlight != null && !highlight.layer.turns(q.home)
             visible += Triple(depth, order, ProjectedQuad(xs, ys, q.sticker, light, dimmed))
         }
@@ -164,9 +232,10 @@ object CubeScene {
     /**
      * The direction arrow for [move] seen through [view], in world space: an arc in the plane of the
      * turning face just above the stickers, its middle on the side facing the camera, traced in the
-     * move's turning direction over its full angle (a quarter or half circle).
+     * move's turning direction over its full angle (a quarter or half circle). With [reflected] the
+     * middle is on the side the mirror shows.
      */
-    fun arrow(move: Move, view: Quat, segments: Int = 24): List<V3> {
+    fun arrow(move: Move, view: Quat, reflected: Boolean = false, segments: Int = 24): List<V3> {
         val axis = V3.of(move.layer.axis)
         val (offset, radius) = when (move.layer.kind) {
             Layer.Kind.FACE, Layer.Kind.WIDE -> 1.56f to 1.05f
@@ -174,7 +243,9 @@ object CubeScene {
         }
         val centre = axis * offset
         val inverse = Quat(view.w, -view.x, -view.y, -view.z)
-        val towardsCamera = inverse.rotate(V3(0f, 0f, 1f))
+        // The mirror shows the cube as seen from the camera's image behind the glass.
+        val seenFrom = if (reflected) reflect(V3(0f, 0f, CAMERA_DISTANCE)).normalized() else V3(0f, 0f, 1f)
+        val towardsCamera = inverse.rotate(seenFrom)
         var u = towardsCamera - axis * (axis dot towardsCamera)
         if (u.length < 1e-3f) u = if (axis.y != 0f) V3(0f, 0f, 1f) else V3(0f, 1f, 0f)
         u = u.normalized()
@@ -184,18 +255,6 @@ object CubeScene {
             val theta = -sweep / 2 + sweep * k / segments
             centre + (u * kotlin.math.cos(theta) + v * kotlin.math.sin(theta)) * radius
         }
-    }
-
-    /** The view for presenting [move]: the hold stays, the camera moves so the turning side shows. */
-    fun guideView(move: Move?): Quat {
-        val deg = (PI / 180).toFloat()
-        val (yaw, pitch) = when (move?.layer?.face) {
-            Face.L -> 32f to 24f
-            Face.B -> 148f to 24f
-            Face.D -> -32f to -24f
-            else -> -32f to 24f
-        }
-        return Quat.axisAngle(V3(1f, 0f, 0f), pitch * deg) * Quat.axisAngle(V3(0f, 1f, 0f), yaw * deg)
     }
 
     /** The sticker under the point, looking from the front (nearest first), or null. */

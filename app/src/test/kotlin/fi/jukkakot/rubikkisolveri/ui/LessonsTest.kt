@@ -127,7 +127,7 @@ class LessonsTest {
         val start = Cube.solved().apply(Sequences.inverse(BeginnerSolver.TRIGGER))
         compose.onNodeWithText("Toista sarja").performClick()
         compose.mainClock.advanceTimeBy(450)
-        compose.onNodeWithText("Käännä alapuolta vastapäivään", substring = true).assertIsDisplayed() // D' in words while it plays
+        compose.onNodeWithText("Käännä alakerrosta vasemmalle.").assertIsDisplayed() // D' in the guide's words while it plays
         compose.mainClock.advanceTimeBy(1050)
         compose.runOnIdle { assertTrue(animator.cube.isSolved, "solved at the end of the demo") }
         compose.mainClock.advanceTimeBy(2000)
@@ -155,6 +155,12 @@ class LessonsTest {
         compose.onNodeWithText("Jatka").performScrollTo().performClick()
         assertTrue(compose.onAllNodesWithText("Opettele vaiheittain").fetchSemanticsNodes().isEmpty(), "no method choice in practice")
         compose.onNodeWithText("Vaihe 4/7: Keltainen risti").performScrollTo().assertIsDisplayed()
+        // The learn method words a move the same way as the fast method.
+        val first = exercise.steps.flatMap { it.moves }.first()
+        val words = fi.jukkakot.rubikkisolveri.ui.common.MoveWords.describe(
+            first, { id, args -> fi.jukkakot.rubikkisolveri.Strings.get("fi", id.key, *args) }, exercise.position.apply(first),
+        )
+        compose.onNodeWithText(words).assertExists()
         repeat(exercise.steps.sumOf { it.moves.size }) { compose.onNodeWithText("Tein sen").performScrollTo().performClick() }
         compose.onNodeWithText("Vaihe valmis!").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Uusi harjoitus").performScrollTo().assertIsDisplayed()

@@ -90,3 +90,22 @@ notation buttons (U, R, …), which is notation, not a description of a move.
 - [The cube gets smaller] → placement tuned for the smallest loss; constants tunable after a try.
 - [Perspective makes the reflection small] → mirror close behind the cube; tune `M` by eye.
 - [Cost: twice the quads per frame] → ~2 × 26 cubies, fine on phones and in the browser.
+
+## Implementation notes (decided while implementing, 2026-10-04)
+
+- **Mirror above the cube, a little left** (`MIRROR_CENTRE` (-1, 4.4, -4)), not up-left: in the
+  holding view the back faces back and to the right, so an up-left mirror showed mostly the left
+  side and the back edge-on; from above-left it shows the back nearly square on, plus the top and
+  left. The reflection clears the cube without overlapping it. Spec wording follows.
+- **Mirror size** half 2.1 × 1.8 (about 1.4 × the cube's width, not 1.6): the scene is limited by
+  the box's height, and a smaller mirror leaves the cube larger (about 80 % of before).
+- **Frame colour**: `secondary` on a light background, `secondaryContainer` on a dark one (the dark
+  theme's `secondary` is as light as the glass).
+- **Arrow in the mirror**: drawn on the side the mirror shows (seen from the camera's image), thinner
+  in proportion to the reflection's distance.
+- **English sides**: `side_f`/`side_b` became "the front side"/"the back side" to match the other
+  sentences ("Turn the back side half a turn").
+- **Texts reworded** (both languages): `note_yellow_cross`, `note_yellow_corner`, `note_final_turn`,
+  `lesson_basics_p3`, `lesson_5_tip`, `lesson_7_tip`, `case_edge_down`, `case_edge_middle`. Faces as
+  places keep "yläpuoli" (a cross on the top face); turning a layer is "yläkerros".
+- `MoveWordsTest.everyFaceMoveHasItsOwnWords` dropped: `SteadyWordsTest` checks the same.

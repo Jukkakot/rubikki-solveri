@@ -144,8 +144,8 @@ class MoveGuideSceneTest {
     fun clockwiseArrow() {
         assertTrue(screenWinding(move("F"), Quat.IDENTITY) > 0, "F seen from the front is clockwise")
         assertTrue(screenWinding(move("F'"), Quat.IDENTITY) < 0)
-        assertTrue(screenWinding(move("R"), CubeScene.guideView(move("R"))) > 0)
-        assertTrue(screenWinding(move("U'"), CubeScene.guideView(move("U'"))) < 0)
+        assertTrue(screenWinding(move("R"), CubeScene.DEFAULT_VIEW) > 0)
+        assertTrue(screenWinding(move("U'"), CubeScene.DEFAULT_VIEW) < 0)
     }
 
     @Test
@@ -162,20 +162,72 @@ class MoveGuideSceneTest {
 
     @Test
     fun arrowSitsOnTheVisibleSideOfTheFace() {
-        val view = CubeScene.guideView(move("U"))
-        val mid = CubeScene.arrow(move("U"), view)[12]
+        val mid = CubeScene.arrow(move("U"), CubeScene.DEFAULT_VIEW)[12]
         assertTrue(mid.z > 0.5f, "the middle of a top arrow is towards the front: $mid")
+    }
+}
+
+class MirrorSceneTest {
+    private val w = 1100f
+    private val h = 1000f
+
+    private fun close(a: V3, b: V3) = (a - b).length < 1e-4f
+
+    private fun reflectedFaces(view: Quat) =
+        CubeScene.project(CubeScene.quads(null, 0f), view, w, h, reflected = true)
+            .filter { it.sticker >= 0 }.groupingBy { Stickers.all[it.sticker].face }.eachCount()
+
+    @Test
+    fun reflectingTwiceGivesTheOriginal() {
+        for (p in listOf(V3(1f, 2f, 3f), V3(-4f, 0.5f, -2f), V3.ZERO)) {
+            assertTrue(close(p, CubeScene.reflect(CubeScene.reflect(p))), "$p")
+        }
     }
 
     @Test
-    fun backMove() {
-        for (m in listOf("B", "L'", "D2")) {
-            val face = move(m).layer.face!!
-            val visible = CubeScene.project(CubeScene.quads(null, 0f), CubeScene.guideView(move(m)), w, h)
-                .filter { it.sticker >= 0 && Stickers.all[it.sticker].face == face }
-            assertEquals(9, visible.size, m)
+    fun theRayToTheMirrorsCentreReflectsToTheCube() {
+        val m = CubeScene.MIRROR_CENTRE
+        val out = CubeScene.reflectDirection((m - V3(0f, 0f, CubeScene.CAMERA_DISTANCE)).normalized())
+        assertTrue(close(out, (V3.ZERO - m).normalized()), "$out")
+    }
+
+    @Test
+    fun theReflectionShowsTheBackInTheHoldingView() {
+        val faces = reflectedFaces(CubeScene.DEFAULT_VIEW)
+        assertEquals(9, faces[Face.B], "$faces")
+        assertEquals(null, faces[Face.F], "the front is not in the mirror: $faces")
+    }
+
+    @Test
+    fun theReflectionStaysInsideTheGlassAndClearOfTheCube() {
+        val (gx, gy) = CubeScene.projectMirror(frame = false, w, h)
+        val glass = ProjectedQuad(gx, gy, -1, 1f)
+        val image = CubeScene.project(CubeScene.quads(null, 0f), CubeScene.DEFAULT_VIEW, w, h, reflected = true)
+        for (q in image) for (i in 0 until 4) assertTrue(glass.contains(q.xs[i], q.ys[i]), "corner ${q.xs[i]},${q.ys[i]}")
+        val cube = CubeScene.project(CubeScene.quads(null, 0f), CubeScene.DEFAULT_VIEW, w, h, mirror = true)
+        val covered = image.count { q -> cube.any { it.contains(q.xs.average().toFloat(), q.ys.average().toFloat()) } }
+        assertTrue(covered <= image.size / 5, "the cube hides $covered of ${image.size} reflected quads")
+    }
+
+    @Test
+    fun dragTurnsTheReflectionButNotTheMirror() {
+        val mirror = CubeScene.projectMirror(frame = true, w, h)
+        val state = CubeViewState(CubeScene.DEFAULT_VIEW)
+        state.drag(-550f, 0f, w)
+        assertTrue(mirror.first.contentEquals(CubeScene.projectMirror(frame = true, w, h).first))
+        assertEquals(9, reflectedFaces(state.rotation)[Face.F], "a quarter turn to the left brings the front into the mirror")
+        val before = CubeScene.project(CubeScene.quads(null, 0f), CubeScene.DEFAULT_VIEW, w, h, reflected = true)
+        val after = CubeScene.project(CubeScene.quads(null, 0f), state.rotation, w, h, reflected = true)
+        assertTrue(before.map { it.sticker }.toSet() != after.map { it.sticker }.toSet())
+    }
+
+    @Test
+    fun theMirrorFitsInTheBox() {
+        for (frame in listOf(true, false)) {
+            val (xs, ys) = CubeScene.projectMirror(frame, w, h)
+            assertTrue(xs.all { it in 0f..w } && ys.all { it in 0f..h })
         }
-        assertEquals(CubeScene.DEFAULT_VIEW, CubeScene.guideView(move("U")))
-        assertEquals(CubeScene.DEFAULT_VIEW, CubeScene.guideView(move("R2")))
+        val cube = CubeScene.project(CubeScene.quads(null, 0f), CubeScene.DEFAULT_VIEW, w, h, mirror = true)
+        assertTrue(cube.all { q -> q.xs.all { it in 0f..w } && q.ys.all { it in 0f..h } })
     }
 }

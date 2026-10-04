@@ -37,20 +37,11 @@ class MoveWordsTest {
 
     @Test
     fun describeAMove() {
-        assertEquals("Turn the top counter-clockwise (as seen from above).", words("en", "U'"))
-        assertEquals("Käännä yläpuolta vastapäivään (katsottuna ylhäältä).", words("fi", "U'"))
-        assertEquals("Käännä oikeaa puolta myötäpäivään (katsottuna oikealta).", words("fi", "R"))
-        assertEquals("Turn the back half a turn.", words("en", "B2"))
-    }
-
-    @Test
-    fun everyFaceMoveHasItsOwnWords() {
-        val faces = listOf(Layer.U, Layer.D, Layer.R, Layer.L, Layer.F, Layer.B)
-        for (language in listOf("fi", "en")) {
-            val texts = faces.flatMap { layer -> (1..3).map { words(language, Move(layer, it).toString()) } }
-            assertEquals(18, texts.toSet().size, language)
-            assertTrue(texts.none { it.contains('%') })
-        }
+        assertEquals("Turn the top layer to the right.", words("en", "U'"))
+        assertEquals("Käännä yläkerrosta oikealle.", words("fi", "U'"))
+        assertEquals("Käännä oikeaa puolta ylöspäin.", words("fi", "R"))
+        assertEquals("Turn the back side half a turn.", words("en", "B2"))
+        assertEquals("y", words("en", "y"), "a whole-cube turn without the cube after it stays notation")
     }
 }
 

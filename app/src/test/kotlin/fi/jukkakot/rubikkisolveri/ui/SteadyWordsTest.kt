@@ -11,7 +11,7 @@ import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** The fast method's words (as seen in the holding view) checked against the cube model. */
+/** The move words (as seen in the holding view) checked against the cube model. */
 class SteadyWordsTest {
     /** Where the sticker at index [from] of a solved cube ends up after [move]. */
     private fun follow(from: Int, move: String): Int {
@@ -23,7 +23,7 @@ class SteadyWordsTest {
         return a.indices.single { a[it] != b[it] }
     }
 
-    private fun sentence(move: String): String = MoveWords.steadyParts(Notation.parseMove(move)!!)!!.first.key
+    private fun sentence(move: String): String = MoveWords.parts(Notation.parseMove(move)!!)!!.first.key
 
     @Test
     fun directionsMatchTheCube() {
@@ -57,7 +57,7 @@ class SteadyWordsTest {
     @Test
     fun sentencesInBothLanguages() {
         val words = { language: String, move: String ->
-            MoveWords.describe(Notation.parseMove(move)!!, { id, args -> Strings.get(language, id.key, *args) }, steady = true)
+            MoveWords.describe(Notation.parseMove(move)!!, { id, args -> Strings.get(language, id.key, *args) })
         }
         assertEquals("Turn the top layer to the right.", words("en", "U'"))
         assertEquals("Käännä takapuolta niin, että sen ylärivi liikkuu vasemmalle.", words("fi", "B"))

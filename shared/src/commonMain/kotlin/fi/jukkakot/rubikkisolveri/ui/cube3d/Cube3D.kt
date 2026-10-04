@@ -22,13 +22,21 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.Move
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipPath
 import kotlin.math.PI
 
 /** The curved direction arrow of [move], with a dark outline and a head at its end. */
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawArrow(move: Move, view: Quat, path: Path) {
-    val points = CubeScene.arrow(move, view).map { CubeScene.projectPoint(it, view, size.width, size.height) }
-    val width = size.minDimension * 0.035f
-    val headLength = size.minDimension * 0.08f
+private fun DrawScope.drawArrow(move: Move, view: Quat, path: Path, mirror: Boolean, reflected: Boolean = false) {
+    val points = CubeScene.arrow(move, view, reflected).map { CubeScene.projectPoint(it, view, size.width, size.height, mirror, reflected) }
+    // Sized by the cube on screen; the mirror's image is farther away, so its arrow is thinner.
+    val distance = if (reflected) CubeScene.CAMERA_DISTANCE - CubeScene.reflect(V3.ZERO).z else CubeScene.CAMERA_DISTANCE
+    val cubeSize = CubeScene.fit(size.width, size.height, mirror).scale * CubeScene.CAMERA_DISTANCE / distance
+    val width = cubeSize * 0.025f
+    val headLength = cubeSize * 0.057f
     val (ex, ey) = points.last()
     val (px, py) = points[points.size - 3]
     val dx = ex - px
@@ -61,6 +69,9 @@ object StickerColors {
     val MARK = Color(0xFFFF1744)
     val ARROW = Color(0xFFFFB300)
     val ARROW_OUTLINE = Color(0xFF1A1A1A)
+
+    /** The mirror's glass: a light blue-grey in both themes, so it reads as glass. */
+    val GLASS = Color(0xFFBFCDD8)
     private val DIM = Color(0xFF808080)
 
     /** A sticker outside the highlighted layer: mostly grey, a hint of its colour left. */
@@ -108,6 +119,7 @@ class CubeViewState(initial: Quat = CubeScene.DEFAULT_VIEW) {
  * The 3D cube. [colors] are the 54 sticker colours (URFDLB order) of the state before [move];
  * [progress] 0..1 turns the move's layers. [marked] stickers get a strong outline. [onTap] gets the
  * tapped sticker's index. A cube that is not [draggable] leaves drags to its parent (e.g. a pager).
+ * [mirror] adds a framed mirror behind the cube, fixed on screen, showing the cube's reflection.
  */
 @Composable
 fun Cube3D(
@@ -122,9 +134,14 @@ fun Cube3D(
     highlight: Move? = null,
     arrow: Move? = null,
     draggable: Boolean = true,
+    mirror: Boolean = false,
 ) {
     var size by remember { mutableStateOf(Size.Zero) }
     val path = remember { Path() }
+    val glassPath = remember { Path() }
+    // The frame contrasts with the light glass: secondary on a light background, its dark container on a dark one.
+    val scheme = MaterialTheme.colorScheme
+    val frameColor = if (scheme.background.luminance() < 0.5f) scheme.secondaryContainer else scheme.secondary
     Canvas(
         modifier
             .semantics { if (description != null) contentDescription = description }
@@ -141,7 +158,7 @@ fun Cube3D(
                     detectTapGestures { offset ->
                         val projected = CubeScene.project(
                             CubeScene.quads(null, 0f), viewState.rotation,
-                            this.size.width.toFloat(), this.size.height.toFloat(),
+                            this.size.width.toFloat(), this.size.height.toFloat(), mirror = mirror,
                         )
                         CubeScene.hitTest(projected, offset.x, offset.y)?.let(onTap)
                     }
@@ -149,21 +166,46 @@ fun Cube3D(
             },
     ) {
         size = this.size
-        val projected = CubeScene.project(CubeScene.quads(move, progress), viewState.rotation, size.width, size.height, highlight)
-        val outline = Stroke(width = size.minDimension * 0.012f)
-        for (q in projected) {
-            path.reset()
-            path.moveTo(q.xs[0], q.ys[0])
-            for (i in 1 until 4) path.lineTo(q.xs[i], q.ys[i])
-            path.close()
-            val base = when {
-                q.sticker < 0 -> StickerColors.PLASTIC
-                q.dimmed -> StickerColors.dim(colors[q.sticker])
-                else -> colors[q.sticker]
+        val quads = CubeScene.quads(move, progress)
+        val view = viewState.rotation
+        val showArrow = arrow != null && move == null
+        if (mirror) {
+            // The mirror is always behind the cube: frame, glass and the reflection clipped to the glass first.
+            val (fx, fy) = CubeScene.projectMirror(frame = true, size.width, size.height)
+            quadPath(glassPath, fx, fy)
+            drawPath(glassPath, frameColor)
+            drawPath(glassPath, frameColor, style = Stroke(size.minDimension * 0.02f, join = StrokeJoin.Round))
+            val (gx, gy) = CubeScene.projectMirror(frame = false, size.width, size.height)
+            quadPath(glassPath, gx, gy)
+            drawPath(glassPath, StickerColors.GLASS)
+            clipPath(glassPath) {
+                val image = CubeScene.project(quads, view, size.width, size.height, highlight, reflected = true)
+                drawQuads(image, colors, marked, path)
+                if (showArrow) drawArrow(arrow!!, view, path, mirror = true, reflected = true)
             }
-            drawPath(path, lerp(Color.Black, base, q.light))
-            if (q.sticker >= 0 && q.sticker in marked) drawPath(path, StickerColors.MARK, style = outline)
         }
-        if (arrow != null && move == null) drawArrow(arrow, viewState.rotation, path)
+        drawQuads(CubeScene.project(quads, view, size.width, size.height, highlight, mirror), colors, marked, path)
+        if (showArrow) drawArrow(arrow!!, view, path, mirror)
+    }
+}
+
+private fun quadPath(path: Path, xs: FloatArray, ys: FloatArray) {
+    path.reset()
+    path.moveTo(xs[0], ys[0])
+    for (i in 1 until 4) path.lineTo(xs[i], ys[i])
+    path.close()
+}
+
+private fun DrawScope.drawQuads(projected: List<ProjectedQuad>, colors: List<Color>, marked: Set<Int>, path: Path) {
+    val outline = Stroke(width = size.minDimension * 0.012f)
+    for (q in projected) {
+        quadPath(path, q.xs, q.ys)
+        val base = when {
+            q.sticker < 0 -> StickerColors.PLASTIC
+            q.dimmed -> StickerColors.dim(colors[q.sticker])
+            else -> colors[q.sticker]
+        }
+        drawPath(path, lerp(Color.Black, base, q.light))
+        if (q.sticker >= 0 && q.sticker in marked) drawPath(path, StickerColors.MARK, style = outline)
     }
 }

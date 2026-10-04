@@ -142,7 +142,7 @@ fun SolveScreen(
     onBack: () -> Unit,
     onHome: () -> Unit,
     showNotation: Boolean = false,
-    followPanel: @Composable (state: StepperState, steady: Boolean) -> Unit = { state, steady -> DefaultFollowPanel(state, steady) },
+    followPanel: @Composable (state: StepperState) -> Unit = { DefaultFollowPanel(it) },
     planner: Planner = BACKGROUND_PLANNER,
     initialMethod: SolveMethod = SolveMethod.FAST,
     title: String? = null,
@@ -189,7 +189,7 @@ fun SolveScreen(
                             Message(stringResource(Res.string.solve_already), stringResource(Res.string.solve_home), onHome)
                         } else {
                             key(method) {
-                                Stepper(cube, r, method == SolveMethod.FAST, showNotation, onHome, follow, { follow = false }, followPanel, finishedText, homeLabel) { moves, millis ->
+                                Stepper(cube, r, showNotation, onHome, follow, { follow = false }, followPanel, finishedText, homeLabel) { moves, millis ->
                                     onFinished(method, moves, millis)
                                 }
                             }
@@ -227,12 +227,11 @@ private fun Message(text: String, action: String, onAction: () -> Unit) {
 private fun Stepper(
     start: Cube,
     plan: SolvePlan.Ready,
-    steady: Boolean,
     showNotation: Boolean,
     onHome: () -> Unit,
     follow: Boolean,
     onStopFollowing: () -> Unit,
-    followPanel: @Composable (state: StepperState, steady: Boolean) -> Unit,
+    followPanel: @Composable (state: StepperState) -> Unit,
     finishedText: String?,
     homeLabel: String?,
     onFinished: (moves: Int, durationMillis: Long) -> Unit,
@@ -285,10 +284,10 @@ private fun Stepper(
         Box(Modifier.fitSlot(), contentAlignment = Alignment.Center) {
             if (follow && !state.isFinished) {
                 CameraPermissionGate(alternative = stringResource(Res.string.follow_show_3d) to onStopFollowing) {
-                    followPanel(state, steady)
+                    followPanel(state)
                 }
             } else {
-                GuideCube(state, steady = steady, mirror = steady)
+                GuideCube(state, mirror = true)
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -303,7 +302,7 @@ private fun Stepper(
             }
         }
         if (!state.isFinished) {
-            MoveWordsText(state, showNotation, steady)
+            MoveWordsText(state, showNotation)
         } else {
             Text(finishedText ?: stringResource(Res.string.solve_finished), style = MaterialTheme.typography.headlineSmall)
         }
@@ -386,13 +385,13 @@ private fun StageCard(steps: List<Step>, index: Int) {
 /** Camera mode with the real camera. */
 @Composable
 @OptIn(ExperimentalAtomicApi::class)
-private fun DefaultFollowPanel(state: StepperState, steady: Boolean) {
+private fun DefaultFollowPanel(state: StepperState) {
     val frames = remember {
         MutableSharedFlow<Pair<List<Rgb>, Boolean>>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     }
     // Whether the latest grid picture shows a cube face; the picture comes just before its readings.
     val face = remember { AtomicBoolean(false) }
-    FollowPanel(state, frames, steady) { modifier ->
+    FollowPanel(state, frames) { modifier ->
         CameraPreview(
             torch = false,
             onSamples = { frames.tryEmit(it to face.load()) },

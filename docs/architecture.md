@@ -204,20 +204,20 @@ yellow cross, yellow edges, yellow corners into place, yellow corners turned.
   snap back) and an automatic demo 500 ms after each new step (skipped when animations are off).
 - `GuideCube`: `Cube3D` with the turning layer highlighted (other stickers mixed 60 % to grey), the
   direction arrow (`CubeScene.arrow`: an arc on the turning face, sweep = the move's angle, middle
-  towards the camera) while the cube is still. Two view modes, chosen by `SolveScreen` from the method:
-  - **Learn** (`steady = false`): the view from `CubeScene.guideView(move)` — the hold never
-    changes, only the camera: default for U/F/R, from the left for L, from behind for B, from below
-    for D.
-  - **Fast** (`steady = true`, also the timer's guided scramble and its camera follow): the view
-    stays at `CubeScene.DEFAULT_VIEW`; nothing turns it but the user's drag. A reset button
-    (`ic_reset_view`) shows while `CubeViewState.isAt(DEFAULT_VIEW)` is false. The guide (not camera
-    follow) adds a mirror cube (`CubeScene.MIRROR_VIEW`, drawn flipped, not draggable) in the
-    bottom-start corner; the main cube shifts right so the mirror covers none of it. Why: the
-    swinging view looked like the cube being turned and cost the user time after every L/B/D move.
+  towards the camera) while the cube is still. One view everywhere (both methods, timer, camera
+  follow): `CubeScene.DEFAULT_VIEW`; nothing turns it but the user's drag. A reset button
+  (`ic_reset_view`) shows while `CubeViewState.isAt(DEFAULT_VIEW)` is false. Why: a view swinging
+  round to L/B/D looked like the cube being turned and cost the user time after every such move.
+- Mirror (`Cube3D(mirror = true)`, the guide only, not camera follow): a framed mirror fixed in
+  camera space (`CubeScene.MIRROR_*`, above the cube, a little left, tuned by eye), its normal set
+  so the ray to its centre reflects to the cube. The cube's quads are rotated by the view, then
+  reflected in that plane (corner order reversed) and drawn clipped to the glass before the cube,
+  so highlight, arrow and animation come for free and dragging changes the reflection only.
+  `CubeScene.fit` scales the projection to cube + mirror (fixed, so dragging never zooms).
 - `MoveWordsText`: the move in words, and its notation when Settings → Show move notation is on.
-  Two wordings (`ui/common/MoveWords`): `parts` names side, direction and viewpoint (learn, lessons);
-  `steadyParts` describes the move as seen in the holding view (fast: top left/right, sides up/down,
-  back by its top row, front clockwise).
+  One wording everywhere (`ui/common/MoveWords.parts`, also lessons and camera follow): as seen in
+  the holding view (top left/right, sides up/down, back by its top row, front clockwise), whole-cube
+  turns by centres. Other texts use the same layer/direction words.
 - Haptics: `Confirm` on done, `SegmentTick` at the end of each demo.
 
 ## Camera follow — Implemented
