@@ -1,9 +1,12 @@
 name: CI
 
 on:
+  # Pushes that only touch specs and docs build nothing (a push with any code change still builds).
   push:
     branches: [main]
+    paths-ignore: ['openspec/**', 'docs/**', '**/*.md']
   pull_request:
+    paths-ignore: ['openspec/**', 'docs/**', '**/*.md']
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -34,6 +37,12 @@ jobs:
           npm ci --prefix web/smoke
           npx --prefix web/smoke playwright install --with-deps chromium
           node web/smoke/smoke.mjs web/build/dist/wasmJs/productionExecutable
+      # The tested browser build goes to the `pages` job below, so it is built only once.
+      - name: Hand the browser build to Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/build/dist/wasmJs/productionExecutable
       - name: Upload the debug APK
         uses: actions/upload-artifact@v4
         with:
@@ -49,6 +58,27 @@ jobs:
             */build/reports
             web/build/smoke
           retention-days: 7
+
+  # The browser version at https://jukkakot.github.io/rubikki-solveri/, published from the build
+  # `check` tested (docs/operations.md → Browser version). Pages' source is "GitHub Actions".
+  # pages.yml remains for a manual rebuild.
+  pages:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
 
   # Every green push to main replaces the one rolling release, so the APK is always at
   # https://github.com/Jukkakot/rubikki-solveri/releases/latest/download/rubikki-solveri.apk

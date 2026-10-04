@@ -1,12 +1,10 @@
 name: Pages
 
-# The browser version at https://jukkakot.github.io/rubikki-solveri/: every push to main builds
-# it, smoke-tests it and publishes it (docs/operations.md → Browser version). Pages' source is
-# "GitHub Actions" (set once through the API, see docs/operations.md → Builds).
+# Manual rebuild of the browser version at https://jukkakot.github.io/rubikki-solveri/ (Actions →
+# Pages → Run workflow). Pushes to main publish it from CI's `pages` job instead, so the browser
+# build is made once per push (docs/operations.md → Builds).
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
