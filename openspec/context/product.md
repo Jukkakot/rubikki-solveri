@@ -65,6 +65,14 @@ method stage by stage so you learn to solve it yourself.
   content is a genuinely long list (history, log, lessons list), and even then the actions stay
   pinned. New and changed screens are checked against this.
 
+## Decided (2026-10-04)
+
+- **Browser version too:** the same app also runs in a web browser (GitHub Pages, installable as a
+  home-screen app, offline), built from one Kotlin Multiplatform code base with the Android app
+  (Compose Multiplatform, Kotlin/Wasm). Data stays in each browser; no sync with the phone.
+- **Getting the app on the phone:** every green push publishes a signed APK at one fixed download
+  address; it is signed with the Android Studio debug key so it updates the Run ▶ install in place.
+
 ## Later ideas
 
 - **Five faces are enough (2026-10-03):** once five faces are scanned, the sixth can largely be

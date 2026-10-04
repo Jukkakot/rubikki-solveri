@@ -33,6 +33,8 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 23 | `look-refresh` | done | Karkki look (shapes, Fredoka/Nunito) on Material You colours; scan and solve screens restyled after mockup A; scan screens always dark |
 | 24 | `home-design` | done | Home screen with a spinning 3D cube, scan as the one primary action, a 2×2 tile grid and a best-time line (gallery feedback 1) |
 | 25 | `lesson-visuals` | done | Lessons as swipe pages with pictures: grey goal cube per stage, case pictures instead of "how" text, algorithm pages that show what moves, goal card in practice and guided solve |
+| 26 | `phone-install` | specced | Every green push publishes a signed APK at one fixed address (signed with the Android Studio key so it updates the installed app and keeps its data); About → "Lataa uusin versio" |
+| 27 | `web-app` | specced | The same app in the browser (GitHub Pages, installable, offline) from one Kotlin Multiplatform code base: cube multiplatform with min2phase ported to Kotlin, screens in a shared Compose Multiplatform module, Android app unchanged |
 
 ## Backlog
 
