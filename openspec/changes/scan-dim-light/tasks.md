@@ -9,8 +9,9 @@
 
 ## 2. Check after every scan (shared)
 
-- [ ] 2.1 `RubikkiNavHost.onResult`: always the colour check; confident scans without marks and with `check_note_ok` (fi/en); pictures follow renamed faces; `scan.done` logs `renamed`
-- [ ] 2.2 Tests updated: scan flow ends in the check, "Näyttää oikealta" opens the solution
+- [ ] 2.1 `RubikkiNavHost.onResult`: always the colour check; confident scans without marks, with `check_note_ok` (fi/en), a 5 s automatic continue shown on "Näyttää oikealta", "Skannaa koko kuutio uudelleen" at hand, any touch stops it; pictures follow renamed faces; `scan.done` logs `renamed`
+- [ ] 2.2 Scan screen without face names (design 7): live status, review name and face choice, "X luettu", the grid's centre hint go; done marks filled with the centre as seen; single-face rescan unchanged; strings removed/replaced in fi/en
+- [ ] 2.3 Tests updated: scan flow ends in the check and opens the solution by itself when confident; a touch stops it; scan again from the check; no face name shown while scanning
 
 ## 3. Check
 

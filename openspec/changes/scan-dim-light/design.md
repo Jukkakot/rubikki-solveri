@@ -65,13 +65,28 @@ rotation search; the bound keeps the worst case well under a second on the phone
 measured in a test). Silent: the check shows the cube as read; nothing says a face was renamed. The
 log's `scan.done` gets the naming used (`renamed=U>B,B>U`) for diagnosis.
 
-### 5. The check after every scan
+### 5. The check after every scan, continuing by itself when confident
 
-`onResult` always opens the colour check. For a confident scan it gets no marks and a new short note
-(`check_note_ok`: "Vertaa kuviin. Jos värit täsmäävät, jatka." / "Compare with the pictures. If the
-colours match, go on."), the button "Näyttää oikealta" opens the solution as today. The pictures in
-`LastScan` follow the renamed faces (the outcome's `from` already maps faces for the opposite-pair
-rename; decision 3 extends that map).
+`onResult` always opens the colour check. For a confident scan (user, 2026-10-04) it gets no marks, a
+short note (`check_note_ok`: "Vertaa kuviin. Jatketaan ratkaisuun…" / "Compare with the pictures.
+Going on to the solution…") and continues to the solution after **5 seconds**; the time left shows
+as the "Näyttää oikealta" button filling up. "Skannaa koko kuutio uudelleen" is shown as an
+outlined button next to it. Any touch on the check (a sticker, a colour, scrolling, a button) stops
+the automatic continue; the button then works as today. An unsure or invalid scan never continues by
+itself. The pictures in `LastScan` follow the renamed faces (the outcome's `from` already maps faces
+for the opposite-pair rename; decision 3 extends that map).
+
+### 7. No face names while scanning
+
+Since the names are decided at the end (user, 2026-10-04), the full scan shows none: the live
+"Keskiö näyttää: X" status, the review's "Tunnistettu: X" and its "Väärä puoli? Napauta…" choice of
+another face, and the face name in "X luettu" (becomes "Puoli luettu") go away, as does the grid's
+hint colour for the recognised centre. The done-face marks are filled with the centre as seen
+(raw reading) instead of the named colour. Live recognition stays inside `ScanSession` (decision 2)
+as the provisional slot of each face and for the references; decision 3 corrects it. The
+single-face rescan (`only`) keeps naming its face, since that face is known. Strings
+`scan_status_centre`, `scan_review_face`, `scan_review_pick` and `scan_captured` are removed or
+replaced.
 
 ### 6. Tests from the log
 

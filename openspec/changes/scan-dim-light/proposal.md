@@ -22,8 +22,11 @@ each.
   as today. If the cube is still impossible, the next-best namings of the centres are tried and the
   first solvable one is used.
 - **Check after every scan:** the colour check (the camera's pictures next to the colours as read)
-  opens after every scan, also a confident one, so the user can glance that it is right and go on
-  with "Näyttää oikealta". Problem stickers are marked as today.
+  opens after every scan. A confident one continues to the solution by itself after a few seconds,
+  with a button at hand to scan again if the colours do not match the pictures; an unsure one waits
+  with the problem stickers marked, as today.
+- **No face names while scanning:** the live "centre looks like X", the review's "Recognised: X"
+  and its choice of another face go away; the names are decided at the end.
 - **Real data in the tests:** the scans of the user's log of 2026-10-04 (daylight and the failed
   evening scan) are kept as test data (`evidence/`).
 - Not in this change: the browser crash after the tab was in the background for minutes (goes to
@@ -35,8 +38,10 @@ each.
 (none)
 
 ### Modified Capabilities
-- `camera-scan`: Live reading (brightness-independent face recognition, bigger cell area), Result
-  (centres named jointly, next-best namings, the check always opens).
+- `camera-scan`: Live reading and Confirm each face (no face names while scanning), Classification
+  (bigger averaged cell area), Result (centres named jointly, next-best namings, the check always
+  opens and continues by itself when confident), Guided scan and Scan look (done marks show the
+  centre as seen).
 
 ## Impact
 
