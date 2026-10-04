@@ -6,9 +6,8 @@ There is no server: "operations" means getting the app onto the phone and findin
 
 - Every push to `main` runs CI (GitHub Actions → CI): tests, lint, debug APK. The APK is attached
   to the run as the artifact `rubikki-solveri-debug-<commit>` for 7 days.
-- Then, if the signing key secret is set, the `publish` job replaces the release "latest-build"
-  with a signed release APK of that commit (see Release below). Without the secret the run summary
-  says "Publishing skipped".
+- The `publish` job (a signed release APK as the release "latest-build", see Release below) is
+  **disabled for now** (`if: false`, user 2026-10-04); it also needs the signing key secret.
 - The version name is `1.0.<commit count>-<short commit>`; the log's `app.start` line and
   Settings → About show it.
 - CI also builds the browser version and runs its smoke test (`web/smoke/smoke.mjs`: the page

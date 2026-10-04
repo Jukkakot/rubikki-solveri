@@ -86,7 +86,8 @@ jobs:
   # the user's Android Studio debug key, so it updates a Run ▶ install in place.
   publish:
     needs: check
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Disabled for now (user, 2026-10-04); to turn back on, restore: if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
