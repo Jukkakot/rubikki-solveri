@@ -49,7 +49,7 @@ class ScanScreenTest {
     private fun scan() {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0, savePicture = { saved += it; "$it.png" }, gridCheck = { FrameSampler.GridCheck(List(9) { 30.0 }, List(9) { cubeInView || it != 4 }) }, onLockExposure = { locks += it }, preview = {})
+                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0, savePicture = { saved += it; "$it.png" }, gridCheck = { FrameSampler.GridCheck(List(9) { 30.0 }, List(9) { cubeInView }) }, onLockExposure = { locks += it }, preview = {})
             }
         }
     }
