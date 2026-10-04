@@ -1,8 +1,8 @@
 name: Pages
 
 # The browser version at https://jukkakot.github.io/rubikki-solveri/: every push to main builds
-# it, smoke-tests it and publishes it (docs/operations.md → Browser version). Needs, once:
-# Settings → Pages → Build and deployment → Source: GitHub Actions.
+# it, smoke-tests it and publishes it (docs/operations.md → Browser version). Pages' source is
+# "GitHub Actions" (set once through the API, see docs/operations.md → Builds).
 
 on:
   push:
