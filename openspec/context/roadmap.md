@@ -39,7 +39,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 29 | `share-log-fix`, `share-log-zip` | done | Browser log sharing: at most ten files to the share sheet, zip download when refused (Samsung Internet) |
 | 30 | `scan-needs-cube` | done | Auto capture only when every grid cell is one sticker; green cell outlines; camera follow ignores frames without a face |
 | 31 | `fit-screen` | done | Screens with actions fit in portrait without scrolling: trimmed spacing, the big element shrinks (200 dp floor) |
-| 32 | `real-mirror` | specced | A framed mirror behind the guide cube in the 3D scene, a true reflection of the back; replaces the mirror card; one steady view and one move wording everywhere, learn method included (user decisions 2026-10-04) |
+| 32 | `real-mirror` | done | A framed mirror behind the guide cube in the 3D scene, a true reflection of the back; replaces the mirror card; one steady view and one move wording everywhere, learn method included (user decisions 2026-10-04) |
 
 ## Backlog
 

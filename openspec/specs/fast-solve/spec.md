@@ -33,12 +33,13 @@ return the cube to before it. After the last move the screen SHALL say the cube 
 - **THEN** the screen says the cube is solved
 
 ### Requirement: Moves in words
-Each move SHALL be described in the app's language. In the fast method it SHALL be described as
-the user sees it in the holding view: the top and bottom layers turn to the left or right, the
-right and left sides turn up or down, the back side by which way its top row moves, and the front
-clockwise or counter-clockwise; half turns say half a turn. In the learn method the side to turn,
-the direction and the side to look from SHALL be named, as before. The holding position (white on
-top, green in front) SHALL be stated on the screen.
+Each move SHALL be described in the app's language, the same way everywhere in the app (both
+solution methods, camera follow, lessons): as the user sees it in the holding view, the top and
+bottom layers turn to the left or right, the right and left sides turn up or down, the back side
+by which way its top row moves, and the front clockwise or counter-clockwise; half turns say half
+a turn; a whole-cube turn names the centre that comes towards the user and the one on top. Other
+texts that name a layer or a direction (step notes, lesson texts, tips) SHALL use the same terms.
+The holding position SHALL be stated on the screen.
 
 #### Scenario: Top move in the fast method
 - **WHEN** the current move is a counter-clockwise turn of the top (U') in the fast method
@@ -53,5 +54,5 @@ top, green in front) SHALL be stated on the screen.
 - **THEN** it reads "Turn the front side clockwise"
 
 #### Scenario: Describe a move
-- **WHEN** the current move is a counter-clockwise turn of the top in the learn method
-- **THEN** it reads "Turn the top counter-clockwise (as seen from above)"
+- **WHEN** the current move is a counter-clockwise turn of the top in the learn method or in a lesson's algorithm demo
+- **THEN** it reads "Turn the top layer to the right", the same as in the fast method
