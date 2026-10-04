@@ -7,6 +7,14 @@ name which face or centre colour it takes the face for; the faces are named at t
 app SHALL still tell faces apart internally, comparing colours regardless of how bright they read,
 so that a dim light does not make a dark colour look like white.
 
+#### Scenario: Wrong face
+- **WHEN** no face is done yet and the camera sees a red centre
+- **THEN** the face can be captured, and no face name is shown
+
+#### Scenario: Warm red
+- **WHEN** the cube's red reads closer to the default orange and the face with the red centre is shown
+- **THEN** the face can be captured, and at the end this cube's red stickers read as red
+
 #### Scenario: Raw colours
 - **WHEN** a cell of the grid sees a pinkish red
 - **THEN** its dot shows that pinkish red, not a palette colour
@@ -46,6 +54,10 @@ NOT be tappable. Only an accepted face SHALL count as done.
 #### Scenario: Accept
 - **WHEN** a face has been captured and the user taps "Good, next"
 - **THEN** the face counts as done and any face not yet scanned is asked for
+
+#### Scenario: Centre note in the review
+- **WHEN** a face has been captured during the full scan
+- **THEN** the review shows its nine colours and the note that the colours are worked out at the end, and names no face
 
 #### Scenario: Scan again
 - **WHEN** a face has been captured and the user taps "Scan again"
