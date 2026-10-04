@@ -35,6 +35,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 25 | `lesson-visuals` | done | Lessons as swipe pages with pictures: grey goal cube per stage, case pictures instead of "how" text, algorithm pages that show what moves, goal card in practice and guided solve |
 | 26 | `phone-install` | done | Every green push publishes a signed APK at one fixed address (signed with the Android Studio key so it updates the installed app and keeps its data); About → "Lataa uusin versio" |
 | 27 | `web-app` | done | The same app in the browser (GitHub Pages, installable, offline) from one Kotlin Multiplatform code base: cube multiplatform with min2phase ported to Kotlin, screens in a shared Compose Multiplatform module, Android app unchanged |
+| 28 | `steady-cube` | specced | The solve guide never turns the view (holding view, mirror cube for left/back/bottom moves, words from the front, reset button after dragging) and learn mode turns the whole cube as rarely as possible (user priority 2026-10-04) |
 
 ## Backlog
 
