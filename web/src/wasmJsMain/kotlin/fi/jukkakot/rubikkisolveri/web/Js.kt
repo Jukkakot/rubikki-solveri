@@ -2,6 +2,8 @@
 
 package fi.jukkakot.rubikkisolveri.web
 
+import org.khronos.webgl.Int8Array
+
 // The functions of platform.mjs (the only JavaScript the app has).
 
 external fun storageGet(key: String): String?
@@ -19,3 +21,16 @@ external fun vibrate(ms: Int)
 external fun formatDateTime(epochMillis: Double, language: String, timeOnly: Boolean): String
 external fun installCrashHooks(report: (String) -> Unit)
 external fun shareOrDownload(logName: String, logText: String, pictureNames: String, pictureData: String)
+
+external fun cameraAcquire(done: (String) -> Unit)
+external fun cameraRelease()
+external fun cameraVideoWidth(): Int
+external fun cameraVideoHeight(): Int
+external fun cameraGrab(x: Int, y: Int, w: Int, h: Int, previewLong: Int, size: Int): Boolean
+external fun cameraPreviewWidth(): Int
+external fun cameraPreviewHeight(): Int
+external fun cameraPreviewData(): Int8Array
+external fun cameraAnalysisData(): Int8Array
+external fun cameraTorchSupported(): Boolean
+external fun cameraSetTorch(on: Boolean)
+external fun cameraLockExposure(lock: Boolean): String
