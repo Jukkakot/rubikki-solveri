@@ -16,4 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "rubikki-solveri"
 
-include(":cube", ":app")
+include(":cube", ":shared", ":app")

@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
+import fi.jukkakot.rubikkisolveri.Strings
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.Notation
@@ -37,7 +38,7 @@ class BeginnerTextsTest {
 
     private fun note(language: String, note: StepNote): String {
         val c = context(language)
-        return noteText(note) { id, args -> c.getString(id, *args) }
+        return noteText(note) { id, args -> Strings.get(language, c.resources.getResourceEntryName(id), *args) }
     }
 
     @Test
@@ -57,7 +58,7 @@ class BeginnerTextsTest {
         val en = context("en")
         assertEquals(
             "Turn the whole cube: red centre towards you, white on top.",
-            MoveWords.describe(y, { id, args -> en.getString(id, *args) }, after),
+            MoveWords.describe(y, { id, args -> Strings.en(en.resources.getResourceEntryName(id), *args) }, after),
         )
     }
 

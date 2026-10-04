@@ -123,6 +123,7 @@ ksp {
 
 dependencies {
     implementation(project(":cube"))
+    implementation(project(":shared"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

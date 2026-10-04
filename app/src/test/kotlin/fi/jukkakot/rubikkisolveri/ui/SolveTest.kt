@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
+import fi.jukkakot.rubikkisolveri.Strings
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.Layer
 import fi.jukkakot.rubikkisolveri.cube.Move
@@ -31,7 +32,7 @@ class MoveWordsTest {
         val base = ApplicationProvider.getApplicationContext<Context>()
         val config = Configuration(base.resources.configuration).apply { setLocale(Locale.forLanguageTag(language)) }
         val context = base.createConfigurationContext(config)
-        return MoveWords.describe(Notation.parseMove(move)!!, { id, args -> context.getString(id, *args) })
+        return MoveWords.describe(Notation.parseMove(move)!!, { id, args -> Strings.get(language, context.resources.getResourceEntryName(id), *args) })
     }
 
     @Test
