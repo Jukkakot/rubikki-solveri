@@ -11,8 +11,10 @@ card in the corner of `GuideCube` (steady-cube, design decision 2).
 **Goals:** a mirror that looks like part of the scene; a geometrically true reflection; the same
 highlight, arrow and animation in it; works on Android and in the browser (pure Compose Canvas).
 
-**Non-Goals:** lighting effects or blur on the glass; mirrors in camera follow or lessons;
-reflections of the mirror in itself.
+Also (user, 2026-10-04): the same steady view and the same move words everywhere in the app.
+
+**Non-Goals:** lighting effects or blur on the glass; mirrors in camera follow, lessons or the
+free cube; reflections of the mirror in itself; changing the free cube's notation buttons.
 
 ## Decisions
 
@@ -59,6 +61,29 @@ from the real cube. No label (user, 2026-10-04).
 
 `Cube3D(..., mirror: Boolean = false)`; `GuideCube` passes `mirror` to the main cube and drops the
 second `Cube3D`, the card and the 10 % shift. `MIRROR_VIEW` and `mirror_label` are removed.
+
+### 7. One view: the `steady` flag goes away
+
+The steady behaviour becomes the only one: `GuideCube(state, mirror)` always starts at
+`DEFAULT_VIEW`, never animates by itself and shows the reset button after a drag;
+`CubeScene.guideView` and the swing code are removed. `SolveScreen` no longer passes `steady`
+(the follow panel signature loses it too); the guide gets `mirror = true`, camera follow's small
+cube `mirror = false`. Whole-cube turns (y, x, z in the learn method) animate as the cube turning
+in the fixed view; the hold line above updates as before.
+
+### 8. One wording
+
+`MoveWords` keeps one wording: today's `steadyParts` becomes `parts`, plus the whole-cube turn
+sentence (`move_whole_cube`, by centres) for rotations; `describe`/`moveDescription` lose
+`steady`. Slices and wide moves (not produced by the solvers or the lesson algorithms today) fall
+back to notation as now. `move_cw`, `move_ccw`, `from_*` and `side_u`/`side_d` are removed. The
+other texts are reworded to the same terms in both languages: in Finnish yläkerros/alakerros,
+oikea/vasen/etu/takapuoli, ylöspäin/alaspäin/vasemmalle/oikealle; known hits today:
+`note_yellow_cross`, `note_yellow_corner`, `lesson_5_tip` ("yläpuolta" → "yläkerrosta") and
+`lesson_basics_p3` (letters explained with the same words: "R: oikea puoli ylöspäin, R' alaspäin,
+R2 puoli kierrosta", and so on); the implementer reads every string for direction or layer words
+in both languages and aligns the rest. The free cube's "Vastapäivään" switch stays: it flips the
+notation buttons (U, R, …), which is notation, not a description of a move.
 
 ## Risks / Trade-offs
 
