@@ -19,7 +19,7 @@ import fi.jukkakot.rubikkisolveri.cube.beginner.Checks
 import fi.jukkakot.rubikkisolveri.cube.beginner.Practice
 import fi.jukkakot.rubikkisolveri.cube.beginner.Stage
 import fi.jukkakot.rubikkisolveri.cube.beginner.StageCases
-import fi.jukkakot.rubikkisolveri.R
+import fi.jukkakot.rubikkisolveri.res.*
 import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeAnimator
 import fi.jukkakot.rubikkisolveri.ui.cube3d.rememberCubeAnimator
 import fi.jukkakot.rubikkisolveri.ui.lessons.Algorithm
@@ -116,7 +116,7 @@ class LessonsTest {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
                 Column {
-                    AlgorithmPage(Algorithm(R.string.alg_trigger, BeginnerSolver.TRIGGER), animatorFor = { start ->
+                    AlgorithmPage(Algorithm(Res.string.alg_trigger, BeginnerSolver.TRIGGER), animatorFor = { start ->
                         rememberCubeAnimator(start).also { animator = it }
                     })
                 }

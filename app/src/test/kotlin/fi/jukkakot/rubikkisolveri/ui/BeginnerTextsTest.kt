@@ -38,7 +38,7 @@ class BeginnerTextsTest {
 
     private fun note(language: String, note: StepNote): String {
         val c = context(language)
-        return noteText(note) { id, args -> Strings.get(language, c.resources.getResourceEntryName(id), *args) }
+        return noteText(note) { id, args -> Strings.get(language, id.key, *args) }
     }
 
     @Test
@@ -58,7 +58,7 @@ class BeginnerTextsTest {
         val en = context("en")
         assertEquals(
             "Turn the whole cube: red centre towards you, white on top.",
-            MoveWords.describe(y, { id, args -> Strings.en(en.resources.getResourceEntryName(id), *args) }, after),
+            MoveWords.describe(y, { id, args -> Strings.en(id.key, *args) }, after),
         )
     }
 

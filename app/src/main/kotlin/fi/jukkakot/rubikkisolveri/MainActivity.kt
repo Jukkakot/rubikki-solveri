@@ -14,6 +14,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.Evt
+import fi.jukkakot.rubikkisolveri.log.file
 import fi.jukkakot.rubikkisolveri.progress.ProgressDatabase
 import fi.jukkakot.rubikkisolveri.progress.RoomProgressRepository
 import fi.jukkakot.rubikkisolveri.settings.LanguageSetting
@@ -87,6 +88,7 @@ class MainActivity : AppCompatActivity() {
                             logger.info(Evt.SETTINGS_CHANGED, null, "notation" to show)
                             scope.launch { settings.setShowNotation(show) }
                         },
+                        scanPictures = ScanPictures.of(this),
                     ),
                 )
             }

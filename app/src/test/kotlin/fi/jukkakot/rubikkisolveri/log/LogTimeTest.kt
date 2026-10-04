@@ -1,7 +1,8 @@
 package fi.jukkakot.rubikkisolveri.log
 
 import org.junit.Test
-import java.time.Instant
+import kotlin.time.Instant
+import kotlin.time.toJavaInstant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -26,7 +27,7 @@ class LogTimeTest {
     @Test
     fun anEarlierDayShowsDateAndTime() {
         val time = Instant.parse("2026-10-01T08:09:51Z")
-        val expected = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.MEDIUM).withLocale(finnish).format(time.atZone(helsinki))
+        val expected = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.MEDIUM).withLocale(finnish).format(time.toJavaInstant().atZone(helsinki))
         assertEquals(expected, LogTime.format(time, LocalDate.of(2026, 10, 3), helsinki, finnish))
         assertEquals(true, expected.contains("11.09.51"), expected)
     }

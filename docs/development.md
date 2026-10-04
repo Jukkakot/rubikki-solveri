@@ -23,7 +23,9 @@ Run before every commit (CI runs the same):
 ```
 
 - `test`: `cube` JVM tests (`./gradlew :cube:jvmTest`; `cube` is Kotlin Multiplatform, its code
-  also compiles for the browser: `./gradlew :cube:compileKotlinWasmJs`) and `app` unit tests. App tests run on the JVM with Robolectric
+  also compiles for the browser: `./gradlew :cube:compileKotlinWasmJs`) and `app` unit tests,
+  which also cover the screens in `shared` (`./gradlew :shared:compileKotlinWasmJs` checks the
+  common code compiles for the browser). App tests run on the JVM with Robolectric
   (Compose UI tests included); the default test locale is Finnish (`robolectric.properties`), a
   test can switch with `@Config(qualifiers = "en")`.
 - `lint`: Android lint, warnings are errors. Dependency-version checks are off (updated by hand).
@@ -72,8 +74,15 @@ screen's modes) are folded into its box through the `PARTS` table.
 
 ## Conventions — Implemented
 
-- English for code and identifiers; UI text from string resources: Finnish in `values/`, English
-  in `values-en/` (a test checks every key exists in both).
+- English for code and identifiers; UI text from Compose resources in
+  `shared/src/commonMain/composeResources`: Finnish in `values/strings.xml`, English in
+  `values-en/` (`ComposeStringsTest` checks both have the same keys and placeholders). Add a text
+  to both files, use it as `stringResource(Res.string.key)` (import `fi.jukkakot.rubikkisolveri.res.*`);
+  arguments must be positional (`%1$s`, `%1$d`). `app/src/main/res/values` keeps only the
+  Android-only texts (launcher label, share-sheet title). Tests build sentences with
+  `Strings.fi(key)` / `Strings.en(key)` (`app/src/test`).
+- Compose Multiplatform and androidx Compose versions are bumped together (CMP 1.12.x maps to
+  androidx Compose 1.12.x).
 - Prefer established libraries over hand-written plumbing; cube logic is our own code except the
   vendored two-phase solver.
 - Conventional commits, directly on `main`.

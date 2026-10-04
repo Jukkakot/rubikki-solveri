@@ -31,6 +31,7 @@ kotlin {
             api(libs.cmp.ui)
             api(libs.cmp.ui.backhandler)
             api(libs.cmp.material3)
+            api(libs.cmp.material.icons.core)
             api(libs.cmp.components.resources)
             api(libs.jb.navigation.compose)
             api(libs.jb.lifecycle.runtime.compose)

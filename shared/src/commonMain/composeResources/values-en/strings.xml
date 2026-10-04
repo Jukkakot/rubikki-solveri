@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">Rubikki Solveri</string>
     <string name="home_tagline">Scan your cube and learn to solve it.</string>
     <string name="home_scan">Scan the cube</string>
     <string name="home_manual">Enter by hand</string>

@@ -4,10 +4,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
-import java.time.Clock
-import java.time.Instant
-import java.time.ZoneOffset
-import java.util.concurrent.Executor
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -16,25 +14,27 @@ class LogTest {
     @get:Rule
     val tmp = TemporaryFolder()
 
-    private val clock = Clock.fixed(Instant.parse("2026-10-02T12:00:00Z"), ZoneOffset.UTC)
-    private val direct = Executor { it.run() }
+    private val clock = object : Clock {
+        override fun now() = Instant.parse("2026-10-02T12:00:00Z")
+    }
+    private val direct: (() -> Unit) -> Unit = { it() }
 
     @Test
     fun lineHasTimeLevelEventFieldsAndMessageInOrder() {
-        val line = LogLine.format(clock.instant(), Level.INFO, Evt.APP_START, mapOf("ver" to "0.1.0", "sdk" to 34), "hello there")
+        val line = LogLine.format(clock.now(), Level.INFO, Evt.APP_START, mapOf("ver" to "0.1.0", "sdk" to 34), "hello there")
         assertEquals("2026-10-02T12:00:00Z INFO app.start ver=0.1.0 sdk=34 msg=\"hello there\"", line)
     }
 
     @Test
     fun stackTraceStaysOnOneLine() {
-        val line = LogLine.format(clock.instant(), Level.ERROR, Evt.APP_CRASH, mapOf("stack" to LogLine.stackOf(IllegalStateException("boom"))), null)
+        val line = LogLine.format(clock.now(), Level.ERROR, Evt.APP_CRASH, mapOf("stack" to LogLine.stackOf(IllegalStateException("boom"))), null)
         assertFalse(line.contains('\n'))
         assertTrue(line.contains("IllegalStateException: boom\\n"))
     }
 
     @Test
     fun nullFieldsAreLeftOut() {
-        val line = LogLine.format(clock.instant(), Level.INFO, Evt.NAV_SCREEN, mapOf("screen" to null), null)
+        val line = LogLine.format(clock.now(), Level.INFO, Evt.NAV_SCREEN, mapOf("screen" to null), null)
         assertEquals("2026-10-02T12:00:00Z INFO nav.screen", line)
     }
 

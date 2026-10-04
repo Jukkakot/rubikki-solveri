@@ -21,7 +21,7 @@ import fi.jukkakot.rubikkisolveri.ui.cube3d.StickerColors
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
 import fi.jukkakot.rubikkisolveri.ui.theme.ForcedDark
 import androidx.compose.runtime.Composable
-import fi.jukkakot.rubikkisolveri.R
+import fi.jukkakot.rubikkisolveri.res.*
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
@@ -101,8 +101,8 @@ class ScreenshotTest {
         onBack = {}, onValid = {},
         initial = phoneScan,
         initialMarked = marked,
-        title = R.string.check_title,
-        note = R.string.check_note,
+        title = Res.string.check_title,
+        note = Res.string.check_note,
         pictures = mapOf(fi.jukkakot.rubikkisolveri.cube.Face.U to stickerPicture(cube = "YWYGWWGYO")),
         onScanAgain = {},
         check = fi.jukkakot.rubikkisolveri.cube.scan.ScanCheck.start(phoneScan, marked, phoneReadings),
@@ -255,12 +255,12 @@ class ScreenshotTest {
     @Composable
     private fun Home() {
         fi.jukkakot.rubikkisolveri.ui.home.HomeScreen(
-            primary = fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_scan, R.drawable.ic_camera) {},
+            primary = fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_scan, Res.drawable.ic_camera) {},
             entries = listOf(
-                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_manual, R.drawable.ic_palette) {},
-                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_learn, R.drawable.ic_school) {},
-                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_timer, R.drawable.ic_timer) {},
-                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(R.string.home_free_cube, R.drawable.ic_cube) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_manual, Res.drawable.ic_palette) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_learn, Res.drawable.ic_school) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_timer, Res.drawable.ic_timer) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_free_cube, Res.drawable.ic_cube) {},
             ),
             onOpenSettings = {}, crashedLastTime = false, onShowLog = {}, onCrashNoticeShown = {},
             version = "1.0.51-0365b23 · 3.10.2026 11.30",

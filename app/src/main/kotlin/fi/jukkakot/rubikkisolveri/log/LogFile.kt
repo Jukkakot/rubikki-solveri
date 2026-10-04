@@ -6,10 +6,10 @@ import java.io.File
  * The on-phone log: lines appended to [file]. When the file passes [maxBytes] the oldest lines
  * are dropped so that about half of the cap remains.
  */
-class LogFile(val file: File, private val maxBytes: Long = DEFAULT_MAX_BYTES) {
+class LogFile(val file: File, private val maxBytes: Long = DEFAULT_MAX_BYTES) : LogStore {
 
     @Synchronized
-    fun append(line: String) {
+    override fun append(line: String) {
         file.parentFile?.mkdirs()
         file.appendText(line + "\n")
         if (file.length() > maxBytes) trim()
@@ -17,10 +17,10 @@ class LogFile(val file: File, private val maxBytes: Long = DEFAULT_MAX_BYTES) {
 
     /** All lines, oldest first. */
     @Synchronized
-    fun readLines(): List<String> = if (file.exists()) file.readLines().filter { it.isNotEmpty() } else emptyList()
+    override fun readLines(): List<String> = if (file.exists()) file.readLines().filter { it.isNotEmpty() } else emptyList()
 
     @Synchronized
-    fun clear() {
+    override fun clear() {
         if (file.exists()) file.writeText("")
     }
 

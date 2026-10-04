@@ -6,6 +6,7 @@ import fi.jukkakot.rubikkisolveri.cube.solve.TwoPhaseSolver
 import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.CrashHandler
 import fi.jukkakot.rubikkisolveri.log.Evt
+import fi.jukkakot.rubikkisolveri.log.init
 import java.io.File
 
 class RubikkiApp : Application() {

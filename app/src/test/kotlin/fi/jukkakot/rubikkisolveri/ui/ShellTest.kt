@@ -1,5 +1,6 @@
 package fi.jukkakot.rubikkisolveri.ui
 
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
@@ -31,9 +32,9 @@ import fi.jukkakot.rubikkisolveri.ui.nav.RubikkiNavHost
 import fi.jukkakot.rubikkisolveri.ui.nav.SettingsRoute
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
 import fi.jukkakot.rubikkisolveri.ui.theme.ForcedDark
-import fi.jukkakot.rubikkisolveri.ui.theme.Fredoka
+import fi.jukkakot.rubikkisolveri.ui.theme.fredoka
 import fi.jukkakot.rubikkisolveri.ui.theme.KarkkiShapes
-import fi.jukkakot.rubikkisolveri.ui.theme.Nunito
+import fi.jukkakot.rubikkisolveri.ui.theme.nunito
 import androidx.compose.material3.Shapes
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -255,19 +256,23 @@ class ThemeTest {
         var dark by mutableStateOf(false)
         var typography: Typography? = null
         var shapes: Shapes? = null
+        var headings: FontFamily? = null
+        var body: FontFamily? = null
         compose.setContent {
             RubikkiTheme(systemDark = dark, dynamicColor = false) {
                 typography = MaterialTheme.typography
                 shapes = MaterialTheme.shapes
+                headings = fredoka()
+                body = nunito()
             }
         }
         for (mode in listOf(false, true)) {
             dark = mode
             compose.waitForIdle()
-            assertEquals(Fredoka, typography!!.headlineSmall.fontFamily)
-            assertEquals(Fredoka, typography!!.titleLarge.fontFamily)
-            assertEquals(Nunito, typography!!.bodyLarge.fontFamily)
-            assertEquals(Nunito, typography!!.labelLarge.fontFamily)
+            assertEquals(headings, typography!!.headlineSmall.fontFamily)
+            assertEquals(headings, typography!!.titleLarge.fontFamily)
+            assertEquals(body, typography!!.bodyLarge.fontFamily)
+            assertEquals(body, typography!!.labelLarge.fontFamily)
             assertEquals(KarkkiShapes, shapes)
         }
     }

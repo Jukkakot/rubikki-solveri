@@ -19,7 +19,7 @@ class StringsTest {
     fun shownLicenceMatchesTheVendoredOne() {
         assertEquals(
             File("../cube/src/commonMain/kotlin/fi/jukkakot/rubikkisolveri/cube/solve/min2phase/LICENSE").readText(),
-            File("src/main/res/raw/min2phase_license.txt").readText(),
+            File("../shared/src/commonMain/composeResources/files/min2phase_license.txt").readText(),
         )
     }
 

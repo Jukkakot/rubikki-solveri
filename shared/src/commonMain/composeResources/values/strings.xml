@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The default language is Finnish (product.md); English lives in values-en. -->
 <resources>
+    <string name="app_name">Rubikki Solveri</string>
     <string name="home_tagline">Skannaa kuutio ja opettele ratkaisemaan se.</string>
     <string name="home_scan">Skannaa kuutio</string>
     <string name="home_manual">Syötä käsin</string>

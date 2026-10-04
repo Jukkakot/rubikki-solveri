@@ -8,10 +8,30 @@ roadmap change.
 | Module | Kind | Holds |
 |---|---|---|
 | `cube` | Kotlin Multiplatform library (JVM + browser/Wasm), no Android imports | Cube state, moves, validity, colour classification, solvers |
-| `app` | Android application (Compose) | Screens, navigation, settings, logging, camera, 3D view |
+| `shared` | Kotlin Multiplatform library (Android + browser/Wasm), Compose Multiplatform | Every screen, navigation, theme, 3D view; texts, fonts, icons and licence texts as Compose resources; the platform seams (see Platforms) |
+| `app` | Android application | `MainActivity`, Room, DataStore settings, per-app language, file log, crash handler, share intent |
 
-`app` depends on `cube`, never the other way. Anything that can be computed without a phone goes
-into `cube`, so it is tested by plain JVM unit tests.
+`app` → `shared` → `cube`, never the other way. Anything that can be computed without a phone goes
+into `cube`, so it is tested by plain JVM unit tests. Packages did not change when code moved to
+`shared` (`fi.jukkakot.rubikkisolveri.ui.*`, `.progress`, `.log`, `.settings`); the Android tests
+stay in `app/src/test` and test the shared screens on Robolectric.
+
+## Platforms — Implemented
+
+Common code calls `expect` declarations; each platform supplies the `actual` (Android in
+`shared/src/androidMain`, browser in `shared/src/wasmJsMain`):
+
+| Seam | Where | Android | Browser |
+|---|---|---|---|
+| `CameraPreview`, `CameraPermissionGate` | `ui/scan/Camera.kt` | CameraX, runtime permission | planned (`web-app`) |
+| `platformColorScheme` | `ui/PlatformSeams.kt` | Material You | none → Karkki scheme |
+| `LightStatusBarIcons` | same | window insets controller | no-op |
+| `animationScale` | same | `ANIMATOR_DURATION_SCALE` | reduced-motion query |
+| `elapsedMillis`, `argbToImageBitmap`, `LocalFormats`, `currentLanguage` | same | `SystemClock`, `Bitmap`, `java.time`/`DateFormat` | browser APIs |
+
+Services that differ per platform come in through `AppActions` (`progress`, `scanPictures`,
+`readLog`/`shareLog`, `platform`, …): `MainActivity` builds the Android set. `AppLog` is common;
+`AppLog.init(context)` (app) installs the phone's `Logger` over a `LogFile`.
 
 ## Cube model (`cube`) — Implemented
 
@@ -130,7 +150,8 @@ yellow cross, yellow edges, yellow corners into place, yellow corners turned.
 
 ## Progress — Implemented
 
-- Room database `progress.db` (`ProgressDatabase`, KSP; schema in `app/schemas`): `timed_solve`,
+- Room database `progress.db` (`ProgressDatabase` in `app`, KSP; schema in `app/schemas`; the
+  `*Entity` rows map to the common `TimedSolve`/`GuidedSolve`/`PracticeSession`): `timed_solve`,
   `guided_solve`, `practice`. `ProgressRepository` (Room implementation; `InMemoryProgressRepository`
   for tests and previews) is created in `MainActivity` and passed through `AppActions`.
 - `TimerState` (hold 500 ms → ready → release starts → tap stops) and `SolveStats` (best, aoN
@@ -148,13 +169,14 @@ yellow cross, yellow edges, yellow corners into place, yellow corners turned.
   navigation graph.
 - `ui/nav`: type-safe routes (`HomeRoute`, `SettingsRoute`, `LogRoute`) and `RubikkiNavHost`.
   Screens take plain values and callbacks, so tests drive them with fakes.
-- `ui/theme`: `RubikkiTheme` — Material You dynamic colour, light/dark by the theme setting, Karkki
-  typography and shapes; `ForcedDark` wraps the scan routes. `ui/common/Buttons.kt`: shared
+- `ui/theme`: `RubikkiTheme` — Material You dynamic colour (where the platform has it), light/dark
+  by the theme setting, Karkki typography (`fredoka()`/`nunito()` are composable, as Compose
+  resources load fonts) and shapes; `ForcedDark` wraps the scan routes. `ui/common/Buttons.kt`: shared
   `RoundIconButton`, `BigButton`, `BackButton`.
 - `settings`: theme in DataStore Preferences; language through AppCompat per-app locales (stored
   by the system on Android 13+, by AppCompat on 12). Finnish is set on the first start.
-- `log`: `Logger` (Logcat + capped file on a background thread), `LogLine` (line format),
-  `Evt` (event catalogue), `CrashHandler` (writes `app.crash` synchronously and leaves a marker
+- `log`: `Logger` over a `LogStore` (common; on the phone Logcat + capped `LogFile` on a background
+  thread), `LogLine` (line format), `Evt` (event catalogue), `ScanPictureStore`, `CrashHandler` (writes `app.crash` synchronously and leaves a marker
   for the next start).
 
 ## 3D cube view — Implemented
@@ -219,7 +241,7 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 R8-shrunk release (`app/proguard-rules.pro`: line numbers, navigation routes), signed from
 `keystore.properties` / `RELEASE_*` env / debug key; `versionCode` = commit count. Settings →
 About shows the name, version and one-line description; the open-source licences (min2phase's
-MIT text from `res/raw`, kept
+MIT text from `shared/.../composeResources/files`, kept
 identical to the vendored `LICENSE` by a test) unfold behind an "Open-source licences" button. Every green push to `main` replaces the
 rolling release `latest-build` (the `publish` job in `ci.yml`), so
 `releases/latest/download/rubikki-solveri.apk` is always the newest; `release.yml` builds tagged

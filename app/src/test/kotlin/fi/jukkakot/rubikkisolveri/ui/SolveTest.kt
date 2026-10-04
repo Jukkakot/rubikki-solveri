@@ -32,7 +32,7 @@ class MoveWordsTest {
         val base = ApplicationProvider.getApplicationContext<Context>()
         val config = Configuration(base.resources.configuration).apply { setLocale(Locale.forLanguageTag(language)) }
         val context = base.createConfigurationContext(config)
-        return MoveWords.describe(Notation.parseMove(move)!!, { id, args -> Strings.get(language, context.resources.getResourceEntryName(id), *args) })
+        return MoveWords.describe(Notation.parseMove(move)!!, { id, args -> Strings.get(language, id.key, *args) })
     }
 
     @Test

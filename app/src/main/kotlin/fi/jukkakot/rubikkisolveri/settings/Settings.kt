@@ -12,20 +12,6 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-enum class ThemeMode { SYSTEM, LIGHT, DARK }
-
-/** The UI languages; Finnish is the default (product.md). */
-enum class AppLanguage(val tag: String) {
-    FINNISH("fi"),
-    ENGLISH("en"),
-    ;
-
-    companion object {
-        val DEFAULT = FINNISH
-        fun fromTag(tag: String?): AppLanguage = entries.firstOrNull { tag?.startsWith(it.tag) == true } ?: DEFAULT
-    }
-}
-
 private val Context.settingsStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 /** User settings kept on the phone. The language is stored by the system (per-app language). */

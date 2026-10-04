@@ -28,6 +28,10 @@ def convert(text: str) -> str:
 
 
 def main() -> None:
+    # Already run (web-app change): the app's strings now hold only Android-only texts, so a rerun
+    # would wipe the shared texts.
+    if (ROOT / "shared/src/commonMain/composeResources/values/strings.xml").exists():
+        raise SystemExit("shared strings exist already; edit them there")
     for src, dst in PAIRS:
         source = ROOT / "app/src/main/res" / src / "strings.xml"
         target = ROOT / "shared/src/commonMain/composeResources" / dst / "strings.xml"

@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import fi.jukkakot.rubikkisolveri.log.AppLog
+import fi.jukkakot.rubikkisolveri.log.file
 import fi.jukkakot.rubikkisolveri.ui.log.shareFilesIntent
 import fi.jukkakot.rubikkisolveri.ui.log.shareLogIntent
 import org.junit.Assume.assumeFalse

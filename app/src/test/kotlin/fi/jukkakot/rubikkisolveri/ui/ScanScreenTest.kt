@@ -23,7 +23,7 @@ import fi.jukkakot.rubikkisolveri.ui.manual.ManualInputScreen
 import fi.jukkakot.rubikkisolveri.ui.scan.ScanContent
 import fi.jukkakot.rubikkisolveri.ui.scan.ScanScreen
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
-import fi.jukkakot.rubikkisolveri.R
+import fi.jukkakot.rubikkisolveri.res.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import org.junit.Rule
 import org.junit.Test
@@ -234,7 +234,7 @@ class ScanScreenTest {
             RubikkiTheme(dynamicColor = false) {
                 ManualInputScreen(
                     onBack = {}, onValid = onValid, initial = editor, initialMarked = marked,
-                    title = R.string.check_title, note = R.string.check_note,
+                    title = Res.string.check_title, note = Res.string.check_note,
                     pictures = mapOf(Face.F to IntArray(120 * 120) { 0xff808080.toInt() }),
                     onScanAgain = onScanAgain,
                     check = ScanCheck.start(editor, marked, readings),
