@@ -11,6 +11,11 @@ There is no server: "operations" means getting the app onto the phone and findin
   says "Publishing skipped".
 - The version name is `1.0.<commit count>-<short commit>`; the log's `app.start` line and
   Settings → About show it.
+- CI also builds the browser version and runs its smoke test (`web/smoke/smoke.mjs`: the page
+  starts without errors, the solver's speed via `?selftest`). Separately, the **Pages** workflow
+  (`pages.yml`) builds, smoke-tests and publishes the browser version on every push to `main`
+  (see Browser version). **Once:** GitHub → the repo → Settings → Pages → Build and deployment →
+  Source: **GitHub Actions**. Until then the Pages run fails at "deploy"; CI is unaffected.
 
 ## Installing on the phone — Implemented
 

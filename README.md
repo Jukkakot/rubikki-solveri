@@ -1,7 +1,7 @@
 # Rubikki Solveri
 
-Android app that scans your Rubik's Cube with the camera and teaches you to solve it.
-Kotlin + Jetpack Compose, fully offline. Spec-driven with [OpenSpec](openspec/); the wiki starts
+Android app that scans your Rubik's Cube with the camera and teaches you to solve it, also as a
+browser version. Kotlin + Compose Multiplatform, fully offline. Spec-driven with [OpenSpec](openspec/); the wiki starts
 at [docs/README.md](docs/README.md).
 
 ## Lataa / Download
@@ -25,6 +25,9 @@ or in the app Settings → About → **Download the latest version**.
 [Obtainium](https://github.com/ImranR98/Obtainium/releases) (`app-arm64-v8a-release.apk`), then
 **Add app** → `https://github.com/Jukkakot/rubikki-solveri` → **Add** → **Install**. Obtainium
 tells you when a new version is out.
+
+**Selaimessa / in the browser:** [jukkakot.github.io/rubikki-solveri](https://jukkakot.github.io/rubikki-solveri/)
+— same app without installing; can be added to the home screen and works offline.
 
 Other ways to share the app: [docs/distribution.md](docs/distribution.md).
 

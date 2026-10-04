@@ -12,7 +12,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,6 +24,16 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Unit tests, lint and debug APK
         run: ./gradlew test lint assembleDebug
+      - name: Browser build
+        run: ./gradlew :web:wasmJsBrowserDistribution
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Browser smoke test
+        run: |
+          npm ci --prefix web/smoke
+          npx --prefix web/smoke playwright install --with-deps chromium
+          node web/smoke/smoke.mjs web/build/dist/wasmJs/productionExecutable
       - name: Upload the debug APK
         uses: actions/upload-artifact@v4
         with:
@@ -37,6 +47,7 @@ jobs:
           name: reports
           path: |
             */build/reports
+            web/build/smoke
           retention-days: 7
 
   # Every green push to main replaces the one rolling release, so the APK is always at

@@ -56,9 +56,9 @@ Chromium needs `locale: 'fi-FI'`; Playwright's browser is at `/opt/pw-browsers` 
 
 ## 8. Publishing
 
-- [ ] 8.1 `web/smoke/smoke.mjs` (design §9) and its npm `package.json` (playwright only), runnable both in CI and in the container (`PLAYWRIGHT_BROWSERS_PATH` respected). Verify: `node web/smoke/smoke.mjs web/build/dist/wasmJs/productionExecutable` passes locally
-- [ ] 8.2 `ci.yml`: build the web distribution and run the smoke test in `check`; new `.github/workflows/pages.yml` (design §9). Verify: `actionlint` clean on all workflows
-- [ ] 8.3 Docs: `docs/operations.md` Builds (Pages workflow, the one-time "Source: GitHub Actions" click), `README.md` link to the browser version. Verify: links resolve
+- [x] 8.1 `web/smoke/smoke.mjs` (design §9) and its npm `package.json` (playwright only), runnable both in CI and in the container (`PLAYWRIGHT_BROWSERS_PATH` respected). Verify: `node web/smoke/smoke.mjs web/build/dist/wasmJs/productionExecutable` passes locally
+- [x] 8.2 `ci.yml`: build the web distribution and run the smoke test in `check`; new `.github/workflows/pages.yml` (design §9). Verify: `actionlint` clean on all workflows
+- [x] 8.3 Docs: `docs/operations.md` Builds (Pages workflow, the one-time "Source: GitHub Actions" click), `README.md` link to the browser version. Verify: links resolve
 
 ## 9. Integration and roadmap
 
