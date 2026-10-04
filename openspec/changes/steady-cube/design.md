@@ -5,78 +5,65 @@
 See proposal.md (Why). Today `GuideCube` (`ui/guide/MoveGuide.kt`) animates its `CubeViewState`
 to `CubeScene.guideView(move)` whenever the presented move's face changes: front-right for U/F/R,
 yawed for L, 148° round for B, tilted from below for D. `MoveWords` builds "Turn the X clockwise
-(as seen from Y)". In learn mode `BeginnerSolver` prefixes most algorithms with `y`, `y2` or `y'`
-(white corners, middle layer, yellow edges and corners); `MacroSearch.find` returns the first
-depth with any hit, shortest by move count, so a `y` + trigger beats a `D` + trigger + `D'`-style
-placement whenever it is shorter. Fast-solve solutions (min2phase) contain no rotations.
+(as seen from Y)". `SolveScreen` knows the method (`SolveMethod.FAST` / `LEARN`) and shows
+`GuideCube(state)` in the guide and, through `FollowPanel`, in camera follow. The timer's guided
+scramble and the practice screen also run through `SolveScreen` (scramble: fast; practice: learn).
+Fast-solve solutions contain no whole-cube turns.
 
 ## Goals / Non-Goals
 
-**Goals:** the on-screen cube never changes orientation by itself; hidden-side moves stay readable;
-fewer real whole-cube turns in learn mode; every move's words readable from the front.
+**Goals:** in the fast method the on-screen cube never changes orientation by itself; hidden sides
+partly visible through a mirror; words that fit the holding view; a way back after dragging.
 
-**Non-Goals:** changing the beginner method (white cross on top, z2 turn over stay); camera-based
-orientation check in follow mode (later idea); avoiding the method's fixed turns.
+**Non-Goals:** any change to the learn method (view, words, whole-cube turns, practice) or to
+lessons; changing the highlight; checking the real cube's orientation with the camera (backlog,
+after the user has tried camera follow).
 
 ## Decisions
 
-### 1. One holding view
+### 1. `GuideCube(state, steady: Boolean, mirror: Boolean)`
 
-`CubeScene.guideView` is removed; `GuideCube` starts from `CubeScene.DEFAULT_VIEW` (the current
-U/F/R guide view: yaw −32°, pitch 24°, so top, front and right show) and never calls `animateTo`
-on its own. Camera follow's small guide cube uses the same `GuideCube`, so it follows.
+`SolveScreen` passes `steady = method == FAST`; the guide passes `mirror = steady`, `FollowPanel`
+`mirror = false`. Steady: the view starts at `CubeScene.DEFAULT_VIEW` (the current U/F/R guide
+view: yaw −32°, pitch 24°) and nothing animates it except the reset button. Not steady: today's
+`guideView` behaviour, unchanged.
 
-### 2. Mirror cube
+### 2. Mirror
 
-A second `Cube3D` inside the guide cube's box, about 34 % of its width, in the bottom corner on the
-mirrored side's side (left for L, right for B and D), on a rounded surface-container card with a
-small label ("Peili: takapuoli" / "Mirror: back"). It gets the same colours, `move`, `progress`,
-`highlight` and `arrow` as the main cube, `draggable = false`, and a fixed view looking at that
-side (L: yaw +90°, B: yaw 180°, D: pitch −90°, each with a slight tilt so two neighbours show),
-drawn with `graphicsLayer { scaleX = -1f }` so it reads like a mirror. Shown while the presented
-or animating move's face is L, B or D. Rejected: an arrow drawn along the hidden layer's visible
-edge on the main cube (needs new arrow geometry; the mirror shows the real face and its arrow
-with code that exists).
+A second `Cube3D` in the guide cube's box, bottom-start corner, about 34 % of the box width, on a
+small rounded `surfaceContainerHigh` card with the label "Peili" / "Mirror" (`mirror_label`). Same
+colours, `move`, `progress`, `highlight` and `arrow` as the main cube; `draggable = false`; fixed
+view from behind and the left, a little from above (yaw 148° + the holding tilt, pitch 24°: back,
+left and top visible), drawn with `graphicsLayer { scaleX = -1f }` so it reads like a mirror
+(constant `MIRROR_VIEW`, tunable after the user tries it). The main cube keeps its full size; the
+mirror overlaps the box's empty corner (the cube's projection leaves the corners free).
 
-### 3. Words from the front
+### 3. Words for the holding view (fast method only)
 
-New strings per layer and direction (positional args unchanged in form):
-`move_u_left` / `move_u_right` ("Käännä yläkerrosta vasemmalle" / "Turn the top layer to the left"),
-`move_d_left` / `move_d_right`, `move_r_up` / `move_r_down`, `move_l_up` / `move_l_down`,
-`move_f_cw` / `move_f_ccw`, `move_b_left` / `move_b_right` ("Käännä takapuolta niin, että sen
-ylärivi liikkuu vasemmalle" / "Turn the back side so its top row moves to the left"), and
-`move_half_<layer>` via the existing `move_half` with the side name. The mapping (U → left,
-U' → right, D → right, R → up, L → down, B → left, F → clockwise) lives in a pure
-`MoveWords.direction(move)` and is checked by a cube-model test: the sticker that moves is followed
-through the move. Old `move_cw` / `move_ccw` / `from_*` strings are removed. Whole-cube turns keep
-`move_whole_cube`.
+A pure `MoveWords.steadyParts(move)` gives the sentence key and words; `moveDescription(move,
+after, steady)` picks it when `steady`. New strings in both languages:
+`move_top_left` / `move_top_right` ("Käännä yläkerrosta vasemmalle" / "Turn the top layer to the
+left"), `move_bottom_left` / `move_bottom_right`, `move_right_up` / `move_right_down`,
+`move_left_up` / `move_left_down`, `move_front_cw` / `move_front_ccw`, `move_back_left` /
+`move_back_right` ("Käännä takapuolta niin, että sen ylärivi liikkuu vasemmalle" / "Turn the back
+side so its top row moves to the left"), and half turns through the existing `move_half`
+("Käännä yläkerrosta puoli kierrosta"). Mapping: U → left, U' → right, D → right, D' → left,
+R → up, R' → down, L → down, L' → up, B → left, B' → right, F → clockwise. A cube-model test
+follows a front or top sticker through each move to confirm the direction. The learn method keeps
+the current strings.
 
 ### 4. Reset button
 
-`CubeViewState` gets `isAt(target, tolerance)`; `GuideCube` shows a small round icon button
-(`Icons.Filled.Refresh`-style rotate icon from material-icons-core, content description
-"Palauta asento" / "Reset view") in the box's top-end corner when the view is off the holding view
-by more than ~2°; tap → `animateTo(DEFAULT_VIEW)`. 48 dp touch target.
-
-### 5. Rotation cost in the beginner search
-
-`MacroSearch.find(start, macros, maxDepth, goal, cost)` explores all depths up to `maxDepth` and
-returns the hit with the lowest `cost`, ties by length then by order. Cost = `8 ×` quarter
-whole-cube turns (y = 1, y2 = 2) `+` face moves, so a rotation is used only when it saves more
-than about eight face moves. The search space stays small (corners: 80 macros → 6 400 sequences
-at depth 2; measured beginner solve today 16 ms in the browser). The test records the average
-quarter rotations over 200 seeded random cubes before the change (constant in the test, measured
-once on the old code) and asserts ≤ 60 % after, plus that every solution solves.
-
-### 6. Whole-cube turn step
-
-When `state.current` is a rotation, `MoveWordsText` shows two 28 dp colour dots (front, top
-centres of `cubeAt(index + 1)`) with small labels "edessä" / "ylhäällä" next to the sentence.
+`CubeViewState.isAt(target)` (angle between the quaternions under 2°). In steady mode a 40 dp
+round tonal icon button with a 48 dp touch target sits in the box's top-end corner while the view
+is off the holding view; icon: a curved "rotate back" arrow drawn as a vector resource in
+`composeResources/drawable` (material-icons-core has no suitable one); content description
+"Palauta asento" / "Reset the view" (`reset_view`). Tap → `animateTo(DEFAULT_VIEW)`.
 
 ## Risks / Trade-offs
 
-- [Mirror flips left/right, which some find confusing] → it is labelled "Peili", and the main cube
-  still highlights the layer; the words describe the turn from the front without needing the mirror.
-- [Cost weight 8 chooses longer solutions] → learn-mode solutions get a few moves longer; the user
-  prefers fewer regrips. Constant `ROTATION_COST` for tuning.
-- [Screenshots of guide screens change] → expected; the gallery is not refreshed per change.
+- [Mirror flips left/right, which can confuse] → labelled "Peili"; the main cube and the words carry
+  the instruction; angle and size tuned after the user's try.
+- [Two wordings (fast, learn)] → each fits its own view (the learn view still swings to the side it
+  names); documented in docs/architecture.md.
+- [Fast-method guide screenshots change] → expected; checked by eye once.

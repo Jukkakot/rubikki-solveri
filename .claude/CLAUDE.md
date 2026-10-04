@@ -14,11 +14,9 @@ natural next step).
 - **Spec phase (now):** write proposal, design, specs and tasks for one change, then stop for the
   user's review before the next. Ask opinion questions freely; the user often answers by voice, so
   plain numbered questions in text work better than pickers.
-- **Specify first (decided 2026-10-04):** a new change is specified with the user until nothing is
-  open: propose, then keep asking questions (numbered, in text) and fold the answers into the
-  artifacts. Only when the user agrees the spec is complete does implementation start.
-- **Autopilot:** **ON since 2026-10-02**, for implementation once the spec is agreed. Run the loop
-  without review stops: apply → verify → commit → archive → commit → push. Make UX and technical decisions yourself from `product.md` and the specs;
+- **Autopilot:** **ON since 2026-10-02**, for implementation once the spec is agreed with the user
+  (global rule "Specify first"). Run the loop without review stops: apply → verify → commit →
+  archive → commit → push. Make UX and technical decisions yourself from `product.md` and the specs;
   record each non-obvious one in the change's `design.md` and list them in the summary. Stop only
   for money, external accounts, anything irreversible outside the repo, a decision that forces
   rework, or failing checks that cannot be fixed. Work that needs the real phone (camera tuning,
