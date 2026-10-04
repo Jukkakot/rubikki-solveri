@@ -120,7 +120,12 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 initial = initial,
                 initialMarked = marked,
                 title = if (route.fromScan) Res.string.check_title else Res.string.manual_title,
-                note = if (route.fromScan) Res.string.check_note else null,
+                note = when {
+                    route.confident -> Res.string.check_note_ok
+                    route.fromScan -> Res.string.check_note
+                    else -> null
+                },
+                autoContinue = route.confident,
                 pictures = if (route.fromScan) LastScan.pictures else emptyMap(),
                 onScanAgain = if (route.fromScan) {
                     { navController.navigate(ScanRoute()) { popUpTo<ManualInputRoute> { inclusive = true } } }
@@ -152,11 +157,13 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                     navController.popBackStack()
                 },
                 onResult = { outcome ->
-                    val next: Any = if (outcome.isConfident) {
-                        SolveRoute(outcome.editor.toCube()!!.toColorString())
-                    } else {
-                        ManualInputRoute(outcome.editor.encode(), outcome.marked.joinToString(","), fromScan = true)
-                    }
+                    // Always the check next to the pictures; a sure scan goes on to the solution by itself.
+                    val next = ManualInputRoute(
+                        outcome.editor.encode(),
+                        outcome.marked.joinToString(","),
+                        fromScan = true,
+                        confident = outcome.isConfident,
+                    )
                     navController.navigate(next) { popUpTo<ScanRoute> { inclusive = true } }
                 },
                 pictures = actions.scanPictures,

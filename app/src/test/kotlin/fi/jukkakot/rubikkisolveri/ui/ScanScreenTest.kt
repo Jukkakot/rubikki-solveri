@@ -103,28 +103,17 @@ class ScanScreenTest {
 
     @Test
     fun anotherFaceFirst() {
-        // The right face, turned a quarter, first: recognised as the right face.
+        // The right face, turned a quarter, first: captured, and no face is named while scanning.
         scan()
         show(FaceView.RIGHT, 2, turn = 1)
-        compose.onNodeWithText("Keskiö näyttää: Oikea puoli. Pidä paikallaan.").assertIsDisplayed()
+        compose.onNodeWithText("Pidä paikallaan…").assertIsDisplayed()
+        compose.onNodeWithText("Oikea puoli", substring = true).assertDoesNotExist()
         show(FaceView.RIGHT, 1, turn = 1)
-        compose.onNodeWithText("Tunnistettu: Oikea puoli").assertIsDisplayed()
+        compose.onNodeWithText("Tunnistettu", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Oikea puoli", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Hyvä, seuraava").performClick()
         compose.onNodeWithText("Kuvattu 1/6").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Oikea puoli luettu.").assertIsDisplayed()
-    }
-
-    @Test
-    fun changingTheRecognisedFace() {
-        // Recognised as the left face; the user taps the red centre colour.
-        scan()
-        show(FaceView.LEFT, 3)
-        compose.onNodeWithText("Tunnistettu: Vasen puoli").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Oikea puoli").assertIsDisplayed().performClick()
-        compose.onNodeWithText("Tunnistettu: Oikea puoli").assertIsDisplayed()
-        compose.onNodeWithText("Hyvä, seuraava").performClick()
-        compose.onNodeWithContentDescription("Oikea puoli luettu.").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Vasen puoli luettu.").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Puoli luettu.").assertIsDisplayed()
     }
 
     @Test
@@ -147,11 +136,11 @@ class ScanScreenTest {
     fun heldStill() {
         scan()
         show(FaceView.FRONT, 3)
-        compose.onNodeWithText("Tunnistettu: Etupuoli").assertIsDisplayed()
+        compose.onNodeWithText("Tunnistettu", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
         compose.onNodeWithText("Hyvä, seuraava").performClick()
         compose.onNodeWithText("Kuvattu 1/6").assertIsDisplayed()
-        compose.onNodeWithText("Etupuoli luettu.").assertIsDisplayed()
+        compose.onNodeWithText("Puoli luettu.").assertIsDisplayed()
     }
 
     @Test
@@ -169,8 +158,7 @@ class ScanScreenTest {
         scan()
         confirm(FaceView.TOP)
         confirm(FaceView.FRONT)
-        compose.onNodeWithContentDescription("Yläpuoli luettu.").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Etupuoli luettu.").assertIsDisplayed()
+        compose.onAllNodesWithContentDescription("Puoli luettu.").assertCountEquals(2)
         compose.onAllNodesWithContentDescription("Kuvattava puoli").assertCountEquals(1)
         compose.onAllNodesWithContentDescription("Kuvaamatta").assertCountEquals(3)
     }
@@ -228,18 +216,26 @@ class ScanScreenTest {
     }
 
     /** The check of [colors] after a scan with [marked] stickers; the readings are the true colours. */
-    private fun check(colors: Cube, marked: Set<Int>, onValid: (Cube) -> Unit = {}, onScanFace: (FaceView) -> Unit = {}, onScanAgain: () -> Unit = {}) {
+    private fun check(
+        colors: Cube,
+        marked: Set<Int>,
+        onValid: (Cube) -> Unit = {},
+        onScanFace: (FaceView) -> Unit = {},
+        onScanAgain: () -> Unit = {},
+        confident: Boolean = false,
+    ) {
         val readings = (0 until 54).map { ColorClassifier.DEFAULT_PALETTE.getValue(cube[it]) }
         val editor = CubeEditor.of(colors)
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
                 ManualInputScreen(
                     onBack = {}, onValid = onValid, initial = editor, initialMarked = marked,
-                    title = Res.string.check_title, note = Res.string.check_note,
+                    title = Res.string.check_title, note = if (confident) Res.string.check_note_ok else Res.string.check_note,
                     pictures = mapOf(Face.F to IntArray(120 * 120) { 0xff808080.toInt() }),
                     onScanAgain = onScanAgain,
                     check = ScanCheck.start(editor, marked, readings),
                     onScanFace = onScanFace,
+                    autoContinue = confident,
                 )
             }
         }
@@ -304,5 +300,52 @@ class ScanScreenTest {
         compose.onNodeWithText("Näyttää oikealta").performClick()
         compose.waitUntil(5_000) { solved != null }
         assertEquals(cube, solved)
+    }
+
+    @Test
+    @Config(qualifiers = "fi-w411dp-h891dp")
+    fun aConfidentScanOpensTheSolutionByItself() {
+        var solved: Cube? = null
+        compose.mainClock.autoAdvance = false
+        check(cube, emptySet(), onValid = { solved = it }, confident = true)
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.onNodeWithText("Vertaa kuviin.", substring = true).assertIsDisplayed()
+        assertEquals(null, solved)
+        compose.mainClock.advanceTimeBy(5_000)
+        compose.mainClock.autoAdvance = true
+        compose.waitUntil(5_000) { solved != null }
+        assertEquals(cube, solved)
+    }
+
+    @Test
+    @Config(qualifiers = "fi-w411dp-h891dp")
+    fun aTouchStopsTheAutomaticContinue() {
+        var solved: Cube? = null
+        compose.mainClock.autoAdvance = false
+        check(cube, emptySet(), onValid = { solved = it }, confident = true)
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.onNodeWithContentDescription("Etupuoli, tarra 1").performClick()
+        compose.mainClock.advanceTimeBy(6_000)
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        assertEquals(null, solved)
+        compose.onNodeWithText("Näyttää oikealta").performClick()
+        compose.waitUntil(5_000) { solved != null }
+    }
+
+    @Test
+    @Config(qualifiers = "fi-w411dp-h891dp")
+    fun scanAgainFromAConfidentCheck() {
+        var solved: Cube? = null
+        var scanAgain = false
+        compose.mainClock.autoAdvance = false
+        check(cube, emptySet(), onValid = { solved = it }, onScanAgain = { scanAgain = true }, confident = true)
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.onNodeWithText("Skannaa koko kuutio uudelleen").performClick()
+        assertTrue(scanAgain)
+        compose.mainClock.advanceTimeBy(6_000)
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        assertEquals(null, solved)
     }
 }

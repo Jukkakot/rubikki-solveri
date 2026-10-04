@@ -106,14 +106,12 @@
     <string name="scan_any_hint">Näytä mikä tahansa kuvaamaton puoli, missä asennossa tahansa.</string>
     <string name="scan_one_hint">Keskiö on %1$s. Näytä tämä puoli missä asennossa tahansa.</string>
     <string name="scan_review_face">Tunnistettu: %1$s</string>
-    <string name="scan_review_pick">Väärä puoli? Napauta oikean puolen keskiön väriä.</string>
     <string name="scan_status_align">Pidä kuution puoli ruudukon sisällä.</string>
     <string name="scan_status_hold">Pidä paikallaan…</string>
-    <string name="scan_captured">%1$s luettu.</string>
+    <string name="scan_captured">Puoli luettu.</string>
     <string name="scan_capture">Ota kuva</string>
     <string name="scan_redo">Uudelleen</string>
     <string name="scan_review_note">Värit tulkitaan lopuksi koko kuution perusteella.</string>
-    <string name="scan_status_centre">Keskiö näyttää: %1$s. Pidä paikallaan.</string>
     <string name="scan_status_no_cube">Tuo kuutio ruudukkoon: jokainen ruutu yhdelle tarralle.</string>
     <string name="scan_status_turn">Tämä puoli on jo kuvattu – käännä kuutiota toiseen puoleen.</string>
     <string name="scan_accept">Hyvä, seuraava</string>
@@ -127,6 +125,7 @@
     <string name="scan_camera_error">Kameraa ei saatu käyttöön.</string>
     <string name="check_title">Tarkista värit</string>
     <string name="check_note">Vertaa kameran kuvaan. Korjaa väärä tarra valitsemalla väri ja napauttamalla tarraa, tai kuvaa puoli uudelleen. Punareunaiset ovat epävarmoja.</string>
+    <string name="check_note_ok">Vertaa kuviin. Jatketaan ratkaisuun…</string>
     <string name="check_picture">Kamera näki</string>
     <string name="check_colors">Värit</string>
     <string name="check_looks_right">Näyttää oikealta</string>

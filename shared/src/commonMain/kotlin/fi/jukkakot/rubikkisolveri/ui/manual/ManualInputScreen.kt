@@ -1,7 +1,17 @@
 package fi.jukkakot.rubikkisolveri.ui.manual
 
 import org.jetbrains.compose.resources.StringResource
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
@@ -107,6 +117,7 @@ fun ManualInputScreen(
     onRescanUsed: () -> Unit = {},
     onReadings: (List<Rgb>) -> Unit = {},
     onRescanTurned: (Face, Int) -> Unit = { _, _ -> },
+    autoContinue: Boolean = false,
 ) {
     var encoded by rememberSaveable { mutableStateOf(initial.encode()) }
     // The face-by-face check of a scan (null for plain manual input); its readings are not saved
@@ -194,7 +205,18 @@ fun ManualInputScreen(
     // A scan that cannot be right without any doubtful sticker starts with every face checked: say
     // at once which faces to look at.
     LaunchedEffect(Unit) {
-        if (check != null && check.unchecked.isEmpty() && verdictFaces.isEmpty()) judge(check)
+        if (!autoContinue && check != null && check.unchecked.isEmpty() && verdictFaces.isEmpty()) judge(check)
+    }
+
+    // A sure scan: the solution opens by itself unless the user touches the check first.
+    var waiting by rememberSaveable { mutableStateOf(autoContinue) }
+    val countdown = remember { Animatable(0f) }
+    LaunchedEffect(waiting) {
+        if (!waiting) return@LaunchedEffect
+        countdown.snapTo(0f)
+        countdown.animateTo(1f, tween(AUTO_CONTINUE_MILLIS, easing = LinearEasing))
+        lookRight()
+        waiting = false
     }
 
     // A face rescanned on its own comes back: it replaces that face in the check.
@@ -216,6 +238,15 @@ fun ManualInputScreen(
     val verdictNames = verdictFaces.split(',').mapNotNull { it.toIntOrNull() }.map { stringResource(faceName(FaceView.entries[it])) }
 
     Scaffold(
+        // Any touch on the check stops the automatic continue (the touch itself still works).
+        modifier = Modifier.pointerInput(waiting) {
+            if (waiting) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    waiting = false
+                }
+            }
+        },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(title)) },
@@ -281,7 +312,26 @@ fun ManualInputScreen(
                         )
                     }
                     Palette(editor, selectedColor, onSelect = { colorIndex = it.ordinal })
-                    if (scanCheck != null) {
+                    if (scanCheck != null && autoContinue && onScanAgain != null) {
+                        // A sure scan: scan again at hand; "Looks right" fills up until the solution opens.
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedButton(onClick = onScanAgain, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) {
+                                Text(stringResource(Res.string.check_scan_whole), maxLines = 2)
+                            }
+                            val fill = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f)
+                            val shown = if (waiting) countdown.value else 0f
+                            Button(
+                                onClick = ::lookRight,
+                                modifier = Modifier.weight(1f).heightIn(min = 56.dp).clip(CircleShape)
+                                    .drawWithContent {
+                                        drawContent()
+                                        drawRect(fill, size = Size(size.width * shown, size.height))
+                                    },
+                            ) {
+                                Text(stringResource(Res.string.check_looks_right), maxLines = 2)
+                            }
+                        }
+                    } else if (scanCheck != null) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (onScanFace != null && scanCheck.readings != null) {
                                 OutlinedButton(onClick = { onScanFace(view) }, modifier = Modifier.weight(1f)) {
@@ -504,3 +554,6 @@ private fun MiniNet(editor: CubeEditor, current: FaceView, marked: Set<Int>, che
         Row { Spacer(Modifier.width(faceSize)); face(FaceView.BOTTOM) }
     }
 }
+
+/** How long the check of a sure scan waits before it opens the solution by itself. */
+private const val AUTO_CONTINUE_MILLIS = 5_000

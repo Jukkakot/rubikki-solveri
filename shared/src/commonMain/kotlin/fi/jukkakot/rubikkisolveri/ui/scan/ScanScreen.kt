@@ -14,7 +14,6 @@ import fi.jukkakot.rubikkisolveri.ui.common.FitColumn
 import fi.jukkakot.rubikkisolveri.ui.common.RoundIconToggle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -31,8 +30,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -201,7 +198,6 @@ fun ScanContent(
     var stickers by remember { mutableStateOf<List<Boolean>?>(null) }
     var index by remember { mutableIntStateOf(0) }
     var review by remember { mutableStateOf<List<Rgb>?>(null) }
-    var reviewFace by remember { mutableStateOf<FaceView?>(null) }
     var recognised by remember { mutableStateOf<FaceView?>(null) }
     var lastCaptured by remember { mutableStateOf<FaceView?>(null) }
     val haptics = LocalHapticFeedback.current
@@ -212,7 +208,6 @@ fun ScanContent(
         index = session.index
         if (e is ScanEvent.Captured) {
             review = session.review
-            reviewFace = e.face
             recognised = e.face
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
             val picture = runCatching { savePicture(e.face.face.name) }
@@ -226,17 +221,11 @@ fun ScanContent(
         }
     }
 
-    fun choose(view: FaceView) {
-        session.choose(view)
-        reviewFace = session.reviewFace
-    }
-
     fun accept() {
         val face = session.reviewFace ?: return
         session.accept()
         keepPicture(face)
         review = null
-        reviewFace = null
         lastCaptured = face
         index = session.index
         event = ScanEvent.Waiting
@@ -257,7 +246,7 @@ fun ScanContent(
                 "uncertain" to outcome.uncertain.size,
                 "cube" to outcome.editor.encode(),
                 "rotations" to Face.entries.joinToString("") { "${it.name}${outcome.rotations[it] ?: 0}" },
-                "renamed" to outcome.from.filter { (to, from) -> to != from }.keys.joinToString("") { it.name }.ifEmpty { null },
+                "renamed" to outcome.renamed,
             )
             onResult(outcome)
         }
@@ -266,7 +255,6 @@ fun ScanContent(
     fun retake() {
         session.retake()
         review = null
-        reviewFace = null
         event = ScanEvent.Waiting
     }
 
@@ -354,7 +342,7 @@ fun ScanContent(
             Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
         ) {
-            Progress(session::isAccepted, index, only)
+            Progress(session::isAccepted, { session.capturedSamples(it)?.get(4) }, index, only)
             Box(
                 Modifier.fitSlot().aspectRatio(3f / 4f, matchHeightConstraintsFirst = true)
                     .clip(MaterialTheme.shapes.extraLarge).background(Color.Black),
@@ -367,7 +355,8 @@ fun ScanContent(
                 val read = review
                 if (read == null) {
                     val holding = event as? ScanEvent.Holding
-                    GridOverlay(live, stickers, holding?.recognised?.centreColor(), Modifier.fillMaxSize())
+                    // The full scan names no face while scanning; a one-face rescan knows its face.
+                    GridOverlay(live, stickers, holding?.recognised?.takeIf { only != null }?.centreColor(), Modifier.fillMaxSize())
                     OnCamera(Modifier.align(Alignment.BottomCenter)) {
                         Text(statusText(event, only), color = Color.White, style = MaterialTheme.typography.titleSmall)
                         LinearProgressIndicator(
@@ -377,9 +366,9 @@ fun ScanContent(
                             drawStopIndicator = {},
                         )
                     }
-                    lastCaptured?.let {
+                    if (lastCaptured != null) {
                         Text(
-                            stringResource(Res.string.scan_captured, stringResource(faceName(it))),
+                            stringResource(Res.string.scan_captured),
                             color = Color.White,
                             style = MaterialTheme.typography.labelLarge,
                             modifier = Modifier.align(Alignment.TopStart).padding(12.dp)
@@ -390,19 +379,15 @@ fun ScanContent(
                 } else {
                     ReviewOverlay(read, Modifier.fillMaxSize())
                     OnCamera(Modifier.align(Alignment.BottomCenter), scrim = false) {
-                        reviewFace?.let {
+                        // The full scan names the faces only at the end; a one-face rescan knows its face.
+                        if (only != null) {
                             Text(
-                                stringResource(Res.string.scan_review_face, stringResource(faceName(it))),
+                                stringResource(Res.string.scan_review_face, stringResource(faceName(only))),
                                 color = Color.White,
                                 style = MaterialTheme.typography.titleSmall,
                             )
                         }
                         Text(stringResource(Res.string.scan_review_note), color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
-                        // Which face this is: the user can change it by its centre colour.
-                        if (only == null) {
-                            Text(stringResource(Res.string.scan_review_pick), color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
-                            FacePicker(session.remaining, reviewFace, ::choose)
-                        }
                     }
                 }
             }
@@ -448,9 +433,7 @@ private fun OnCamera(modifier: Modifier, scrim: Boolean = true, content: @Compos
 private fun statusText(event: ScanEvent, only: FaceView?): String = when (event) {
     is ScanEvent.AlreadyScanned -> stringResource(Res.string.scan_status_turn)
     is ScanEvent.NoCube -> stringResource(Res.string.scan_status_no_cube)
-    is ScanEvent.Holding -> event.recognised?.takeIf { only == null }
-        ?.let { stringResource(Res.string.scan_status_centre, stringResource(faceName(it))) }
-        ?: stringResource(Res.string.scan_status_hold)
+    is ScanEvent.Holding -> stringResource(Res.string.scan_status_hold)
     else -> stringResource(Res.string.scan_status_align)
 }
 
@@ -515,12 +498,12 @@ private fun ReviewOverlay(samples: List<Rgb>, modifier: Modifier) {
 
 
 /**
- * Which faces are done, as six marks: a done face filled with its centre colour, the face being
- * scanned ringed, the rest empty; the count beside. A one-face rescan ([only]) shows just that face.
- * [done] is read again whenever [count] changes.
+ * Which faces are done, as six marks: a done face filled with its centre as the camera saw it
+ * ([centre]), the face being scanned ringed, the rest empty; the count beside. A one-face rescan
+ * ([only]) shows just that face. [done] is read again whenever [count] changes.
  */
 @Composable
-private fun Progress(done: (FaceView) -> Boolean, count: Int, only: FaceView?) {
+private fun Progress(done: (FaceView) -> Boolean, centre: (FaceView) -> Rgb?, count: Int, only: FaceView?) {
     val scheme = MaterialTheme.colorScheme
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         if (only != null) Text(stringResource(Res.string.scan_one_face), style = MaterialTheme.typography.labelLarge)
@@ -530,15 +513,16 @@ private fun Progress(done: (FaceView) -> Boolean, count: Int, only: FaceView?) {
             val view = doneViews.getOrNull(i)
             val current = view == null && i == doneViews.size
             val mark = when {
-                view != null -> stringResource(Res.string.scan_captured, stringResource(faceName(view)))
+                view != null -> stringResource(Res.string.scan_captured)
                 current -> stringResource(Res.string.scan_pip_current)
                 else -> stringResource(Res.string.scan_pip_empty)
             }
+            val seen = view?.let { centre(it)?.toColor() ?: StickerColors.of(it.centreColor()) }
             val shape = MaterialTheme.shapes.small
             Box(
                 Modifier.size(34.dp).clip(shape)
-                    .then(if (view != null) Modifier.background(StickerColors.of(view.centreColor())) else Modifier)
-                    .border(3.dp, if (view != null) StickerColors.of(view.centreColor()) else if (current) scheme.onSurface else scheme.outlineVariant, shape)
+                    .then(if (seen != null) Modifier.background(seen) else Modifier)
+                    .border(3.dp, seen ?: if (current) scheme.onSurface else scheme.outlineVariant, shape)
                     .semantics { contentDescription = mark },
             )
         }
@@ -548,27 +532,6 @@ private fun Progress(done: (FaceView) -> Boolean, count: Int, only: FaceView?) {
             style = if (only != null) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelLarge,
             color = if (only != null) scheme.onSurface else scheme.onSurfaceVariant,
         )
-    }
-}
-
-/** The faces not yet scanned as centre colours (44 dp); [selected] is the face the capture is taken as. */
-@Composable
-private fun FacePicker(faces: List<FaceView>, selected: FaceView?, onPick: (FaceView) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        for (view in faces) {
-            val name = stringResource(faceName(view))
-            val isSelected = view == selected
-            Box(
-                Modifier.size(44.dp).clip(CircleShape)
-                    .selectable(selected = isSelected, role = Role.RadioButton) { onPick(view) }
-                    .background(StickerColors.of(view.centreColor()))
-                    .border(if (isSelected) 4.dp else 1.dp, if (isSelected) Color.White else MaterialTheme.colorScheme.outline, CircleShape)
-                    .semantics { contentDescription = name },
-                contentAlignment = Alignment.Center,
-            ) {
-                if (isSelected) Icon(Icons.Filled.Check, contentDescription = null, tint = Color.Black, modifier = Modifier.size(20.dp))
-            }
-        }
     }
 }
 

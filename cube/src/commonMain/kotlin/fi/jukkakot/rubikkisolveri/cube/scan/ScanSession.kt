@@ -55,8 +55,8 @@ data class ScanOutcome(
 
 /**
  * The six-face scan, frame by frame, in any order and with each face turned any way. The centre
- * tells which face is in view (among the faces not yet scanned); the user confirms or changes it in
- * the review. A face is captured when every cell has stayed steady for [holdMillis] and at least
+ * provisionally tells which face is in view (among the faces not yet scanned, regardless of
+ * brightness); the final names are decided together in [outcome]. A face is captured when every cell has stayed steady for [holdMillis] and at least
  * [minFrames] frames (the captured samples are the per-cell median of those frames) and is under
  * review until [accept] or [retake]. The colours and how each face was turned are only worked out
  * at the end, from all 54 readings together ([RotationSearch]).
@@ -91,7 +91,7 @@ class ScanSession(
     var review: List<Rgb>? = null
         private set
 
-    /** Which face the samples under review are taken as; the user may [choose] another. */
+    /** Which face the samples under review are provisionally taken as; [choose] sets another (tests, logged scans). */
     var reviewFace: FaceView? = null
         private set
 

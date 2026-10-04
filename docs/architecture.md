@@ -70,12 +70,12 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
    RGBA_8888 at ~640×480, keep-only-latest. The controller aligns analysis with the visible preview,
    so the frame's crop rect is what the user sees.
 2. `FrameSampler`: the grid is a centred square, 72 % of the visible area's shorter side, on
-   screen and in the frame; each cell's middle 40 % is read (every 2nd pixel, per-channel median),
+   screen and in the frame; each cell's middle 60 % is read (every 2nd pixel, per-channel mean of the 25th–75th percentile),
    mapped through the frame rotation.
-3. `ScanSession`: faces in any order, each turned any way. The centre recognises the face among
-   the faces not yet scanned (`Holding.recognised`, `Captured(face)`; read against the default
-   palette and the accepted centres); the review shows it and the user can `choose` another face
-   by its centre colour before `accept`. Readings are stored as seen. Steady = every cell within ΔE 12
+3. `ScanSession`: faces in any order, each turned any way. The centre provisionally names the face among
+   the faces not yet scanned (`ColorClassifier.rankedCentre`: brightness scaled out, against the
+   default palette and the accepted centres); the full scan shows no face name, the names are
+   decided in `outcome()` (step 5). Readings are stored as seen. Steady = every cell within ΔE 12
    (`STEADY_DISTANCE`) for 1.5 s and 3 frames → capture the per-cell median, then review (raw
    colours, "Good, next" / "Scan again"; no tap-to-fix). Stops: an accepted face in view in any of
    its four rotations (`AlreadyScanned`), and a grid that is not a cube face (`NoCube`, decided by
@@ -89,7 +89,10 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
 4. `ColorClassifier.classify`: CIE Lab (lightness weight 0.5), balanced assignment (Hungarian,
    every colour exactly nine times) seeded by the six centres, refined twice; confidence per
    sticker; below 0.12 is uncertain.
-5. `RotationSearch` (in `outcome()`): the 54 classified colours as seen; the 4⁶ = 4096 face
+5. `outcome()` first names the six centres together (`ColorClassifier.centreNamings`, the best
+   of the 720 namings by brightness-scaled distance to the default palette) and renames faces
+   accordingly; if that gives no solvable cube, the next namings (up to `MAX_NAMINGS`) are tried
+   with rotations only. Then, per naming, `RotationSearch`: the 54 classified colours as seen; the 4⁶ = 4096 face
    rotations are tried (`CubeCheck.realPieceCount`, then `validity` for those with 20 real pieces).
    One distinct valid cube → it; several → the fewest quarter turns, the faces that differ marked
    uncertain; none → the most real pieces, after trying each single opposite pair renamed (a
@@ -98,8 +101,10 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
    The outcome carries `rotations` and `from` (which capture ended on which face); readings and
    uncertain stickers are turned into net order, and the app turns each picture the same way
    (`rotatePicture`).
-6. `ScanOutcome`: valid and no uncertain sticker → solution; otherwise manual input with
-   `fromScan`, the scanned colours and the doubtful/problem stickers marked. The outcome keeps the
+6. `ScanOutcome`: always the check (manual input with `fromScan`). Valid and no uncertain sticker
+   (`confident`): nothing marked, and the check opens the solution by itself after 5 s
+   (`autoContinue`; any touch stops it; "scan the whole cube again" beside "Looks right").
+   Otherwise the doubtful/problem stickers are marked and nothing continues by itself. The outcome keeps the
    54 raw readings (`samples`); the app holds them, the pictures and a just-rescanned face in
    `LastScan` (snapshot state, in memory only).
 7. The check (`ScanCheck`, pure Kotlin): faces without a mark start checked; "Looks right" goes to
@@ -247,7 +252,7 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 | `PracticeRoute(stage, seed)` | Practice | the solution screen limited to one stage |
 | `TimerRoute`, `HistoryRoute`, `ScrambleGuideRoute(moves)` | Timer, history, guided scramble | |
 | `ScanRoute(face?)` | Scan (with `face`: that face only, back to the check) | camera permission, grid, live dots, auto-capture; one screen (actions in the bottom bar, status and review texts on the camera); result → solve or check |
-| `ManualInputRoute(cube?, marked?, fromScan)` | Manual input / check a scan | one screen (palette, ‹ › and check in the bottom bar); face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution. From a scan: the face-by-face check (`ScanCheck`): checked faces ticked in the face map, "N faces left", the face's camera picture beside the grid (`LastScan`), "Kuvaa uudelleen" (one-face scan) and "Näyttää oikealta" in place of ‹ › and check, the verdict line, "scan the whole cube again" in the menu |
+| `ManualInputRoute(cube?, marked?, fromScan, confident)` | Manual input / check a scan | one screen (palette, ‹ › and check in the bottom bar); face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution. From a scan: the face-by-face check (`ScanCheck`): checked faces ticked in the face map, "N faces left", the face's camera picture beside the grid (`LastScan`), "Kuvaa uudelleen" (one-face scan) and "Näyttää oikealta" in place of ‹ › and check, the verdict line, "scan the whole cube again" in the menu |
 | `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
 | `SolveRoute(cube)` | Solution | background solve, then the move guide stepper; camera mode follows on the real cube |
 | `SettingsRoute`, `LogRoute` | Settings, log | the log viewer splits each line (`LogLine.parse`), shows its time in the phone's zone and the app language's format (`LogTime.format`, only the time for today) and colours it by level (error/warn/debug/info; the level word shown for non-INFO) |

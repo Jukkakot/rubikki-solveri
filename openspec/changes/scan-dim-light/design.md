@@ -96,6 +96,25 @@ same cube as logged; the 10:47 and 11:07 scans are reported either way (no expec
 beyond not throwing, since the real cube is unknown), and their result is noted in the summary. The
 live recognition test: `072641` with no faces done names the blue face.
 
+### Implementation decisions (autopilot)
+
+- **Namings by enumeration:** all 720 namings are costed and sorted (cheap), instead of Hungarian
+  plus a k-best search; the best one is what Hungarian would give. A tie keeps the live name.
+- **Pair rename only for the best naming:** renaming an opposite pair is itself another naming, so
+  namings 2–12 try rotations only. Worst case on the JVM: 1.4 s → 0.5 s (the log's impossible
+  10:47 and 11:07 scans); a valid scan stays under 0.15 s.
+- **Confident check's bar:** "Skannaa koko kuutio uudelleen" + "Näyttää oikealta" for the whole
+  life of the screen, also after a touch stopped the countdown; no per-face rescan there. Why: the
+  touch that stops the countdown must not change the button under the finger. Stickers can still be
+  painted, and the menu keeps "scan the whole cube again".
+- **Countdown look:** a translucent fill sweeping across "Näyttää oikealta"; it clears when stopped.
+- **One-face rescan:** keeps its face name in the review and its centre ring on the grid.
+- **`ScanSession.choose`** stays (no UI uses it) so tests can replay the log's live names.
+- **Log results:** the evening scan is valid and confident with the new live naming already; with
+  the log's wrong live names it is renamed `B>U,U>B` and gives the same cube. 10:47 and 11:07 stay
+  impossible: their U and D faces have near-black and brownish cells that are not stickers, not a
+  naming problem.
+
 ## Risks / Trade-offs
 
 - [A bigger area catches a gap when the cube is held small in the grid] → the trimmed mean drops the

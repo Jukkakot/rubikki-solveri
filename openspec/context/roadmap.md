@@ -40,7 +40,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 30 | `scan-needs-cube` | done | Auto capture only when every grid cell is one sticker; green cell outlines; camera follow ignores frames without a face |
 | 31 | `fit-screen` | done | Screens with actions fit in portrait without scrolling: trimmed spacing, the big element shrinks (200 dp floor) |
 | 32 | `real-mirror` | done | A framed mirror behind the guide cube in the 3D scene, a true reflection of the back; replaces the mirror card; one steady view and one move wording everywhere, learn method included (user decisions 2026-10-04) |
-| 33 | `scan-dim-light` | specced | Forgiving scan in dim, warm light: bigger averaged cell reading, brightness-independent face naming, the six centres named together at the end (silent fix, next-best namings), the colour check after every scan (user, 2026-10-04) |
+| 33 | `scan-dim-light` | done | Forgiving scan in dim, warm light: bigger averaged cell reading, brightness-independent face naming, the six centres named together at the end (silent fix, next-best namings), the colour check after every scan (user, 2026-10-04) |
 
 ## Backlog
 

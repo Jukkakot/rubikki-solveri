@@ -13,10 +13,16 @@ data object LogRoute
 
 /**
  * Manual input, empty or prefilled: [cube] is a `CubeEditor.encode()` string, [marked] comma-separated
- * sticker indices to mark, [fromScan] when a scan hands over its result for checking.
+ * sticker indices to mark, [fromScan] when a scan hands over its result for checking, [confident]
+ * when that scan was valid and sure (the check then goes on to the solution by itself).
  */
 @Serializable
-data class ManualInputRoute(val cube: String? = null, val marked: String? = null, val fromScan: Boolean = false)
+data class ManualInputRoute(
+    val cube: String? = null,
+    val marked: String? = null,
+    val fromScan: Boolean = false,
+    val confident: Boolean = false,
+)
 
 /** The scan; with [face] (a `FaceView` name) only that face, rescanned from the check. */
 @Serializable
