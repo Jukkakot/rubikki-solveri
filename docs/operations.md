@@ -6,19 +6,24 @@ There is no server: "operations" means getting the app onto the phone and findin
 
 - Every push to `main` runs CI (GitHub Actions → CI): tests, lint, debug APK. The APK is attached
   to the run as the artifact `rubikki-solveri-debug-<commit>` for 7 days.
-- The version name is `0.1.0-<short commit>`; the log's `app.start` line shows it.
+- Then, if the signing key secret is set, the `publish` job replaces the release "latest-build"
+  with a signed release APK of that commit (see Release below). Without the secret the run summary
+  says "Publishing skipped".
+- The version name is `1.0.<commit count>-<short commit>`; the log's `app.start` line and
+  Settings → About show it.
 
 ## Installing on the phone — Implemented
 
-Two ways:
+Three ways:
 
-1. **From Android Studio** (normal during development): phone connected with USB debugging on,
-   pick the phone in the device menu, press Run ▶.
-2. **From a CI artifact:** download the APK zip from the CI run, unzip, copy the APK to the phone,
-   open it and allow "install unknown apps" for the file manager. A debug APK from CI is signed
-   with that runner's debug key, so installing it over a Studio-installed build needs an
-   uninstall first.
-3. **A signed release** for everyday use: see Release below.
+1. **The download link** (everyday): open
+   https://github.com/Jukkakot/rubikki-solveri/releases/latest/download/rubikki-solveri.apk on the
+   phone, or in the app Settings → About → **Lataa uusin versio**. Steps below under Release → 4.
+2. **From Android Studio** (during development): phone connected with USB debugging on, pick the
+   phone in the device menu, press Run ▶. Both ways use the same key, so they update each other.
+3. **From a CI artifact:** download the debug APK zip from a CI run, unzip, copy it to the phone.
+   It is signed with that runner's own debug key, so it does **not** install over the others
+   without an uninstall (which deletes the history) — avoid.
 
 ### First time: Android Studio on Windows and the Galaxy S24
 
@@ -93,54 +98,59 @@ With the phone on wireless debugging Claude can also pull them directly:
 
 ## Release — Implemented
 
-The release APK is shrunk with R8 (about 4.5 MB) and signed with your own key. Versions: build
-number = number of commits, name `1.0.<count>-<commit>` (shown in Settings → About and in the
-log's `app.start`). Android only installs an update over an app signed with the **same key**, so
-create the key once and keep it.
+The release APK is shrunk with R8 (about 4.5 MB). Versions: build number = number of commits, name
+`1.0.<count>-<commit>` (Settings → About, the log's `app.start`). Android only installs an update
+over an app signed with the **same key**. The app's key is your **Android Studio debug key**
+(`C:\Users\<you>\.android\debug.keystore`, created by Android Studio, passwords `android`): it
+already signed the app Run ▶ put on the phone, so the downloaded APK updates that install and keeps
+its history. Local release builds without `keystore.properties` use the same key automatically.
 
-### 1. Create the signing key (once, in Android Studio)
+### 1. Once: give the key to GitHub
 
-1. Android Studio → **Build → Generate Signed App Bundle or APK…** → choose **APK** → Next.
-2. Module **app**. Under *Key store path* click **Create new…**.
-3. Key store path: a folder outside the project, e.g. `C:\Users\<you>\keys\rubikki.jks`.
-   Choose a password and confirm it. Alias: `rubikki`, its password (may be the same), validity
-   25 years, your name under *First and Last Name*. **OK**.
-4. Back in the dialog press **Cancel** (the build below uses the Gradle setup instead).
-5. **Back up `rubikki.jks` and the passwords** (e.g. a password manager and a USB stick). If the
-   key is lost, updates are impossible: the app must be uninstalled, which deletes its history.
-
-### 2. Build a release APK on your computer
-
-1. In the project folder (next to `settings.gradle.kts`) create `keystore.properties`
-   (it is git-ignored, never commit it):
+1. On the PC open **PowerShell** (Start → type `powershell` → Enter) and paste:
    ```
-   storeFile=C:/Users/<you>/keys/rubikki.jks
-   storePassword=<key store password>
-   keyAlias=rubikki
-   keyPassword=<key password>
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:USERPROFILE\.android\debug.keystore")) | Set-Clipboard
    ```
-2. Android Studio → **Build → Select Build Variant…** → set *app* to **release**, then
-   **Build → Build App Bundle(s) / APK(s) → Build APK(s)**. The APK is in
-   `app/build/outputs/apk/release/app-release.apk` (the "locate" link in the pop-up opens it).
-   Alternatively Run ▶ with the release variant installs it on the connected phone directly.
+   Nothing is printed; the key is now on the clipboard as text.
+2. In the browser: https://github.com/Jukkakot/rubikki-solveri → **Settings** (top bar) →
+   left menu **Secrets and variables → Actions** → **New repository secret**.
+   Name: `RELEASE_KEYSTORE_BASE64`, Secret: paste (Ctrl+V) → **Add secret**.
+3. **Back up the key file**: copy `C:\Users\<you>\.android\debug.keystore` to a USB stick or
+   a cloud drive. A new PC or a reinstalled Android Studio makes a different key; then copy this
+   file back to the same place before pressing Run ▶, or updates stop working.
+4. Start a build: **Actions** → **CI** → the newest run → **Re-run all jobs** (or push anything).
+   When it is green, **Code** page → right side **Releases** shows "Rubikki Solveri 1.0.…".
 
-### 3. Optional: releases from GitHub
+A dedicated key instead (e.g. for a store later): set `RELEASE_KEYSTORE_BASE64` to that key file
+and add `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`; every existing
+install then needs one uninstall. See [distribution.md](distribution.md).
 
-1. GitHub → the repo → **Settings → Secrets and variables → Actions → New repository secret**,
-   four secrets:
-   - `RELEASE_KEYSTORE_BASE64`: the key file as base64 — in PowerShell
-     `[Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\Users\<you>\keys\rubikki.jks")) | Set-Clipboard`,
-     then paste.
-   - `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS` (`rubikki`), `RELEASE_KEY_PASSWORD`.
-2. Tag a version: Android Studio → **Git → New Tag…** → `v1.0` → push with tags (or ask Claude to
-   do it). The **Release** workflow builds, tests and attaches `rubikki-solveri-v1.0.apk` to a
-   GitHub release. Without the secrets it still runs, but signs with a throw-away debug key.
+### 2. Tagged versions (optional)
 
-### 4. Install the APK on the Galaxy S24
+A tag like `v1.0` (Android Studio → **Git → New Tag…**, then push with tags) runs the **Release**
+workflow, which makes a permanent release "v1.0" with the same APK. The fixed download link
+serves whichever release is newest.
 
-1. Copy the APK to the phone (USB cable → *Phone/Download*, or download it on the phone from the
-   GitHub release).
-2. On the phone open **My Files → Downloads** and tap the APK. The first time Android asks to
-   allow installs from that app: **Settings → Allow from this source** → back → **Install**.
-3. A build signed with a different key than the installed one does not install over it ("App not
-   installed"): uninstall the old one first (this deletes its history) — or always use the same key.
+### 3. Build a release APK on the computer (optional)
+
+Android Studio → **Build → Select Build Variant…** → *app* = **release**, then Run ▶ (installs on
+the phone) or **Build → Build App Bundle(s) / APK(s) → Build APK(s)** (file in
+`app/build/outputs/apk/release/`).
+
+### 4. Install or update on the Galaxy S24
+
+1. On the phone open the link above in **Chrome** (or Settings → About → **Lataa uusin versio** in
+   the app). Chrome may ask "Download file anyway?" → **Download**.
+2. Tap **Open** in the download notice (or **My Files → Downloads → rubikki-solveri.apk**).
+3. First time only: "For your security, your phone is not allowed to install unknown apps from this
+   source" → **Settings** → turn on **Allow from this source** → back.
+4. **Update** (or **Install** on a phone without the app). If Play Protect shows "Unsafe app
+   blocked" or asks to scan: **More details → Install anyway**.
+5. Optional, for one-tap updates: in Chrome open the link page, **⋮ → Add to home screen**.
+
+If it says **"App not installed"**: either the phone's app was signed with another key (e.g. Run ▶
+from a different PC — install the key file there, see 1.3) or the download is older than what is
+installed (Run ▶ from unpushed commits — push first, or keep using Run ▶).
+
+For other people (QR code, Obtainium automatic updates): the front page `README.md` and
+[distribution.md](distribution.md).

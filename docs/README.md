@@ -11,6 +11,7 @@ about the solution starts here.
 |---|---|
 | How is it built? How do the parts fit together? | [architecture.md](architecture.md) |
 | How do I install it on the phone, read its log, debug it? | [operations.md](operations.md) |
+| How do others get the app? Which free distribution routes exist? | [distribution.md](distribution.md) |
 | How do I build, test and debug it on a computer? Conventions? | [development.md](development.md) |
 | What exactly does the app do (requirements)? | [`openspec/specs/`](../openspec/specs/): one folder per capability |
 | What has been decided but not built yet? | [`openspec/context/`](../openspec/context/): [product](../openspec/context/product.md), [nfr](../openspec/context/nfr.md), [roadmap](../openspec/context/roadmap.md) |

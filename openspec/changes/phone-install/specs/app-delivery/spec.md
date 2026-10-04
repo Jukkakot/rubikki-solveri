@@ -33,3 +33,17 @@ SHALL still run.
 #### Scenario: Secret missing
 - **WHEN** a commit is pushed to main and the signing key secret is not set
 - **THEN** the tests run, no release is created or changed, and the run summary names the missing secret
+
+### Requirement: Install instructions for others
+The repository's front page SHALL have a download section with the fixed address as a link, a QR
+code that opens it, and short install steps in Finnish and English: allowing the browser to
+install apps, the Play Protect prompt, and how to get automatic updates with Obtainium using the
+repository address. Each published release's notes SHALL include the same short steps.
+
+#### Scenario: A friend installs from the front page
+- **WHEN** someone opens the repository page on an Android phone and follows the download section
+- **THEN** they can download and install the app without a GitHub account
+
+#### Scenario: Automatic updates with Obtainium
+- **WHEN** someone adds the repository address in Obtainium as the steps describe
+- **THEN** Obtainium installs the latest release APK and offers each newer one as an update

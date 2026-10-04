@@ -246,6 +246,7 @@
     <string name="about_title">Tietoja sovelluksesta</string>
     <string name="about_text">Rubikki Solveri skannaa kuutiosi ja opettaa ratkaisemaan sen. Kaikki toimii puhelimessa: kuvia tai tietoja ei lähetetä minnekään.</string>
     <string name="about_licences">Avoimen lähdekoodin osat</string>
+    <string name="about_download_latest">Lataa uusin versio</string>
     <string name="about_licences_show">Avoimen lähdekoodin lisenssit</string>
     <string name="about_licences_hide">Piilota lisenssit</string>
     <string name="about_androidx">Android Jetpack (AndroidX, Compose, CameraX, Room) – Apache License 2.0, The Android Open Source Project.</string>

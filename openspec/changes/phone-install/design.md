@@ -60,6 +60,28 @@ existing app without losing data; one-time setup the user can do in a few minute
 - **No `INTERNET` permission** is added: the browser does the download and Android's package
   installer does the install.
 
+- **Free distribution routes** (`docs/distribution.md` records the comparison):
+
+  | Route | Cost / effort | For whom | Decision |
+  |---|---|---|---|
+  | GitHub release link + QR code | none; automatic from CI | anyone with the link; they allow "install unknown apps" once | **do now** |
+  | Obtainium (free open-source app that installs from GitHub releases and checks for updates) | none on our side: the release only needs one APK asset per release | friends who want updates without visiting the link | **document now** |
+  | Browser version (PWA) | the `web-app` change | anyone, also iPhone and computers; no install permission prompts | **next change** |
+  | F-Droid main repository | free, but needs a FOSS licence for the whole repo, a reproducible build from source, review, and no trademark name ("Rubik's") | the open-source audience | later, needs licence + rename |
+  | Own F-Droid repo (fdroidserver on GitHub Pages) | free, moderate setup | F-Droid client users | not now; Obtainium covers updates |
+  | Samsung Galaxy Store (free seller account, review) | free, account + review, needs a non-debug signing key | Samsung users | not now; needs a dedicated key |
+
+  Play Store is out (paid account, product.md). The Obtainium steps: install Obtainium from its
+  GitHub releases page (`https://github.com/ImranR98/Obtainium/releases`, the `app-arm64-v8a`
+  APK), Add app → `https://github.com/Jukkakot/rubikki-solveri` → Add → Install.
+- **Signing and other people:** the debug-key decision above also covers friends' installs: an
+  APK signed with an Android Studio debug certificate installs normally when sideloaded. Stores
+  (Galaxy Store, Play) would reject it; moving to a dedicated release key later means one
+  reinstall for every user (and the history lost). Recorded so a store decision includes that cost.
+- **QR code:** generated once with the Python `qrcode` package (`pip install qrcode[pil]`) by
+  `scripts/download-qr.py` into `docs/img/download-qr.png` (the address never changes, so the
+  image is committed, not built).
+
 ## Risks / Trade-offs
 
 - [The user's PC key differs from the one that signed the phone's current install, e.g. Studio was

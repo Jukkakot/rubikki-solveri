@@ -218,5 +218,11 @@ R8-shrunk release (`app/proguard-rules.pro`: line numbers, navigation routes), s
 `keystore.properties` / `RELEASE_*` env / debug key; `versionCode` = commit count. Settings →
 About shows the name, version and one-line description; the open-source licences (min2phase's
 MIT text from `res/raw`, kept
-identical to the vendored `LICENSE` by a test) unfold behind an "Open-source licences" button. `.github/workflows/release.yml` builds tagged
-releases. See [operations.md](operations.md#release--implemented).
+identical to the vendored `LICENSE` by a test) unfold behind an "Open-source licences" button. Every green push to `main` replaces the
+rolling release `latest-build` (the `publish` job in `ci.yml`), so
+`releases/latest/download/rubikki-solveri.apk` is always the newest; `release.yml` builds tagged
+releases. Both sign with the user's Android Studio debug key from the `RELEASE_KEYSTORE_BASE64`
+secret (passwords default to the debug key's), so downloads update a Run ▶ install in place; no
+secret → no publishing. Settings → About opens the download (`AppLinks.LATEST_APK`); the app makes
+no network requests. See [operations.md](operations.md#release--implemented) and
+[distribution.md](distribution.md).

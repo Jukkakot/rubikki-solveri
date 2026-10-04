@@ -20,6 +20,11 @@ repeatable way to get the latest app onto the phone without a computer.
   installed app); it says so in the run summary.
 - Settings → About gets a "Lataa uusin versio" button that opens the address in the phone's browser.
 - The tagged `v*` release workflow attaches the same fixed-name APK.
+- **Sharing with others, free:** the repository's front page gets a "Lataa / Download" section
+  with the fixed link, a QR code and short install steps in Finnish and English, including
+  Obtainium (a free app that installs and auto-updates apps straight from GitHub releases). The
+  release notes carry the same steps. `docs/distribution.md` compares the free routes (GitHub
+  link, Obtainium, the browser version, F-Droid, Samsung Galaxy Store) and what each would need.
 - Docs: click-by-click setup (secret from the debug key, back it up), first install and every later
   update on the Galaxy S24 (allow installs from Chrome, Play Protect prompt, home-screen shortcut).
 

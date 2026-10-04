@@ -38,3 +38,67 @@ jobs:
           path: |
             */build/reports
           retention-days: 7
+
+  # Every green push to main replaces the one rolling release, so the APK is always at
+  # https://github.com/Jukkakot/rubikki-solveri/releases/latest/download/rubikki-solveri.apk
+  # (docs/operations.md → Release). Signed with the key in RELEASE_KEYSTORE_BASE64, by default
+  # the user's Android Studio debug key, so it updates a Run ▶ install in place.
+  publish:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    concurrency:
+      group: publish
+      cancel-in-progress: true
+    steps:
+      - name: Signing key present?
+        id: key
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$RELEASE_KEYSTORE_BASE64" ]; then
+            echo "Publishing skipped: add the RELEASE_KEYSTORE_BASE64 secret (docs/operations.md → Release)." >> "$GITHUB_STEP_SUMMARY"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          fetch-depth: 0 # the build number is the commit count
+      - uses: actions/setup-java@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.key.outputs.present == 'true'
+      - name: Keystore from secrets
+        if: steps.key.outputs.present == 'true'
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "RELEASE_STORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+      - name: Release APK
+        if: steps.key.outputs.present == 'true'
+        env:
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD || 'android' }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS || 'androiddebugkey' }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD || 'android' }}
+        run: |
+          ./gradlew assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk rubikki-solveri.apk
+          echo "VERSION_NAME=$(./gradlew -q :app:printVersionName)" >> "$GITHUB_ENV"
+      - name: Replace the rolling release
+        if: steps.key.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { git log -1 --format=%s; cat .github/release-notes.md; } > "$RUNNER_TEMP/notes.md"
+          gh release delete latest-build --cleanup-tag --yes || true
+          gh release create latest-build rubikki-solveri.apk --target "$GITHUB_SHA" --latest \
+            --title "Rubikki Solveri $VERSION_NAME" --notes-file "$RUNNER_TEMP/notes.md"

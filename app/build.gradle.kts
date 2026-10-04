@@ -160,3 +160,9 @@ dependencies {
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
 }
+
+// CI reads the version for the release title, so it matches Settings → About.
+tasks.register("printVersionName") {
+    val name = "1.0.$commitCount-$gitSha"
+    doLast { println(name) }
+}
