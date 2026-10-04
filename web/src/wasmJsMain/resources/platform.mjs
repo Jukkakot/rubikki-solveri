@@ -224,9 +224,11 @@ export function formatDateTime(epochMillis, language, timeOnly) {
 
 /**
  * Shares the log text and the PNG pictures (names and base64 data, one per line) through the share
- * sheet when the browser can share files; otherwise downloads the log as a text file.
+ * sheet when the browser can share files; a refused share (Samsung Internet says it can, then
+ * refuses) is retried with the log alone, then the log is downloaded as a text file. [report] gets
+ * the outcome (shared, log-only, downloaded, cancelled) and the last refusal ("" when none).
  */
-export function shareOrDownload(logName, logText, pictureNames, pictureData) {
+export function shareOrDownload(logName, logText, pictureNames, pictureData, report) {
   const files = [new File([logText], logName, { type: 'text/plain' })];
   const names = pictureNames ? pictureNames.split('\n') : [];
   const data = pictureData ? pictureData.split('\n') : [];
@@ -234,14 +236,38 @@ export function shareOrDownload(logName, logText, pictureNames, pictureData) {
     const bytes = Uint8Array.from(atob(data[i]), (c) => c.charCodeAt(0));
     files.push(new File([bytes], name, { type: 'image/png' }));
   });
-  if (navigator.canShare && navigator.share && navigator.canShare({ files })) {
-    navigator.share({ files, title: logName }).catch(() => {});
-    return;
-  }
-  const url = URL.createObjectURL(files[0]);
+  const share = (list) => {
+    try {
+      if (navigator.canShare && navigator.share && navigator.canShare({ files: list })) {
+        return navigator.share({ files: list, title: logName });
+      }
+      return Promise.reject(new Error('cannot share files'));
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  };
+  const describe = (e) => (e && (e.name + ': ' + e.message)) || String(e);
+  const cancelled = (e) => e && e.name === 'AbortError';
+  share(files)
+    .then(() => report('shared', ''))
+    .catch((first) => {
+      if (cancelled(first)) return report('cancelled', '');
+      const retry = files.length > 1 ? share([files[0]]) : Promise.reject(first);
+      return retry
+        .then(() => report('log-only', describe(first)))
+        .catch((second) => {
+          if (cancelled(second)) return report('cancelled', describe(first));
+          download(files[0], logName);
+          report('downloaded', describe(second));
+        });
+    });
+}
+
+function download(file, name) {
+  const url = URL.createObjectURL(file);
   const a = document.createElement('a');
   a.href = url;
-  a.download = logName;
+  a.download = name;
   document.body.appendChild(a);
   a.click();
   a.remove();

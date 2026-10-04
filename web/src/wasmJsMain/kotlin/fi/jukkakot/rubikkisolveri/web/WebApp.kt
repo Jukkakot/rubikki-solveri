@@ -121,7 +121,9 @@ fun WebApp(services: WebServices) {
                             },
                             shareLog = {
                                 logger.info(Evt.LOG_SHARED)
-                                shareLog(services)
+                                shareLog(services) { outcome, error ->
+                                    logger.info(Evt.LOG_SHARED, null, "outcome" to outcome, "error" to error.ifEmpty { null })
+                                }
                             },
                             crashedLastTime = crashed,
                             onCrashNoticeShown = { crashed = false },

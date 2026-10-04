@@ -20,7 +20,7 @@ external fun reducedMotion(): Boolean
 external fun vibrate(ms: Int)
 external fun formatDateTime(epochMillis: Double, language: String, timeOnly: Boolean): String
 external fun installCrashHooks(report: (String) -> Unit)
-external fun shareOrDownload(logName: String, logText: String, pictureNames: String, pictureData: String)
+external fun shareOrDownload(logName: String, logText: String, pictureNames: String, pictureData: String, report: (String, String) -> Unit)
 
 external fun cameraAcquire(done: (String) -> Unit)
 external fun cameraRelease()
