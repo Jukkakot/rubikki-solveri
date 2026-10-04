@@ -9,6 +9,10 @@ gap SHALL fail. Each cell of the grid SHALL show whether it looks like a sticker
 when it does). While any cell fails, the screen SHALL ask the user to bring the cube into the grid
 and the hold progress SHALL NOT run. The capture button SHALL still capture what is in the grid.
 
+#### Scenario: Desk in view
+- **WHEN** the camera shows a dark mouse pad or a grey desk in the grid and is held still
+- **THEN** the screen asks to bring the cube into the grid and nothing is captured
+
 #### Scenario: Room in view
 - **WHEN** the camera shows a room, with or without the cube small in a corner, and is held still
 - **THEN** the screen asks to bring the cube into the grid and nothing is captured
