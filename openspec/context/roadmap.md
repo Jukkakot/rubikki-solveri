@@ -37,7 +37,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 27 | `web-app` | done | The same app in the browser (GitHub Pages, installable, offline) from one Kotlin Multiplatform code base: cube multiplatform with min2phase ported to Kotlin, screens in a shared Compose Multiplatform module, Android app unchanged |
 | 28 | `steady-cube` | done | Shortest-solution guide never turns the view: holding view, a small mirror cube, words for that view, reset button after dragging (user priority 2026-10-04; learn method unchanged) |
 | 29 | `share-log-fix`, `share-log-zip` | done | Browser log sharing: at most ten files to the share sheet, zip download when refused (Samsung Internet) |
-| 30 | `scan-needs-cube` | specced | Auto capture only when every grid cell is one sticker; green cell outlines; camera follow ignores frames without a face |
+| 30 | `scan-needs-cube` | done | Auto capture only when every grid cell is one sticker; green cell outlines; camera follow ignores frames without a face |
 | 31 | `fit-screen` | specced | Screens with actions fit in portrait without scrolling: trimmed spacing, the big element shrinks (200 dp floor) |
 | 32 | `real-mirror` | planned | A framed mirror behind the guide cube in the 3D scene, a true reflection of the back; replaces the mirror card (user decision 2026-10-04) |
 
