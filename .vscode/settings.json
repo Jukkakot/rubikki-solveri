@@ -1,0 +1,6 @@
+{
+  // fwcd.kotlin's language server knows Kotlin 2.1 and no Multiplatform: it reports false
+  // "Unresolved reference" errors everywhere here. Gradle is the checker; highlighting stays.
+  "kotlin.languageServer.enabled": false,
+  "kotlin.diagnostics.enabled": false
+}
