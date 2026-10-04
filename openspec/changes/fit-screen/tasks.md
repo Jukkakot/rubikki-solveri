@@ -1,17 +1,18 @@
 # Tasks
 
-## 1. Solution screen
+## 1. Helper and solution screen
 
-- [ ] 1.1 Stepper: fixed column; the guide area gets the leftover height (`weight(1f)`), `GuideCube` draws the largest 1.1 box that fits, centred; under 160 dp leftover the scrolling layout as today
-- [ ] 1.2 Camera follow: the camera box shrinks the same way (keeps 3:4, centred)
-- [ ] 1.3 Compose test in `app` at a short window (about 411 × 560 dp): "Tein sen" and the move text are displayed without scrolling; one at a tall window: cube width unchanged
+- [ ] 1.1 `ui/common/FitColumn`: fixed column with a `weight(1f)` slot for the big element (as large as fits, centred, never larger than full width), scrolling fallback under 200 dp
+- [ ] 1.2 Stepper on `FitColumn`: step count on the progress row, hold line in `bodySmall`, 8 dp spacing, method choice without extra padding; `GuideCube` sized by its slot (mirror and reset scale with it)
+- [ ] 1.3 Camera follow: the camera box (3:4) in the slot
+- [ ] 1.4 Compose tests in `app` at about 411 × 560 dp: "Tein sen" and the move text displayed without scrolling, and the cube's size is the same after a step; at 411 × 891 dp the cube is full width
 
-## 2. Free cube screen
+## 2. Other screens
 
-- [ ] 2.1 Same layout: the cube takes the leftover height, the turn buttons and "Ratkaise" stay visible; scroll fallback under 160 dp
-- [ ] 2.2 One smoke test: "Ratkaise" displayed without scrolling at the short window
+- [ ] 2.1 Free cube, scan (camera view in the slot), timer (tap area in the slot), lessons (picture in the slot): `FitColumn`, trimmed spacing
+- [ ] 2.2 One smoke test per screen at 411 × 560 dp: its main action is displayed without scrolling
 
 ## 3. Check and docs
 
-- [ ] 3.1 `./gradlew test lint assembleDebug :web:wasmJsBrowserDistribution` and the smoke test; one screenshot of the solve screen at the short window, judged by eye
-- [ ] 3.2 `docs/architecture.md`: one line on the fit-the-screen layout (where it lives, the 160 dp fallback)
+- [ ] 3.1 `./gradlew test lint assembleDebug :web:wasmJsBrowserDistribution` and the smoke test; screenshots of the solution and scan screens at 411 × 560 dp, judged by eye
+- [ ] 3.2 `docs/architecture.md`: one line on `FitColumn` (where, the 200 dp floor)
