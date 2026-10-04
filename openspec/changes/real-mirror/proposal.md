@@ -14,8 +14,8 @@ wants a real mirror in the 3D scene behind the guide cube, showing a true reflec
   turned so the camera sees the cube's reflection in its middle. The reflection is computed, not
   faked: the cube is reflected in the mirror's plane, so it shows the back, left and bottom as a
   real mirror would, with the same highlight, arrow and turning animation.
-- The mirror belongs to the scene: when the user drags the cube, the mirror turns with it and the
-  reflection stays true; when the mirror's glass faces away from the viewer it is not drawn.
+- The mirror stays in place on the screen like a mirror on a wall: dragging turns only the cube,
+  and the reflection follows it. No label (the frame makes it a mirror).
 - The cube is drawn a little smaller so the mirror fits in the same box; the box's size rules
   (fit-screen) are unchanged.
 - Only in the fast method's guide, as today; the learn method, camera follow and lessons are
