@@ -87,8 +87,9 @@ fun FollowPanel(state: StepperState, frames: Flow<Pair<List<Rgb>, Boolean>>, ste
         }
     }
     val move = state.current
-    Column {
-        Box(Modifier.fillMaxWidth().aspectRatio(3f / 4f).clip(MaterialTheme.shapes.extraLarge).background(Color.Black)) {
+    // Meant for a bounded slot (FitColumn): the camera takes the height the message leaves.
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.weight(1f, fill = false).aspectRatio(3f / 4f, matchHeightConstraintsFirst = true).clip(MaterialTheme.shapes.extraLarge).background(Color.Black)) {
             preview(Modifier.fillMaxSize())
             FollowOverlay(live, move?.let(FrontArrow::of), Modifier.fillMaxSize())
             Box(Modifier.align(Alignment.BottomEnd).fillMaxWidth(0.3f).padding(6.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x99000000))) {

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -62,6 +63,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import fi.jukkakot.rubikkisolveri.res.*
+import fi.jukkakot.rubikkisolveri.ui.common.FitColumn
+import fi.jukkakot.rubikkisolveri.ui.common.FitScope
 import fi.jukkakot.rubikkisolveri.cube.Corner
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.Edge
@@ -177,10 +180,10 @@ fun LessonScreen(index: Int, onBack: () -> Unit, onPractice: (Stage) -> Unit, on
         },
     ) { modifier ->
         HorizontalPager(pager, modifier.fillMaxSize()) { i ->
-            Column(
-                Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+            FitColumn(
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 when (val page = pages[i]) {
                     is LessonPage.Goal -> GoalPage(lesson, page.stage)
@@ -207,8 +210,8 @@ private fun PageDots(page: Int, count: Int, modifier: Modifier = Modifier) {
 
 /** The page's picture: takes the room the texts leave, as a square. */
 @Composable
-private fun ColumnScope.PictureBox(content: @Composable () -> Unit) {
-    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { content() }
+private fun FitScope.PictureBox(content: @Composable () -> Unit) {
+    Box(Modifier.fitSlot().fillMaxSize(), contentAlignment = Alignment.Center) { content() }
 }
 
 @Composable
@@ -217,7 +220,7 @@ private fun PageTitle(text: String) {
 }
 
 @Composable
-private fun ColumnScope.GoalPage(lesson: Lesson, stage: Stage) {
+private fun FitScope.GoalPage(lesson: Lesson, stage: Stage) {
     PageTitle(stringResource(Res.string.lesson_page_goal))
     PictureBox { StageGoalPicture(stage, Modifier.fillMaxSize()) }
     Text(stringResource(lesson.summary), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
@@ -234,14 +237,14 @@ private fun ColumnScope.GoalPage(lesson: Lesson, stage: Stage) {
 }
 
 @Composable
-private fun ColumnScope.PracticePage(stage: Stage) {
+private fun FitScope.PracticePage(stage: Stage) {
     PageTitle(stringResource(Res.string.lesson_page_practice))
     PictureBox { StageGoalCube(stage, Modifier.fillMaxSize(0.7f)) }
     Text(stringResource(Res.string.lesson_practice_text), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
 }
 
 @Composable
-private fun ColumnScope.PicturePage(page: LessonPage.Picture) {
+private fun FitScope.PicturePage(page: LessonPage.Picture) {
     val solved = Cube.solved()
     val centres = Face.entries.map { Stickers.centre(it) }.toSet()
     val (colors, marked) = when (page.picture) {
@@ -255,7 +258,7 @@ private fun ColumnScope.PicturePage(page: LessonPage.Picture) {
 
 /** "Which situation do you have?": the stage's cases as a 2×2 grid; tapping one opens it large. */
 @Composable
-fun ColumnScope.CasesPage(stage: Stage, animatorFor: @Composable (Cube) -> CubeAnimator = { rememberCubeAnimator(it) }) {
+fun FitScope.CasesPage(stage: Stage, animatorFor: @Composable (Cube) -> CubeAnimator = { rememberCubeAnimator(it) }) {
     val cases = remember(stage) { StageCases.of(stage) }
     var selected by rememberSaveable { mutableStateOf<Int?>(null) }
     BackHandler(enabled = selected != null) { selected = null }
@@ -265,10 +268,12 @@ fun ColumnScope.CasesPage(stage: Stage, animatorFor: @Composable (Cube) -> CubeA
         return
     }
     PageTitle(stringResource(Res.string.lesson_cases_title))
-    for (row in cases.indices.chunked(2)) {
-        Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            for (i in row) CaseCard(cases[i], Modifier.weight(1f).fillMaxHeight()) { selected = i }
-            if (row.size == 1) Spacer(Modifier.weight(1f))
+    Column(Modifier.fitSlot().fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        for (row in cases.indices.chunked(2)) {
+            Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                for (i in row) CaseCard(cases[i], Modifier.weight(1f).fillMaxHeight()) { selected = i }
+                if (row.size == 1) Spacer(Modifier.weight(1f))
+            }
         }
     }
 }
@@ -295,7 +300,7 @@ private fun CaseCard(case: StageCase, modifier: Modifier, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ColumnScope.CaseDetail(case: StageCase, onClose: () -> Unit, animatorFor: @Composable (Cube) -> CubeAnimator) {
+private fun FitScope.CaseDetail(case: StageCase, onClose: () -> Unit, animatorFor: @Composable (Cube) -> CubeAnimator) {
     val animator = animatorFor(case.position)
     PageTitle(stringResource(LessonCatalog.caseCaption(case.id)))
     PictureBox {
@@ -327,7 +332,7 @@ private fun ColumnScope.CaseDetail(case: StageCase, onClose: () -> Unit, animato
  * said in words, and before/after pictures with the pieces it moves outlined.
  */
 @Composable
-fun ColumnScope.AlgorithmPage(
+fun FitScope.AlgorithmPage(
     algorithm: Algorithm,
     intro: StringResource? = null,
     animatorFor: @Composable (Cube) -> CubeAnimator = { rememberCubeAnimator(it) },

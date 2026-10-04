@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -62,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fi.jukkakot.rubikkisolveri.res.*
+import fi.jukkakot.rubikkisolveri.ui.common.FitColumn
 import fi.jukkakot.rubikkisolveri.cube.Move
 import fi.jukkakot.rubikkisolveri.cube.Notation
 import fi.jukkakot.rubikkisolveri.cube.solve.TwoPhaseSolver
@@ -150,7 +153,13 @@ fun TimerScreen(
             )
         },
     ) { padding ->
-        Column(
+        val background = when (phase) {
+            TimerState.Phase.HOLDING -> Color(0xFFE57373)
+            TimerState.Phase.READY -> Color(0xFF66BB6A)
+            else -> MaterialTheme.colorScheme.surfaceVariant
+        }
+        val areaName = stringResource(Res.string.timer_area)
+        FitColumn(
             Modifier.fillMaxSize().padding(padding)
                 .focusRequester(focus)
                 .onKeyEvent { event ->
@@ -169,8 +178,6 @@ fun TimerScreen(
                     true
                 }
                 .focusable()
-                .verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -188,14 +195,9 @@ fun TimerScreen(
                     }
                 }
             }
-            val background = when (phase) {
-                TimerState.Phase.HOLDING -> Color(0xFFE57373)
-                TimerState.Phase.READY -> Color(0xFF66BB6A)
-                else -> MaterialTheme.colorScheme.surfaceVariant
-            }
-            val areaName = stringResource(Res.string.timer_area)
             Box(
-                Modifier.fillMaxWidth().height(240.dp).clip(MaterialTheme.shapes.large).background(background)
+                // The height that is left, at most the 240 dp it always had.
+                Modifier.fitSlot().fillMaxWidth().heightIn(max = 240.dp).fillMaxHeight().clip(MaterialTheme.shapes.large).background(background)
                     .semantics { contentDescription = areaName }
                     .pointerInput(Unit) {
                         awaitEachGesture {

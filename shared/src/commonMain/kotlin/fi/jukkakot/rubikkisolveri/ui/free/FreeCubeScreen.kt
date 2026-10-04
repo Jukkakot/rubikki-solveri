@@ -1,14 +1,11 @@
 package fi.jukkakot.rubikkisolveri.ui.free
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -38,6 +35,7 @@ import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.Layer
 import fi.jukkakot.rubikkisolveri.cube.Move
 import fi.jukkakot.rubikkisolveri.cube.Scramble
+import fi.jukkakot.rubikkisolveri.ui.common.FitColumn
 import fi.jukkakot.rubikkisolveri.ui.cube3d.Cube3D
 import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeViewState
 import fi.jukkakot.rubikkisolveri.ui.cube3d.StickerColors
@@ -68,9 +66,8 @@ fun FreeCubeScreen(start: Cube, onBack: () -> Unit, onSolve: (Cube) -> Unit = {}
             )
         },
     ) { padding ->
-        Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        FitColumn(
+            Modifier.fillMaxSize().padding(padding),
         ) {
             Cube3D(
                 colors = animator.cube.toList().map(StickerColors::of),
@@ -78,7 +75,7 @@ fun FreeCubeScreen(start: Cube, onBack: () -> Unit, onSolve: (Cube) -> Unit = {}
                 progress = animator.progress,
                 viewState = viewState,
                 description = stringResource(Res.string.free_cube_description),
-                modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                modifier = Modifier.fitSlot().aspectRatio(1f, matchHeightConstraintsFirst = true),
             )
             Text(stringResource(Res.string.free_hint), style = MaterialTheme.typography.bodySmall)
             Row(verticalAlignment = Alignment.CenterVertically) {

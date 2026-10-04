@@ -60,7 +60,8 @@ fun GuideCube(
     val highlight = turning ?: presented
     val arrow = if (turning == null && animator.pending == 0 && animator.cube == state.cubeAt(state.index)) presented else null
     val scope = rememberCoroutineScope()
-    Box(modifier.fillMaxWidth().aspectRatio(1.1f)) {
+    // As large as its bounds allow: by height in a FitColumn slot, by width elsewhere.
+    Box(modifier.aspectRatio(1.1f, matchHeightConstraintsFirst = true)) {
         Cube3D(
             colors = colors,
             move = turning,

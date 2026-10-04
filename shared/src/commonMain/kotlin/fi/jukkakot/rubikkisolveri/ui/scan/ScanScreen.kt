@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.FilledTonalButton
 import fi.jukkakot.rubikkisolveri.ui.common.BackButton
+import fi.jukkakot.rubikkisolveri.ui.common.FitColumn
 import fi.jukkakot.rubikkisolveri.ui.common.RoundIconToggle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -349,60 +350,58 @@ fun ScanContent(
         },
     ) { padding ->
         // One screen, no scrolling: the camera takes what the marks above and the texts and actions below leave.
-        Column(
-            Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        FitColumn(
+            Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
         ) {
             Progress(session::isAccepted, index, only)
-            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Box(
-                    Modifier.aspectRatio(3f / 4f, matchHeightConstraintsFirst = true)
-                        .clip(MaterialTheme.shapes.extraLarge).background(Color.Black),
-                ) {
-                    if (cameraFailed) {
-                        Text(stringResource(Res.string.scan_camera_error), color = Color.White, modifier = Modifier.align(Alignment.Center))
-                    } else {
-                        preview(Modifier.fillMaxSize())
+            Box(
+                Modifier.fitSlot().aspectRatio(3f / 4f, matchHeightConstraintsFirst = true)
+                    .clip(MaterialTheme.shapes.extraLarge).background(Color.Black),
+            ) {
+                if (cameraFailed) {
+                    Text(stringResource(Res.string.scan_camera_error), color = Color.White, modifier = Modifier.align(Alignment.Center))
+                } else {
+                    preview(Modifier.fillMaxSize())
+                }
+                val read = review
+                if (read == null) {
+                    val holding = event as? ScanEvent.Holding
+                    GridOverlay(live, stickers, holding?.recognised?.centreColor(), Modifier.fillMaxSize())
+                    OnCamera(Modifier.align(Alignment.BottomCenter)) {
+                        Text(statusText(event, only), color = Color.White, style = MaterialTheme.typography.titleSmall)
+                        LinearProgressIndicator(
+                            progress = { holding?.progress ?: 0f },
+                            modifier = Modifier.fillMaxWidth().height(6.dp),
+                            gapSize = 0.dp,
+                            drawStopIndicator = {},
+                        )
                     }
-                    val read = review
-                    if (read == null) {
-                        val holding = event as? ScanEvent.Holding
-                        GridOverlay(live, stickers, holding?.recognised?.centreColor(), Modifier.fillMaxSize())
-                        OnCamera(Modifier.align(Alignment.BottomCenter)) {
-                            Text(statusText(event, only), color = Color.White, style = MaterialTheme.typography.titleSmall)
-                            LinearProgressIndicator(
-                                progress = { holding?.progress ?: 0f },
-                                modifier = Modifier.fillMaxWidth().height(6.dp),
-                                gapSize = 0.dp,
-                                drawStopIndicator = {},
-                            )
-                        }
-                        lastCaptured?.let {
+                    lastCaptured?.let {
+                        Text(
+                            stringResource(Res.string.scan_captured, stringResource(faceName(it))),
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.align(Alignment.TopStart).padding(12.dp)
+                                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                        )
+                    }
+                } else {
+                    ReviewOverlay(read, Modifier.fillMaxSize())
+                    OnCamera(Modifier.align(Alignment.BottomCenter), scrim = false) {
+                        reviewFace?.let {
                             Text(
-                                stringResource(Res.string.scan_captured, stringResource(faceName(it))),
+                                stringResource(Res.string.scan_review_face, stringResource(faceName(it))),
                                 color = Color.White,
-                                style = MaterialTheme.typography.labelLarge,
-                                modifier = Modifier.align(Alignment.TopStart).padding(12.dp)
-                                    .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                style = MaterialTheme.typography.titleSmall,
                             )
                         }
-                    } else {
-                        ReviewOverlay(read, Modifier.fillMaxSize())
-                        OnCamera(Modifier.align(Alignment.BottomCenter), scrim = false) {
-                            reviewFace?.let {
-                                Text(
-                                    stringResource(Res.string.scan_review_face, stringResource(faceName(it))),
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.titleSmall,
-                                )
-                            }
-                            Text(stringResource(Res.string.scan_review_note), color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
-                            // Which face this is: the user can change it by its centre colour.
-                            if (only == null) {
-                                Text(stringResource(Res.string.scan_review_pick), color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
-                                FacePicker(session.remaining, reviewFace, ::choose)
-                            }
+                        Text(stringResource(Res.string.scan_review_note), color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
+                        // Which face this is: the user can change it by its centre colour.
+                        if (only == null) {
+                            Text(stringResource(Res.string.scan_review_pick), color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
+                            FacePicker(session.remaining, reviewFace, ::choose)
                         }
                     }
                 }

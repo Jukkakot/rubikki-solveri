@@ -174,7 +174,9 @@ yellow cross, yellow edges, yellow corners into place, yellow corners turned.
 - `ui/theme`: `RubikkiTheme` — Material You dynamic colour (where the platform has it), light/dark
   by the theme setting, Karkki typography (`fredoka()`/`nunito()` are composable, as Compose
   resources load fonts) and shapes; `ForcedDark` wraps the scan routes. `ui/common/Buttons.kt`: shared
-  `RoundIconButton`, `BigButton`, `BackButton`.
+  `RoundIconButton`, `BigButton`, `BackButton`. `ui/common/FitColumn.kt`: every screen with actions
+  (solution, free cube, scan, timer, lesson pages) fits without scrolling; the child marked
+  `fitSlot()` gets the height left, and the column scrolls only below the 200 dp floor.
 - `settings`: theme in DataStore Preferences; language through AppCompat per-app locales (stored
   by the system on Android 13+, by AppCompat on 12). Finnish is set on the first start.
 - `log`: `Logger` over a `LogStore` (common; on the phone Logcat + capped `LogFile` on a background

@@ -135,6 +135,13 @@ class ScreenshotTest {
         SolveScreen(Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {}, planner = INLINE_PLANNER)
     }
 
+    /** A short browser window: the cube shrinks so "Tein sen" stays on screen. */
+    @Test
+    @Config(qualifiers = "fi-w411dp-h560dp-xxhdpi")
+    fun solveShort() = shot("solve-short", waitForText = "Siirto 1/") {
+        SolveScreen(Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {}, planner = INLINE_PLANNER)
+    }
+
     @Test
     fun guideBack() = shot("guide-back", waitForText = "Siirto 1/") {
         SolveScreen(Cube.solved().apply("B'"), onBack = {}, onHome = {}, showNotation = true, planner = INLINE_PLANNER)
@@ -162,7 +169,7 @@ class ScreenshotTest {
         val frames = kotlinx.coroutines.flow.MutableStateFlow(
             fi.jukkakot.rubikkisolveri.cube.follow.front(start).map { fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier.DEFAULT_PALETTE.getValue(it) } to true,
         )
-        androidx.compose.foundation.layout.Column(Modifier.background(androidx.compose.ui.graphics.Color.White)) {
+        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.White)) {
             fi.jukkakot.rubikkisolveri.ui.guide.FollowPanel(state, frames) {
                 androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530))))
             }
@@ -239,6 +246,15 @@ class ScreenshotTest {
             // The cube's bottom row below the grid: those cells are not stickers.
             gridCheck = { fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler.GridCheck(List(9) { 30.0 }, List(9) { it < 6 }) },
             preview ={ androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530)))) },
+        )
+    } }
+
+    @Test
+    @Config(qualifiers = "fi-w411dp-h560dp-xxhdpi")
+    fun scanShort() = shot("scan-short") { ForcedDark {
+        fi.jukkakot.rubikkisolveri.ui.scan.ScanContent(
+            kotlinx.coroutines.flow.emptyFlow(), torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {},
+            preview = { androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530)))) },
         )
     } }
 

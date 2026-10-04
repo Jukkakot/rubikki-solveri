@@ -23,6 +23,7 @@ import fi.jukkakot.rubikkisolveri.res.*
 import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeAnimator
 import fi.jukkakot.rubikkisolveri.ui.cube3d.rememberCubeAnimator
 import fi.jukkakot.rubikkisolveri.ui.lessons.Algorithm
+import fi.jukkakot.rubikkisolveri.ui.common.FitColumn
 import fi.jukkakot.rubikkisolveri.ui.lessons.AlgorithmPage
 import fi.jukkakot.rubikkisolveri.ui.lessons.CasesPage
 import fi.jukkakot.rubikkisolveri.ui.lessons.LessonCatalog
@@ -86,7 +87,7 @@ class LessonsTest {
 
     @Test
     fun tapACase() {
-        compose.setContent { RubikkiTheme(dynamicColor = false) { Column { CasesPage(Stage.WHITE_CORNERS) } } }
+        compose.setContent { RubikkiTheme(dynamicColor = false) { FitColumn { CasesPage(Stage.WHITE_CORNERS) } } }
         compose.onNodeWithText("Valkoinen oikealle").performClick()
         compose.onNodeWithText("Toista sarja").assertIsDisplayed()
         compose.onNodeWithText("Kaikki tilanteet").performClick()
@@ -98,7 +99,7 @@ class LessonsTest {
         lateinit var animator: CubeAnimator
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                Column { CasesPage(Stage.WHITE_CORNERS, animatorFor = { start -> rememberCubeAnimator(start).also { animator = it } }) }
+                FitColumn { CasesPage(Stage.WHITE_CORNERS, animatorFor = { start -> rememberCubeAnimator(start).also { animator = it } }) }
             }
         }
         compose.onNodeWithText("Valkoinen oikealle").performClick()
@@ -115,7 +116,7 @@ class LessonsTest {
         compose.mainClock.autoAdvance = false
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                Column {
+                FitColumn {
                     AlgorithmPage(Algorithm(Res.string.alg_trigger, BeginnerSolver.TRIGGER), animatorFor = { start ->
                         rememberCubeAnimator(start).also { animator = it }
                     })

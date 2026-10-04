@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -66,6 +67,7 @@ import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.Evt
 import fi.jukkakot.rubikkisolveri.ui.common.BackButton
 import fi.jukkakot.rubikkisolveri.ui.common.BigButton
+import fi.jukkakot.rubikkisolveri.ui.common.FitColumn
 import fi.jukkakot.rubikkisolveri.ui.common.RoundIconButton
 import fi.jukkakot.rubikkisolveri.ui.common.RoundIconToggle
 import fi.jukkakot.rubikkisolveri.ui.common.colorName
@@ -172,7 +174,7 @@ fun SolveScreen(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (!cube.isSolved && !practice) {
-                MethodChoice(method, onChoose = { method = it }, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                MethodChoice(method, onChoose = { method = it }, modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp))
             }
             Box(Modifier.fillMaxSize()) {
                 when (val r = result) {
@@ -253,38 +255,54 @@ private fun Stepper(
         }
     }
 
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
+    val hold: @Composable () -> Unit = {
         Text(
             stringResource(
                 Res.string.solve_hold_now,
                 stringResource(colorName(now.centre(Face.F))),
                 stringResource(colorName(now.centre(Face.U))),
             ),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
         )
-        if (stage != null && showGoal) {
+    }
+    if (stage != null && showGoal) {
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            hold()
             GoalCard(stage) { seenStages = seenStages or (1 shl stage.ordinal) }
-            return@Column
         }
+        return
+    }
+    FitColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        keepSize = true,
+    ) {
+        hold()
         plan.steps?.let { steps -> StageCard(steps, index) }
-        if (follow && !state.isFinished) {
-            CameraPermissionGate(alternative = stringResource(Res.string.follow_show_3d) to onStopFollowing) {
-                followPanel(state, steady)
+        Box(Modifier.fitSlot(), contentAlignment = Alignment.Center) {
+            if (follow && !state.isFinished) {
+                CameraPermissionGate(alternative = stringResource(Res.string.follow_show_3d) to onStopFollowing) {
+                    followPanel(state, steady)
+                }
+            } else {
+                GuideCube(state, steady = steady, mirror = steady)
             }
-        } else {
-            GuideCube(state, steady = steady, mirror = steady)
         }
-        LinearProgressIndicator(
-            progress = { index / moves.size.toFloat() },
-            modifier = Modifier.fillMaxWidth().height(8.dp),
-            gapSize = 0.dp,
-            drawStopIndicator = {},
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            LinearProgressIndicator(
+                progress = { index / moves.size.toFloat() },
+                modifier = Modifier.weight(1f).height(8.dp),
+                gapSize = 0.dp,
+                drawStopIndicator = {},
+            )
+            if (!state.isFinished) {
+                Text(stringResource(Res.string.solve_step, index + 1, moves.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
         if (!state.isFinished) {
-            Text(stringResource(Res.string.solve_step, index + 1, moves.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             MoveWordsText(state, showNotation, steady)
         } else {
             Text(finishedText ?: stringResource(Res.string.solve_finished), style = MaterialTheme.typography.headlineSmall)
