@@ -38,7 +38,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 28 | `steady-cube` | done | Shortest-solution guide never turns the view: holding view, a small mirror cube, words for that view, reset button after dragging (user priority 2026-10-04; learn method unchanged) |
 | 29 | `share-log-fix`, `share-log-zip` | done | Browser log sharing: at most ten files to the share sheet, zip download when refused (Samsung Internet) |
 | 30 | `scan-needs-cube` | done | Auto capture only when every grid cell is one sticker; green cell outlines; camera follow ignores frames without a face |
-| 31 | `fit-screen` | specced | Screens with actions fit in portrait without scrolling: trimmed spacing, the big element shrinks (200 dp floor) |
+| 31 | `fit-screen` | done | Screens with actions fit in portrait without scrolling: trimmed spacing, the big element shrinks (200 dp floor) |
 | 32 | `real-mirror` | planned | A framed mirror behind the guide cube in the 3D scene, a true reflection of the back; replaces the mirror card (user decision 2026-10-04) |
 
 ## Backlog
