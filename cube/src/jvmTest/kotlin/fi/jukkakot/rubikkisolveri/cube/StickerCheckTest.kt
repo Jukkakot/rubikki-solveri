@@ -80,9 +80,19 @@ class StickerCheckTest {
                 else -> argb("00aa30")
             }
         }
-        val check = FrameSampler.check(picture(List(9) { if (it == 7) straddle else flat("0067bc") }))
-        assertEquals(List(9) { it != 7 }, check.stickerCells)
+        // A grid off by half a sticker puts a whole row on the gaps.
+        val check = FrameSampler.check(picture(List(9) { if (it >= 6) straddle else flat("0067bc") }))
+        assertEquals(List(9) { it < 6 }, check.stickerCells)
         assertFalse(check.looksLikeCube)
+    }
+
+    @Test
+    fun oneShadowedCellPasses() {
+        // A shadow over the middle sticker: dark and uneven, the other eight are fine.
+        val shadow: (Int, Int) -> Int = { x, _ -> if (x < cell / 2) argb("3a1a10") else argb("a03000") }
+        val check = FrameSampler.check(picture(List(9) { if (it == 4) shadow else flat("ff4500") }))
+        assertFalse(check.stickerCells[4])
+        assertTrue(check.looksLikeCube)
     }
 
     @Test

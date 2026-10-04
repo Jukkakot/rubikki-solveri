@@ -260,7 +260,7 @@ class ScanSession(
         const val MIN_FRAMES = 3
 
         /** Largest colour difference per cell that still counts as the same view. */
-        const val STEADY_DISTANCE = 12.0
+        const val STEADY_DISTANCE = 18.0
         private const val CENTRE = 4
 
         /** Most centre namings tried at the end ([outcome]). */

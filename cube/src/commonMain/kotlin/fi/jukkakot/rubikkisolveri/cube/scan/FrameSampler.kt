@@ -108,8 +108,11 @@ object FrameSampler {
     /** At least this many of the nine cells must have a dark gap around them. */
     const val MIN_STICKER_CELLS = 6
 
+    /** At least this many of the nine cells must read as an even cube colour (one may be in shadow or glare). */
+    const val MIN_COLOUR_CELLS = 8
+
     /** A sticker's middle is one even colour: median distance (Lab) from its median colour. */
-    const val MAX_STICKER_SPREAD = 4.0
+    const val MAX_STICKER_SPREAD = 6.0
 
     /** A coloured sticker has at least this chroma and lightness (dark reds included). */
     const val MIN_COLOUR_CHROMA = 30.0
@@ -121,9 +124,9 @@ object FrameSampler {
 
     /** What a grid picture shows: per cell [gapContrast] and whether it looks like a sticker. */
     class GridCheck(val gapContrast: List<Double>, val stickerCells: List<Boolean>) {
-        /** A cube face: every cell is a sticker and enough cells have a dark gap around them. */
+        /** A cube face: nearly every cell is a sticker and enough cells have a dark gap around them. */
         val looksLikeCube: Boolean
-            get() = stickerCells.all { it } && gapContrast.count { it >= MIN_GAP_CONTRAST } >= MIN_STICKER_CELLS
+            get() = stickerCells.count { it } >= MIN_COLOUR_CELLS && gapContrast.count { it >= MIN_GAP_CONTRAST } >= MIN_STICKER_CELLS
     }
 
     /**

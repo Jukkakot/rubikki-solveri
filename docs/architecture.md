@@ -75,11 +75,11 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
 3. `ScanSession`: faces in any order, each turned any way. The centre provisionally names the face among
    the faces not yet scanned (`ColorClassifier.rankedCentre`: brightness scaled out, against the
    default palette and the accepted centres); the full scan shows no face name, the names are
-   decided in `outcome()` (step 5). Readings are stored as seen. Steady = every cell within ΔE 12
+   decided in `outcome()` (step 5). Readings are stored as seen. Steady = every cell within ΔE 18
    (`STEADY_DISTANCE`) for 1.5 s and 3 frames → capture the per-cell median, then review (raw
    colours, "Good, next" / "Scan again"; no tap-to-fix). Stops: an accepted face in view in any of
    its four rotations (`AlreadyScanned`), and a grid that is not a cube face (`NoCube`, decided by
-   `FrameSampler.check` on the grid picture: every cell's middle must be one even cube colour
+   `FrameSampler.check` on the grid picture: at least 8 of 9 cells' middles must be one even cube colour, so one shadowed cell is allowed
    (coloured, or light and nearly grey for white; thresholds in `FrameSampler`, set from the user's
    pictures of 2026-10-04) and enough cells need dark gaps around them; no picture yet = not a cube).
    Each grid cell that looks like a sticker gets a green outline. The capture button ignores the check. Redo takes back the face accepted last; capture button. Live dots show the raw camera colour.
