@@ -103,11 +103,17 @@ denied, the screen SHALL explain how to allow the camera in the browser's site s
 manual input instead. The torch button SHALL be shown only when the camera supports a torch. When
 the camera supports it, exposure and white balance SHALL be locked at the first capture as on the
 phone; when it does not, the scan SHALL work without the lock and the log SHALL say the lock is not
-supported.
+supported. The camera picture SHALL be shown as sharp and as smooth as the camera delivers it (its
+own resolution, about the camera's frame rate), whatever size the colours are read at, with the
+scan's marks drawn on top in the right places.
 
 #### Scenario: Scan in the phone's browser
 - **WHEN** the user opens the scan in Chrome on the phone and allows the camera
 - **THEN** the back camera's picture fills the scan view with the grid and the live colour dots, and faces are captured and checked as in the phone app
+
+#### Scenario: Sharp and smooth picture
+- **WHEN** the user opens the video scan or the scan in the phone's browser
+- **THEN** the camera picture is as sharp and moves as smoothly as in the phone's camera app, and the marks stay on the stickers
 
 #### Scenario: Back camera with a torch
 - **WHEN** the phone has several back cameras and the browser opens one without a torch
