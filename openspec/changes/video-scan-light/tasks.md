@@ -11,7 +11,7 @@
 
 ## 2. Screen and camera (shared, app, web)
 
-- [ ] 2.1 Stall notice at the bottom of the picture per design 6 (fi + en): description, "Aloita alusta", "Korjaa värit", torch toggle; at least 5 s; tap outside closes it, the reason does not come back. Verify: Compose tests (scanning goes on with the notice shown; it stays 5 s; tap outside closes it and the same reason does not return; restart clears progress); one screenshot.
+- [ ] 2.1 Stall notice at the bottom of the picture per design 6 (fi + en): description, "Aloita alusta", "Korjaa värit", torch toggle; stall times 5 s longer (dark 8 s, no cube 13 s, stuck 20 s); tap outside closes it, the reason does not come back. Verify: Compose tests (scanning goes on with the notice shown; tap outside closes it and the same reason does not return; restart clears progress); stall tests updated for the new times; one screenshot.
 - [ ] 2.2 Torch re-meters the camera on Android and in the browser (design 7). Verify: unit test of the settle logic (frames in the settling second are not read); phone check listed for the user.
 - [ ] 2.3 Browser camera picture from the video element under the app (design 10), guided scan and video scan. Verify: the web build runs; the preview box is transparent over the video in a quick browser check (desktop Chrome); phone check listed for the user.
 

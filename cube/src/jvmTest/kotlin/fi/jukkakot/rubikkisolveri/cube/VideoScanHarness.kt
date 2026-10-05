@@ -17,13 +17,17 @@ import kotlin.test.Test
 
 /**
  * `video-scan-spike`: runs [FaceFinder] on the frames of the test videos of 2026-10-05 and prints
- * the numbers for `findings.md`. The frames are extracted locally with ffmpeg (git-ignored, see
- * tasks 1.1); it runs only with the environment variable VIDEO_HARNESS=1 (about 20 s), and
- * without the frames it is skipped. The table also goes to `frames/report.txt`, and
+ * the numbers for `findings.md`. The frames are the committed JPEG stills (`testdata/video/2026-10-05/stills/`,
+ * extracted with ffmpeg at 10 fps, 360 px wide); it runs only with the environment variable
+ * VIDEO_HARNESS=1 (about 20 s). The table also goes to `frames/report.txt`, and
  * what was found is drawn into `frames/overlay/<video>/`.
  */
 class VideoScanHarness {
-    private val root = File("../testdata/video/2026-10-05/frames")
+    /** Reports, overlays and sweep files (git-ignored). */
+    private val root = File("../testdata/video/2026-10-05/frames").apply { mkdirs() }
+
+    /** The videos' frames, 10 fps, 360 px wide, as JPEG (quality 90, no chroma subsampling), committed so any checkout can regenerate the fixtures. */
+    private val stills = File("../testdata/video/2026-10-05/stills")
     private val videos = listOf("20261005_151828" to "free angles, fingers", "20261005_151903" to "straight on, table")
 
     /** The evening videos of 2026-10-05 (light: table by the window, dark room, dim ceiling light, another room); fixtures only. */
@@ -47,7 +51,7 @@ class VideoScanHarness {
     @Test
     fun printNumbers() {
         assumeTrue("set VIDEO_HARNESS=1 to run", System.getenv("VIDEO_HARNESS") == "1")
-        assumeTrue("frames not extracted", videos.all { File(root, it.first).isDirectory })
+        assumeTrue("frames not extracted", videos.all { File(stills, it.first).isDirectory })
         println("video | frames | ≥1 face | faces/frame | 2 faces | 3 faces | partial (7–8) | stickers right | exact faces | faces seen | assembled | ms/frame")
         for ((video, note) in videos) {
             val frames = run(video)
@@ -66,7 +70,7 @@ class VideoScanHarness {
         val file = File(root, "sweep.txt")
         assumeTrue("no sweep.txt", file.isFile)
         val images = videos.associate { (video, _) ->
-            video to File(root, video).listFiles { f -> f.name.endsWith(".png") }!!.sortedBy { it.name }.map { ImageIO.read(it) }
+            video to File(stills, video).listFiles { f -> f.name.endsWith(".jpg") }!!.sortedBy { it.name }.map { ImageIO.read(it) }
         }
         val settings = mapOf(
             "darkBelow" to Setting({ FaceFinder.darkBelow.toDouble() }, { FaceFinder.darkBelow = it.toInt() }),
@@ -109,18 +113,18 @@ class VideoScanHarness {
     @Test
     fun writeFixtures() {
         assumeTrue("set VIDEO_HARNESS=1 to run", System.getenv("VIDEO_HARNESS") == "1")
-        assumeTrue("frames not extracted", videos.all { File(root, it.first).isDirectory })
+        assumeTrue("frames not extracted", videos.all { File(stills, it.first).isDirectory })
         val dir = File("src/jvmTest/resources/video").apply { mkdirs() }
-        for (video in videos.map { it.first } + evening.filter { File(root, it).isDirectory }) {
-            val files = File(root, video).listFiles { f -> f.name.endsWith(".png") }!!.sortedBy { it.name }
+        for (video in videos.map { it.first } + evening.filter { File(stills, it).isDirectory }) {
+            val files = File(stills, video).listFiles { f -> f.name.endsWith(".jpg") }!!.sortedBy { it.name }
             val text = files.joinToString("\n", postfix = "\n") { file ->
-                VideoFixtures.line(file.name.removeSuffix(".png"), find(ImageIO.read(file)).let { it.faces + it.partial }.map { FaceReading.of(it) })
+                VideoFixtures.line(file.name.removeSuffix(".jpg"), find(ImageIO.read(file)).let { it.faces + it.partial }.map { FaceReading.of(it) })
             }
             File(dir, "$video.txt").writeText(text)
         }
     }
 
-    /** Every lattice considered in the frames named in `frames/debug.txt` (`<video>/<frame>.png`), without the face checks. */
+    /** Every lattice considered in the frames named in `frames/debug.txt` (`<video>/<frame>.jpg`), without the face checks. */
     @Test
     fun debugFrames() {
         val file = File(root, "debug.txt")
@@ -129,7 +133,7 @@ class VideoScanHarness {
         FaceFinder.minSpan = 0.0
         val report = StringBuilder()
         for (name in file.readLines().filter { it.isNotBlank() }) {
-            val image = ImageIO.read(File(root, name.trim()))
+            val image = ImageIO.read(File(stills, name.trim()))
             val result = find(image)
             mask(Frame(name, image, result, 0.0), File(root, "debug-" + name.replace("/", "-")))
             report.appendLine("$name blobs=${result.blobs.size}")
@@ -144,7 +148,7 @@ class VideoScanHarness {
     }
 
     private fun run(video: String): List<Frame> {
-        val files = File(root, video).listFiles { f -> f.name.endsWith(".png") }!!.sortedBy { it.name }
+        val files = File(stills, video).listFiles { f -> f.name.endsWith(".jpg") }!!.sortedBy { it.name }
         // Warm the JIT once so the timing is closer to steady state.
         files.take(5).forEach { find(ImageIO.read(it)) }
         return files.map { file ->
@@ -263,7 +267,7 @@ class VideoScanHarness {
     private fun overlay(video: String, frames: List<Frame>) {
         val dir = File(root, "overlay/$video").apply { mkdirs() }
         for ((index, f) in frames.withIndex()) {
-            if (index % 10 == 9) mask(f, File(dir, f.name.replace(".png", "-mask.png")))
+            if (index % 10 == 9) mask(f, File(dir, f.name.replace(".jpg", "-mask.png")))
             val g = f.image.createGraphics()
             g.stroke = BasicStroke(1f)
             g.color = Color.MAGENTA
@@ -287,7 +291,7 @@ class VideoScanHarness {
             f.result.faces.forEach { draw(it, Color.CYAN) }
             f.result.partial.forEach { draw(it, Color.ORANGE) }
             g.dispose()
-            ImageIO.write(f.image, "png", File(dir, f.name))
+            ImageIO.write(f.image, "png", File(dir, f.name.replace(".jpg", ".png")))
         }
     }
 }

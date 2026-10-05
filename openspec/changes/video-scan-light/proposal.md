@@ -23,8 +23,8 @@ Phone test of `video-scan-progress` (user): the restart panel covers the cube an
 - **Torch from the notice:** where the device has a torch, the "more light" / stuck notice offers to
   turn it on.
 - **The stall panel becomes a notice** at the bottom of the picture that does not cover the cube;
-  scanning goes on underneath, the notice stays at least 5 s and then goes once the scan gets on, a
-  tap anywhere outside it closes it for good (that reason). It describes the situation ("Heikko
+  scanning goes on underneath, each stall waits 5 s longer before the notice shows, it goes once
+  the scan gets on, and a tap anywhere outside it closes it for good (that reason). It describes the situation ("Heikko
   valaistus") instead of giving orders. "Start over" and "fix colours" stay in the notice only.
 - **Torch re-meters the camera:** turning it on or off lets exposure and white balance settle and
   lock again (screenshots 2026-10-05: torch on after the lock washed the picture out). Washed-out

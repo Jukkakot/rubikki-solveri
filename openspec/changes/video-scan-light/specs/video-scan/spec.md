@@ -50,14 +50,14 @@ confirmed in the same way, so the progress is visible also while the cube is out
 
 ### Requirement: Restart with a reason
 When the scan cannot make progress, the screen SHALL describe the situation with an icon and a few
-words (a description, not an order, e.g. "Heikko valaistus"): too dark, no cube found for a while,
-or no new stickers for a while with the cube in view for about fifteen seconds (including readings
-that no possible cube fits). The notice SHALL lie at the bottom of the camera picture without
+words (a description, not an order, e.g. "Heikko valaistus"): too dark for about eight seconds, no
+cube found for about thirteen seconds, or no new stickers with the cube in view for about twenty
+seconds (including readings that no possible cube fits); each about five seconds later than before
+(user, 2026-10-05), so the notice does not come too eagerly. The notice SHALL lie at the bottom of the camera picture without
 covering the cube, and the scan SHALL go on underneath it: the user can always keep scanning. The
 notice SHALL offer to start the scan again and to go to the colour check with what is known, and,
-where the device has a torch, a torch button when the reason is the light or no progress. Once
-shown, it SHALL stay at least about five seconds even if new stickers become known, then go away
-when the scan gets on again. A tap anywhere outside it SHALL close it, and it SHALL not come back
+where the device has a torch, a torch button when the reason is the light or no progress. It
+SHALL go away when new stickers become known. A tap anywhere outside it SHALL close it, and it SHALL not come back
 for the same reason in that scan. Starting again SHALL clear what was read and keep the camera
 running; it is offered only in the notice. Dim light SHALL also be told early, as a small notice on
 the picture, before the scan stalls.
@@ -67,12 +67,12 @@ the picture, before the scan stalls.
 - **THEN** a small lamp notice is shown on the picture at once, and if the scan stalls the notice describes the poor light and offers the torch
 
 #### Scenario: No progress
-- **WHEN** the cube is in view but nothing new is known for about fifteen seconds
+- **WHEN** the cube is in view but nothing new is known for about twenty seconds
 - **THEN** the situation is shown at the bottom of the picture with a restart button, and restarting clears the progress
 
 #### Scenario: Keep scanning
 - **WHEN** the notice is shown and the user keeps turning the cube
-- **THEN** the scan goes on, and the notice goes away once new stickers are known and it has been shown about five seconds
+- **THEN** the scan goes on, and the notice goes away as soon as new stickers are known
 
 #### Scenario: Close the notice
 - **WHEN** the user taps the picture outside the notice

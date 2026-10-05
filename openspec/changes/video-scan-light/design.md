@@ -45,8 +45,8 @@ classifier.
    reason icon and a description, not an order ("Heikko valaistus", "Kuutiota ei näy", "Värit eivät
    täsmää"; en: "Poor light", "No cube in view", "Colours don't fit"), small "Aloita alusta" and
    "Korjaa värit" buttons, and a torch toggle (torch icon, label "Taskulamppu") when the device has a
-   torch and the reason is darkness or no progress. Shown at least 5 s, then gone once the stall
-   clears. A tap on the picture outside the card closes it, and that reason does not come back in
+   torch and the reason is darkness or no progress. Each stall waits 5 s longer before the notice
+   shows (user: dark 3 → 8 s, no cube 8 → 13 s, stuck 15 → 20 s); it goes once the stall clears. A tap on the picture outside the card closes it, and that reason does not come back in
    this scan (a restart forgets it). The small "Hämärää" notice in the top corner stays.
 7. **Torch re-meters the camera** (screenshots 2026-10-05: torch on after the lock washed the
    picture out; orange read as yellow, blue as white). Turning the torch on or off unlocks exposure

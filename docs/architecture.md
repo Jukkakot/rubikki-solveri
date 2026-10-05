@@ -139,8 +139,8 @@ Video scan pipeline (`video-scan`):
    Face rotations come from the same cost. `CubeProjection` puts every sticker into the picture.
    Earlier decisions in the `video-scan` and `video-scan-live` archives. Regression data: the test
    videos' finder output in `cube/src/jvmTest/resources/video/` (`VideoScanTest`, the true cubes in
-   `VideoFixtures`; regenerate with `VideoScanHarness.writeFixtures`, videos and frames local only
-   under `testdata/video/`).
+   `VideoFixtures`; regenerate with `VideoScanHarness.writeFixtures` from the committed JPEG stills
+   in `testdata/video/<date>/stills/`; the videos themselves stay local only).
 4. `ui/scan/VideoScanScreen`: camera with the progress drawn on the real cube (marks on the
    projected stickers of the sides facing the camera, the found faces' own lattices where they are,
    ticks on done sides), the turn arrow beside the cube, done-sides row, restart panel per stall
