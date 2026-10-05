@@ -3,6 +3,7 @@ package fi.jukkakot.rubikkisolveri.cube
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceFinder
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceLattice
+import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.FinderResult
 import fi.jukkakot.rubikkisolveri.cube.scan.RotationSearch
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanSession
@@ -96,6 +97,24 @@ class VideoScanHarness {
             restore()
         }
         File(root, "sweep-report.txt").writeText(report.toString())
+    }
+
+    /**
+     * `video-scan` task 1.1: the full faces found in every frame, saved as the fixtures the
+     * [VideoScanTest]s replay (`src/jvmTest/resources/video/<video>.txt`, see [VideoFixtures]).
+     */
+    @Test
+    fun writeFixtures() {
+        assumeTrue("set VIDEO_HARNESS=1 to run", System.getenv("VIDEO_HARNESS") == "1")
+        assumeTrue("frames not extracted", videos.all { File(root, it.first).isDirectory })
+        val dir = File("src/jvmTest/resources/video").apply { mkdirs() }
+        for ((video, _) in videos) {
+            val files = File(root, video).listFiles { f -> f.name.endsWith(".png") }!!.sortedBy { it.name }
+            val text = files.joinToString("\n", postfix = "\n") { file ->
+                VideoFixtures.line(file.name.removeSuffix(".png"), find(ImageIO.read(file)).faces.map { FaceReading.of(it) })
+            }
+            File(dir, "$video.txt").writeText(text)
+        }
     }
 
     /** Every lattice considered in the frames named in `frames/debug.txt` (`<video>/<frame>.png`), without the face checks. */

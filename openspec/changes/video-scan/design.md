@@ -50,6 +50,23 @@ sizes; removing the guided scan.
 - **Speed.** Frames are small; if the browser is too slow, the finder runs in a Web Worker
   (measured in the spike).
 
+## Implementation decisions (autopilot)
+
+- **Core in `cube/scan/VideoScan.kt`.** Readings are grouped by centre colour; the group's anchor is
+  the reading most others agree with (≥ 7 of 9 in some rotation); only agreeing readings vote.
+  Recognised: ≥ 3 votes and twice the next colour; a recognised sticker keeps its colour while it
+  still leads. Disputed (≥ 3 votes, no clear lead) = a contradiction on the progress cube.
+- **Rotations before every sticker is known:** a search over the unsettled faces' turns that maximises
+  the real pieces among fully known pieces; a face counts as settled when every best answer agrees.
+  Unsettled faces are drawn with the best guess (they may turn once more). Corner views need 2
+  agreeing observations; if they make the whole cube impossible, the free search is used instead.
+- **Pose** from the largest face in view whose rotation is settled (so at first it can be the top
+  face of a corner view). **Hint score:** the new front's missing stickers plus a quarter of those on
+  its four neighbours; no arrow when staying put scores as well.
+- **Fixtures:** the finder's output for both test videos is saved in
+  `cube/src/jvmTest/resources/video/` (`VideoScanHarness.writeFixtures`), so the tests run without
+  the git-ignored frames. Speed: ≈ 2 ms per frame on the desktop JVM on top of the finder.
+
 ## Risks / Trade-offs
 
 - Steep angles and glare → only full lattices count at first; many frames give many chances.

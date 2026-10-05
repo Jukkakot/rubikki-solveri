@@ -4,9 +4,9 @@ Built only after `video-scan-spike` says "go"; thresholds and limits come from i
 
 ## 1. Recognition core (`cube`)
 
-- [ ] 1.1 `VideoScan` state: sticker votes (54 slots, per face in reading coordinates until the face's rotation is known), live centre naming, contradictions. Verify: JVM tests on face readings from the test videos (the harness output saved as fixtures): one wrong reading does not change a recognised sticker.
-- [ ] 1.2 Face rotations from corner views (shared edges between lattices in one frame), the rotation search as fallback; pose tracking (one of 24). Verify: on both test videos the assembled cube equals the true state; the pose sequence is plausible on a few hand-checked frames.
-- [ ] 1.3 Turning hint: the quarter tilt that shows the most unrecognised stickers from the current pose. Verify: unit tests (only the bottom missing → tilt so the bottom shows).
+- [x] 1.1 `VideoScan` state: sticker votes (54 slots, per face in reading coordinates until the face's rotation is known), live centre naming, contradictions. Verify: JVM tests on face readings from the test videos (the harness output saved as fixtures): one wrong reading does not change a recognised sticker.
+- [x] 1.2 Face rotations from corner views (shared edges between lattices in one frame), the rotation search as fallback; pose tracking (one of 24). Verify: on both test videos the assembled cube equals the true state; the pose sequence is plausible on a few hand-checked frames.
+- [x] 1.3 Turning hint: the quarter tilt that shows the most unrecognised stickers from the current pose. Verify: unit tests (only the bottom missing → tilt so the bottom shows).
 
 ## 2. Video scan screen (`shared`)
 

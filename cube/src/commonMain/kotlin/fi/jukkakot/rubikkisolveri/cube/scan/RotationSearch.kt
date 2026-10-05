@@ -52,16 +52,18 @@ object RotationSearch {
      * a mirror is undone by renaming any one pair (two mirrors make a turn of the whole cube), so
      * every single pair gives a solvable cube. The pair whose readings fit the default palette better
      * renamed is taken; without readings, red/orange before white/yellow before green/blue.
-     * With [renamePairs] false, only the rotations are tried.
+     * With [renamePairs] false, only the rotations are tried. [fixed] faces keep the given turn
+     * (known from elsewhere, e.g. a video scan's corner views).
      */
     fun search(
         colors: List<CubeColor>,
         scheme: ColorScheme = ColorScheme.STANDARD,
         samples: List<Rgb>? = null,
         renamePairs: Boolean = true,
+        fixed: Map<Face, Int> = emptyMap(),
     ): RotationResult {
         require(colors.size == Stickers.COUNT)
-        val plain = best(colors, emptyList(), scheme)
+        val plain = best(colors, emptyList(), scheme, fixed)
         if (plain.validity.isValid || !renamePairs) return plain
         val pairs = listOf(Face.R, Face.U, Face.F).sortedByDescending { renameGain(colors, samples, scheme[it], scheme[it.opposite]) }
         for (pair in pairs) {
@@ -84,7 +86,7 @@ object RotationSearch {
     }
 
     /** The best rotations with the faces of [swapped] and their opposites exchanged (readings and colour names). */
-    private fun best(colors: List<CubeColor>, swapped: List<Face>, scheme: ColorScheme): RotationResult {
+    private fun best(colors: List<CubeColor>, swapped: List<Face>, scheme: ColorScheme, fixed: Map<Face, Int> = emptyMap()): RotationResult {
         val from = Face.entries.associateWith { face -> if (face in swapped || face.opposite in swapped) face.opposite else face }
         val rename = HashMap<CubeColor, CubeColor>()
         for (face in swapped) {
@@ -105,6 +107,7 @@ object RotationSearch {
         val buffer = ArrayList<CubeColor>(Stickers.COUNT)
         for (combo in 0 until 4096) {
             for (f in 0 until 6) turns[f] = (combo shr (2 * f)) and 3
+            if (fixed.any { (face, k) -> turns[face.ordinal] != k.mod(4) }) continue
             buffer.clear()
             for (f in 0 until 6) buffer.addAll(options[f][turns[f]])
             val cube = Cube.of(buffer)
