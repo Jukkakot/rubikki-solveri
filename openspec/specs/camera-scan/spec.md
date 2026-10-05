@@ -99,28 +99,27 @@ two opposite centres were read the wrong way round, swapping them SHALL be tried
 giving different solvable cubes exist, the faces whose rotation differs SHALL be marked. None of
 this SHALL be announced to the user.
 
-After every scan the check SHALL open with the camera's pictures next to the scanned colours. For a
-valid scan where no sticker is uncertain or marked, nothing SHALL be marked, and the solution SHALL
-open by itself after a few seconds, with the time left visible; a button to scan again SHALL be at
-hand, and any touch on the check SHALL stop the automatic continue. Otherwise the uncertain or
-problem stickers SHALL be marked, with a note asking the user to check them, and nothing continues
-by itself.
+A valid scan where no sticker is uncertain or marked SHALL open the solution at once, without the
+check; the check with the camera's pictures SHALL stay behind the solution, so going back from the
+solution opens it. Otherwise the check SHALL open with the camera's pictures next to the scanned
+colours, the uncertain or problem stickers marked and a note asking the user to check them, and
+nothing SHALL continue by itself.
 
 #### Scenario: Confident scan
-- **WHEN** the scan is valid and confident and the user does nothing
-- **THEN** the check shows the pictures and colours with nothing marked, and the solution opens after a few seconds
+- **WHEN** the scan is valid and confident
+- **THEN** the solution opens at once, with no check in between
 
 #### Scenario: Result does not match the pictures
-- **WHEN** the check of a confident scan is open and the user taps scan again before the time runs out
+- **WHEN** the check of an unsure scan is open and the user taps scan again
 - **THEN** the solution does not open and the scan starts again
 
 #### Scenario: Looking closer
-- **WHEN** the user touches the check of a confident scan before the time runs out
-- **THEN** the automatic continue stops and "Looks right" opens the solution
+- **WHEN** the solution of a confident scan is open and the user goes back
+- **THEN** the check opens with the pictures and the scanned colours, ready to fix
 
 #### Scenario: Faces turned
 - **WHEN** a scrambled cube is scanned with the top face turned a quarter and the back face upside down
-- **THEN** the check shows the real cube, and the solution follows
+- **THEN** the solution of the real cube opens
 
 #### Scenario: Unsure scan
 - **WHEN** the scan has uncertain stickers or is invalid
@@ -128,7 +127,7 @@ by itself.
 
 #### Scenario: Face taken wrong during the scan
 - **WHEN** the blue face was taken for the white one during a dim scan (the user's evening scan of 2026-10-04)
-- **THEN** the faces are renamed without a message, and the check shows a valid cube
+- **THEN** the faces are renamed without a message, and the cube is valid
 
 ### Requirement: Camera permission
 Without camera permission the screen SHALL explain why the camera is needed, offer to ask for it
@@ -141,12 +140,22 @@ again and offer manual input instead.
 ### Requirement: Confirm each face
 After a capture the screen SHALL stop reading the camera and show the nine colours as the camera
 saw them, with a note that the colours are worked out at the end from the whole cube, and a choice
-to go on or scan again. During the full scan it SHALL NOT name the face. Stickers in the review SHALL
-NOT be tappable. Only an accepted face SHALL count as done.
+to go on or scan again. "Good, next" SHALL fill up over a couple of seconds and then accept the
+face by itself; a touch on the review SHALL stop that, leaving the choice to the user. During the
+full scan it SHALL NOT name the face. Stickers in the review SHALL NOT be tappable. Only an
+accepted face SHALL count as done.
+
+#### Scenario: Accept by itself
+- **WHEN** a face has been captured and the user does nothing
+- **THEN** after a couple of seconds the face counts as done and any face not yet scanned is asked for
 
 #### Scenario: Accept
 - **WHEN** a face has been captured and the user taps "Good, next"
-- **THEN** the face counts as done and any face not yet scanned is asked for
+- **THEN** the face counts as done at once
+
+#### Scenario: Looking closer
+- **WHEN** the user touches the review before the time runs out
+- **THEN** it no longer accepts by itself, and "Good, next" or "Scan again" decides
 
 #### Scenario: Centre note in the review
 - **WHEN** a face has been captured during the full scan
@@ -158,7 +167,7 @@ NOT be tappable. Only an accepted face SHALL count as done.
 
 #### Scenario: Tap to fix
 - **WHEN** the user taps a sticker in the review
-- **THEN** nothing changes; doubtful stickers are checked after the scan
+- **THEN** no colour changes; doubtful stickers are checked after the scan
 
 ### Requirement: Steady camera settings
 When the first face is captured, the camera's exposure and white balance SHALL be locked for the
