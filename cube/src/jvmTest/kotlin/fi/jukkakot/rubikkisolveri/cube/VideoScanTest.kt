@@ -4,6 +4,7 @@ import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
 import fi.jukkakot.rubikkisolveri.cube.scan.RgbaFrame
+import fi.jukkakot.rubikkisolveri.cube.scan.Orientation
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.Pose
 import fi.jukkakot.rubikkisolveri.cube.scan.RotationSearch
@@ -110,6 +111,36 @@ class VideoScanTest {
         repeat(4) { s = scan.onFrame(listOf(f, u), it * 100L) }
         assertEquals(Pose(Face.F, Face.U), s.pose)
         for (face in listOf(Face.U, Face.F)) for (n in 0 until 9) assertEquals(truth[face.ordinal * 9 + n], s.stickers[face.ordinal * 9 + n])
+    }
+
+    @Test
+    fun orientationFollowsTheSettledFrontFaceAndIsNullWithoutOne() {
+        val scan = VideoScan()
+        assertNull(scan.onFrame(listOf(reading(Face.F)), 0).orientation, "rotation not settled yet")
+        val f = reading(Face.F, centre = Point(100.0, 200.0))
+        val u = reading(Face.U, centre = Point(100.0, 110.0))
+        var s = VideoScanState.EMPTY
+        repeat(4) { s = scan.onFrame(listOf(f, u), 100 + it * 100L) }
+        // F straight at the camera with U on top: the cube's axes are the camera's.
+        val straight = Orientation(listOf(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0))
+        assertTrue(s.orientation!!.angleTo(straight) < 0.05, "${s.orientation}")
+        assertNull(scan.onFrame(emptyList(), 600).orientation)
+    }
+
+    @Test
+    fun oneReadingGivesLeadingColoursAndThreeRecogniseThem() {
+        val scan = VideoScan()
+        val first = scan.onFrame(listOf(reading(Face.U)), 0)
+        assertEquals(0, first.recognised)
+        for (n in 0 until 9) assertEquals(truth[Face.U.ordinal * 9 + n], first.leading[Face.U.ordinal * 9 + n])
+        assertTrue(first.found.single().recognised.none { it })
+        assertEquals(9, first.found.single().names.count { it != null })
+        var s = first
+        repeat(2) { s = scan.onFrame(listOf(reading(Face.U, turn = 1)), 100 + it * 100L) }
+        assertTrue(s.found.single().recognised.all { it })
+        assertTrue(s.leading.all { it == null }, "recognised stickers have no leading colour")
+        // Named in the reading's own order: the turned reading's first sticker is the face's seventh.
+        assertEquals(truth[Face.U.ordinal * 9 + 6], s.found.single().names[0])
     }
 
     @Test

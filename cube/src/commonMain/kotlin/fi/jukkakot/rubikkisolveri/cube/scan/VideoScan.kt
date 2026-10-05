@@ -35,22 +35,33 @@ enum class Tilt {
 }
 
 /**
+ * A face found in a frame as the scan took it: per sticker (reading order) the colour [names] it was
+ * read as in this frame (null where none was found, or for a face the scan could not use) and
+ * whether that sticker is already [recognised].
+ */
+data class FoundFace(val reading: FaceReading, val names: List<CubeColor?>, val recognised: List<Boolean>)
+
+/**
  * What the video scan knows after a frame. [stickers] are the recognised colours (URFDLB, net
- * order; null = not yet), [contradictions] the stickers whose readings disagree, [found] the faces
- * in this frame, [pose] how the cube was last seen held, [hint] the tilt that brings most missing
- * stickers into view (only while a face is in view and its pose is known), [newStickers] how many
- * stickers were recognised with this frame. [complete]: all 54 recognised and a possible cube;
- * [finished]: complete for [VideoScan.FINISH_MILLIS].
+ * order; null = not yet), [leading] the colour most readings name for each sticker not yet
+ * recognised (null for the recognised ones and those without readings), [contradictions] the
+ * stickers whose readings disagree, [found] the faces in this frame, [pose] how the cube was last
+ * seen held, [orientation] how it is turned in this frame (null when no face with a settled rotation
+ * is in view), [hint] the tilt that brings most missing stickers into view (only while a face is in
+ * view and its pose is known), [newStickers] how many stickers were recognised with this frame.
+ * [complete]: all 54 recognised and a possible cube; [finished]: complete for [VideoScan.FINISH_MILLIS].
  */
 data class VideoScanState(
     val stickers: List<CubeColor?>,
     val contradictions: Set<Int>,
-    val found: List<FaceReading>,
+    val found: List<FoundFace>,
     val pose: Pose?,
     val hint: Tilt?,
     val newStickers: Int,
     val complete: Boolean,
     val finished: Boolean,
+    val leading: List<CubeColor?> = List(Stickers.COUNT) { null },
+    val orientation: Orientation? = null,
 ) {
     val recognised: Int get() = stickers.count { it != null }
 
@@ -71,12 +82,14 @@ data class VideoScanState(
  * base for the phone and the browser.
  */
 class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
-    private class Reading(val rgb: List<Rgb?>, val area: Double, var group: Group) {
-        val labs: List<Lab?> = rgb.map { it?.toLab() }
+    private class Reading(val face: FaceReading, var group: Group) {
+        val rgb: List<Rgb?> get() = face.colors
+        val area: Double get() = face.area
+        val labs: List<Lab?> = face.colors.map { it?.toLab() }
         var names: List<CubeColor?> = emptyList()
 
         /** All nine stickers found; only a full reading can be a group's anchor. */
-        val full: Boolean = rgb.all { it != null }
+        val full: Boolean = face.isFull
 
         /** Quarter turns clockwise that bring this reading to its group's frame. */
         var turn = 0
@@ -95,6 +108,9 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         var anchorTurn = 0
         val sticky = arrayOfNulls<CubeColor>(9)
         var stickers: List<CubeColor?> = List(9) { null }
+
+        /** The colour with the most votes per place (recognised or not). */
+        var leading: List<CubeColor?> = List(9) { null }
         var disputed: Set<Int> = emptySet()
         var samples: List<Rgb?> = List(9) { null }
         val inliers: List<Reading> get() = readings.filter { it.inlier }
@@ -109,6 +125,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     private var ambiguous: Set<Face> = emptySet()
     private var rotationKey: String? = null
     private var lastPose: Pose? = null
+    private var lastOrientation: Orientation? = null
     private var lastRecognised = 0
     private var completeSince: Long? = null
 
@@ -124,7 +141,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             val centre = face.colors[CENTRE] ?: return@map null
             val color = nameCentre(centre)
             val group = if (face.isFull) groups.getOrPut(color) { Group(color) } else groups[color] ?: return@map null
-            Reading(face.colors, face.area, group).also { group.add(it) }
+            Reading(face, group).also { group.add(it) }
         }
         for (i in faces.indices) for (j in faces.indices) {
             val a = fresh[i] ?: continue
@@ -148,13 +165,20 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val complete = all && contradictions.isEmpty() && validity?.isValid == true && (ambiguous - settled).isEmpty()
         if (!complete) completeSince = null else if (completeSince == null) completeSince = nowMillis
 
-        val pose = poseOf(fresh.filterNotNull())
+        val usable = fresh.filterNotNull()
+        val main = mainReading(usable)
+        val pose = main?.let { poseOf(it) }
         if (pose != null) lastPose = pose
+        val orientation = main?.let { orientationOf(it, usable) }
+        if (orientation != null) lastOrientation = orientation
         val recognised = net.count { it != null }
+        val leading = netOf { it.leading }.mapIndexed { i, c -> if (net[i] == null) c else null }
         state = VideoScanState(
             stickers = net,
+            leading = leading,
+            orientation = orientation,
             contradictions = contradictions,
-            found = faces,
+            found = faces.mapIndexed { i, face -> foundFace(face, fresh[i]) },
             pose = lastPose,
             hint = pose?.let { hint(it, net, contradictions) },
             newStickers = (recognised - lastRecognised).coerceAtLeast(0),
@@ -266,6 +290,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         }
         val inliers = g.inliers
         val stickers = arrayOfNulls<CubeColor>(9)
+        val leading = arrayOfNulls<CubeColor>(9)
         val samples = arrayOfNulls<Rgb>(9)
         val disputed = HashSet<Int>()
         for (n in 0 until 9) {
@@ -274,6 +299,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             for ((_, c) in voters) counts[c] = (counts[c] ?: 0) + 1
             val ranked = counts.entries.sortedByDescending { it.value }
             val lead = ranked.getOrNull(0)
+            leading[n] = lead?.key
             val second = ranked.getOrNull(1)?.value ?: 0
             val sticky = g.sticky[n]
             val color = when {
@@ -295,6 +321,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             }
         }
         g.stickers = stickers.toList()
+        g.leading = leading.toList()
         g.samples = samples.toList()
         g.disputed = disputed
     }
@@ -389,13 +416,37 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         List(9) { n -> group?.let { get(it)[RotationSearch.turnIndex(n, k)] } }
     }
 
-    /** The pose from the largest face in view whose rotation is settled. */
-    private fun poseOf(fresh: List<Reading>): Pose? {
-        val main = fresh.filter { !it.removed && it.inlier && scheme.faceOf(it.group.color) in settled }.maxByOrNull { it.area } ?: return null
+    /** The largest face in view whose rotation is settled: the pose and the orientation come from it. */
+    private fun mainReading(fresh: List<Reading>): Reading? =
+        fresh.filter { !it.removed && it.inlier && scheme.faceOf(it.group.color) in settled }.maxByOrNull { it.area }
+
+    /** Quarter turns from [r]'s reading order to its face in the net: its side s is the net's side s + this. */
+    private fun netTurn(r: Reading): Int = (r.turn + (rotations[scheme.faceOf(r.group.color)] ?: 0)) % 4
+
+    private fun poseOf(main: Reading): Pose {
         val front = scheme.faceOf(main.group.color)
         // The reading's top side (0), turned to the group's frame and then into the net.
-        val up = neighbourAt(front, (main.turn + (rotations[front] ?: 0)) % 4)
-        return Pose(front, up)
+        return Pose(front, neighbourAt(front, netTurn(main)))
+    }
+
+    /**
+     * The cube's orientation from [main]'s steps (its right and bottom sides in the net give the
+     * cube vectors they show), the tilt's sign from the other faces in view or the last orientation.
+     */
+    private fun orientationOf(main: Reading, fresh: List<Reading>): Orientation? {
+        val front = scheme.faceOf(main.group.color)
+        val k = netTurn(main)
+        val candidates = Orientation.candidates(main.face.u, main.face.v, sideVector(front, k + 1), sideVector(front, k + 2))
+        val others = fresh.filter { it !== main && it.group !== main.group }.map { scheme.faceOf(it.group.color).normal to it.face.centre }
+        return Orientation.choose(candidates, front.normal, main.face.centre, others, lastOrientation)
+    }
+
+    /** [face] as the scan took it in this frame: names and recognised places in reading order. */
+    private fun foundFace(face: FaceReading, r: Reading?): FoundFace {
+        if (r == null || r.removed) return FoundFace(face, List(9) { null }, List(9) { false })
+        val recognised = MutableList(9) { false }
+        if (r.inlier) for (n in 0 until 9) recognised[RotationSearch.turnIndex(n, r.turn)] = r.group.stickers[n] != null
+        return FoundFace(face, r.names.toList(), recognised)
     }
 
     companion object {
@@ -434,15 +485,16 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         /** The side (0 top, 1 right, 2 bottom, 3 left) of [face] in the net that [other] lies across, or null when they do not touch. */
         fun netSide(face: Face, other: Face): Int? = (0 until 4).firstOrNull { neighbourAt(face, it) == other }
 
+        /** One sticker step on [face] towards its side [side] in the net (0 top, 1 right, 2 bottom, 3 left). */
+        fun sideVector(face: Face, side: Int): Vec3 = when (side.mod(4)) {
+            0 -> face.down * -1
+            1 -> face.right
+            2 -> face.down
+            else -> face.right * -1
+        }
+
         /** The face across side [side] of [face] in the net. */
-        fun neighbourAt(face: Face, side: Int): Face = faceWithNormal(
-            when (side.mod(4)) {
-                0 -> face.down * -1
-                1 -> face.right
-                2 -> face.down
-                else -> face.right * -1
-            },
-        )
+        fun neighbourAt(face: Face, side: Int): Face = faceWithNormal(sideVector(face, side))
 
         /**
          * The tilt that brings the most missing stickers into view from [pose]: the new front face's

@@ -40,6 +40,12 @@ a cube while its layers are turned; tracking pieces from frame to frame by motio
   whose rotation is not settled are not used. With several faces, the largest (most frontal)
   is used. `VideoScanState` gets the orientation (a rotation, or null when no usable face is in the
   frame).
+- **Tilt sign (decided in apply).** The two weak-perspective answers are mirror images tilted
+  towards or away from the camera, and both look at it, so the face's facing does not pick one.
+  Instead: another face in the same frame (its centre lies where its normal says) picks it; without
+  one, the answer closer to the last orientation; with no history, the first. Near straight-on the
+  two answers coincide, and steep views usually show a second face. `VideoScanState.found` became
+  `FoundFace` (reading, names, recognised flags).
 - **Smoothing in the screen.** Frames come at ≤ 10 fps; the progress cube eases towards the latest
   orientation at display rate (exponential, about 150 ms to close most of the gap) along the
   shortest way, so it moves smoothly without jitter. No usable face → it stays put. The discrete

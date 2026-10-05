@@ -12,8 +12,8 @@
 
 ## 3. Orientation and faint stickers (cube)
 
-- [ ] 3.1 Orientation from one face's steps (weak perspective, sign from the face looking at the camera), from the largest found face with a settled rotation; `VideoScanState.orientation`. Verify: unit tests with synthetic projections of known rotations (straight, rolled 30°, tilted 25°) give them back within a few degrees; null without a usable face.
-- [ ] 3.2 `VideoScanState`: leading colour per unrecognised sticker; per found face the colour named in this frame and whether each sticker is recognised. Verify: unit tests (one reading → leading colours, none recognised; three agreeing → recognised flags true).
+- [x] 3.1 Orientation from one face's steps (weak perspective, sign from the face looking at the camera), from the largest found face with a settled rotation; `VideoScanState.orientation`. Verify: unit tests with synthetic projections of known rotations (straight, rolled 30°, tilted 25°) give them back within a few degrees; null without a usable face.
+- [x] 3.2 `VideoScanState`: leading colour per unrecognised sticker; per found face the colour named in this frame and whether each sticker is recognised. Verify: unit tests (one reading → leading colours, none recognised; three agreeing → recognised flags true).
 
 ## 4. Screen (shared)
 
