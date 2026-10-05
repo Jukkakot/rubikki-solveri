@@ -3,8 +3,8 @@
 ### Requirement: Scan from video
 The video scan SHALL read the cube from the camera's live picture without a grid, without holding
 still and without separate captures. It SHALL find the cube's faces anywhere in the picture,
-straight on or at an angle, several at a time, and outline each found face on the camera picture.
-A face with one or two stickers hidden (for example under a finger) SHALL still count for the
+straight on or at an angle, several at a time, and outline each found face on the camera picture
+with a dim line. A face with one or two stickers hidden (for example under a finger) SHALL still count for the
 stickers it shows.
 
 #### Scenario: Turning the cube

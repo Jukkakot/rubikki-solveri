@@ -53,7 +53,8 @@ a cube while its layers are turned; tracking pieces from frame to frame by motio
   group's own frame, so it works before the face's rotation in the net is settled). The overlay
   draws a round dot of about half the sticker's step at each sticker, in the app's sticker colour
   for that name, with a thin dark rim; solid when recognised, about 45 % opaque when not. The cyan
-  face outline stays, thinner. Fixed colours, not theme colours (drawn on the camera image).
+  face outline stays, thinner and dimmed (about half opaque) so the dots lead (user, 2026-10-05).
+  Fixed colours, not theme colours (drawn on the camera image).
 - **Fixtures.** `VideoScanHarness.writeFixtures` also writes partial faces (and, if the spike says
   go, the smaller pieces) so the replay tests use them without the frames.
 
@@ -68,4 +69,9 @@ a cube while its layers are turned; tracking pieces from frame to frame by motio
 
 ## Open Questions
 
-- (Asked from the user with the proposal; folded in when answered.)
+User answers 2026-10-05 (mockups https://claude.ai/artifact/PoE7Ldoxa2VFt2TWKvYdoW): round dots;
+dimmed outline; two levels on the progress cube (faint from the first reading, full when
+recognised, grey only with no reading); full 3D following; follow only faces with a settled
+rotation; a partial face without its centre is dropped.
+
+- Who decides on the smaller pieces after the spike (asked again in text).

@@ -18,7 +18,7 @@
 ## 4. Screen (shared)
 
 - [ ] 4.1 Progress cube eases towards `orientation` at display rate (shortest way, ~150 ms), stays put without one; faint leading colours (about one third over grey). Verify: Compose test that the progress cube renders with a partly known state; easing function unit-tested (moves towards the target, never overshoots).
-- [ ] 4.2 Camera overlay: a round dot per sticker of each found face in its named colour, solid when recognised and faint when not, thin dark rim; thinner cyan outline. Verify: the existing screen smoke test still passes with faces carrying colours.
+- [ ] 4.2 Camera overlay: a round dot per sticker of each found face in its named colour, solid when recognised and faint when not, thin dark rim; thinner, dimmed cyan outline. Verify: the existing screen smoke test still passes with faces carrying colours.
 
 ## 5. Docs
 
