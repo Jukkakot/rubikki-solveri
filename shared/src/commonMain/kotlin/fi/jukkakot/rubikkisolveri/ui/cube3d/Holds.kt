@@ -2,6 +2,7 @@ package fi.jukkakot.rubikkisolveri.ui.cube3d
 
 import fi.jukkakot.rubikkisolveri.cube.FaceView
 import fi.jukkakot.rubikkisolveri.cube.Move
+import fi.jukkakot.rubikkisolveri.cube.scan.Orientation
 import fi.jukkakot.rubikkisolveri.cube.scan.Pose
 import kotlin.math.sqrt
 
@@ -17,10 +18,16 @@ fun viewFor(view: FaceView): Quat = CubeScene.viewFor(rotationOf(view.hold))
  * The whole-cube rotation that holds the cube as [pose]: its front face towards the viewer, its up
  * face on top (the rotation matrix's rows are the right, up and front faces' normals).
  */
-fun holdFor(pose: Pose): Quat {
-    val r = V3.of(pose.right.normal)
-    val u = V3.of(pose.up.normal)
-    val f = V3.of(pose.front.normal)
+fun holdFor(pose: Pose): Quat = fromRows(V3.of(pose.right.normal), V3.of(pose.up.normal), V3.of(pose.front.normal))
+
+/** The whole-cube rotation of the real cube as the video scan measured it ([Orientation]'s rows likewise). */
+fun holdFor(orientation: Orientation): Quat {
+    val m = orientation.m.map { it.toFloat() }
+    return fromRows(V3(m[0], m[1], m[2]), V3(m[3], m[4], m[5]), V3(m[6], m[7], m[8]))
+}
+
+/** The rotation whose matrix has rows [r], [u], [f] (where the viewer's right, up and front point in the cube). */
+private fun fromRows(r: V3, u: V3, f: V3): Quat {
     val trace = r.x + u.y + f.z
     val q = when {
         trace > 0 -> {

@@ -48,6 +48,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 38 | `arrow-count-loop` | done | A "×1"/"×2" badge in the middle of the guide arrow; the demo repeats 3 s after it ends until the user moves on (phone testing 2026-10-05) |
 | 39 | `video-scan-spike` | done | Offline face finder (pure Kotlin) measured on the user's test videos: both assemble the true cube, ~90 % of faces read exactly, two faces in a quarter of angled frames; proposal "go" (findings in the archive) |
 | 40 | `video-scan` | done | Scan by turning the cube in front of the camera: a grey 3D progress cube in the camera corner fills sticker by sticker, a turning-hint arrow on it; offered beside the guided scan (default) until it proves reliable on the phone |
+| 41 | `video-scan-live` | done | Video scan feels live: faces with a finger over a sticker count, a dot in the read colour on every sticker on the camera picture, the progress cube follows the real cube smoothly and shows unconfirmed stickers faintly |
 
 ## Backlog
 

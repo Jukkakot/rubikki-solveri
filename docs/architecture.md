@@ -127,15 +127,18 @@ Video scan pipeline (`video-scan`):
 
 1. `CameraPreview(onImage)`: about ten times a second the visible picture upright, short side
    ≤ 360 px (`FrameSampler.upright` on Android; the browser passes its 360-px preview as is).
-2. `cube/scan/FaceFinder`: full 3×3 lattices anywhere in the picture (spike `video-scan-spike`,
+2. `cube/scan/FaceFinder`: full 3×3 lattices (and partial ones with 7–8 stickers) anywhere in the picture (spike `video-scan-spike`,
    findings in its archive); run on `Dispatchers.Default` (the page's one thread in the browser; no
    Web Worker yet, `scan.video` logs the finder's ms per frame to decide).
-3. `cube/scan/VideoScan`: votes per sticker, face rotations, pose, turning hint and finishing
-   (decisions in the change's `design.md`). Regression data: the test videos' finder output in
+3. `cube/scan/VideoScan`: votes per sticker (partial faces vote, never anchor), face rotations,
+   pose, orientation (`Orientation`, weak perspective from one face's steps), turning hint and
+   finishing (decisions in the `video-scan` and `video-scan-live` archives; smaller pieces measured
+   and dropped there). Regression data: the test videos' finder output in
    `cube/src/jvmTest/resources/video/` (`VideoScanTest`; regenerate with
    `VideoScanHarness.writeFixtures`, frames local only).
-4. `ui/scan/VideoScanScreen`: camera, outlines, the progress cube (`Cube3D` turned by
-   `holdFor(pose)`), hint line; the result goes through `afterScan` like the guided scan's (no face
+4. `ui/scan/VideoScanScreen`: camera, outlines with a dot per sticker in its read colour, the
+   progress cube (`Cube3D` easing towards `holdFor(orientation)` every display frame, unrecognised
+   stickers faint), hint line; the result goes through `afterScan` like the guided scan's (no face
    pictures).
 
 ## Beginner solver — Implemented

@@ -6,15 +6,19 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import fi.jukkakot.rubikkisolveri.cube.Cube
+import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.Stickers
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
+import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
+import fi.jukkakot.rubikkisolveri.ui.cube3d.StickerColors
 import fi.jukkakot.rubikkisolveri.ui.nav.afterScan
 import fi.jukkakot.rubikkisolveri.ui.scan.FoundFaces
 import fi.jukkakot.rubikkisolveri.ui.scan.VideoScanContent
+import fi.jukkakot.rubikkisolveri.ui.scan.progressColors
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
 import kotlinx.coroutines.flow.MutableSharedFlow
 import org.junit.Rule
@@ -71,6 +75,22 @@ class VideoScanScreenTest {
         compose.onNodeWithText("9/54 tarraa").assertExists()
         compose.onNodeWithText("Tarkista nyt").assertIsEnabled()
         assertEquals(listOf(false, true), locks)
+    }
+
+    @Test
+    fun aPartlyReadCubeShowsFaintColoursAndPartialFacesCount() {
+        scan()
+        // A face with a sticker hidden, then the face in full: the full one starts it, both are drawn.
+        val partial = face(Face.U).let { it.copy(colors = it.colors.toMutableList().also { c -> c[1] = null }) }
+        show(face(Face.U), partial, face(Face.U).copy(centre = Point(180.0, 120.0)))
+        // Three votes for the eight it shows, two for the hidden one.
+        compose.onNodeWithText("8/54 tarraa").assertExists()
+        show(face(Face.U))
+        compose.onNodeWithText("9/54 tarraa").assertExists()
+        val state = VideoScanState.EMPTY.copy(leading = List(Stickers.COUNT) { if (it < 9) CubeColor.RED else null })
+        val colors = progressColors(state)
+        assertTrue(colors[0] != StickerColors.UNKNOWN && colors[0] != StickerColors.of(CubeColor.RED), "faint")
+        assertEquals(StickerColors.UNKNOWN, colors[9])
     }
 
     @Test

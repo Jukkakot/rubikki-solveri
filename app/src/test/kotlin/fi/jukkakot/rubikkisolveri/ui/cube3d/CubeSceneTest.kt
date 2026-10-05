@@ -15,6 +15,31 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CubeSceneTest {
+    @Test
+    fun easingMovesTowardsTheTargetAndNeverOvershoots() {
+        val from = Quat.IDENTITY
+        val to = Quat.axisAngle(V3(0f, 1f, 0f), (PI / 2).toFloat())
+        var q = from
+        var gap = q.angleTo(to)
+        repeat(30) {
+            val next = q.easeTowards(to, 16f)
+            assertTrue(next.angleTo(to) < gap || gap < 2e-3f, "closer")
+            assertTrue(q.angleTo(next) <= gap + 1e-4f, "not past the target")
+            q = next
+            gap = q.angleTo(to)
+        }
+        assertTrue(gap < 0.01f, "about there after half a second: $gap")
+        assertTrue(from.easeTowards(to, 150f).angleTo(to) < 0.06f * (PI / 2).toFloat(), "~150 ms closes most of the gap")
+        assertTrue(from.easeTowards(to, 10_000f).angleTo(to) < 1e-3f, "a long pause lands on it")
+    }
+
+    @Test
+    fun measuredOrientationHoldsLikeThePose() {
+        // The straight orientation (camera axes = cube axes) is the hold with F in front and U on top.
+        val straight = fi.jukkakot.rubikkisolveri.cube.scan.Orientation(listOf(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0))
+        assertTrue(holdFor(straight).angleTo(holdFor(Pose(Face.F, Face.U))) < 1e-3f)
+    }
+
     private val w = 1000f
     private val h = 1000f
 

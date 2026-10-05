@@ -59,8 +59,21 @@ data class Quat(val w: Float, val x: Float, val y: Float, val z: Float) {
         return Quat(w * ka + b.w * kb, x * ka + b.x * kb, y * ka + b.y * kb, z * ka + b.z * kb)
     }
 
+    /** The angle (radians) of the rotation from this to [to], the shorter way. */
+    fun angleTo(to: Quat): Float = 2 * acos(kotlin.math.abs(w * to.w + x * to.x + y * to.y + z * to.z).coerceAtMost(1f))
+
+    /**
+     * One display frame's step of an exponential ease towards [to] after [millis]: the gap shrinks
+     * by e^(-millis / [tau]), along the shorter way, never past [to].
+     */
+    fun easeTowards(to: Quat, millis: Float, tau: Float = EASE_TAU): Quat =
+        slerp(to, (1 - kotlin.math.exp(-millis.coerceAtLeast(0f) / tau)).coerceIn(0f, 1f))
+
     companion object {
         val IDENTITY = Quat(1f, 0f, 0f, 0f)
+
+        /** Time constant of [easeTowards]: about 150 ms (three of these) closes 95 % of the gap. */
+        const val EASE_TAU = 50f
 
         /** Rotation by [radians] about unit [axis], counter-clockwise seen from the axis tip. */
         fun axisAngle(axis: V3, radians: Float): Quat {

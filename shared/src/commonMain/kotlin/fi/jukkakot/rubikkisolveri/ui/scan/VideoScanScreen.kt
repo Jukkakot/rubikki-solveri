@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -37,6 +38,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
@@ -44,6 +46,8 @@ import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceFinder
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
+import fi.jukkakot.rubikkisolveri.cube.scan.FoundFace
+import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.cube.scan.Tilt
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
@@ -68,7 +72,7 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-/** The faces [FaceFinder] found in one camera picture of [width]×[height] pixels (for drawing them). */
+/** The faces (full and partial) [FaceFinder] found in one camera picture of [width]×[height] pixels. */
 class FoundFaces(val faces: List<FaceReading>, val width: Int, val height: Int)
 
 /**
@@ -91,7 +95,7 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
                 var millis = 0L
                 images.collect { image ->
                     val start = elapsedMillis()
-                    val faces = FaceFinder.find(image.argb, image.width, image.height).faces.map(FaceReading::of)
+                    val faces = FaceFinder.find(image.argb, image.width, image.height).let { it.faces + it.partial }.map(FaceReading::of)
                     millis += elapsedMillis() - start
                     if (++count % TIMING_FRAMES == 0) {
                         AppLog.info(Evt.SCAN_VIDEO, null, "finderMs" to millis / TIMING_FRAMES, "size" to "${image.width}x${image.height}")
@@ -127,7 +131,8 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
 
 /**
  * The video scan without the camera: [found] are the faces of each picture, [preview] draws the
- * camera. The camera picture is large, the faces found outlined on it; the progress cube sits in its
+ * camera. The camera picture is large, the faces found outlined on it with a dot in the colour read
+ * for each sticker; the progress cube sits in its
  * top corner with the turning hint's arrow on it, the hint's line below the picture. Exposure is
  * locked once the first face is found. All recognised and possible for half a second → [onResult];
  * "check now" hands over what is known. [clock] is the time in milliseconds (tests pass their own).
@@ -223,7 +228,7 @@ fun VideoScanContent(
                 } else {
                     preview(Modifier.fillMaxSize())
                 }
-                picture?.let { FaceOutlines(it, Modifier.fillMaxSize()) }
+                picture?.let { FaceMarks(state.found, it.width, it.height, Modifier.fillMaxSize()) }
                 ProgressCube(state, Modifier.align(Alignment.TopEnd).padding(10.dp))
             }
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -257,37 +262,62 @@ private fun statusText(state: VideoScanState): String {
     }
 }
 
-/** The faces found in the latest picture, outlined; the picture fills the box (both are the visible part). */
+/**
+ * The faces found in the latest picture of [width]×[height] pixels: a thin, dim outline and a round
+ * dot per sticker in the colour it was read as, solid once recognised, faint before. The picture
+ * fills the box (both are the visible part).
+ */
 @Composable
-private fun FaceOutlines(found: FoundFaces, modifier: Modifier) {
+private fun FaceMarks(found: List<FoundFace>, width: Int, height: Int, modifier: Modifier) {
     Canvas(modifier) {
-        val sx = size.width / found.width
-        val sy = size.height / found.height
+        val sx = size.width / width
+        val sy = size.height / height
+        fun at(p: Point) = Offset((p.x * sx).toFloat(), (p.y * sy).toFloat())
         val path = Path()
-        for (face in found.faces) {
-            val corners = face.outline.map { Offset((it.x * sx).toFloat(), (it.y * sy).toFloat()) }
+        for (face in found) {
+            val reading = face.reading
+            val corners = reading.outline.map(::at)
             path.reset()
             path.moveTo(corners[0].x, corners[0].y)
             for (c in corners.drop(1)) path.lineTo(c.x, c.y)
             path.close()
-            drawPath(path, Color.Black.copy(alpha = 0.5f), style = Stroke(6.dp.toPx(), join = StrokeJoin.Round))
-            drawPath(path, OUTLINE, style = Stroke(3.dp.toPx(), join = StrokeJoin.Round))
+            drawPath(path, Color.Black.copy(alpha = 0.25f), style = Stroke(3.dp.toPx(), join = StrokeJoin.Round))
+            drawPath(path, OUTLINE.copy(alpha = 0.5f), style = Stroke(1.5.dp.toPx(), join = StrokeJoin.Round))
+            val step = minOf(reading.u.length * sx, reading.v.length * sy).toFloat()
+            val radius = step * DOT_SHARE / 2
+            for (n in 0 until 9) {
+                val name = face.names[n] ?: continue
+                val centre = at(reading.centre + reading.u * (n % 3 - 1.0) + reading.v * (n / 3 - 1.0))
+                val alpha = if (face.recognised[n]) 1f else FAINT_DOT
+                drawCircle(StickerColors.of(name).copy(alpha = alpha), radius, centre)
+                drawCircle(StickerColors.PLASTIC.copy(alpha = alpha), radius, centre, style = Stroke(maxOf(1f, radius * 0.18f)))
+            }
         }
     }
 }
 
 /**
- * The cube as recognised so far, small on a dark rounded backing: grey until a sticker is
- * recognised, contradictions marked, turned to the real cube's pose once that is known, and the
- * turning hint's arrow on it.
+ * The cube as recognised so far, small on a dark rounded backing: grey until a sticker has readings,
+ * then its leading colour faintly, fully once recognised; contradictions marked. It eases towards
+ * the real cube's orientation at display rate (with the usual tilt so three faces show) and stays
+ * put while none is known; the turning hint's arrow on it.
  */
 @Composable
 private fun ProgressCube(state: VideoScanState, modifier: Modifier) {
     val view = remember { CubeViewState() }
-    LaunchedEffect(state.pose) { state.pose?.let { view.animateTo(CubeScene.viewFor(holdFor(it))) } }
+    val target = state.orientation?.let { CubeScene.viewFor(holdFor(it)) }
+    LaunchedEffect(target) {
+        if (target == null) return@LaunchedEffect
+        var last = withFrameMillis { it }
+        while (view.rotation.angleTo(target) > SETTLED_RADIANS) {
+            val now = withFrameMillis { it }
+            view.rotation = view.rotation.easeTowards(target, (now - last).toFloat())
+            last = now
+        }
+    }
     Box(modifier.size(PROGRESS_SIZE.dp).background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(16.dp)).padding(6.dp)) {
         Cube3D(
-            colors = state.stickers.map { StickerColors.of(it) },
+            colors = progressColors(state),
             modifier = Modifier.fillMaxSize(),
             viewState = view,
             marked = state.contradictions,
@@ -295,6 +325,17 @@ private fun ProgressCube(state: VideoScanState, modifier: Modifier) {
             description = stringResource(Res.string.video_progress, state.recognised),
         )
         state.hint?.let { TiltArrow(it, Modifier.fillMaxSize()) }
+    }
+}
+
+/** Recognised stickers in full, those with readings faintly (a third of the colour over grey), the rest grey. */
+fun progressColors(state: VideoScanState): List<Color> = state.stickers.indices.map { i ->
+    val known = state.stickers[i]
+    val lead = state.leading[i]
+    when {
+        known != null -> StickerColors.of(known)
+        lead != null -> lerp(StickerColors.UNKNOWN, StickerColors.of(lead), FAINT_STICKER)
+        else -> StickerColors.UNKNOWN
     }
 }
 
@@ -332,6 +373,18 @@ private fun TiltArrow(tilt: Tilt, modifier: Modifier) {
 private val OUTLINE = Color(0xFF4DD0E1)
 
 private const val PROGRESS_SIZE = 116
+
+/** A sticker's dot on the camera picture, as a share of its step. */
+private const val DOT_SHARE = 0.5f
+
+/** Opacity of a dot whose sticker is not yet recognised. */
+private const val FAINT_DOT = 0.45f
+
+/** How much of its leading colour an unrecognised sticker shows on the progress cube. */
+private const val FAINT_STICKER = 0.33f
+
+/** The progress cube stops easing within this of its target (0.2°). */
+private const val SETTLED_RADIANS = 0.0035f
 
 /** Frames between two timing lines in the log. */
 private const val TIMING_FRAMES = 50
