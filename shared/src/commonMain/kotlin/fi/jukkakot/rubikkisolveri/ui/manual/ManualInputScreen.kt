@@ -117,7 +117,7 @@ fun ManualInputScreen(
     onRescanUsed: () -> Unit = {},
     onReadings: (List<Rgb>) -> Unit = {},
     onRescanTurned: (Face, Int) -> Unit = { _, _ -> },
-    autoContinue: Boolean = false,
+    confident: Boolean = false,
 ) {
     var encoded by rememberSaveable { mutableStateOf(initial.encode()) }
     // The face-by-face check of a scan (null for plain manual input); its readings are not saved
@@ -205,18 +205,7 @@ fun ManualInputScreen(
     // A scan that cannot be right without any doubtful sticker starts with every face checked: say
     // at once which faces to look at.
     LaunchedEffect(Unit) {
-        if (!autoContinue && check != null && check.unchecked.isEmpty() && verdictFaces.isEmpty()) judge(check)
-    }
-
-    // A sure scan: the solution opens by itself unless the user touches the check first.
-    var waiting by rememberSaveable { mutableStateOf(autoContinue) }
-    val countdown = remember { Animatable(0f) }
-    LaunchedEffect(waiting) {
-        if (!waiting) return@LaunchedEffect
-        countdown.snapTo(0f)
-        countdown.animateTo(1f, tween(AUTO_CONTINUE_MILLIS, easing = LinearEasing))
-        lookRight()
-        waiting = false
+        if (!confident && check != null && check.unchecked.isEmpty() && verdictFaces.isEmpty()) judge(check)
     }
 
     // A face rescanned on its own comes back: it replaces that face in the check.
@@ -238,15 +227,6 @@ fun ManualInputScreen(
     val verdictNames = verdictFaces.split(',').mapNotNull { it.toIntOrNull() }.map { stringResource(faceName(FaceView.entries[it])) }
 
     Scaffold(
-        // Any touch on the check stops the automatic continue (the touch itself still works).
-        modifier = Modifier.pointerInput(waiting) {
-            if (waiting) {
-                awaitEachGesture {
-                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-                    waiting = false
-                }
-            }
-        },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(title)) },
@@ -312,22 +292,13 @@ fun ManualInputScreen(
                         )
                     }
                     Palette(editor, selectedColor, onSelect = { colorIndex = it.ordinal })
-                    if (scanCheck != null && autoContinue && onScanAgain != null) {
-                        // A sure scan: scan again at hand; "Looks right" fills up until the solution opens.
+                    if (scanCheck != null && confident && onScanAgain != null) {
+                        // A sure scan, opened again from its solution: scan again or back to the solution.
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             OutlinedButton(onClick = onScanAgain, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) {
                                 Text(stringResource(Res.string.check_scan_whole), maxLines = 2)
                             }
-                            val fill = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f)
-                            val shown = if (waiting) countdown.value else 0f
-                            Button(
-                                onClick = ::lookRight,
-                                modifier = Modifier.weight(1f).heightIn(min = 56.dp).clip(CircleShape)
-                                    .drawWithContent {
-                                        drawContent()
-                                        drawRect(fill, size = Size(size.width * shown, size.height))
-                                    },
-                            ) {
+                            Button(onClick = ::lookRight, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) {
                                 Text(stringResource(Res.string.check_looks_right), maxLines = 2)
                             }
                         }
@@ -556,4 +527,3 @@ private fun MiniNet(editor: CubeEditor, current: FaceView, marked: Set<Int>, che
 }
 
 /** How long the check of a sure scan waits before it opens the solution by itself. */
-private const val AUTO_CONTINUE_MILLIS = 5_000

@@ -4,6 +4,7 @@ import kotlin.time.Clock
 import fi.jukkakot.rubikkisolveri.ui.scan.LastScan
 import fi.jukkakot.rubikkisolveri.cube.FaceView
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanCheck
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -125,7 +126,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                     route.fromScan -> Res.string.check_note
                     else -> null
                 },
-                autoContinue = route.confident,
+                confident = route.confident,
                 pictures = if (route.fromScan) LastScan.pictures else emptyMap(),
                 onScanAgain = if (route.fromScan) {
                     { navController.navigate(ScanRoute()) { popUpTo<ManualInputRoute> { inclusive = true } } }
@@ -157,14 +158,9 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                     navController.popBackStack()
                 },
                 onResult = { outcome ->
-                    // Always the check next to the pictures; a sure scan goes on to the solution by itself.
-                    val next = ManualInputRoute(
-                        outcome.editor.encode(),
-                        outcome.marked.joinToString(","),
-                        fromScan = true,
-                        confident = outcome.isConfident,
-                    )
-                    navController.navigate(next) { popUpTo<ScanRoute> { inclusive = true } }
+                    val (check, solve) = afterScan(outcome)
+                    navController.navigate(check) { popUpTo<ScanRoute> { inclusive = true } }
+                    if (solve != null) navController.navigate(solve)
                 },
                 pictures = actions.scanPictures,
             ) }
@@ -261,4 +257,20 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
             )
         }
     }
+}
+
+/**
+ * Where a finished scan goes: the check next to the pictures, and for a sure scan (valid, nothing
+ * uncertain or marked) straight on to the solution, which leaves the check behind it so going back
+ * from the solution opens it.
+ */
+fun afterScan(outcome: ScanOutcome): Pair<ManualInputRoute, SolveRoute?> {
+    val check = ManualInputRoute(
+        outcome.editor.encode(),
+        outcome.marked.joinToString(","),
+        fromScan = true,
+        confident = outcome.isConfident,
+    )
+    val sure = outcome.editor.toCube()?.takeIf { outcome.isConfident && outcome.marked.isEmpty() }
+    return check to sure?.let { SolveRoute(it.toColorString()) }
 }

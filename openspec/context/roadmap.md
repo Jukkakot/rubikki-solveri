@@ -43,21 +43,11 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 33 | `scan-dim-light` | done | Forgiving scan in dim, warm light: bigger averaged cell reading, brightness-independent face naming, the six centres named together at the end (silent fix, next-best namings), the colour check after every scan (user, 2026-10-04) |
 | 34 | `web-context-lost` | done | Browser app reloads itself silently on the same screen when the phone takes its graphics away in a background tab, instead of crashing on return |
 | 35 | `step-settle` | done | Guide demo stays after the move, "Tein sen" nods instead of replaying the turn, back unchanged; no arrow in the mirror, a hidden face's arrow goes around the outside of its layer; solved cube hops, spins and bursts confetti (phone testing 2026-10-05) |
+| 36 | `scan-quick-flow` | done | Each captured face is accepted by itself after 2 s (a touch stops it); a sure scan skips the colour check and opens the solution, with the check behind it; the guide shows the arrow 1.5 s before the demo (phone testing 2026-10-05) |
 
 ## Backlog
 
 Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
-
-- **Next fix batch (collecting, user 2026-10-05; don't build until the user says the list is ready):**
-  - scan face review (after each face, screenshot 2026-10-05): "Hyvä, seuraava" continues by
-    itself after a few seconds, like the final colour check already does (time left visible, any
-    touch stops it, "Kuvaa uudelleen" at hand). This page shows raw camera colours with no
-    confidence yet, so presumably always. Only this page: not the learn method's goal card, not
-    the per-face "Näyttää oikealta" of the colour check (user, 2026-10-05).
-  - final colour check ("Tarkista värit"): skip it when the scan is valid and confident and go
-    straight to the solution; it opens only when something is uncertain or wrong (user,
-    2026-10-05; reverses scan-dim-light's "check after every scan"). Open: a way back to the
-    check from the solution if the colours turn out wrong (e.g. a "Värit väärin?" link)?
 
 - camera follow: notice when the cube is held differently, or keep helping in any orientation
   (after the user has tried camera follow; from `steady-cube`).

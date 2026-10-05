@@ -2,8 +2,15 @@
 
 package fi.jukkakot.rubikkisolveri.ui.scan
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -170,7 +177,10 @@ fun ScanScreen(
     }
 }
 
-/** The scan without the camera itself: [frames] are the grid readings, [preview] draws the camera. */
+/**
+ * The scan without the camera itself: [frames] are the grid readings, [preview] draws the camera.
+ * A captured face is accepted by itself after [autoAcceptMillis] (null: only by tapping).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScanContent(
@@ -182,6 +192,7 @@ fun ScanContent(
     onResult: (ScanOutcome) -> Unit,
     cameraFailed: Boolean = false,
     holdMillis: Long = ScanSession.HOLD_MILLIS,
+    autoAcceptMillis: Int? = AUTO_ACCEPT_MILLIS,
     onLockExposure: (Boolean) -> Unit = {},
     savePicture: (face: String) -> String? = { null },
     keepPicture: (FaceView) -> Unit = {},
@@ -200,6 +211,9 @@ fun ScanContent(
     var review by remember { mutableStateOf<List<Rgb>?>(null) }
     var recognised by remember { mutableStateOf<FaceView?>(null) }
     var lastCaptured by remember { mutableStateOf<FaceView?>(null) }
+    // A captured face is accepted by itself unless the user touches the review first.
+    var autoAccept by remember { mutableStateOf(false) }
+    val acceptFill = remember { Animatable(0f) }
     val haptics = LocalHapticFeedback.current
 
     fun handle(e: ScanEvent) {
@@ -208,6 +222,7 @@ fun ScanContent(
         index = session.index
         if (e is ScanEvent.Captured) {
             review = session.review
+            autoAccept = autoAcceptMillis != null
             recognised = e.face
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
             val picture = runCatching { savePicture(e.face.face.name) }
@@ -223,6 +238,7 @@ fun ScanContent(
 
     fun accept() {
         val face = session.reviewFace ?: return
+        autoAccept = false
         session.accept()
         keepPicture(face)
         review = null
@@ -253,9 +269,17 @@ fun ScanContent(
     }
 
     fun retake() {
+        autoAccept = false
         session.retake()
         review = null
         event = ScanEvent.Waiting
+    }
+
+    LaunchedEffect(review, autoAccept) {
+        if (review == null || !autoAccept) return@LaunchedEffect
+        acceptFill.snapTo(0f)
+        acceptFill.animateTo(1f, tween(autoAcceptMillis ?: 0, easing = LinearEasing))
+        accept()
     }
 
     LaunchedEffect(session) {
@@ -308,7 +332,17 @@ fun ScanContent(
                 if (review != null) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = ::retake, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) { Text(stringResource(Res.string.scan_retake)) }
-                        Button(onClick = ::accept, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) { Text(stringResource(Res.string.scan_accept)) }
+                        // "Good, next" fills up until the face is accepted by itself.
+                        val fill = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f)
+                        val shown = if (autoAccept) acceptFill.value else 0f
+                        Button(
+                            onClick = ::accept,
+                            modifier = Modifier.weight(1f).heightIn(min = 56.dp).clip(CircleShape)
+                                .drawWithContent {
+                                    drawContent()
+                                    drawRect(fill, size = Size(size.width * shown, size.height))
+                                },
+                        ) { Text(stringResource(Res.string.scan_accept)) }
                     }
                     TextButton(onClick = onManual) { Text(stringResource(Res.string.scan_manual)) }
                 } else {
@@ -377,7 +411,15 @@ fun ScanContent(
                         )
                     }
                 } else {
-                    ReviewOverlay(read, Modifier.fillMaxSize())
+                    ReviewOverlay(
+                        read,
+                        Modifier.fillMaxSize().pointerInput(read) {
+                            awaitEachGesture {
+                                awaitFirstDown(requireUnconsumed = false)
+                                autoAccept = false
+                            }
+                        },
+                    )
                     OnCamera(Modifier.align(Alignment.BottomCenter), scrim = false) {
                         // The full scan names the faces only at the end; a one-face rescan knows its face.
                         if (only != null) {
@@ -552,3 +594,6 @@ private fun Rgb.toColor() = Color(r, g, b)
 
 /** A screen frame this late is a stutter worth logging. */
 private const val UI_STALL_MILLIS = 150L
+
+/** How long a captured face waits before it is accepted by itself. */
+private const val AUTO_ACCEPT_MILLIS = 2_000

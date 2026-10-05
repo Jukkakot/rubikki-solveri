@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
+import fi.jukkakot.rubikkisolveri.cube.CubeCheck
 import fi.jukkakot.rubikkisolveri.cube.CubeEditor
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.FaceView
@@ -21,6 +22,8 @@ import fi.jukkakot.rubikkisolveri.cube.scan.RotationSearch
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanCheck
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.ui.manual.ManualInputScreen
+import fi.jukkakot.rubikkisolveri.ui.nav.SolveRoute
+import fi.jukkakot.rubikkisolveri.ui.nav.afterScan
 import fi.jukkakot.rubikkisolveri.ui.scan.ScanContent
 import fi.jukkakot.rubikkisolveri.ui.scan.ScanScreen
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
@@ -46,10 +49,10 @@ class ScanScreenTest {
     private val locks = ArrayList<Boolean>()
     private val cube = Cube.solved().apply("R U F' D2 L B")
 
-    private fun scan() {
+    private fun scan(autoAccept: Int? = null) {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0, savePicture = { saved += it; "$it.png" }, gridCheck = { FrameSampler.GridCheck(List(9) { 30.0 }, List(9) { cubeInView }) }, onLockExposure = { locks += it }, preview = {})
+                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0, autoAcceptMillis = autoAccept, savePicture = { saved += it; "$it.png" }, gridCheck = { FrameSampler.GridCheck(List(9) { 30.0 }, List(9) { cubeInView }) }, onLockExposure = { locks += it }, preview = {})
             }
         }
     }
@@ -144,6 +147,31 @@ class ScanScreenTest {
     }
 
     @Test
+    fun aCapturedFaceIsAcceptedByItself() {
+        compose.mainClock.autoAdvance = false
+        scan(autoAccept = 2_000)
+        show(FaceView.FRONT, 3)
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
+        compose.mainClock.advanceTimeBy(1_500)
+        compose.onNodeWithText("Kuvattu 1/6").assertIsDisplayed()
+    }
+
+    @Test
+    fun aTouchOnTheReviewStopsTheAutomaticAccept() {
+        compose.mainClock.autoAdvance = false
+        scan(autoAccept = 2_000)
+        show(FaceView.FRONT, 3)
+        compose.mainClock.advanceTimeBy(500)
+        compose.onNodeWithText("Värit tulkitaan lopuksi", substring = true).performClick()
+        compose.mainClock.advanceTimeBy(3_000)
+        compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
+        compose.mainClock.autoAdvance = true
+        compose.onNodeWithText("Hyvä, seuraava").performClick()
+        compose.onNodeWithText("Kuvattu 1/6").assertIsDisplayed()
+    }
+
+    @Test
     fun scanAgain() {
         scan()
         show(FaceView.FRONT, 3)
@@ -199,7 +227,7 @@ class ScanScreenTest {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
                 ScanContent(
-                    frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0,
+                    frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it }, holdMillis = 0, autoAcceptMillis = null,
                     only = FaceView.TOP, onFace = { view, samples -> faces += view to samples }, preview = {},
                 )
             }
@@ -235,7 +263,7 @@ class ScanScreenTest {
                     onScanAgain = onScanAgain,
                     check = ScanCheck.start(editor, marked, readings),
                     onScanFace = onScanFace,
-                    autoContinue = confident,
+                    confident = confident,
                 )
             }
         }
@@ -303,49 +331,35 @@ class ScanScreenTest {
     }
 
     @Test
+    fun aSureScanGoesStraightToTheSolutionWithTheCheckBehindIt() {
+        val sure = ScanOutcome(CubeEditor.of(cube), emptySet(), CubeCheck.validity(cube))
+        val (check, solve) = afterScan(sure)
+        assertEquals(SolveRoute(cube.toColorString()), solve)
+        assertTrue(check.fromScan && check.confident)
+        val unsure = ScanOutcome(CubeEditor.of(cube), setOf(Stickers.index(Face.F, 1)), CubeCheck.validity(cube))
+        assertEquals(null, afterScan(unsure).second)
+    }
+
+    @Test
     @Config(qualifiers = "fi-w411dp-h891dp")
-    fun aConfidentScanOpensTheSolutionByItself() {
+    fun theCheckOfASureScanWaitsForTheUser() {
+        // Opened again from the solution: nothing continues by itself, "Looks right" goes back.
         var solved: Cube? = null
-        compose.mainClock.autoAdvance = false
         check(cube, emptySet(), onValid = { solved = it }, confident = true)
-        compose.mainClock.advanceTimeBy(1_000)
-        compose.onNodeWithText("Vertaa kuviin.", substring = true).assertIsDisplayed()
+        compose.mainClock.advanceTimeBy(6_000)
+        compose.waitForIdle()
         assertEquals(null, solved)
-        compose.mainClock.advanceTimeBy(5_000)
-        compose.mainClock.autoAdvance = true
+        compose.onNodeWithText("Näyttää oikealta").performClick()
         compose.waitUntil(5_000) { solved != null }
         assertEquals(cube, solved)
     }
 
     @Test
     @Config(qualifiers = "fi-w411dp-h891dp")
-    fun aTouchStopsTheAutomaticContinue() {
-        var solved: Cube? = null
-        compose.mainClock.autoAdvance = false
-        check(cube, emptySet(), onValid = { solved = it }, confident = true)
-        compose.mainClock.advanceTimeBy(1_000)
-        compose.onNodeWithContentDescription("Etupuoli, tarra 1").performClick()
-        compose.mainClock.advanceTimeBy(6_000)
-        compose.mainClock.autoAdvance = true
-        compose.waitForIdle()
-        assertEquals(null, solved)
-        compose.onNodeWithText("Näyttää oikealta").performClick()
-        compose.waitUntil(5_000) { solved != null }
-    }
-
-    @Test
-    @Config(qualifiers = "fi-w411dp-h891dp")
     fun scanAgainFromAConfidentCheck() {
-        var solved: Cube? = null
         var scanAgain = false
-        compose.mainClock.autoAdvance = false
-        check(cube, emptySet(), onValid = { solved = it }, onScanAgain = { scanAgain = true }, confident = true)
-        compose.mainClock.advanceTimeBy(1_000)
+        check(cube, emptySet(), onScanAgain = { scanAgain = true }, confident = true)
         compose.onNodeWithText("Skannaa koko kuutio uudelleen").performClick()
         assertTrue(scanAgain)
-        compose.mainClock.advanceTimeBy(6_000)
-        compose.mainClock.autoAdvance = true
-        compose.waitForIdle()
-        assertEquals(null, solved)
     }
 }

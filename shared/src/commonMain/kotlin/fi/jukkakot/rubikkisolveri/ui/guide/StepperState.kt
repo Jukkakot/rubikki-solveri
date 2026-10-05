@@ -103,7 +103,7 @@ class StepperState(
     }
 
     companion object {
-        const val AUTO_DEMO_DELAY_MS = 500L
+        const val AUTO_DEMO_DELAY_MS = 1_500L
     }
 }
 

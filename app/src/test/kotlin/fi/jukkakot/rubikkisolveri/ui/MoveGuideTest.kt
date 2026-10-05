@@ -36,8 +36,14 @@ class MoveGuideTest {
     @Test
     fun automaticDemo() {
         stepper()
-        compose.mainClock.advanceTimeBy(700)
-        compose.runOnIdle { assertEquals(moves[0], state.animator.move ?: moves[0]) }
+        // First the cube before the move (with its arrow) for a moment, then the demo.
+        compose.mainClock.advanceTimeBy(1_200)
+        compose.runOnIdle {
+            assertEquals(null, state.animator.move)
+            assertEquals(start, state.animator.cube)
+        }
+        compose.mainClock.advanceTimeBy(450)
+        compose.runOnIdle { assertEquals(moves[0], state.animator.move) }
         compose.mainClock.advanceTimeBy(3000)
         compose.runOnIdle {
             assertEquals(1, demos)
@@ -63,7 +69,7 @@ class MoveGuideTest {
     @Test
     fun doneDuringTheDemoLandsOnTheNextCube() {
         stepper()
-        compose.mainClock.advanceTimeBy(650)
+        compose.mainClock.advanceTimeBy(1_650)
         compose.runOnIdle {
             state.done()
             assertEquals(0, state.animator.pending)
