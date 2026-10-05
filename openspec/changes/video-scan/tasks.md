@@ -10,14 +10,14 @@ Built only after `video-scan-spike` says "go"; thresholds and limits come from i
 
 ## 2. Video scan screen (`shared`)
 
-- [ ] 2.1 Screen: full camera picture, found faces outlined, the progress cube (grey, filling, following the pose, contradictions marked), hint arrow and line, vibration on new stickers; exposure lock on the first face. Verify: Compose smoke test with a fake frame source fed from saved readings; screenshot for the gallery.
-- [ ] 2.2 Finishing: all recognised and possible for 0.5 s → solution with the check behind it; "stop" → the check with the missing stickers marked. Verify: test with fake readings.
-- [ ] 2.3 Scan choice: the guided scan default, the video scan offered beside it (switch the default later in a small change). Verify: smoke test that both open.
+- [x] 2.1 Screen: full camera picture, found faces outlined, the progress cube (grey, filling, following the pose, contradictions marked), hint arrow and line, vibration on new stickers; exposure lock on the first face. Verify: Compose smoke test with a fake frame source fed from saved readings; screenshot for the gallery.
+- [x] 2.2 Finishing: all recognised and possible for 0.5 s → solution with the check behind it; "stop" → the check with the missing stickers marked. Verify: test with fake readings.
+- [x] 2.3 Scan choice: the guided scan default, the video scan offered beside it (switch the default later in a small change). Verify: smoke test that both open.
 
 ## 3. Platforms and speed
 
-- [ ] 3.1 Frames at ≈10 fps from the Android camera and the browser camera into the finder; Web Worker in the browser if the spike's timing says so. Verify: web build and smoke test; timing logged.
+- [x] 3.1 Frames at ≈10 fps from the Android camera and the browser camera into the finder; Web Worker in the browser if the spike's timing says so. Verify: web build and smoke test; timing logged.
 
 ## 4. Docs and roadmap
 
-- [ ] 4.1 Roadmap and `docs/` (scan section: the two ways, where the finder lives). Verify: roadmap row present.
+- [x] 4.1 Roadmap and `docs/` (scan section: the two ways, where the finder lives). Verify: roadmap row present.

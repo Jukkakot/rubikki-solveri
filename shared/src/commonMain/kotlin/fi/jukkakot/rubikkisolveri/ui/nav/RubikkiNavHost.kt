@@ -17,6 +17,7 @@ import androidx.navigation.toRoute
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeEditor
 import fi.jukkakot.rubikkisolveri.ui.scan.ScanScreen
+import fi.jukkakot.rubikkisolveri.ui.scan.VideoScanScreen
 import fi.jukkakot.rubikkisolveri.ui.theme.DarkIf
 import fi.jukkakot.rubikkisolveri.ui.theme.ForcedDark
 import fi.jukkakot.rubikkisolveri.ui.free.FreeCubeScreen
@@ -82,6 +83,8 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
             HomeScreen(
                 primary = HomeEntry(Res.string.home_scan, Res.drawable.ic_camera) { navController.navigate(ScanRoute()) },
                 entries = listOf(
+                    // The guided scan stays the default (primary); the video scan is offered right after it.
+                    HomeEntry(Res.string.home_video_scan, Res.drawable.ic_video) { navController.navigate(VideoScanRoute) },
                     HomeEntry(Res.string.home_manual, Res.drawable.ic_palette) { navController.navigate(ManualInputRoute()) },
                     HomeEntry(Res.string.home_learn, Res.drawable.ic_school) { navController.navigate(LessonsRoute) },
                     HomeEntry(Res.string.home_timer, Res.drawable.ic_timer) { navController.navigate(TimerRoute) },
@@ -163,6 +166,20 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                     if (solve != null) navController.navigate(solve)
                 },
                 pictures = actions.scanPictures,
+            ) }
+        }
+        composable<VideoScanRoute> {
+            ForcedDark { VideoScanScreen(
+                onBack = { navController.popBackStack() },
+                onManual = { navController.navigate(ManualInputRoute()) { popUpTo<VideoScanRoute> { inclusive = true } } },
+                onResult = { outcome ->
+                    // No face pictures from a video; the readings let the check re-read a rescanned face.
+                    LastScan.pictures = emptyMap()
+                    LastScan.readings = outcome.samples.ifEmpty { null }
+                    val (check, solve) = afterScan(outcome)
+                    navController.navigate(check) { popUpTo<VideoScanRoute> { inclusive = true } }
+                    if (solve != null) navController.navigate(solve)
+                },
             ) }
         }
         composable<FreeCubeRoute> { entry ->

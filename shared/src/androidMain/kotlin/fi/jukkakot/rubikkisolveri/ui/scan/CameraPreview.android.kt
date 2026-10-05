@@ -22,11 +22,15 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
+import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.cube.scan.RgbaFrame
 import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.Evt
 import java.util.concurrent.Executors
+
+/** The video scan's pictures at most this often (about ten a second). */
+private const val IMAGE_MILLIS = 100L
 
 /** Camera frames this far apart are a stall worth logging. */
 private const val CAMERA_STALL_MILLIS = 300L
@@ -55,6 +59,7 @@ actual fun CameraPreview(
     lockExposure: Boolean,
     onPicture: ((IntArray) -> Unit)?,
     onTorchAvailable: (Boolean) -> Unit,
+    onImage: ((ArgbImage) -> Unit)?,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -75,6 +80,7 @@ actual fun CameraPreview(
     DisposableEffect(controller) {
         var buffer = ByteArray(0)
         var lastFrame = 0L
+        var lastImage = 0L
         controller.setImageAnalysisAnalyzer(executor) { image: ImageProxy ->
             try {
                 val now = System.nanoTime() / 1_000_000
@@ -94,6 +100,10 @@ actual fun CameraPreview(
                 // The picture first, so it belongs to the same frame as the readings.
                 onPicture?.invoke(FrameSampler.picture(frame))
                 onSamples(FrameSampler.sample(frame))
+                if (onImage != null && now - lastImage >= IMAGE_MILLIS) {
+                    lastImage = now
+                    onImage(FrameSampler.upright(frame))
+                }
             } catch (e: Exception) {
                 AppLog.logger.error(Evt.SCAN_ERROR, e)
             } finally {

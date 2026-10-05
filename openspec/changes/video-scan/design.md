@@ -66,6 +66,18 @@ sizes; removing the guided scan.
 - **Fixtures:** the finder's output for both test videos is saved in
   `cube/src/jvmTest/resources/video/` (`VideoScanHarness.writeFixtures`), so the tests run without
   the git-ignored frames. Speed: ≈ 2 ms per frame on the desktop JVM on top of the finder.
+- **Scan choice:** the home screen keeps the guided scan as its primary button and adds a
+  "Skannaa videolta (kokeilu)" tile first among the tiles. "Scan the whole cube again" from the
+  check still opens the guided scan.
+- **Screen:** the camera takes all the height the texts and buttons leave (no 3:4 box); bottom bar
+  "Syötä käsin" + "Tarkista nyt" (enabled once a sticker is known); status line: done → marked
+  stickers → hint → "show the cube" → "keep turning"; a short vibration at most every 0.3 s.
+  Exposure locks when the first face is found and stays locked.
+- **Frames:** Android takes the analysis frame's visible part upright at short side 360 px, ≤ 10 fps,
+  on the camera thread; the browser hands its 360-px-long preview to the finder (short side ≈ 200–270
+  px; raise `PREVIEW_LONG_SIDE` if faces are missed). The finder runs on `Dispatchers.Default`; no
+  Web Worker until the logged browser timing (`scan.video`, `finderMs`) says it is needed.
+- **No face pictures** go to the check from a video scan; the readings (median per sticker) do.
 
 ## Risks / Trade-offs
 

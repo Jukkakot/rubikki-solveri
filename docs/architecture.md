@@ -119,6 +119,25 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
    four rotations: the one giving a solvable cube, else the most real pieces, else the best fit;
    the check's picture of that face is turned to match.
 
+### Two ways to scan
+
+The guided scan above is the default (`ScanRoute`, the home screen's primary button); the video scan
+(`VideoScanRoute`, "Skannaa videolta (kokeilu)" tile) is offered beside it until it proves reliable.
+Video scan pipeline (`video-scan`):
+
+1. `CameraPreview(onImage)`: about ten times a second the visible picture upright, short side
+   ≤ 360 px (`FrameSampler.upright` on Android; the browser passes its 360-px preview as is).
+2. `cube/scan/FaceFinder`: full 3×3 lattices anywhere in the picture (spike `video-scan-spike`,
+   findings in its archive); run on `Dispatchers.Default` (the page's one thread in the browser; no
+   Web Worker yet, `scan.video` logs the finder's ms per frame to decide).
+3. `cube/scan/VideoScan`: votes per sticker, face rotations, pose, turning hint and finishing
+   (decisions in the change's `design.md`). Regression data: the test videos' finder output in
+   `cube/src/jvmTest/resources/video/` (`VideoScanTest`; regenerate with
+   `VideoScanHarness.writeFixtures`, frames local only).
+4. `ui/scan/VideoScanScreen`: camera, outlines, the progress cube (`Cube3D` turned by
+   `holdFor(pose)`), hint line; the result goes through `afterScan` like the guided scan's (no face
+   pictures).
+
 ## Beginner solver — Implemented
 
 `cube/beginner`: a layer-by-layer method for people, in seven stages (`Stage`): white cross, white
@@ -247,11 +266,12 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 
 | Route | Screen | Notes |
 |---|---|---|
-| `HomeRoute` | Home | spinning hero cube; scan as the primary button; tiles: manual input, learn, timer, free cube; best-time summary |
+| `HomeRoute` | Home | spinning hero cube; scan as the primary button; tiles: video scan (beta), manual input, learn, timer, free cube; best-time summary |
 | `LessonsRoute`, `LessonRoute(index)` | Lessons | basics + 7 stages, algorithm demos |
 | `PracticeRoute(stage, seed)` | Practice | the solution screen limited to one stage |
 | `TimerRoute`, `HistoryRoute`, `ScrambleGuideRoute(moves)` | Timer, history, guided scramble | |
 | `ScanRoute(face?)` | Scan (with `face`: that face only, back to the check) | camera permission, grid, live dots, auto-capture; one screen (actions in the bottom bar, status and review texts on the camera); result → solve or check |
+| `VideoScanRoute` | Video scan (beta) | camera picture with found faces outlined, progress cube with the hint arrow in its corner, hint line; "Tarkista nyt" hands over what is known; result → solve or check |
 | `ManualInputRoute(cube?, marked?, fromScan, confident)` | Manual input / check a scan | one screen (palette, ‹ › and check in the bottom bar); face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution. From a scan: the face-by-face check (`ScanCheck`): checked faces ticked in the face map, "N faces left", the face's camera picture beside the grid (`LastScan`), "Kuvaa uudelleen" (one-face scan) and "Näyttää oikealta" in place of ‹ › and check, the verdict line, "scan the whole cube again" in the menu |
 | `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
 | `SolveRoute(cube)` | Solution | background solve, then the move guide stepper; camera mode follows on the real cube |

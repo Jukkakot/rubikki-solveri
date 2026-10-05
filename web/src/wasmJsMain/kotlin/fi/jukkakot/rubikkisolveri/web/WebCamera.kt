@@ -28,6 +28,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
 import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
 import fi.jukkakot.rubikkisolveri.cube.scan.RgbaFrame
 import fi.jukkakot.rubikkisolveri.log.AppLog
@@ -55,6 +56,9 @@ const val ANALYSIS_SIZE = 264
 
 /** Frames are read at most this often (about 15 a second). */
 private const val FRAME_MILLIS = 66L
+
+/** The video scan's pictures at most this often (about ten a second). */
+private const val IMAGE_MILLIS = 100L
 
 /** Camera frames this far apart are a stall worth logging (as on the phone). */
 private const val CAMERA_STALL_MILLIS = 300L
@@ -146,6 +150,7 @@ private fun WebCameraPreview(args: CameraArgs) {
         if (!running || box.width == 0 || box.height == 0) return@LaunchedEffect
         var lastRead = 0L
         var lastFrame = 0L
+        var lastImage = 0L
         while (true) {
             val now = withFrameMillis { elapsedMillis() }
             if (now - lastRead < FRAME_MILLIS) continue
@@ -164,7 +169,17 @@ private fun WebCameraPreview(args: CameraArgs) {
                 // The picture first, so it belongs to the same frame as the readings.
                 current.onPicture?.invoke(FrameSampler.picture(frame))
                 current.onSamples(FrameSampler.sample(frame))
-                image = rgbaBitmap(cameraPreviewData().toByteArray(), cameraPreviewWidth(), cameraPreviewHeight())
+                val preview = cameraPreviewData().toByteArray()
+                val pw = cameraPreviewWidth()
+                val ph = cameraPreviewHeight()
+                image = rgbaBitmap(preview, pw, ph)
+                // The video scan looks for faces in the preview itself: the visible part, upright.
+                current.onImage?.let { onImage ->
+                    if (now - lastImage >= IMAGE_MILLIS) {
+                        lastImage = now
+                        onImage(ArgbImage(IntArray(pw * ph) { i -> argb(preview, i * 4) }, pw, ph))
+                    }
+                }
             } catch (e: Throwable) {
                 AppLog.logger.error(Evt.SCAN_ERROR, e)
             }
@@ -174,6 +189,9 @@ private fun WebCameraPreview(args: CameraArgs) {
         image?.let { Image(it, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
     }
 }
+
+private fun argb(rgba: ByteArray, i: Int): Int =
+    (0xff shl 24) or ((rgba[i].toInt() and 0xff) shl 16) or ((rgba[i + 1].toInt() and 0xff) shl 8) or (rgba[i + 2].toInt() and 0xff)
 
 private fun rgbaBitmap(bytes: ByteArray, width: Int, height: Int): ImageBitmap {
     val bitmap = Bitmap()

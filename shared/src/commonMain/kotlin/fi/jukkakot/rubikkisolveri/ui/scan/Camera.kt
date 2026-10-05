@@ -2,13 +2,15 @@ package fi.jukkakot.rubikkisolveri.ui.scan
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 
 /**
  * The back camera's preview. Every analysed frame is read through the grid and its nine readings
  * passed to [onSamples] (possibly on a background thread); [onPicture] gets the grid picture of the
  * same frame. [lockExposure] holds the current exposure and white balance where the camera can.
- * [onTorchAvailable] says whether the camera has a torch the app can switch.
+ * [onTorchAvailable] says whether the camera has a torch the app can switch. [onImage] gets, about
+ * ten times a second, the whole visible picture upright (`FrameSampler.upright`) for the video scan.
  */
 @Composable
 expect fun CameraPreview(
@@ -19,6 +21,7 @@ expect fun CameraPreview(
     lockExposure: Boolean = false,
     onPicture: ((IntArray) -> Unit)? = null,
     onTorchAvailable: (Boolean) -> Unit = {},
+    onImage: ((ArgbImage) -> Unit)? = null,
 )
 
 /**

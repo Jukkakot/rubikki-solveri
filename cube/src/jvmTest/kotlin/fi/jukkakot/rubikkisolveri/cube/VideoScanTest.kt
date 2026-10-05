@@ -2,6 +2,8 @@ package fi.jukkakot.rubikkisolveri.cube
 
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
+import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
+import fi.jukkakot.rubikkisolveri.cube.scan.RgbaFrame
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.Pose
 import fi.jukkakot.rubikkisolveri.cube.scan.RotationSearch
@@ -100,6 +102,18 @@ class VideoScanTest {
         assertEquals(Tilt.DOWN, VideoScan.hint(Pose(Face.F, Face.D), stickers, emptySet()))
         assertNull(VideoScan.hint(Pose(Face.D, Face.F), stickers, emptySet()), "already in view")
         assertNull(VideoScan.hint(Pose(Face.F, Face.U), truth.toList(), emptySet()), "nothing missing")
+    }
+
+    @Test
+    fun aSidewaysCameraFrameIsTurnedUprightForTheFinder() {
+        // 4×2 frame, rotation 90: upright it is 2 wide and 4 high; the frame's bottom-left pixel is the top left.
+        val bytes = ByteArray(4 * 2 * 4)
+        bytes[(1 * 4 + 0) * 4] = 200.toByte()
+        val image = FrameSampler.upright(RgbaFrame(4, 2, 16, bytes, 90))
+        assertEquals(2 to 4, image.width to image.height)
+        assertEquals(200, (image.argb[0] shr 16) and 0xff)
+        val small = FrameSampler.upright(RgbaFrame(4, 2, 16, bytes, 0), shortSide = 1)
+        assertEquals(2 to 1, small.width to small.height)
     }
 
     @Test

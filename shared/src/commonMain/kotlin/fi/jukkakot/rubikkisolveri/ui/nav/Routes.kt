@@ -59,3 +59,7 @@ data class ScrambleGuideRoute(val moves: String)
 
 @Serializable
 data object AboutRoute
+
+/** The scan from video (`video-scan`); offered beside the guided scan while it is new. */
+@Serializable
+data object VideoScanRoute

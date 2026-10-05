@@ -29,6 +29,9 @@ class RgbaFrame(
     }
 }
 
+/** A picture as ARGB pixels, row by row. */
+class ArgbImage(val argb: IntArray, val width: Int, val height: Int)
+
 /** Where the 3×3 grid is and how a frame is read through it. */
 object FrameSampler {
     /** The grid is a centred square this share of the visible area's shorter side. */
@@ -101,6 +104,33 @@ object FrameSampler {
     }
 
     const val PICTURE_SIZE = 120
+
+    /**
+     * The visible part of [frame] upright as seen on screen, ARGB row by row (nearest pixel), scaled
+     * down so its shorter side is at most [shortSide]: the picture the video scan's [FaceFinder]
+     * looks for faces in.
+     */
+    fun upright(frame: RgbaFrame, shortSide: Int = FINDER_SHORT_SIDE): ArgbImage {
+        val cw = frame.cropRight - frame.cropLeft
+        val ch = frame.cropBottom - frame.cropTop
+        val turned = frame.rotation == 90 || frame.rotation == 270
+        val sw = if (turned) ch else cw
+        val sh = if (turned) cw else ch
+        val scale = minOf(1.0, shortSide.toDouble() / minOf(sw, sh))
+        val w = (sw * scale).toInt().coerceAtLeast(1)
+        val h = (sh * scale).toInt().coerceAtLeast(1)
+        val argb = IntArray(w * h) { i ->
+            val (fx, fy) = toFrame((i % w + 0.5f) / w, (i / w + 0.5f) / h, frame.rotation)
+            val x = (frame.cropLeft + fx * cw).toInt().coerceIn(0, frame.width - 1)
+            val y = (frame.cropTop + fy * ch).toInt().coerceIn(0, frame.height - 1)
+            val p = frame.pixel(x, y)
+            (0xff shl 24) or (p.r shl 16) or (p.g shl 8) or p.b
+        }
+        return ArgbImage(argb, w, h)
+    }
+
+    /** The face finder's frames: shorter side in pixels (the test videos' frames were 360×640). */
+    const val FINDER_SHORT_SIDE = 360
 
     /** A cell looks like a sticker when its middle is this much lighter (Lab L) than its gap. */
     const val MIN_GAP_CONTRAST = 15.0

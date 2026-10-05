@@ -250,6 +250,25 @@ class ScreenshotTest {
         )
     } }
 
+    /** The video scan after a corner view of the front and the top: two faces filled in, a hint to show more. */
+    @Test
+    fun videoScan() = shot("video-scan") { ForcedDark {
+        val cube = Cube.solved().apply("R U F' D2 L B")
+        fun face(face: fi.jukkakot.rubikkisolveri.cube.Face, x: Double, y: Double) = fi.jukkakot.rubikkisolveri.cube.scan.FaceReading(
+            (0 until 9).map { fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier.DEFAULT_PALETTE.getValue(cube[face.ordinal * 9 + it]) },
+            fi.jukkakot.rubikkisolveri.cube.scan.Point(x, y), fi.jukkakot.rubikkisolveri.cube.scan.Point(40.0, 0.0), fi.jukkakot.rubikkisolveri.cube.scan.Point(0.0, 40.0),
+        )
+        val view = fi.jukkakot.rubikkisolveri.ui.scan.FoundFaces(
+            listOf(face(fi.jukkakot.rubikkisolveri.cube.Face.F, 180.0, 380.0), face(fi.jukkakot.rubikkisolveri.cube.Face.U, 180.0, 260.0)), 360, 640,
+        )
+        var t = 0L
+        fi.jukkakot.rubikkisolveri.ui.scan.VideoScanContent(
+            kotlinx.coroutines.flow.flowOf(view, view, view, view), torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {},
+            clock = { t.also { t += 100 } },
+            preview = { androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530)))) },
+        )
+    } }
+
     @Test
     @Config(qualifiers = "fi-w411dp-h560dp-xxhdpi")
     fun scanShort() = shot("scan-short") { ForcedDark {

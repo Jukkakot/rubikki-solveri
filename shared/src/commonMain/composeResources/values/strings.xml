@@ -306,4 +306,17 @@
     <string name="camera_denied_web">Kamera on estetty tältä sivulta. Salli se selaimen sivustoasetuksista (lukon tai asetusten kuvake osoiterivillä) ja lataa sivu uudelleen. Voit myös syöttää värit käsin.</string>
     <string name="about_text_web">Rubikki Solveri skannaa kuutiosi ja opettaa ratkaisemaan sen. Kaikki toimii selaimessa: kuvia tai tietoja ei lähetetä minnekään.</string>
     <string name="version_built">Koottu %1$s</string>
+    <string name="home_video_scan">Skannaa videolta (kokeilu)</string>
+    <string name="video_title">Videoskannaus</string>
+    <string name="video_status_find">Näytä kuutio kameralle ja käännä sitä hitaasti.</string>
+    <string name="video_status_keep">Hyvä! Jatka kääntämistä.</string>
+    <string name="video_hint_up">Käännä kuutiota ylöspäin – alapuoli esiin.</string>
+    <string name="video_hint_down">Käännä kuutiota alaspäin – yläpuoli esiin.</string>
+    <string name="video_hint_left">Käännä kuutiota vasemmalle – oikea sivu esiin.</string>
+    <string name="video_hint_right">Käännä kuutiota oikealle – vasen sivu esiin.</string>
+    <string name="video_status_marked">Näytä punaisella merkityt kohdat uudelleen.</string>
+    <string name="video_status_done">Koko kuutio tunnistettu!</string>
+    <string name="video_count">%1$d/54 tarraa</string>
+    <string name="video_check">Tarkista nyt</string>
+    <string name="video_progress">Tunnistetut tarrat: %1$d/54</string>
 </resources>

@@ -1,6 +1,8 @@
 package fi.jukkakot.rubikkisolveri.ui.cube3d
 
 import fi.jukkakot.rubikkisolveri.cube.Face
+import fi.jukkakot.rubikkisolveri.cube.FaceView
+import fi.jukkakot.rubikkisolveri.cube.scan.Pose
 import fi.jukkakot.rubikkisolveri.cube.Layer
 import fi.jukkakot.rubikkisolveri.cube.Move
 import fi.jukkakot.rubikkisolveri.cube.Notation
@@ -240,5 +242,21 @@ class MirrorSceneTest {
         }
         val cube = CubeScene.project(CubeScene.quads(null, 0f), CubeScene.DEFAULT_VIEW, w, h, mirror = true)
         assertTrue(cube.all { q -> q.xs.all { it in 0f..w } && q.ys.all { it in 0f..h } })
+    }
+}
+
+class HoldForPoseTest {
+    /** The video scan's pose, held as each scanner hold holds the cube, turns the cube the same way. */
+    @Test
+    fun poseHoldsMatchTheFaceViewHolds() {
+        for (view in FaceView.entries) {
+            val a = holdFor(Pose(view.face, view.topFace))
+            val b = rotationOf(view.hold)
+            for (face in Face.entries) {
+                val pa = a.rotate(V3.of(face.normal))
+                val pb = b.rotate(V3.of(face.normal))
+                assertTrue(abs(pa.x - pb.x) + abs(pa.y - pb.y) + abs(pa.z - pb.z) < 1e-4f, "$view $face: $pa vs $pb")
+            }
+        }
     }
 }
