@@ -52,8 +52,8 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
   - scan face review (after each face, screenshot 2026-10-05): "Hyvä, seuraava" continues by
     itself after a few seconds, like the final colour check already does (time left visible, any
     touch stops it, "Kuvaa uudelleen" at hand). This page shows raw camera colours with no
-    confidence yet, so presumably always. Also look for other places that could work the same
-    way, e.g. the learn method's stage goal card ("Jatka"); ask the user which ones.
+    confidence yet, so presumably always. Only this page: not the learn method's goal card, not
+    the per-face "Näyttää oikealta" of the colour check (user, 2026-10-05).
 
 - camera follow: notice when the cube is held differently, or keep helping in any orientation
   (after the user has tried camera follow; from `steady-cube`).
