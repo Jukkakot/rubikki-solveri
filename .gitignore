@@ -17,3 +17,6 @@ gradle/gradle-daemon-jvm.properties
 
 # npm (web/smoke)
 node_modules/
+# Test videos are large: kept locally only (testdata/video/<date>/*.mp4), frames extracted from them too.
+testdata/video/**/*.mp4
+testdata/video/**/frames/
