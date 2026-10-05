@@ -574,8 +574,8 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         /** How long the whole cube must stay recognised before the scan finishes. */
         const val FINISH_MILLIS = 500L
 
-        /** The best cube is clear when every place's margin reaches this ([BestCube.clearness]; chosen by simulation, `video-scan-progress` findings). */
-        const val CLEAR_MARGIN = 3.0
+        /** The best cube is clear when every place's margin reaches this ([BestCube.clearness]; chosen by simulation with soft votes, `video-scan-light` findings). */
+        const val CLEAR_MARGIN = 2.0
 
         /** Frames between working the faces' rotations out again while the leading colours stay the same. */
         const val ROTATION_EVERY = 10

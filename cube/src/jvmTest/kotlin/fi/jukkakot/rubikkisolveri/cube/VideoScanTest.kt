@@ -71,14 +71,15 @@ class VideoScanTest {
     }
 
     @Test
-    fun eveningVideosNeverGiveAWrongClearCube() {
+    fun eveningVideosClearWithTheTrueCubeOnly() {
         for ((video, before) in VideoFixtures.EVENING) {
             val states = replay(video)
             for ((i, s) in states.withIndex()) if (s.complete) assertEquals(VideoFixtures.EVENING_TRUTH, s.stickers.joinToString("") { it!!.letter.toString() }, "$video frame $i")
             val clear = states.indexOfFirst { it.complete }
             println("$video frames to clear: $clear (before: $before)")
-            // In dim light red reads as orange on whole faces: no clear cube (the stall asks for light).
-            if (before != null) assertTrue(clear in 0..before, "$video: $clear")
+            // The two dim ones never cleared before soft votes (`video-scan-light`); now all four do.
+            assertTrue(clear >= 0, "$video never clears")
+            if (before != null) assertTrue(clear <= before, "$video: $clear")
         }
     }
 

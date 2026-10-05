@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
  * possibly never), a face held for a while and a couple of faces at once while turning; each frame
  * reads the stickers in view with the misreads seen in `video-scan-spike` (bursts of a wrong colour
  * lasting up to five frames, red and orange mixed up, in dim light a whole face's orange read as
- * red). After every frame the best cube is solved; a threshold finishes the run once the clearness
+ * red), each as a soft vote (`video-scan-light`: a share to the colour read, the rest to the true one). After every frame the best cube is solved; a threshold finishes the run once the clearness
  * stays over it for half a second (5 frames). The full sweep runs with SIMULATION=<runs> and writes
  * `frames/simulation.txt`; the small test checks the chosen threshold.
  */
@@ -37,25 +37,33 @@ class ScanSimulation {
         val read = ArrayList<Int>()
         var over = 0
 
+        /** One reading of [s]: [share] of a vote to [color], the rest to the true colour (soft votes, `video-scan-light`). */
+        fun vote(s: Int, color: CubeColor, share: Double) {
+            votes[s][color.ordinal] += share
+            votes[s][cube[s].ordinal] += 1 - share
+        }
+
         fun read(face: Face, angled: Boolean) {
             for (n in 0 until 9) {
                 val s = face.ordinal * 9 + n
                 if (n == 4 || random.nextDouble() < 0.05) continue
                 val truth = cube[s]
                 val burst = bursts[s]
-                val color = when {
-                    burst != null -> burst.color.also { if (--burst.left == 0) bursts.remove(s) }
+                when {
+                    // A misread fits its wrong colour well, mostly.
+                    burst != null -> vote(s, burst.color, 0.6 + 0.4 * random.nextDouble()).also { if (--burst.left == 0) bursts.remove(s) }
                     random.nextDouble() < (if (angled) 0.03 else 0.01) * (if (dim) 2 else 1) -> {
                         val wrong = if (truth.isRedOrOrange && random.nextDouble() < 0.7) truth.partner else CubeColor.entries.filter { it != truth }.random(random)
                         val length = 1 + random.nextInt(5)
                         if (length > 1) bursts[s] = Burst(wrong, length - 1)
-                        wrong
+                        vote(s, wrong, 0.6 + 0.4 * random.nextDouble())
                     }
-                    truth == CubeColor.ORANGE && orangeAsRed.getValue(face) && random.nextDouble() < 0.6 -> CubeColor.RED
-                    truth.isRedOrOrange && random.nextDouble() < (if (dim) 0.15 else 0.05) -> truth.partner
-                    else -> truth
+                    truth == CubeColor.ORANGE && orangeAsRed.getValue(face) && random.nextDouble() < 0.6 -> vote(s, CubeColor.RED, 0.5 + 0.4 * random.nextDouble())
+                    truth.isRedOrOrange && random.nextDouble() < (if (dim) 0.15 else 0.05) -> vote(s, truth.partner, 0.5 + 0.3 * random.nextDouble())
+                    // In dim light red and orange lie close: a right reading still leans a little to the other.
+                    truth.isRedOrOrange && dim -> vote(s, truth.partner, 0.4 * random.nextDouble())
+                    else -> vote(s, truth, 1.0)
                 }
-                votes[s][color.ordinal] += 1.0
             }
         }
 

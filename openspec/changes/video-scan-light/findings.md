@@ -85,3 +85,30 @@ the rest of the cube already outvotes the three reds on the white side that read
 keeps them from finishing is the margin: 2.4–3.0 against the threshold 3.0. Soft votes do not
 raise it, because those reds really read nearer orange on that side (1.2): sharing does not turn
 them into red votes. Widths over 5 blur good readings (the window video stops clearing at 6).
+
+## 1.6 Threshold with soft votes
+
+`ScanSimulation` now votes softly: a misread gives its wrong colour 0.6–1 of a vote (the rest to the
+true colour), a red/orange mix-up 0.5–0.8, an orange-as-red face 0.5–0.9, and in dim light a right
+red or orange reading still leans up to 0.4 towards the other. 1000 runs, 1.95 ms per frame:
+
+| T | wrong | not finished | frames to finish (median, 90 %) | not finished: biased dim, other dim, good |
+|---|---|---|---|---|
+| 0.5 | 2 | 0 | 92, 121 | 0, 0, 0 |
+| 1.0 | 0 | 18 | 94, 149 | 18, 0, 0 |
+| 1.5 | 0 | 108 | 97, 162 | 108, 0, 0 |
+| 2.0 | 0 | 185 | 101, 185 | 185, 0, 0 |
+| 2.5 | 0 | 270 | 102, 186 | 268, 2, 0 |
+| 3.0 | 0 | 331 | 104, 189 | 314, 17, 0 |
+| 4.0 | 0 | 407 | 106, 138 | 357, 50, 0 |
+| 6.0 | 0 | 407 | 141, 189 | 357, 50, 0 |
+| 8.0 | 0 | 456 | 289, 386 | 357, 50, 49 |
+
+The sweep moved: the smallest T with no wrong finish is now 1.0 (was 1.5); by the same rule
+(doubled) **T = 2.0** (`VideoScan.CLEAR_MARGIN`, was 3.0). Soft votes give fractional margins: a
+borderline reading no longer adds a whole vote's weight to either side, so wrong cubes stay below
+1 where whole wrong votes reached 1.5.
+
+Test videos with T = 2.0 (frames to clear; before this change): 151828 209 (210), 151903 114 (140),
+213729 117 (117), 213817 118 (119), **213850 176 (never), 213929 200 (never)**; every clear frame of
+every video is the true cube.

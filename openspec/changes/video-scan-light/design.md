@@ -89,3 +89,8 @@ classifier.
 - **Washed out: a reading's brightest channel at 250 or more, weight 0.2.** The reading is a blob's
   median, so at least half its pixels are at the top. White stickers clipped in bright light count
   little too; the test videos hardly have such readings (213817: 157 of 1613), and none got slower.
+- **Clear threshold 3.0 → 2.0.** The soft-vote simulation's smallest wrong-free threshold fell from
+  1.5 to 1.0; doubled as before. With it both dim evening videos finish on the true cube (findings
+  1.4 showed the best cube was already right there, only short of 3.0), and no test video is slower.
+- **Tick from the best cube only for the done-sides row and the marks' ticks** (`VideoScanState.confirmed`);
+  the "side" log line follows the ticks.
