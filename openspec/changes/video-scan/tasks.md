@@ -1,6 +1,6 @@
 # Tasks
 
-Built only after `video-scan-spike` says "go"; thresholds and limits come from its findings.
+Built only after `video-scan-spike` says "go"; thresholds and limits come from its findings (`openspec/changes/archive/2026-10-05-video-scan-spike/findings.md`).
 
 ## 1. Recognition core (`cube`)
 
