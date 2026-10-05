@@ -42,6 +42,10 @@ sizes; removing the guided scan.
   margin; contradictions (a face whose colours do not fit the rest) mark those stickers instead.
 - **Finishing.** All 54 recognised + a possible cube for ≈0.5 s → solution, the check behind it
   (as `scan-quick-flow`). A "Valmis / tarkista" action opens the check earlier with what is known.
+- **Screen layout (user, 2026-10-05, mockups https://claude.ai/artifact/FYZ54jo3RKhDawW9XafY9r):**
+  the camera picture is large; the progress cube is small in its top corner on a dark rounded
+  backing (1A); the turning hint's arrow is drawn on the progress cube, not over the camera picture,
+  with the short line below the camera (2A).
 - **Exposure.** Locked when the first face is found (as the guided scan does).
 - **Speed.** Frames are small; if the browser is too slow, the finder runs in a Web Worker
   (measured in the spike).
@@ -58,6 +62,4 @@ sizes; removing the guided scan.
 
 ## Open Questions
 
-- The progress cube's place and size on the screen and the hint's look: settled with mockups (https://claude.ai/artifact/FYZ54jo3RKhDawW9XafY9r)
-  before implementation.
 - The thresholds (votes, margin): from the spike's numbers.

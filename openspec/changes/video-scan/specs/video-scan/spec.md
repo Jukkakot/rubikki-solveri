@@ -21,7 +21,7 @@ straight on or at an angle, several at a time, and outline each found face on th
 - **THEN** all three faces are outlined and read
 
 ### Requirement: Progress cube
-The screen SHALL show a 3D cube that starts all grey and fills in each sticker with its colour once
+The screen SHALL show, small in a corner of the camera picture, a 3D cube that starts all grey and fills in each sticker with its colour once
 that sticker is recognised. It SHALL turn to the pose the real cube is held in once that pose is
 known. Stickers that contradict the rest SHALL be marked on it. A small vibration SHALL tell when
 new stickers are recognised.
@@ -36,7 +36,7 @@ new stickers are recognised.
 
 ### Requirement: Turning hints
 While stickers are missing, the screen SHALL show how to turn the cube to bring them into view: an
-arrow on the progress cube and one short line of text. No hint SHALL be shown while no face is
+arrow on the progress cube (not over the camera picture) and one short line of text. No hint SHALL be shown while no face is
 found or the pose is not known.
 
 #### Scenario: Show the missing side
