@@ -30,11 +30,10 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import kotlin.math.PI
 
 /** The curved direction arrow of [move], with a dark outline and a head at its end. */
-private fun DrawScope.drawArrow(move: Move, view: Quat, path: Path, mirror: Boolean, reflected: Boolean = false) {
-    val points = CubeScene.arrow(move, view, reflected).map { CubeScene.projectPoint(it, view, size.width, size.height, mirror, reflected) }
-    // Sized by the cube on screen; the mirror's image is farther away, so its arrow is thinner.
-    val distance = if (reflected) CubeScene.CAMERA_DISTANCE - CubeScene.reflect(V3.ZERO).z else CubeScene.CAMERA_DISTANCE
-    val cubeSize = CubeScene.fit(size.width, size.height, mirror).scale * CubeScene.CAMERA_DISTANCE / distance
+private fun DrawScope.drawArrow(move: Move, view: Quat, path: Path, mirror: Boolean) {
+    val points = CubeScene.arrow(move, view).map { CubeScene.projectPoint(it, view, size.width, size.height, mirror) }
+    // Sized by the cube on screen.
+    val cubeSize = CubeScene.fit(size.width, size.height, mirror).scale
     val width = cubeSize * 0.025f
     val headLength = cubeSize * 0.057f
     val (ex, ey) = points.last()
@@ -180,8 +179,8 @@ fun Cube3D(
             drawPath(glassPath, StickerColors.GLASS)
             clipPath(glassPath) {
                 val image = CubeScene.project(quads, view, size.width, size.height, highlight, reflected = true)
+                // No arrow in the mirror: the main cube's arrow is placed where it can be seen.
                 drawQuads(image, colors, marked, path)
-                if (showArrow) drawArrow(arrow!!, view, path, mirror = true, reflected = true)
             }
         }
         drawQuads(CubeScene.project(quads, view, size.width, size.height, highlight, mirror), colors, marked, path)

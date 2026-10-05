@@ -21,7 +21,9 @@ import kotlinx.coroutines.launch
 
 /**
  * Steps through [moves] starting from [start]: [index] moves are done. The [animator] shows the
- * cube; [demo] plays the current move and returns the cube to before it.
+ * cube; [demo] plays the current move from before it and leaves the cube after it, as the user's
+ * cube will be once turned. [done] does not replay the turn: the cube jumps to the next step and
+ * [nods] (or, after the last move, [celebrations]) counts up for the view to react.
  */
 @Stable
 class StepperState(
@@ -33,6 +35,14 @@ class StepperState(
     private val onDemoTick: () -> Unit = {},
 ) {
     var index by mutableIntStateOf(initialIndex)
+        private set
+
+    /** Counts steps reached by [done] (not the last): the cube nods for each. */
+    var nods by mutableIntStateOf(0)
+        private set
+
+    /** Counts finishes reached by [done]: the solved cube celebrates. */
+    var celebrations by mutableIntStateOf(0)
         private set
 
     val current: Move? get() = moves.getOrNull(index)
@@ -54,10 +64,12 @@ class StepperState(
     }
 
     fun done() {
-        val move = current ?: return
-        settle()
-        animator.play(move)
+        if (current == null) return
+        demoing = false
+        val next = cubeAt(index + 1)
+        if (animator.target != next || animator.pending > 0) animator.snapTo(next)
         index++
+        if (isFinished) celebrations++ else nods++
     }
 
     fun back() {
@@ -75,10 +87,9 @@ class StepperState(
         demoing = true
         scope.launch {
             snapshotFlow { animator.pending }.first { it == 0 }
+            if (index != shownAt || !demoing) return@launch
             demoing = false
             onDemoTick()
-            delay(DEMO_PAUSE_MS)
-            if (index == shownAt && animator.pending == 0) animator.snapTo(cubeAt(index))
         }
     }
 
@@ -92,7 +103,6 @@ class StepperState(
     }
 
     companion object {
-        const val DEMO_PAUSE_MS = 700L
         const val AUTO_DEMO_DELAY_MS = 500L
     }
 }

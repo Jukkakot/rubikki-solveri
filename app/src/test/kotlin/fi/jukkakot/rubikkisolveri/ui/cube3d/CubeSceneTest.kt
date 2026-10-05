@@ -165,6 +165,17 @@ class MoveGuideSceneTest {
         val mid = CubeScene.arrow(move("U"), CubeScene.DEFAULT_VIEW)[12]
         assertTrue(mid.z > 0.5f, "the middle of a top arrow is towards the front: $mid")
     }
+
+    @Test
+    fun aHiddenFacesArrowGoesAroundTheOutsideOfItsLayer() {
+        val back = CubeScene.arrow(move("B"), CubeScene.DEFAULT_VIEW)
+        for (p in back) {
+            assertTrue(abs(p.z + 1f) < 1e-4f, "at the back layer's depth: $p")
+            assertTrue(kotlin.math.hypot(p.x, p.y) > 2.13f, "outside the cube's outline: $p")
+        }
+        val front = CubeScene.arrow(move("F"), CubeScene.DEFAULT_VIEW)
+        assertTrue(front.all { abs(it.z - 1.56f) < 1e-4f }, "a visible face keeps its arrow on the face")
+    }
 }
 
 class MirrorSceneTest {

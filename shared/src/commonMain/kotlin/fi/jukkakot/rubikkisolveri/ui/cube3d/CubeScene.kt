@@ -56,6 +56,15 @@ object CubeScene {
     private const val MIRROR_HALF_HEIGHT = 1.8f
     private const val MIRROR_FRAME = 0.25f
 
+    /**
+     * A face whose normal is turned less than this towards the camera counts as hidden: its arrow
+     * goes around the outside of the layer (at the layer's depth, outside the cube's outline, which
+     * reaches 2.12 from the axis at the corners).
+     */
+    private const val HIDDEN_FACE_DOT = 0.2f
+    private const val HIDDEN_ARROW_OFFSET = 1f
+    private const val HIDDEN_ARROW_RADIUS = 2.35f
+
     /** How much darker the reflection is than the cube, so the two are told apart. */
     private const val MIRROR_SHADE = 0.85f
 
@@ -230,22 +239,22 @@ object CubeScene {
     }
 
     /**
-     * The direction arrow for [move] seen through [view], in world space: an arc in the plane of the
-     * turning face just above the stickers, its middle on the side facing the camera, traced in the
-     * move's turning direction over its full angle (a quarter or half circle). With [reflected] the
-     * middle is on the side the mirror shows.
+     * The direction arrow for [move] seen through [view], in world space, traced in the move's
+     * turning direction over its full angle (a quarter or half circle), its middle on the side facing
+     * the camera. For a face the camera sees, the arc lies on the face just above the stickers; for a
+     * face turned away (such as the back), it runs around the outside of the turning layer, beside
+     * the cube, so it is not drawn over the other side.
      */
-    fun arrow(move: Move, view: Quat, reflected: Boolean = false, segments: Int = 24): List<V3> {
+    fun arrow(move: Move, view: Quat, segments: Int = 24): List<V3> {
         val axis = V3.of(move.layer.axis)
+        val inverse = Quat(view.w, -view.x, -view.y, -view.z)
+        val towardsCamera = inverse.rotate(V3(0f, 0f, 1f))
         val (offset, radius) = when (move.layer.kind) {
-            Layer.Kind.FACE, Layer.Kind.WIDE -> 1.56f to 1.05f
+            Layer.Kind.FACE, Layer.Kind.WIDE ->
+                if ((axis dot towardsCamera) > HIDDEN_FACE_DOT) 1.56f to 1.05f else HIDDEN_ARROW_OFFSET to HIDDEN_ARROW_RADIUS
             else -> 0f to 2.0f
         }
         val centre = axis * offset
-        val inverse = Quat(view.w, -view.x, -view.y, -view.z)
-        // The mirror shows the cube as seen from the camera's image behind the glass.
-        val seenFrom = if (reflected) reflect(V3(0f, 0f, CAMERA_DISTANCE)).normalized() else V3(0f, 0f, 1f)
-        val towardsCamera = inverse.rotate(seenFrom)
         var u = towardsCamera - axis * (axis dot towardsCamera)
         if (u.length < 1e-3f) u = if (axis.y != 0f) V3(0f, 0f, 1f) else V3(0f, 1f, 0f)
         u = u.normalized()

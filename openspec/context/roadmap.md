@@ -42,6 +42,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 32 | `real-mirror` | done | A framed mirror behind the guide cube in the 3D scene, a true reflection of the back; replaces the mirror card; one steady view and one move wording everywhere, learn method included (user decisions 2026-10-04) |
 | 33 | `scan-dim-light` | done | Forgiving scan in dim, warm light: bigger averaged cell reading, brightness-independent face naming, the six centres named together at the end (silent fix, next-best namings), the colour check after every scan (user, 2026-10-04) |
 | 34 | `web-context-lost` | done | Browser app reloads itself silently on the same screen when the phone takes its graphics away in a background tab, instead of crashing on return |
+| 35 | `step-settle` | done | Guide demo stays after the move, "Tein sen" nods instead of replaying the turn, back unchanged; no arrow in the mirror, a hidden face's arrow goes around the outside of its layer; solved cube hops, spins and bursts confetti (phone testing 2026-10-05) |
 
 ## Backlog
 

@@ -41,8 +41,33 @@ class MoveGuideTest {
         compose.mainClock.advanceTimeBy(3000)
         compose.runOnIdle {
             assertEquals(1, demos)
-            assertEquals(start, state.animator.cube, "the cube returns to before the move")
+            assertEquals(start.apply(moves.take(1)), state.animator.cube, "the cube stays after the move")
             assertEquals(0, state.animator.pending)
+        }
+    }
+
+    @Test
+    fun doneAfterTheDemoDoesNotTurnAgain() {
+        stepper()
+        compose.mainClock.advanceTimeBy(3000)
+        compose.runOnIdle {
+            state.done()
+            assertEquals(1, state.index)
+            assertEquals(null, state.animator.move, "no turn is replayed")
+            assertEquals(0, state.animator.pending)
+            assertEquals(start.apply(moves.take(1)), state.animator.cube)
+            assertEquals(1, state.nods)
+        }
+    }
+
+    @Test
+    fun doneDuringTheDemoLandsOnTheNextCube() {
+        stepper()
+        compose.mainClock.advanceTimeBy(650)
+        compose.runOnIdle {
+            state.done()
+            assertEquals(0, state.animator.pending)
+            assertEquals(start.apply(moves.take(1)), state.animator.cube)
         }
     }
 
@@ -53,14 +78,28 @@ class MoveGuideTest {
         compose.mainClock.advanceTimeBy(5000)
         compose.runOnIdle {
             assertEquals(1, state.index)
-            assertEquals(start.apply(moves.take(1)), state.animator.cube)
             state.back()
+            assertEquals(start.apply(moves.take(1)), state.animator.cube, "back starts from before the current move")
+            assertEquals(1, state.animator.pending, "and animates the undo")
+            assertEquals(1, state.nods, "back does not nod")
         }
         compose.mainClock.advanceTimeBy(5000)
         compose.runOnIdle {
             assertEquals(0, state.index)
-            assertEquals(start, state.animator.cube)
+            assertEquals(start.apply(moves.take(1)), state.animator.cube, "then move 1 demos again and stays after it")
         }
+    }
+
+    @Test
+    fun theLastDoneCelebratesInsteadOfNodding() {
+        stepper()
+        compose.runOnIdle { repeat(moves.size) { state.done() } }
+        compose.runOnIdle {
+            assertEquals(true, state.isFinished)
+            assertEquals(moves.size - 1, state.nods)
+            assertEquals(1, state.celebrations)
+        }
+        compose.mainClock.advanceTimeBy(3000)
     }
 
     @Test

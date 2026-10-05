@@ -73,6 +73,8 @@ class SteadyGuideTest {
         guide()
         compose.onNodeWithTag(GUIDE_CUBE_TAG).performTouchInput { swipeLeft() }
         compose.mainClock.advanceTimeBy(500)
+        compose.waitForIdle()
+        compose.mainClock.advanceTimeByFrame() // nothing else animates now: one more frame shows the button
         assertTrue(resetShown())
         step()
         assertTrue(resetShown(), "the next move keeps the user's view")
