@@ -56,6 +56,13 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 
 Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
 
+- `cloud-setup` (all projects, 2026-10-05): global instructions, hooks and skills also in cloud
+  sessions: a public repo `jukkakot/claude-config` with them, a cloud environment setup script that
+  copies them into `~/.claude/` (refreshed each session) and installs the Android SDK (network:
+  add `dl.google.com`); locally `~/.claude/` reads the same files. Check first that the cloud
+  session reads a `~/.claude/CLAUDE.md` written by the script; fallback: commit them to the repo's
+  `.claude/`.
+
 - camera follow: notice when the cube is held differently, or keep helping in any orientation
   (after the user has tried camera follow; from `steady-cube`).
 
