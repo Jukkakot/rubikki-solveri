@@ -2,6 +2,30 @@
 
 ## MODIFIED Requirements
 
+### Requirement: Direction arrow
+A curved arrow SHALL be drawn in the direction of the turn, covering a quarter of a circle for a
+quarter turn and half a circle for a half turn, with its arrowhead at the end. When the turning
+face can be seen, the arrow SHALL be on that face. When it faces away from the view (such as the
+back), the arrow SHALL go around the outside of the turning layer, where it can be seen, instead
+of being drawn over the other side of the cube. The arrow SHALL be shown only while the cube is in
+the state before the move: hidden while the turn animates and after the demo has ended.
+
+#### Scenario: Clockwise arrow
+- **WHEN** a clockwise turn of the front is presented in the default view
+- **THEN** the arrow, seen on screen, goes clockwise
+
+#### Scenario: Half turn arrow
+- **WHEN** a half turn is presented
+- **THEN** the arrow covers half a circle
+
+#### Scenario: Back turn arrow
+- **WHEN** a turn of the back is presented in the holding view
+- **THEN** the arrow runs around the outside of the back layer, visible beside the cube, and none is drawn over the front
+
+#### Scenario: No arrow after the demo
+- **WHEN** the demo of a move has ended and the cube stays after the move
+- **THEN** no arrow is shown
+
 ### Requirement: Demo and replay
 When a new move is presented, its turn SHALL play once by itself after a short pause, and the
 cube SHALL stay in the state after the move, as the user's cube will be once they have turned it.

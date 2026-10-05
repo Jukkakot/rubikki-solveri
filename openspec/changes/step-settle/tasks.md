@@ -8,6 +8,7 @@
 ## 2. Mirror without the arrow
 
 - [ ] 2.1 `Cube3D`: stop drawing the arrow in the reflection. Verify: shared build passes.
+- [ ] 2.2 `CubeScene.arrow`: when the turning face points away from the camera, place the arc around the outside of the layer (layer depth, radius outside the cube's outline, middle towards the camera). Verify: unit test that a back turn in the holding view gives an arc whose projected points lie outside the cube's front face, and that a front turn is unchanged.
 
 ## 3. Docs and roadmap
 

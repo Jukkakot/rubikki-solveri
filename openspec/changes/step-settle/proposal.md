@@ -17,7 +17,11 @@ one thing too many.
   next move appears and demos as before. The same applies when camera follow detects the move.
 - "Back" goes to the previous move with the same nod: the cube jumps to before that move and its
   demo plays again (instead of animating the undo).
-- The mirror shows the cube, highlight and turning, but no arrow.
+- The arrow is shown only before the move: not after the demo, when the cube already shows the
+  result (user, 2026-10-05).
+- The mirror never shows the arrow. When the turning face is hidden from the view (the back, and
+  in some views the bottom or left), the arrow goes around the outside of that layer, beside the
+  cube, instead of being drawn over the front (user, 2026-10-05).
 - The nod is skipped when the animations are off (reduced motion).
 - Mockups the user chose from: https://claude.ai/artifact/8FU4Jx3GEZE5VmgaYWJRKZ (option A with the
   nod from option C).
