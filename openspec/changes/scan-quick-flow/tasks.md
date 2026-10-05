@@ -2,7 +2,7 @@
 
 ## 1. Face review accepts by itself
 
-- [ ] 1.1 `ScanScreen`: during a review, "Hyvä, seuraava" fills up over 2.5 s (same look as the check's "Näyttää oikealta") and then calls accept; a touch on the review picture stops it; retake and manual stay. Verify: Compose test that a captured face is accepted after the time with no tap, and stays in review after a touch.
+- [ ] 1.1 `ScanScreen`: during a review, "Hyvä, seuraava" fills up over 2 s (same look as the check's "Näyttää oikealta") and then calls accept; a touch on the review picture stops it; retake and manual stay. Verify: Compose test that a captured face is accepted after the time with no tap, and stays in review after a touch.
 
 ## 2. No check after a confident scan
 

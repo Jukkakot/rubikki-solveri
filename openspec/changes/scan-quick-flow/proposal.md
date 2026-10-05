@@ -10,7 +10,7 @@ and not after it (step-settle), so in practice the user sees no arrow.
 ## What Changes
 
 - **Face review continues by itself:** after a capture the review shows as now, and "Hyvä,
-  seuraava" fills up over 2.5 s and then accepts the face, the same way the colour check's "Looks
+  seuraava" fills up over 2 s and then accepts the face, the same way the colour check's "Looks
   right" fills up. A touch on the review stops it; "Kuvaa uudelleen" stays at hand. Always, since
   this page has no confidence yet (raw camera colours).
 - **No colour check after a confident scan:** a valid scan with no uncertain or marked sticker goes
