@@ -6,7 +6,7 @@
 
 ## 2. Arrow, pause and nod
 
-- [ ] 2.1 `GuideCube`: show the arrow while the presented move turns from the step's own cube (not after the demo); remove the nod (keep the celebration). `StepperState`: auto demo delay 0.5 s; drop the nod counter. Verify: `MoveGuideTest` timings updated; shared build passes.
+- [ ] 2.1 `GuideCube`: show the arrow the whole time a move is presented (before, during and after the demo); remove the nod (keep the celebration). `StepperState`: auto demo delay 0.5 s; drop the nod counter. Verify: `MoveGuideTest` timings updated; shared build passes.
 
 ## 3. Roadmap
 

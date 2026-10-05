@@ -12,9 +12,9 @@ A curved arrow SHALL be drawn in the direction of the turn, covering a quarter o
 quarter turn and half a circle for a half turn, with its arrowhead at the end. When the turning
 face can be seen, the arrow SHALL be on that face. When it faces away from the view (such as the
 back), the arrow SHALL go around the outside of the turning layer, where it can be seen, instead
-of being drawn over the other side of the cube. The arrow SHALL be shown while the cube is in the
-state before the move and while the turn animates, so the turn and the arrow are seen together; it
-SHALL be hidden once the demo has ended.
+of being drawn over the other side of the cube. The arrow SHALL be shown the whole time a move is
+presented: before the demo, while the turn animates (so the turn and the arrow are seen together)
+and after the demo, until the user moves on.
 
 #### Scenario: Clockwise arrow
 - **WHEN** a clockwise turn of the front is presented in the default view
@@ -34,7 +34,7 @@ SHALL be hidden once the demo has ended.
 
 #### Scenario: No arrow after the demo
 - **WHEN** the demo of a move has ended and the cube stays after the move
-- **THEN** no arrow is shown
+- **THEN** the arrow is not taken away: it stays while the user turns their cube (reversed 2026-10-05)
 
 ### Requirement: Demo and replay
 When a new move is presented, the cube SHALL first show the state before the move with the arrow
