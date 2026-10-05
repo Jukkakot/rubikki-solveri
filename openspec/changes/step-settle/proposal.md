@@ -15,8 +15,12 @@ one thing too many.
 - "Done" no longer animates the move. The cube is already in the new state (or jumps there if the
   demo has not finished), gives a small nod (tilts a few degrees and back, about 0.3 s), and the
   next move appears and demos as before. The same applies when camera follow detects the move.
-- "Back" goes to the previous move with the same nod: the cube jumps to before that move and its
-  demo plays again (instead of animating the undo).
+- "Back" works as now: it animates the undo of the previous move (from the state before the
+  current move; after a demo the cube first jumps back to it), then that move demos again. No nod
+  (user, 2026-10-05).
+- The last "done" ends in a small victory instead of a nod: the cube hops and spins once (~1 s)
+  while confetti in the six sticker colours bursts from it, with a success vibration (user's
+  choice c, 2026-10-05). No motion with animations off.
 - The arrow is shown only before the move: not after the demo, when the cube already shows the
   result (user, 2026-10-05).
 - The mirror never shows the arrow. When the turning face is hidden from the view (the back, and
@@ -32,9 +36,9 @@ one thing too many.
 
 ### Modified Capabilities
 - `move-guide`: demo ends after the move; the nod on a step change; no arrow in the mirror.
-- `fast-solve`: stepping no longer animates done or back.
+- `fast-solve`: done no longer replays the turn; back unchanged; the solved celebration.
 
 ## Impact
 
 `shared` only: `ui/guide/StepperState.kt` (done, back, demo), `ui/cube3d/Cube3D.kt` (mirror arrow,
-nod), the solve screen's tests. `cube`, `app` and `web` are untouched.
+nod), `ui/cube3d/CubeScene.kt` (arrow placement), the solve screen (celebration) and its tests. `cube`, `app` and `web` are untouched.

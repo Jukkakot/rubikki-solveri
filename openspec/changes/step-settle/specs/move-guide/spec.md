@@ -59,9 +59,10 @@ reflection follows the cube. The mirror SHALL NOT cover the cube and SHALL have 
 ## ADDED Requirements
 
 ### Requirement: Nod on a step change
-When the guide moves to another step (done, back, or a move detected by camera follow), the cube
+When the guide moves to the next step (done, or a move detected by camera follow), the cube
 SHALL NOT replay a turn; it SHALL show the state of the new step at once with a small nod, a tilt
-of a few degrees and back in about a third of a second. With animations off there SHALL be no nod.
+of a few degrees and back in about a third of a second. The last move ends with the solved
+celebration instead of a nod. With animations off there SHALL be no nod.
 
 #### Scenario: Done after the demo
 - **WHEN** the demo of a move has ended and the user taps done
