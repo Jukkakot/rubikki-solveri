@@ -3,6 +3,7 @@ package fi.jukkakot.rubikkisolveri.cube
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
+import fi.jukkakot.rubikkisolveri.cube.scan.Lab
 import fi.jukkakot.rubikkisolveri.cube.scan.RgbaFrame
 import fi.jukkakot.rubikkisolveri.cube.scan.Orientation
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
@@ -282,5 +283,29 @@ class VideoScanTest {
         val again = scan.onFrame(listOf(reading(Face.U)), 15_600)
         assertNull(again.stall)
         assertEquals(1, again.recognised, "only the centre after one frame")
+    }
+
+    @Test
+    fun aBorderlineRedOrangeReadingGivesEachAboutHalfAndAClearOneAWholeVote() {
+        val refs = ColorClassifier.references()
+        val red = refs.getValue(CubeColor.RED)
+        val orange = refs.getValue(CubeColor.ORANGE)
+        val halfway = Lab((red.l + orange.l) / 2, (red.a + orange.a) / 2, (red.b + orange.b) / 2)
+        val split = ColorClassifier.shares(halfway, refs)
+        assertEquals(0.5, split[CubeColor.RED.ordinal], 0.05)
+        assertEquals(0.5, split[CubeColor.ORANGE.ordinal], 0.05)
+        val clear = ColorClassifier.shares(red, refs)
+        assertEquals(1.0, clear[CubeColor.RED.ordinal])
+        assertEquals(1.0, clear.sum(), 1e-9)
+    }
+
+    @Test
+    fun washedOutReadingsCountLittle() {
+        // Too much light: every sticker's brightest channel at the top of the range.
+        fun washed(face: Face) = reading(face).let { r -> r.copy(colors = r.colors.map { c -> c?.let { Rgb(minOf(255, it.r * 2), minOf(255, it.g * 2), minOf(255, it.b * 2)) } }) }
+        assertTrue(washed(Face.U).colors.all { VideoScan.weight(it!!) == VideoScan.WASHED_WEIGHT })
+        val scan = VideoScan()
+        repeat(3) { scan.onFrame(listOf(washed(Face.U)), it * 100L) }
+        assertEquals(listOf(4), (0 until 9).filter { scan.state.stickers[Face.U.ordinal * 9 + it] != null }, "three washed-out readings make only the centre known")
     }
 }

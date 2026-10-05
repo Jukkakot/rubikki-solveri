@@ -15,7 +15,7 @@ class BestCubeTest {
     private fun evidence(cube: Cube, votes: Int = 5, unseen: Set<Int> = emptySet(), misread: Map<Int, CubeColor> = emptyMap()) =
         StickerEvidence(
             List(Stickers.COUNT) { s ->
-                IntArray(6).also { if (s !in unseen) it[(misread[s] ?: cube[s]).ordinal] = votes }
+                DoubleArray(6).also { if (s !in unseen) it[(misread[s] ?: cube[s]).ordinal] = votes.toDouble() }
             },
         )
 
@@ -29,10 +29,10 @@ class BestCubeTest {
 
     @Test
     fun redVotesLeaveOrangeCheaperThanBlue() {
-        val e = StickerEvidence(List(Stickers.COUNT) { IntArray(6).also { a -> a[CubeColor.RED.ordinal] = 6 } })
+        val e = StickerEvidence(List(Stickers.COUNT) { DoubleArray(6).also { a -> a[CubeColor.RED.ordinal] = 6.0 } })
         assertTrue(e.cost(0, CubeColor.RED) < e.cost(0, CubeColor.ORANGE))
         assertTrue(e.cost(0, CubeColor.ORANGE) < e.cost(0, CubeColor.BLUE))
-        assertEquals(null, StickerEvidence(List(Stickers.COUNT) { IntArray(6).also { a -> a[CubeColor.RED.ordinal] = 3 } }).sure(0), "red needs more readings")
+        assertEquals(null, StickerEvidence(List(Stickers.COUNT) { DoubleArray(6).also { a -> a[CubeColor.RED.ordinal] = 3.0 } }).sure(0), "red needs more readings")
         assertEquals(CubeColor.RED, e.sure(0))
     }
 

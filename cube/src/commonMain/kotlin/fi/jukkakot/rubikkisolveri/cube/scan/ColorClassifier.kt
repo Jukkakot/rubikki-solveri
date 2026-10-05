@@ -4,6 +4,7 @@ import fi.jukkakot.rubikkisolveri.cube.ColorScheme
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.Stickers
+import kotlin.math.exp
 
 /** Colours for all 54 stickers and how sure each one is (0 = a coin toss, 1 = certain). */
 data class Classification(val colors: List<CubeColor>, val confidence: List<Double>) {
@@ -41,6 +42,32 @@ object ColorClassifier {
         val lab = rgb.toLab()
         return refs.entries.sortedBy { it.value.distance(lab) }.map { it.key }
     }
+
+    /**
+     * How well [lab] fits each colour (by ordinal), the shares summing to 1: a Gaussian of its
+     * distance to each reference in [refs] with width [width]. A reading halfway between two colours
+     * gives each about half (`video-scan-light`).
+     */
+    fun shares(lab: Lab, refs: Map<CubeColor, Lab>, width: Double = SHARE_WIDTH): DoubleArray {
+        val d2 = DoubleArray(6) { c -> refs.getValue(CubeColor.entries[c]).distance(lab).let { it * it } }
+        val least = d2.min()
+        val w = DoubleArray(6) { c -> exp(-(d2[c] - least) / (2 * width * width)) }
+        val sum = w.sum()
+        // Shares too small to matter are dropped, so a clear reading is one whole vote.
+        for (c in w.indices) if (w[c] < MIN_SHARE * sum) w[c] = 0.0
+        val kept = w.sum()
+        return DoubleArray(6) { w[it] / kept }
+    }
+
+    /** A share below this is dropped (and the rest scaled up). */
+    const val MIN_SHARE = 0.05
+
+    /**
+     * [shares]' width (Lab distance): a reading this far from a colour's reference keeps 61 % of the
+     * weight of one right on it. Readings spread about 5 around their own colour in good light; the
+     * test videos clear as fast from 3 to 5 (`video-scan-light` findings).
+     */
+    const val SHARE_WIDTH = 4.0
 
     /** Most a reading is brightened by [scaled] (so noise in near-black is not blown up). */
     const val MAX_GAIN = 6.0

@@ -27,7 +27,7 @@ class ScanSimulation {
     fun run(random: Random, stopAbove: Double): Trace {
         val cube = Cube.solved().apply(Scramble.random(random = random))
         val dim = random.nextDouble() < 0.4
-        val votes = List(Stickers.COUNT) { IntArray(6) }
+        val votes = List(Stickers.COUNT) { DoubleArray(6) }
         val bursts = HashMap<Int, Burst>()
         // In dim light some faces read most of their orange as red, all through.
         val orangeAsRed = Face.entries.associateWith { dim && random.nextDouble() < 0.3 }
@@ -55,7 +55,7 @@ class ScanSimulation {
                     truth.isRedOrOrange && random.nextDouble() < (if (dim) 0.15 else 0.05) -> truth.partner
                     else -> truth
                 }
-                votes[s][color.ordinal]++
+                votes[s][color.ordinal] += 1.0
             }
         }
 
@@ -66,7 +66,7 @@ class ScanSimulation {
             val c = best.clearness(evidence)
             clearness += c
             right += best.cube == cube
-            read += (0 until Stickers.COUNT).count { it % 9 == 4 || votes[it].sum() > 0 }
+            read += (0 until Stickers.COUNT).count { it % 9 == 4 || votes[it].sum() > 0.0 }
             over = if (c >= stopAbove) over + 1 else 0
             return over >= FINISH_FRAMES
         }

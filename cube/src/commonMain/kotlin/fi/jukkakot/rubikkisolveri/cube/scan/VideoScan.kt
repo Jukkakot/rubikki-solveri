@@ -99,6 +99,9 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val labs: List<Lab?> = face.colors.map { it?.toLab() }
         var names: List<CubeColor?> = emptyList()
 
+        /** Per sticker, how well it fits each colour (by ordinal; [ColorClassifier.shares]), times its [weight]. */
+        var shares: List<DoubleArray?> = emptyList()
+
         /** All nine stickers found; only a full reading can be a group's anchor. */
         val full: Boolean = face.isFull
 
@@ -123,8 +126,8 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         /** The colour with the most votes per place (recognised or not). */
         var leading: List<CubeColor?> = List(9) { null }
 
-        /** Votes per place and colour (by ordinal). */
-        var counts: List<IntArray> = List(9) { IntArray(6) }
+        /** Votes per place and colour (by ordinal): the inliers' shares summed. */
+        var counts: List<DoubleArray> = List(9) { DoubleArray(6) }
         var disputed: Set<Int> = emptySet()
         var samples: List<Rgb?> = List(9) { null }
         val inliers: List<Reading> get() = readings.filter { it.inlier }
@@ -332,11 +335,17 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         }
     }
 
-    /** Every sticker named with the cube's own centres as references (the guided scan's live reading). */
+    /**
+     * Every sticker named with the cube's own centres as references (the guided scan's live reading),
+     * and its share of each colour against the same references for the votes.
+     */
     private fun renameStickers() {
         val refs = ColorClassifier.references(groups.mapValues { (_, g) -> g.inliers.ifEmpty { g.readings }.map { it.labs[CENTRE]!! } })
         for (g in groups.values) for (r in g.readings) {
             r.names = r.rgb.mapIndexed { n, rgb -> if (n == CENTRE) g.color else rgb?.let { ColorClassifier.live(it, refs) } }
+            r.shares = r.labs.mapIndexed { n, lab ->
+                lab?.let { ColorClassifier.shares(it, refs).also { s -> weight(r.rgb[n]!!).let { w -> for (c in s.indices) s[c] *= w } } }
+            }
         }
     }
 
@@ -389,24 +398,22 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val leading = arrayOfNulls<CubeColor>(9)
         val samples = arrayOfNulls<Rgb>(9)
         val disputed = HashSet<Int>()
-        val votes = List(9) { IntArray(6) }
+        val votes = List(9) { DoubleArray(6) }
         for (n in 0 until 9) {
-            val counts = HashMap<CubeColor, Int>()
+            val v = votes[n]
             val voters = inliers.mapNotNull { r -> r.names[RotationSearch.turnIndex(n, r.turn)]?.let { r to it } }
-            for ((_, c) in voters) counts[c] = (counts[c] ?: 0) + 1
-            for ((c, v) in counts) votes[n][c.ordinal] = v
-            val ranked = counts.entries.sortedByDescending { it.value }
-            val lead = ranked.getOrNull(0)
-            leading[n] = lead?.key
-            val second = ranked.getOrNull(1)?.value ?: 0
+            for ((r, _) in voters) r.shares[RotationSearch.turnIndex(n, r.turn)]!!.forEachIndexed { c, share -> v[c] += share }
+            val lead = if (voters.isEmpty()) null else v.indices.maxBy { v[it] }
+            leading[n] = lead?.let { CubeColor.entries[it] }
+            val second = v.indices.filter { it != lead }.maxOf { v[it] }
             val sticky = g.sticky[n]
             val color = when {
                 lead == null -> null
-                lead.value >= MIN_VOTES && lead.value >= MARGIN * second -> lead.key
-                sticky != null && (counts[sticky] ?: 0) >= lead.value -> sticky
+                v[lead] >= MIN_VOTES && v[lead] >= MARGIN * second -> CubeColor.entries[lead]
+                sticky != null && v[sticky.ordinal] >= v[lead] -> sticky
                 else -> null
             }
-            if (color == null && lead != null && lead.value >= MIN_VOTES) disputed += n
+            if (color == null && lead != null && v[lead] >= MIN_VOTES) disputed += n
             g.sticky[n] = color
             stickers[n] = color
             if (color != null) {
@@ -485,7 +492,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         Face.entries.flatMap { face ->
             val group = groups[scheme[face]]
             val k = turns[face] ?: 0
-            List(9) { n -> if (group == null || n == CENTRE) IntArray(6) else group.counts[RotationSearch.turnIndex(n, k)] }
+            List(9) { n -> if (group == null || n == CENTRE) DoubleArray(6) else group.counts[RotationSearch.turnIndex(n, k)] }
         },
     )
 
@@ -585,6 +592,15 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** A face found this recently counts as the cube in view. */
         const val IN_VIEW_MILLIS = 1_000L
+
+        /** A reading with a channel at least this high is washed out (the median of its blob: half its pixels or more). */
+        const val WASHED_FROM = 250
+
+        /** How much a washed-out reading's vote counts (too much light: orange reads yellow, blue white). */
+        const val WASHED_WEIGHT = 0.2
+
+        /** How much a reading of [rgb] counts in the votes. */
+        fun weight(rgb: Rgb): Double = if (maxOf(rgb.r, rgb.g, rgb.b) >= WASHED_FROM) WASHED_WEIGHT else 1.0
 
         /** Median brightness (brightest channel) of the stickers of [faces], or null without any. */
         fun brightness(faces: List<FaceReading>): Int? {

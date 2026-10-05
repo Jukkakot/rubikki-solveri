@@ -83,3 +83,9 @@ classifier.
   lamp (brighter, so the tone curve makes them more orange), which a per-frame colour correction
   cannot undo. The correction stays in the test harness; the spec's sentence on the light's colour
   cast is dropped.
+- **Share width 4 (Lab distance), shares under 5 % dropped.** The narrowest widths and up to 5 clear
+  the videos equally fast; 6 and more blur good readings. Dropping tiny shares makes a clear reading
+  exactly one vote, so the vote-sure rule (3 votes, twice the next) is unchanged for clear readings.
+- **Washed out: a reading's brightest channel at 250 or more, weight 0.2.** The reading is a blob's
+  median, so at least half its pixels are at the top. White stickers clipped in bright light count
+  little too; the test videos hardly have such readings (213817: 157 of 1613), and none got slower.

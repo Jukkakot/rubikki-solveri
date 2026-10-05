@@ -12,36 +12,37 @@ import kotlin.math.ln
 import kotlin.math.min
 
 /**
- * What the readings say about each sticker (net order, URFDLB): [votes] per sticker, one count per
- * [CubeColor] (by ordinal). The cost of a colour is −ln of its smoothed share; a vote for red lends
+ * What the readings say about each sticker (net order, URFDLB): [votes] per sticker, one sum per
+ * [CubeColor] (by ordinal); a reading gives each colour a share by how well it fits (`video-scan-light`),
+ * so votes are fractional. The cost of a colour is −ln of its smoothed share; a vote for red lends
  * up to [LEND] votes to orange and the other way round (they are the usual confusion), so a red or
  * orange sticker needs more agreeing readings to be sure. A sticker without readings costs the same
  * for every colour.
  */
-class StickerEvidence(val votes: List<IntArray>) {
+class StickerEvidence(val votes: List<DoubleArray>) {
     init {
         require(votes.size == Stickers.COUNT && votes.all { it.size == COLORS })
     }
 
     /** Readings of [sticker]. */
-    fun total(sticker: Int): Int = votes[sticker].sum()
+    fun total(sticker: Int): Double = votes[sticker].sum()
 
     fun cost(sticker: Int, color: CubeColor): Double {
         val v = votes[sticker]
-        val lent = IntArray(COLORS) { c -> partner(c)?.let { min(v[it], LEND) } ?: 0 }
+        val lent = DoubleArray(COLORS) { c -> partner(c)?.let { min(v[it], LEND) } ?: 0.0 }
         val all = v.sum() + lent.sum() + COLORS * SMOOTH
         return -ln((v[color.ordinal] + lent[color.ordinal] + SMOOTH) / all)
     }
 
     /**
-     * The colour [sticker]'s votes alone make sure: at least [VideoScan.MIN_VOTES] readings agree
-     * (twice that for red and orange) and lead the next colour [VideoScan.MARGIN] times over.
+     * The colour [sticker]'s votes alone make sure: at least [VideoScan.MIN_VOTES] votes (twice that
+     * for red and orange) and lead the next colour [VideoScan.MARGIN] times over.
      */
     fun sure(sticker: Int): CubeColor? {
         val v = votes[sticker]
         val lead = v.indices.maxBy { v[it] }
         val second = v.indices.filter { it != lead }.maxOf { v[it] }
-        val need = if (partner(lead) != null) 2 * VideoScan.MIN_VOTES else VideoScan.MIN_VOTES
+        val need = if (partner(lead) != null) 2.0 * VideoScan.MIN_VOTES else VideoScan.MIN_VOTES.toDouble()
         return CubeColor.entries[lead].takeIf { v[lead] >= need && v[lead] >= VideoScan.MARGIN * second }
     }
 
@@ -52,9 +53,9 @@ class StickerEvidence(val votes: List<IntArray>) {
         const val SMOOTH = 1.0
 
         /** Most votes a red reading lends to orange (and the other way round). */
-        const val LEND = 2
+        const val LEND = 2.0
 
-        val EMPTY = StickerEvidence(List(Stickers.COUNT) { IntArray(COLORS) })
+        val EMPTY = StickerEvidence(List(Stickers.COUNT) { DoubleArray(COLORS) })
 
         private fun partner(c: Int): Int? = when (c) {
             CubeColor.RED.ordinal -> CubeColor.ORANGE.ordinal
@@ -87,7 +88,7 @@ class BestCube(val cube: Cube, val cost: Double, val cornerMargins: DoubleArray,
      */
     fun supportedMargin(sticker: Int, evidence: StickerEvidence): Double {
         val place = placeOf(sticker)
-        if (place.any { evidence.total(it) == 0 } && place.any { evidence.total(it) > 0 && evidence.sure(it) != cube[it] }) return 0.0
+        if (place.any { evidence.total(it) == 0.0 } && place.any { evidence.total(it) > 0.0 && evidence.sure(it) != cube[it] }) return 0.0
         return margin(sticker)
     }
 

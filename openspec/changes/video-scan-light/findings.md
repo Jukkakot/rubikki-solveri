@@ -62,3 +62,26 @@ saturation) than the darker half of its blob; white stickers keep all theirs. Fi
 blobs only within 60 of their mean colour, so it leaves a hole), so only mild sheen was affected.
 The red/orange table is unchanged to one decimal; frames to clear 210, 140, 117, 120 (213817: 119
 before), the dim two still never.
+
+## 1.4 Soft votes
+
+Each reading gives every colour a share (Gaussian of its Lab distance to the colour's reference,
+shares under 5 % dropped so a clear reading is one whole vote); readings with a channel at 250 or
+more count 0.2. Frames to clear and the best cube's largest clearness by the width:
+
+| width | 151828 | 151903 | 213729 | 213817 | 213850 | 213929 |
+|---|---|---|---|---|---|---|
+| 0.5 (≈ hard votes) | 210 (8.0) | 140 (7.4) | 117 (6.4) | 120 (5.9) | never (2.4) | never (2.9) |
+| 3 | 210 (8.0) | 140 (7.4) | 117 (6.2) | 119 (5.9) | never (2.6) | never (2.9) |
+| 4 (chosen) | 210 (7.9) | 140 (7.4) | 117 (6.1) | 119 (5.8) | never (2.5) | never (2.8) |
+| 5 | 210 (7.9) | 140 (7.4) | 117 (6.0) | 119 (5.5) | never (2.4) | never (2.9) |
+| 6 | 210 (7.8) | 140 (7.4) | never (0.9) | 119 (4.7) | never (2.4) | never (3.0) |
+| 8 | 227 (7.6) | 140 (7.4) | never (0.8) | 123 (3.1) | never (1.6) | never (2.9) |
+
+(Dropping shares under 2 % or 10 % instead of 5 % changes nothing.)
+
+On both dim videos the best cube at the end **is the true cube**, with hard votes as well as soft:
+the rest of the cube already outvotes the three reds on the white side that read orange-ish. What
+keeps them from finishing is the margin: 2.4–3.0 against the threshold 3.0. Soft votes do not
+raise it, because those reds really read nearer orange on that side (1.2): sharing does not turn
+them into red votes. Widths over 5 blur good readings (the window video stops clearing at 6).
