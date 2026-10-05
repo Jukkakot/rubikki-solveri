@@ -48,6 +48,13 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 
 Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
 
+- **Next fix batch (collecting, user 2026-10-05; don't build until the user says the list is ready):**
+  - scan face review (after each face, screenshot 2026-10-05): "Hyvä, seuraava" continues by
+    itself after a few seconds, like the final colour check already does (time left visible, any
+    touch stops it, "Kuvaa uudelleen" at hand). This page shows raw camera colours with no
+    confidence yet, so presumably always. Also look for other places that could work the same
+    way, e.g. the learn method's stage goal card ("Jatka"); ask the user which ones.
+
 - camera follow: notice when the cube is held differently, or keep helping in any orientation
   (after the user has tried camera follow; from `steady-cube`).
 
