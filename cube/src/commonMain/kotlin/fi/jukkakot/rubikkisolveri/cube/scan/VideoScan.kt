@@ -424,7 +424,8 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             g.sticky[n] = color
             stickers[n] = color
             if (color != null) {
-                val agreeing = voters.filter { it.second == color }.map { it.first.rgb[RotationSearch.turnIndex(n, it.first.turn)]!! }
+                // With soft votes the colour may lead without any reading named it: then all readings give the sample.
+                val agreeing = (voters.filter { it.second == color }.ifEmpty { voters }).map { it.first.rgb[RotationSearch.turnIndex(n, it.first.turn)]!! }
                 samples[n] = Rgb(
                     FrameSampler.median(agreeing.map { it.r }),
                     FrameSampler.median(agreeing.map { it.g }),

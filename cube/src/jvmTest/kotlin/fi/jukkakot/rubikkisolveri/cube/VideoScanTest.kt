@@ -332,4 +332,32 @@ class VideoScanTest {
         repeat(VideoScan.MAX_READINGS + 20) { s = scan.onFrame(listOf(reading(Face.U)), it * 100L) }
         assertEquals(9, s.found.single().names.count { it != null })
     }
+
+    @Test
+    fun aColourLeadingOnSharesAloneDoesNotBreakTheScan() {
+        // Sticker 0 (first in reading order) read between red and orange (named red) and between orange and yellow (named
+        // yellow): orange leads on the shares, though no reading named it (crash in the browser, 2026-10-05).
+        val refs = ColorClassifier.references()
+        fun mix(a: CubeColor, b: CubeColor, t: Double): Rgb {
+            val x = ColorClassifier.DEFAULT_PALETTE.getValue(a)
+            val y = ColorClassifier.DEFAULT_PALETTE.getValue(b)
+            return Rgb((x.r + (y.r - x.r) * t).toInt(), (x.g + (y.g - x.g) * t).toInt(), (x.b + (y.b - x.b) * t).toInt())
+        }
+        fun split(a: CubeColor) = (1..99).map { mix(a, CubeColor.ORANGE, it / 100.0) }
+            .first { ColorClassifier.shares(it.toLab(), refs)[CubeColor.ORANGE.ordinal] in 0.35..0.5 }
+        val nearRed = split(CubeColor.RED)
+        val nearYellow = split(CubeColor.YELLOW)
+        assertEquals(CubeColor.RED, ColorClassifier.live(nearRed))
+        assertEquals(CubeColor.YELLOW, ColorClassifier.live(nearYellow))
+        val scan = VideoScan()
+        val u = reading(Face.U)
+        fun show(t: Long, vararg set: Pair<Int, Rgb>) = scan.onFrame(listOf(u.copy(colors = u.colors.toMutableList().also { c -> for ((n, rgb) in set) c[n] = rgb })), t)
+        val orange = ColorClassifier.DEFAULT_PALETTE.getValue(CubeColor.ORANGE)
+        val wrong = ColorClassifier.DEFAULT_PALETTE.getValue(CubeColor.entries.first { it != u.colors.let { c -> ColorClassifier.live(c[1]!!) } && it != CubeColor.ORANGE })
+        // First read clearly orange (it sticks), with two other stickers misread: once the split readings
+        // outnumber them they no longer belong (the anchor moves), and no reading names orange any more.
+        repeat(4) { show(it * 100L, 0 to orange, 1 to wrong, 2 to wrong) }
+        repeat(VideoScan.MAX_READINGS + 10) { k -> show(400L + k * 100, 0 to if (k % 2 == 0) nearRed else nearYellow) }
+        scan.outcome()
+    }
 }
