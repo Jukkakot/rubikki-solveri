@@ -9,8 +9,8 @@ arrow and a repeating demo make solving quicker.
 ## What Changes
 
 - **Count on the arrow:** the arrow carries the number of quarter turns (1 or 2) in a small badge,
-  readable at a glance. Placement and whether "1" is shown are decided with the user (mockups).
-- **Demo repeats:** after the demo ends, the cube waits about 5 s in the state after the move, then
+  "×1" or "×2" in the middle of the arc, for every move (user, 2026-10-05; mockups https://claude.ai/artifact/EUm6dvCdTdkK6Viak3tdqT).
+- **Demo repeats:** after the demo ends, the cube waits 3 s in the state after the move, then
   jumps back to before it and plays it again, until the user moves on. "Näytä" still plays at once.
 
 ## Capabilities
