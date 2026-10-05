@@ -27,9 +27,8 @@ object VideoScanLog {
         "stall" to state.stall?.name?.lowercase(),
     )
 
-    /** The sides whose nine stickers are all known in [state]. */
-    fun doneSides(state: VideoScanState): Set<Face> =
-        Face.entries.filter { f -> (0 until 9).all { state.stickers[f.ordinal * 9 + it] != null } }.toSet()
+    /** The sides done in [state]: the rest of the cube confirms all nine stickers ([VideoScanState.confirmed]). */
+    fun doneSides(state: VideoScanState): Set<Face> = state.confirmed
 
     private fun tenths(x: Double): Double = (x * 10).roundToInt() / 10.0
 }

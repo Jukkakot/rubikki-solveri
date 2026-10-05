@@ -52,7 +52,8 @@ data class FoundFace(val reading: FaceReading, val names: List<CubeColor?>, val 
  * [clearness] is the best cube's smallest supported margin, [brightness] the median sticker
  * brightness of the faces in this frame (null without one), [dim] whether that is too dark, [stall]
  * why the scan cannot get on, if it cannot. [projection] is where every sticker lies in this frame
- * (null without [orientation]).
+ * (null without [orientation]). [confirmed] are the sides whose nine stickers the best cube makes
+ * clear (not their own votes alone): the sides that get a tick.
  */
 data class VideoScanState(
     val stickers: List<CubeColor?>,
@@ -70,6 +71,7 @@ data class VideoScanState(
     val dim: Boolean = false,
     val stall: Stall? = null,
     val projection: CubeProjection? = null,
+    val confirmed: Set<Face> = emptySet(),
 ) {
     val recognised: Int get() = stickers.count { it != null }
 
@@ -184,6 +186,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val complete = best != null && seen.all { it in settled } && clearness >= CLEAR_MARGIN
         // Known: from the best cube where it is clear, else from the votes alone.
         val voted = netOf { it.stickers }
+        val clearAt = BooleanArray(Stickers.COUNT)
         val net = List(Stickers.COUNT) { i ->
             val face = Face.entries[i / 9]
             val clear = when {
@@ -193,8 +196,10 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
                 face in seen && face !in settled -> false
                 else -> best.supportedMargin(i, evidence) >= CLEAR_MARGIN
             }
+            clearAt[i] = clear
             if (clear) best!!.cube[i] else voted[i]
         }
+        val confirmed = Face.entries.filter { f -> (0 until 9).all { clearAt[f.ordinal * 9 + it] } }.toSet()
         val contradictions = HashSet<Int>()
         for (face in Face.entries) {
             val group = groups[scheme[face]] ?: continue
@@ -222,6 +227,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             leading = leading,
             orientation = orientation,
             projection = projection,
+            confirmed = confirmed,
             contradictions = contradictions,
             found = faces.mapIndexed { i, face -> foundFace(face, fresh[i], net) },
             pose = lastPose,

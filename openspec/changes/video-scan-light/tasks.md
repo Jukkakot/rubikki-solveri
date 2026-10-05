@@ -6,7 +6,7 @@
 - [x] 1.2 Light correction per frame (design 2). Verify: unit test (a frame tinted warm reads like the untinted one); harness numbers before/after in `findings.md`.
 - [x] 1.3 Glare left out of a sticker's colour (design 4); fixtures regenerated. Verify: unit test (a blob with a bright washed-out patch keeps its colour); all video tests still pass.
 - [x] 1.4 Soft votes through groups and `StickerEvidence`, washed-out readings weighted down (design 3, 8). Verify: unit tests (a borderline red/orange reading gives each about half; a washed-out one counts little; clear readings unchanged); video tests: both dim evening videos clear with the true cube, frames to clear on the others not worse.
-- [ ] 1.5 Side confirmed only by the best cube's margin (design 9). Verify: unit test (a side read many times but not confirmed has no tick).
+- [x] 1.5 Side confirmed only by the best cube's margin (design 9). Verify: unit test (a side read many times but not confirmed has no tick).
 - [ ] 1.6 Simulation with soft votes, threshold re-checked (design 5). Verify: sweep in `findings.md`; the small simulation test passes.
 
 ## 2. Screen and camera (shared, app, web)

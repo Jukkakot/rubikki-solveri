@@ -496,7 +496,7 @@ private fun PanelIcon(icon: DrawableResource) {
     }
 }
 
-/** The six side colours in a row, a tick on each side whose stickers are all known. */
+/** The six side colours in a row, a tick on each side the rest of the cube confirms. */
 @Composable
 private fun DoneSides(done: Set<Face>) {
     val description = stringResource(Res.string.video_sides_done, done.size)

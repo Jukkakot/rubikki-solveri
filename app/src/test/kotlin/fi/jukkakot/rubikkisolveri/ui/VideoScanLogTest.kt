@@ -14,7 +14,7 @@ class VideoScanLogTest {
         val cube = Cube.solved()
         // U and R fully known, F's first three, nothing else.
         val stickers = cube.toList().mapIndexed { i, c -> if (i < 18 || i in 18..20) c else null }
-        val state = VideoScanState.EMPTY.copy(stickers = stickers, clearness = 1.234, brightness = 142, stall = Stall.STUCK)
+        val state = VideoScanState.EMPTY.copy(stickers = stickers, clearness = 1.234, brightness = 142, stall = Stall.STUCK, confirmed = setOf(Face.U))
         val fields = VideoScanLog.snapshot(state, facesPerFrame = 1.26, finderMs = 17.6).toMap()
         assertEquals("snapshot", fields["kind"])
         assertEquals("U9 R9 F3 D0 L0 B0", fields["known"])
@@ -24,6 +24,7 @@ class VideoScanLogTest {
         assertEquals(1.3, fields["faces"])
         assertEquals(18, fields["finderMs"])
         assertEquals("stuck", fields["stall"])
-        assertEquals(setOf(Face.U, Face.R), VideoScanLog.doneSides(state))
+        // R is known but not confirmed by the rest of the cube: no tick.
+        assertEquals(setOf(Face.U), VideoScanLog.doneSides(state))
     }
 }

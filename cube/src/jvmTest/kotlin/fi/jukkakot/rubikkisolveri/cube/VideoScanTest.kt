@@ -308,4 +308,16 @@ class VideoScanTest {
         repeat(3) { scan.onFrame(listOf(washed(Face.U)), it * 100L) }
         assertEquals(listOf(4), (0 until 9).filter { scan.state.stickers[Face.U.ordinal * 9 + it] != null }, "three washed-out readings make only the centre known")
     }
+
+    @Test
+    fun aSideReadManyTimesButNotConfirmedHasNoTick() {
+        val scan = VideoScan()
+        repeat(20) { scan.onFrame(listOf(reading(Face.U)), it * 100L) }
+        assertEquals(9, recognisedOn(scan.state, Face.U).size + 1, "all nine known from their own votes")
+        assertTrue(scan.state.confirmed.isEmpty(), "${scan.state.confirmed}")
+        val faces = Face.entries.map { reading(it, centre = Point(100.0, 100.0 + 300 * it.ordinal)) }
+        var t = 2_000L
+        for (face in faces) repeat(10) { if (!scan.state.complete) scan.onFrame(listOf(face), t).also { t += 100 } }
+        assertEquals(Face.entries.toSet(), scan.state.confirmed)
+    }
 }
