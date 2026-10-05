@@ -1,12 +1,12 @@
 package fi.jukkakot.rubikkisolveri.ui.cube3d
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -34,8 +34,9 @@ class CubeAnimator(initial: Cube, private val scope: CoroutineScope, private val
         private set
     var move: Move? by mutableStateOf(null)
         private set
-    private val animatable = Animatable(0f)
-    val progress: Float get() = animatable.value
+    /** How far the step in progress has turned, 0..1 (eased). */
+    var progress: Float by mutableFloatStateOf(0f)
+        private set
 
     /** Moves waiting or playing. */
     var pending: Int by mutableIntStateOf(0)
@@ -63,14 +64,21 @@ class CubeAnimator(initial: Cube, private val scope: CoroutineScope, private val
                     if (i > 0) delay((STEP_PAUSE_MS * durationScale / speed).toLong())
                     if (gen != generation) break
                     if (millis > 0) {
+                        // Frame by frame, so a snap (a new generation) ends the turn without
+                        // stopping this loop: the moves after it still play.
                         move = step
-                        animatable.snapTo(0f)
-                        animatable.animateTo(1f, tween(millis, easing = FastOutSlowInEasing))
+                        progress = 0f
+                        val start = withFrameMillis { it }
+                        while (gen == generation) {
+                            val fraction = ((withFrameMillis { it } - start).toFloat() / millis).coerceAtMost(1f)
+                            if (gen == generation) progress = FastOutSlowInEasing.transform(fraction)
+                            if (fraction >= 1f) break
+                        }
                     }
                     if (gen != generation) break
                     cube = cube.apply(step)
                     move = null
-                    animatable.snapTo(0f)
+                    progress = 0f
                     if (i < steps.lastIndex) onHalfway?.invoke(next)
                 }
                 if (gen == generation) pending--
@@ -95,7 +103,7 @@ class CubeAnimator(initial: Cube, private val scope: CoroutineScope, private val
         move = null
         this.cube = cube
         target = cube
-        scope.launch { animatable.snapTo(0f) }
+        progress = 0f
     }
 
     companion object {

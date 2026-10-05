@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
  * Steps through [moves] starting from [start]: [index] moves are done. The [animator] shows the
  * cube; [demo] plays the current move from before it and leaves the cube after it, as the user's
  * cube will be once turned. [done] does not replay the turn: the cube jumps to the next step and
- * [nods] (or, after the last move, [celebrations]) counts up for the view to react.
+ * after the last move [celebrations] counts up for the view to celebrate.
  */
 @Stable
 class StepperState(
@@ -35,10 +35,6 @@ class StepperState(
     private val onDemoTick: () -> Unit = {},
 ) {
     var index by mutableIntStateOf(initialIndex)
-        private set
-
-    /** Counts steps reached by [done] (not the last): the cube nods for each. */
-    var nods by mutableIntStateOf(0)
         private set
 
     /** Counts finishes reached by [done]: the solved cube celebrates. */
@@ -69,7 +65,7 @@ class StepperState(
         val next = cubeAt(index + 1)
         if (animator.target != next || animator.pending > 0) animator.snapTo(next)
         index++
-        if (isFinished) celebrations++ else nods++
+        if (isFinished) celebrations++
     }
 
     fun back() {
@@ -103,7 +99,7 @@ class StepperState(
     }
 
     companion object {
-        const val AUTO_DEMO_DELAY_MS = 1_500L
+        const val AUTO_DEMO_DELAY_MS = 500L
     }
 }
 

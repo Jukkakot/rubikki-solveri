@@ -44,6 +44,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 34 | `web-context-lost` | done | Browser app reloads itself silently on the same screen when the phone takes its graphics away in a background tab, instead of crashing on return |
 | 35 | `step-settle` | done | Guide demo stays after the move, "Tein sen" nods instead of replaying the turn, back unchanged; no arrow in the mirror, a hidden face's arrow goes around the outside of its layer; solved cube hops, spins and bursts confetti (phone testing 2026-10-05) |
 | 36 | `scan-quick-flow` | done | Each captured face is accepted by itself after 2 s (a touch stops it); a sure scan skips the colour check and opens the solution, with the check behind it; the guide shows the arrow 1.5 s before the demo (phone testing 2026-10-05) |
+| 37 | `guide-fixes` | done | Arrow shown the whole time a move is presented (also during and after the demo), 0.5 s pause before the demo, no nod (vibration stays), show always plays: a tap during a turn no longer stopped the animator for good (phone testing 2026-10-05) |
 
 ## Backlog
 

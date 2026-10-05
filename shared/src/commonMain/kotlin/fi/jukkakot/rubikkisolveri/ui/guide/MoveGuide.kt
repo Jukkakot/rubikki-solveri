@@ -59,17 +59,14 @@ fun GuideCube(
     val turning = animator.move
     val colors = animator.cube.toList().map(StickerColors::of)
     val highlight = turning ?: presented
-    val arrow = if (turning == null && animator.pending == 0 && animator.cube == state.cubeAt(state.index)) presented else null
+    // The arrow stays the whole time a move is presented, also while its demo turns, but not while
+    // another turn plays (such as the undo after back).
+    val arrow = presented?.takeIf { p ->
+        turning == null || (turning.layer == p.layer && (p.quarterTurns == 2 || turning.quarterTurns == p.quarterTurns))
+    }
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
-    val tilt = remember { Animatable(0f) }
     val hop = remember { Animatable(0f) }
-    LaunchedEffect(state.nods) {
-        // The cube already shows the next step; a small nod says it moved on.
-        if (state.nods == 0 || animator.isInstant) return@LaunchedEffect
-        tilt.animateTo(-NOD_DEGREES, tween(120))
-        tilt.animateTo(0f, tween(200))
-    }
     LaunchedEffect(state.celebrations) {
         if (state.celebrations == 0) return@LaunchedEffect
         if (!animator.isInstant) {
@@ -92,7 +89,6 @@ fun GuideCube(
     // As large as its bounds allow: by height in a FitColumn slot, by width elsewhere.
     Box(
         modifier.aspectRatio(1.1f, matchHeightConstraintsFirst = true).graphicsLayer {
-            rotationZ = tilt.value
             translationY = -hop.value * size.height * HOP_HEIGHT
         },
     ) {
@@ -123,7 +119,6 @@ fun GuideCube(
 /** Test tag of the guide's main 3D cube. */
 const val GUIDE_CUBE_TAG = "guide_cube"
 
-private const val NOD_DEGREES = 4f
 private const val CELEBRATE_MS = 1000
 private const val HOP_HEIGHT = 0.12f
 

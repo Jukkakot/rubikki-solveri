@@ -167,7 +167,7 @@ fun Cube3D(
         size = this.size
         val quads = CubeScene.quads(move, progress)
         val view = viewState.rotation
-        val showArrow = arrow != null && move == null
+        val showArrow = arrow != null
         if (mirror) {
             // The mirror is always behind the cube: frame, glass and the reflection clipped to the glass first.
             val (fx, fy) = CubeScene.projectMirror(frame = true, size.width, size.height)
