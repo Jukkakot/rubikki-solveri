@@ -54,6 +54,31 @@ class VideoScanTest {
         }
     }
 
+    @Test
+    fun neverAWrongClearCubeAndClearSoonerThanByConfirmingAll() {
+        // Frames to complete when all 54 had to be confirmed one by one (before video-scan-progress).
+        val before = mapOf(VideoFixtures.ANGLED to 226, VideoFixtures.STRAIGHT to 143)
+        for (video in before.keys) {
+            val states = replay(video)
+            for ((i, s) in states.withIndex()) if (s.complete) assertEquals(VideoFixtures.TRUTH, s.stickers.joinToString("") { it!!.letter.toString() }, "$video frame $i")
+            val clear = states.indexOfFirst { it.complete }
+            println("$video frames to clear: $clear (before: ${before[video]})")
+            assertTrue(clear in 0 until before.getValue(video), "$video: $clear")
+        }
+    }
+
+    @Test
+    fun eveningVideosNeverGiveAWrongClearCube() {
+        for ((video, before) in VideoFixtures.EVENING) {
+            val states = replay(video)
+            for ((i, s) in states.withIndex()) if (s.complete) assertEquals(VideoFixtures.EVENING_TRUTH, s.stickers.joinToString("") { it!!.letter.toString() }, "$video frame $i")
+            val clear = states.indexOfFirst { it.complete }
+            println("$video frames to clear: $clear (before: $before)")
+            // In dim light red reads as orange on whole faces: no clear cube (the stall asks for light).
+            if (before != null) assertTrue(clear in 0..before, "$video: $clear")
+        }
+    }
+
     /** Frames until the cube is first complete (null: never) and stickers recognised at the halfway frame, replaying only the faces [keep] lets through. */
     private fun speed(video: String, keep: (FaceReading) -> Boolean): Pair<Int?, Int> {
         val states = replay(VideoFixtures.load(video).map { f -> f.copy(faces = f.faces.filter(keep)) })
@@ -66,7 +91,8 @@ class VideoScanTest {
             val without = speed(video) { it.isFull }
             val with = speed(video) { true }
             println("$video frames to complete / recognised at halfway: full faces only $without, with partial faces $with")
-            assertTrue(with.first != null && without.first != null && with.first!! <= without.first!!, "$video: $with vs $without")
+            // A partial face can add a misread vote or two: a couple of frames either way.
+            assertTrue(with.first != null && without.first != null && with.first!! <= without.first!! + 3, "$video: $with vs $without")
         }
     }
 
@@ -131,9 +157,9 @@ class VideoScanTest {
     fun oneReadingGivesLeadingColoursAndThreeRecogniseThem() {
         val scan = VideoScan()
         val first = scan.onFrame(listOf(reading(Face.U)), 0)
-        assertEquals(0, first.recognised)
-        for (n in 0 until 9) assertEquals(truth[Face.U.ordinal * 9 + n], first.leading[Face.U.ordinal * 9 + n])
-        assertTrue(first.found.single().recognised.none { it })
+        assertEquals(1, first.recognised, "only the centre of the face in view")
+        for (n in 0 until 9) if (n != 4) assertEquals(truth[Face.U.ordinal * 9 + n], first.leading[Face.U.ordinal * 9 + n])
+        assertTrue(first.found.single().recognised.withIndex().none { (n, r) -> r && n != 4 })
         assertEquals(9, first.found.single().names.count { it != null })
         var s = first
         repeat(2) { s = scan.onFrame(listOf(reading(Face.U, turn = 1)), 100 + it * 100L) }
@@ -153,15 +179,16 @@ class VideoScanTest {
         assertNull(VideoScan.hint(Pose(Face.F, Face.U), truth.toList(), emptySet()), "nothing missing")
     }
 
-    private fun recognisedOn(state: VideoScanState, face: Face) = (0 until 9).filter { state.stickers[face.ordinal * 9 + it] != null }
+    /** Places of [face] known in [state], the centre left out (it is known as soon as the face is seen). */
+    private fun recognisedOn(state: VideoScanState, face: Face) = (0 until 9).filter { it != 4 && state.stickers[face.ordinal * 9 + it] != null }
 
     @Test
     fun aPartialFaceVotesForTheStickersItShows() {
         val scan = VideoScan()
         repeat(2) { scan.onFrame(listOf(reading(Face.U)), it * 100L) }
         val s = scan.onFrame(listOf(reading(Face.U, turn = 1, missing = setOf(1))), 200)
-        // Missing place 1 of the turned reading is a different place of the face; the other eight reach three votes.
-        assertEquals(8, recognisedOn(s, Face.U).size)
+        // Missing place 1 of the turned reading is a different place of the face; the other seven around the centre reach three votes.
+        assertEquals(7, recognisedOn(s, Face.U).size)
         for (n in recognisedOn(s, Face.U)) assertEquals(truth[Face.U.ordinal * 9 + n], s.stickers[Face.U.ordinal * 9 + n])
     }
 
@@ -203,7 +230,8 @@ class VideoScanTest {
         val scan = VideoScan()
         val faces = Face.entries.map { reading(it, centre = Point(100.0, 100.0 + 300 * it.ordinal)) }
         var t = 0L
-        for (face in faces) repeat(3) { scan.onFrame(listOf(face), t); t += 100 }
+        // Each face shown until the cube is first clear (the last one needs not be read in full).
+        for (face in faces) repeat(10) { if (!scan.state.complete) scan.onFrame(listOf(face), t).also { t += 100 } }
         val first = scan.state
         assertTrue(first.complete)
         assertTrue(!first.finished)

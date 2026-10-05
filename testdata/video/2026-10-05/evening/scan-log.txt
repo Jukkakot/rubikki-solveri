@@ -1,0 +1,1003 @@
+2026-10-04T09:10:46.683Z INFO app.start ver=1.0.113-c82e4d1 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T09:10:47.910Z INFO nav.screen screen=HomeRoute
+2026-10-04T09:10:49.914Z INFO solver.ready ms=198
+2026-10-04T09:10:52.503Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T09:10:55.630Z INFO scan.permission granted=true status=ok
+2026-10-04T09:11:06.869Z INFO scan.capture face=U picture=1791105066869-000-U.png rgb=d8d7da,bcc480,828382,8a6955,696e77,4c5457,b39988,757c81,7e8688
+2026-10-04T09:11:06.921Z INFO scan.lock lock=true
+2026-10-04T09:11:10.560Z INFO nav.screen screen=HomeRoute
+2026-10-04T09:11:11.994Z INFO nav.screen screen=LessonsRoute
+2026-10-04T09:11:13.956Z INFO nav.screen screen=LessonRoute/{index}
+2026-10-04T09:11:46.198Z INFO nav.screen screen=LessonsRoute
+2026-10-04T09:11:48.915Z INFO nav.screen screen=LessonRoute/{index}
+2026-10-04T09:11:50.110Z INFO nav.screen screen=LessonsRoute
+2026-10-04T09:11:51.226Z INFO nav.screen screen=LessonRoute/{index}
+2026-10-04T09:11:52.590Z INFO nav.screen screen=LessonsRoute
+2026-10-04T09:11:53.405Z INFO nav.screen screen=LessonRoute/{index}
+2026-10-04T09:12:17.165Z INFO nav.screen screen=LessonsRoute
+2026-10-04T09:12:18.494Z INFO nav.screen screen=LessonRoute/{index}
+2026-10-04T09:12:24.447Z INFO nav.screen screen=LessonsRoute
+2026-10-04T09:12:25.585Z INFO nav.screen screen=LessonRoute/{index}
+2026-10-04T09:12:39.355Z INFO nav.screen screen=PracticeRoute/{stage}/{seed}
+2026-10-04T09:12:42.850Z INFO nav.screen screen=LessonRoute/{index}
+2026-10-04T09:16:22.709Z INFO app.start ver=1.0.113-c82e4d1 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T09:16:22.905Z INFO nav.screen screen=HomeRoute
+2026-10-04T09:16:24.864Z INFO solver.ready ms=198
+2026-10-04T09:16:27.226Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T09:16:28.844Z INFO scan.permission granted=true status=ok
+2026-10-04T09:16:33.051Z INFO scan.capture face=U picture=1791105393051-000-U.png rgb=d8f743,d5f33e,aa0211,ec3700,9cacba,005393,7e0000,00427d,c22c07
+2026-10-04T09:16:33.127Z INFO scan.lock lock=true
+2026-10-04T09:16:37.463Z INFO scan.face face=U rgb=d8f743,d5f33e,aa0211,ec3700,9cacba,005393,7e0000,00427d,c22c07 recognised=U
+2026-10-04T09:16:42.190Z INFO scan.capture face=R picture=1791105402190-001-R.png rgb=5cda96,d2f056,fe3f05,e02f00,790000,028c32,919fa7,00781f,bb2200
+2026-10-04T09:16:42.890Z INFO scan.face face=R rgb=5cda96,d2f056,fe3f05,e02f00,790000,028c32,919fa7,00781f,bb2200 recognised=R
+2026-10-04T09:16:46.785Z INFO scan.capture face=D picture=1791105406785-002-D.png rgb=0087d4,cbeb3e,006fc1,810000,9eba0c,d52e01,008b2b,003e75,838e91
+2026-10-04T09:16:47.400Z INFO scan.face face=D rgb=0087d4,cbeb3e,006fc1,810000,9eba0c,d52e01,008b2b,003e75,838e91 recognised=D
+2026-10-04T09:16:51.003Z INFO scan.capture face=L picture=1791105411003-003-L.png rgb=bcd0e2,a90f1b,9e030e,9eb913,d13001,8f9ea4,c52900,00711a,828b8d
+2026-10-04T09:16:51.596Z INFO scan.face face=L rgb=bcd0e2,a90f1b,9e030e,9eb913,d13001,8f9ea4,c52900,00711a,828b8d recognised=L
+2026-10-04T09:16:56.940Z INFO scan.capture face=B picture=1791105416940-004-B.png rgb=c56072,b41c29,cbea2b,a4b5c1,005294,005b96,004e8e,007d1f,8c9e1b
+2026-10-04T09:16:59.108Z INFO scan.face face=B rgb=c56072,b41c29,cbea2b,a4b5c1,005294,005b96,004e8e,007d1f,8c9e1b recognised=B
+2026-10-04T09:17:02.210Z INFO scan.capture face=F picture=1791105422210-005-F.png rgb=33d274,b3313d,00bb4b,e83701,00922d,95a6ad,004d8e,869399,8da012
+2026-10-04T09:17:02.966Z INFO scan.face face=F rgb=33d274,b3313d,00bb4b,e83701,00922d,95a6ad,004d8e,869399,8da012 recognised=F
+2026-10-04T09:17:03.060Z INFO scan.done valid=true validity=Valid uncertain=0 cube=YYROWBRBOWOGGRYOGOGRGOGWBWYWBGOYRBYBRWWROGWYOYGBBBWYRR rotations=U0R1F0D2L3B2
+2026-10-04T09:17:03.063Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-04T09:17:03.213Z INFO solve.done method=FAST moves=19 ms=80
+2026-10-04T10:01:21.823Z INFO app.start ver=1.0.113-c82e4d1 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:01:22.181Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:22:43.592Z INFO app.start ver=1.0.117-73b96f7 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:22:43.767Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:22:45.174Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T10:22:45.724Z INFO solver.ready ms=230
+2026-10-04T10:22:46.780Z INFO scan.permission granted=true status=ok
+2026-10-04T10:23:08.622Z INFO scan.capture face=U picture=1791109388622-000-U.png rgb=0076bd,b3cd1f,9eb718,c3e026,a3b2ba,004a7e,bdd90d,00528e,93a61d
+2026-10-04T10:23:08.736Z INFO scan.lock lock=true
+2026-10-04T10:23:10.585Z INFO scan.face face=U rgb=0076bd,b3cd1f,9eb718,c3e026,a3b2ba,004a7e,bdd90d,00528e,93a61d recognised=U
+2026-10-04T10:23:14.862Z INFO scan.capture face=D picture=1791109394861-001-D.png rgb=c9e62e,ed3c00,96a7ac,fd4000,afcc09,004e87,990000,9fadb1,018027
+2026-10-04T10:23:15.936Z INFO scan.face face=D rgb=c9e62e,ed3c00,96a7ac,fd4000,afcc09,004e87,990000,9fadb1,018027 recognised=D
+2026-10-04T10:23:19.811Z INFO scan.capture face=F picture=1791109399811-002-F.png rgb=00bf3e,b8d31c,e13503,fe4300,00a233,00548e,0063b1,a0afb5,d13203
+2026-10-04T10:23:20.465Z INFO scan.face face=F rgb=00bf3e,b8d31c,e13503,fe4300,00a233,00548e,0063b1,a0afb5,d13203 recognised=F
+2026-10-04T10:23:24.826Z INFO scan.capture face=R picture=1791109404826-003-R.png rgb=006db2,009f32,93a4a9,f73a00,840000,710105,a9bac2,01912b,008023
+2026-10-04T10:23:25.468Z INFO scan.face face=R rgb=006db2,009f32,93a4a9,f73a00,840000,710105,a9bac2,01912b,008023 recognised=R
+2026-10-04T10:23:28.776Z INFO scan.capture face=B picture=1791109408776-004-B.png rgb=ad0c14,97050d,009631,c0d2df,005ea7,7c0106,b6cad5,a5b4bb,6c0002
+2026-10-04T10:23:29.333Z INFO scan.face face=B rgb=ad0c14,97050d,009631,c0d2df,005ea7,7c0106,b6cad5,a5b4bb,6c0002 recognised=B
+2026-10-04T10:23:32.229Z INFO scan.capture face=L picture=1791109412229-005-L.png rgb=ff4d11,92080c,7b0208,00bb44,ec3900,008f2a,0067b2,a9c312,cb3003
+2026-10-04T10:23:33.373Z INFO scan.face face=L rgb=ff4d11,92080c,7b0208,00bb44,ec3900,008f2a,0067b2,a9c312,cb3003 recognised=L
+2026-10-04T10:23:33.463Z INFO scan.done valid=true validity=Valid uncertain=0 cube=YYBBWYYBYBGWORRWGGGYOOGBBWOWBGOYWYORORRGOGBYORRGWBRWWR rotations=U1R0F0D3L0B0
+2026-10-04T10:23:33.465Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-04T10:23:33.582Z INFO solve.done method=FAST moves=16 ms=51
+2026-10-04T10:25:06.293Z INFO app.start ver=1.0.117-73b96f7 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:25:06.407Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:25:06.523Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-04T10:25:06.753Z INFO solve.done method=FAST moves=16 ms=172
+2026-10-04T10:25:08.050Z INFO solver.ready ms=0
+2026-10-04T10:25:08.650Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:25:13.607Z INFO app.start ver=1.0.117-73b96f7 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:25:13.681Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:25:13.735Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:25:15.397Z INFO solver.ready ms=160
+2026-10-04T10:25:32.229Z INFO app.start ver=1.0.117-73b96f7 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:25:32.305Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:25:32.352Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:25:33.753Z INFO app.start ver=1.0.117-73b96f7 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:25:33.837Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:25:33.883Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:25:35.546Z INFO solver.ready ms=155
+2026-10-04T10:25:37.985Z INFO app.start ver=1.0.117-73b96f7 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:25:38.055Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:25:38.106Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:25:39.762Z INFO solver.ready ms=154
+2026-10-04T10:25:41.419Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:25:41.540Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:25:41.646Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:25:43.351Z INFO solver.ready ms=198
+2026-10-04T10:25:43.412Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T10:25:44.764Z INFO scan.permission granted=true status=ok
+2026-10-04T10:25:46.438Z INFO scan.capture face=U picture=1791109546438-000-U.png rgb=575552,ae9e94,a29f97,c8b0a4,a89a90,565c5d,ab9a8f,908074,9d8e81
+2026-10-04T10:25:46.571Z INFO scan.lock lock=true
+2026-10-04T10:25:51.037Z INFO scan.capture face=U picture=1791109551037-001-U.png rgb=5c5b58,b5a399,aba59e,cdb5a8,b2a299,5a6060,b8a69a,99897d,a39385
+2026-10-04T10:25:51.132Z INFO scan.lock lock=true
+2026-10-04T10:28:15.161Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:28:15.321Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:28:15.475Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T10:28:16.905Z INFO scan.permission granted=true status=ok
+2026-10-04T10:28:17.180Z INFO solver.ready ms=145
+2026-10-04T10:28:17.184Z INFO scan.stall where=ui ms=150
+2026-10-04T10:28:20.631Z INFO scan.capture face=F picture=1791109700631-000-F.png rgb=cff32b,b7d71e,9bb1b9,0072c6,00a733,96a9b1,c1e52a,a1b4bf,6f0105
+2026-10-04T10:28:20.756Z INFO scan.lock lock=true
+2026-10-04T10:28:21.732Z INFO scan.face face=F rgb=cff32b,b7d71e,9bb1b9,0072c6,00a733,96a9b1,c1e52a,a1b4bf,6f0105 recognised=F
+2026-10-04T10:28:24.874Z INFO scan.capture face=R picture=1791109704874-001-R.png rgb=00bf3b,00ad38,9db2b9,a00000,900003,da3200,aec4d2,009f2d,004982
+2026-10-04T10:28:25.568Z INFO scan.face face=R rgb=00bf3b,00ad38,9db2b9,a00000,900003,da3200,aec4d2,009f2d,004982 recognised=R
+2026-10-04T10:28:49.124Z INFO scan.capture face=D picture=1791109729124-002-D.png rgb=ced9e7,717885,4b4f50,b9a79c,c6a635,c6a635,a88777,656c6c,6e7777
+2026-10-04T10:28:52.250Z INFO scan.face face=D rgb=ced9e7,717885,4b4f50,b9a79c,c6a635,c6a635,a88777,656c6c,6e7777 recognised=D
+2026-10-04T10:32:14.758Z INFO scan.stall where=ui ms=198253
+2026-10-04T10:32:14.864Z INFO scan.stall where=camera ms=198290
+2026-10-04T10:32:14.899Z INFO scan.capture face=U picture=1791109934899-003-U.png rgb=625f58,d6b8a6,b5a599,615e53,cbb2a5,a98c7e,b59f91,a59385,a58f80
+2026-10-04T10:32:14.947Z INFO scan.stall where=ui ms=216
+2026-10-04T10:32:17.935Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:32:18.838Z INFO nav.screen screen=SettingsRoute
+2026-10-04T10:32:21.348Z INFO nav.screen screen=LogRoute
+2026-10-04T10:32:23.039Z INFO log.shared
+2026-10-04T10:32:25.592Z INFO log.shared
+2026-10-04T10:32:31.025Z INFO log.shared
+2026-10-04T10:32:31.804Z INFO log.shared
+2026-10-04T10:32:34.146Z INFO log.shared
+2026-10-04T10:32:34.606Z INFO log.shared
+2026-10-04T10:32:57.751Z INFO log.shared
+2026-10-04T10:32:59.238Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:32:59.357Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:32:59.521Z INFO nav.screen screen=LogRoute
+2026-10-04T10:33:00.378Z INFO log.shared
+2026-10-04T10:33:01.029Z INFO log.shared
+2026-10-04T10:33:01.239Z INFO solver.ready ms=143
+2026-10-04T10:33:01.308Z INFO log.shared
+2026-10-04T10:33:01.662Z INFO log.shared
+2026-10-04T10:43:36.966Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:43:37.133Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:43:38.880Z INFO solver.ready ms=150
+2026-10-04T10:43:40.675Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:43:40.745Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:43:40.786Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:43:42.451Z INFO solver.ready ms=158
+2026-10-04T10:45:59.770Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:45:59.833Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:45:59.874Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:01.415Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:46:01.457Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:01.501Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:02.833Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:46:02.930Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:02.975Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:04.632Z INFO solver.ready ms=154
+2026-10-04T10:46:11.182Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:46:11.262Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:11.316Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:12.538Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:46:12.607Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:12.657Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:13.543Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:46:13.618Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:13.690Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:14.571Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:46:14.640Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:14.679Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:15.570Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:46:15.641Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:15.696Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:16.711Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:46:16.762Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:16.809Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:18.468Z INFO solver.ready ms=153
+2026-10-04T10:46:36.874Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:46:36.921Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:36.979Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:38.209Z INFO app.start ver=1.0.119-56a92d5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:46:38.276Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:38.319Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:39.974Z INFO solver.ready ms=148
+2026-10-04T10:46:56.470Z INFO app.start ver=1.0.122-3136aaf platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T10:46:56.579Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:56.664Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:46:58.345Z INFO solver.ready ms=166
+2026-10-04T10:46:59.850Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T10:47:01.303Z INFO scan.permission granted=true status=ok
+2026-10-04T10:47:05.372Z INFO scan.capture face=D picture=1791110825372-000-D.png rgb=b5c3d3,58636f,49545b,9f9088,8b741d,ac8f24,827269,958174,505859
+2026-10-04T10:47:05.459Z INFO scan.lock lock=true
+2026-10-04T10:47:07.110Z INFO scan.face face=D rgb=b5c3d3,58636f,49545b,9f9088,8b741d,ac8f24,827269,958174,505859 recognised=D
+2026-10-04T10:47:13.271Z INFO scan.capture face=U picture=1791110833271-001-U.png rgb=0a0c0f,888889,a19e96,271b10,a8b6bb,725f50,87959c,1e1b17,343434
+2026-10-04T10:47:17.432Z INFO scan.face face=U rgb=0a0c0f,888889,a19e96,271b10,a8b6bb,725f50,87959c,1e1b17,343434 recognised=U
+2026-10-04T10:47:21.108Z INFO scan.capture face=B picture=1791110841108-002-B.png rgb=a4020a,c6ea2d,00a639,a50001,b2c8dc,9aacb9,046b3f,0061a9,500205
+2026-10-04T10:47:23.476Z INFO scan.face face=B rgb=a4020a,c6ea2d,00a639,a50001,b2c8dc,9aacb9,046b3f,0061a9,500205 recognised=B
+2026-10-04T10:47:27.412Z INFO scan.capture face=R picture=1791110847412-003-R.png rgb=b5cddd,fe4100,00579d,00bb3b,920000,009129,00b535,860000,8b9fab
+2026-10-04T10:47:28.023Z INFO scan.face face=R rgb=b5cddd,fe4100,00579d,00bb3b,920000,009129,00b535,860000,8b9fab recognised=R
+2026-10-04T10:47:36.214Z INFO scan.capture face=L picture=1791110856214-004-L.png rgb=b07e6e,a6817b,6d5b47,bbdb1c,e33500,004d8c,b0d21e,9bbc08,c42d00
+2026-10-04T10:47:37.474Z INFO scan.face face=L rgb=b07e6e,a6817b,6d5b47,bbdb1c,e33500,004d8c,b0d21e,9bbc08,c42d00 recognised=L
+2026-10-04T10:47:41.397Z INFO scan.capture face=F picture=1791110861397-005-F.png rgb=f64302,a9cc19,005193,00ab31,de3400,008729,8b0000,730000,c62800
+2026-10-04T10:47:43.667Z INFO scan.face face=F rgb=f64302,a9cc19,005193,00ab31,de3400,008729,8b0000,730000,c62800 recognised=F
+2026-10-04T10:47:44.040Z INFO scan.done valid=false validity="ImpossiblePiece(stickers=[0, 36, 47])" uncertain=17 cube=RWWRWRWRRYYBGROBYBGGGYGYBOOWOWWYRBWWGYOBOORROYGGBBOGBY rotations=U0R1F2D3L2B1
+2026-10-04T10:47:44.043Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}"
+2026-10-04T10:47:44.067Z INFO scan.stall where=ui ms=399
+2026-10-04T10:47:50.833Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T10:47:52.310Z INFO scan.permission granted=true status=ok
+2026-10-04T10:47:55.555Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}"
+2026-10-04T10:47:56.734Z INFO nav.screen screen=HomeRoute
+2026-10-04T10:47:57.846Z INFO nav.screen screen=SettingsRoute
+2026-10-04T10:48:00.328Z INFO nav.screen screen=LogRoute
+2026-10-04T10:48:01.892Z INFO log.shared
+2026-10-04T10:48:01.982Z INFO log.shared outcome=downloaded error="NotAllowedError: Failed to execute 'share' on 'Navigator': Must be handling a user gesture to perform a share request."
+2026-10-04T10:50:20.649Z INFO log.shared
+2026-10-04T10:50:20.731Z INFO log.shared outcome=downloaded error="NotAllowedError: Failed to execute 'share' on 'Navigator': Must be handling a user gesture to perform a share request."
+2026-10-04T11:02:06.458Z INFO nav.screen screen=SettingsRoute
+2026-10-04T11:02:08.424Z INFO app.start ver=1.0.122-3136aaf platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T11:02:08.549Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:02:08.658Z INFO nav.screen screen=SettingsRoute
+2026-10-04T11:02:09.515Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:02:10.324Z INFO solver.ready ms=152
+2026-10-04T11:02:12.881Z INFO app.start ver=1.0.122-3136aaf platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T11:02:12.931Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:02:12.968Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:02:14.622Z INFO solver.ready ms=150
+2026-10-04T11:02:19.965Z INFO app.start ver=1.0.122-3136aaf platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T11:02:20.042Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:02:20.084Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:02:21.582Z INFO app.start ver=1.0.122-3136aaf platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T11:02:21.646Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:02:21.691Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:02:23.356Z INFO solver.ready ms=159
+2026-10-04T11:02:34.918Z INFO app.start ver=1.0.122-3136aaf platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T11:02:35.004Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:02:35.052Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:02:36.712Z INFO solver.ready ms=150
+2026-10-04T11:02:37.423Z INFO app.start ver=1.0.122-3136aaf platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T11:02:37.484Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:02:37.534Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:02:38.694Z INFO app.start ver=1.0.122-3136aaf platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T11:02:38.750Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:02:38.795Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:02:40.453Z INFO solver.ready ms=149
+2026-10-04T11:03:00.279Z INFO app.start ver=1.0.122-3136aaf platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T11:03:00.314Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:03:00.355Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:03:02.010Z INFO solver.ready ms=148
+2026-10-04T11:03:43.251Z INFO app.start ver=1.0.122-3136aaf platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T11:03:43.306Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:03:43.345Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:03:44.998Z INFO solver.ready ms=147
+2026-10-04T11:03:45.621Z INFO app.start ver=1.0.122-3136aaf platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T11:03:45.675Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:03:45.724Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:03:47.394Z INFO solver.ready ms=167
+2026-10-04T11:06:23.478Z INFO app.start ver=1.0.122-3136aaf platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T11:06:23.529Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:06:23.565Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:06:25.222Z INFO solver.ready ms=148
+2026-10-04T11:07:00.554Z INFO app.start ver=1.0.124-14cdd3e platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T11:07:00.662Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:07:00.755Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:07:02.465Z INFO solver.ready ms=177
+2026-10-04T11:07:06.722Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T11:07:08.224Z INFO scan.permission granted=true status=ok
+2026-10-04T11:07:10.909Z INFO scan.capture face=D picture=1791112030909-000-D.png rgb=7a5b52,6e7b8b,5e6773,be993e,d0a92f,c8a429,a4abb4,2d4a26,6c7476
+2026-10-04T11:07:11.036Z INFO scan.lock lock=true
+2026-10-04T11:07:15.765Z INFO scan.face face=D rgb=7a5b52,6e7b8b,5e6773,be993e,d0a92f,c8a429,a4abb4,2d4a26,6c7476 recognised=D
+2026-10-04T11:07:18.869Z INFO scan.capture face=U picture=1791112038869-001-U.png rgb=090b10,e2e2e3,c1bbb3,b2bac2,aeaeb3,896f59,081311,000000,b29489
+2026-10-04T11:07:19.852Z INFO scan.face face=U rgb=090b10,e2e2e3,c1bbb3,b2bac2,aeaeb3,896f59,081311,000000,b29489 recognised=U
+2026-10-04T11:07:24.725Z INFO scan.capture face=B picture=1791112044725-002-B.png rgb=c9dcf1,c6daed,ff4500,ff4100,0067bb,0063b1,c6e321,970000,de3301
+2026-10-04T11:07:25.394Z INFO scan.face face=B rgb=c9dcf1,c6daed,ff4500,ff4100,0067bb,0063b1,c6e321,970000,de3301 recognised=B
+2026-10-04T11:07:30.592Z INFO scan.capture face=F picture=1791112050592-003-F.png rgb=a79287,b3a49d,c6c0b9,00d353,bbcddd,9e010c,d2f134,b2c2d6,005ba1
+2026-10-04T11:07:31.394Z INFO scan.face face=F rgb=a79287,b3a49d,c6c0b9,00d353,bbcddd,9e010c,d2f134,b2c2d6,005ba1 recognised=F
+2026-10-04T11:07:39.515Z INFO scan.capture face=L picture=1791112059515-004-L.png rgb=007dda,00d052,ff4a00,d6f628,ff4200,9d0007,ff4904,00b138,800003
+2026-10-04T11:07:40.178Z INFO scan.face face=L rgb=007dda,00d052,ff4a00,d6f628,ff4200,9d0007,ff4904,00b138,800003 recognised=L
+2026-10-04T11:07:50.207Z INFO scan.capture face=R picture=1791112070206-005-R.png rgb=0073ca,00c744,b8cee1,fa3900,980000,8a0309,a9bac9,009c2e,008825
+2026-10-04T11:07:52.122Z INFO scan.face face=R rgb=0073ca,00c744,b8cee1,fa3900,980000,8a0309,a9bac9,009c2e,008825 recognised=R
+2026-10-04T11:07:52.450Z INFO scan.done valid=false validity="ImpossiblePiece(stickers=[8, 9, 20])" uncertain=10 cube=BGWGWRBBWGOBYRYYRGWWWYGRYGBGRRWYBWOWBYOYOROYROROBBOOGG rotations=U0R1F0D1L0B2
+2026-10-04T11:07:52.453Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}"
+2026-10-04T11:07:52.475Z INFO scan.stall where=camera ms=400
+2026-10-04T11:07:52.491Z INFO scan.stall where=ui ms=349
+2026-10-04T11:07:52.739Z INFO scan.stall where=ui ms=200
+2026-10-04T11:07:53.975Z INFO nav.screen screen=HomeRoute
+2026-10-04T11:07:55.136Z INFO nav.screen screen=SettingsRoute
+2026-10-04T11:07:57.217Z INFO nav.screen screen=LogRoute
+2026-10-04T11:07:58.165Z INFO log.shared
+2026-10-04T11:08:35.119Z INFO log.shared outcome=shared
+2026-10-04T11:08:48.787Z INFO log.shared
+2026-10-04T11:08:51.651Z INFO log.shared outcome=cancelled
+2026-10-04T11:11:05.498Z INFO log.shared
+2026-10-04T11:11:06.908Z INFO log.shared outcome=shared
+2026-10-04T13:01:32.814Z INFO app.start ver=1.0.138-aac492f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T13:01:32.999Z INFO nav.screen screen=HomeRoute
+2026-10-04T13:01:34.889Z INFO solver.ready ms=195
+2026-10-04T13:01:37.903Z INFO app.start ver=1.0.138-aac492f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T13:01:37.964Z INFO nav.screen screen=HomeRoute
+2026-10-04T13:01:38.017Z INFO nav.screen screen=HomeRoute
+2026-10-04T13:01:39.687Z INFO solver.ready ms=149
+2026-10-04T13:02:03.516Z INFO app.start ver=1.0.138-aac492f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T13:02:03.599Z INFO nav.screen screen=HomeRoute
+2026-10-04T13:02:03.652Z INFO nav.screen screen=HomeRoute
+2026-10-04T13:02:05.303Z INFO solver.ready ms=147
+2026-10-04T13:02:06.467Z INFO app.start ver=1.0.138-aac492f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T13:02:06.510Z INFO nav.screen screen=HomeRoute
+2026-10-04T13:02:06.560Z INFO nav.screen screen=HomeRoute
+2026-10-04T13:02:08.222Z INFO solver.ready ms=159
+2026-10-04T13:02:15.327Z INFO app.start ver=1.0.138-aac492f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T13:02:15.380Z INFO nav.screen screen=HomeRoute
+2026-10-04T13:02:15.451Z INFO nav.screen screen=HomeRoute
+2026-10-04T13:02:17.109Z INFO solver.ready ms=147
+2026-10-04T13:09:41.443Z INFO app.start ver=1.0.138-aac492f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T13:09:41.561Z INFO nav.screen screen=HomeRoute
+2026-10-04T13:09:41.658Z INFO nav.screen screen=HomeRoute
+2026-10-04T13:09:43.320Z INFO solver.ready ms=150
+2026-10-04T13:09:53.354Z INFO app.start ver=1.0.138-aac492f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T13:09:53.548Z INFO nav.screen screen=HomeRoute
+2026-10-04T13:09:55.419Z INFO solver.ready ms=197
+2026-10-04T13:09:56.340Z INFO app.start ver=1.0.138-aac492f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T13:09:56.402Z INFO nav.screen screen=HomeRoute
+2026-10-04T13:09:56.449Z INFO nav.screen screen=HomeRoute
+2026-10-04T13:09:58.107Z INFO solver.ready ms=155
+2026-10-04T14:40:57.033Z INFO app.start ver=1.0.142-ca4b63f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T14:40:57.266Z INFO nav.screen screen=HomeRoute
+2026-10-04T14:40:59.130Z INFO solver.ready ms=199
+2026-10-04T14:41:05.538Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T14:41:07.058Z INFO scan.permission granted=true status=ok
+2026-10-04T14:47:09.426Z INFO app.start ver=1.0.142-ca4b63f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T14:47:09.598Z INFO nav.screen screen=HomeRoute
+2026-10-04T14:47:11.474Z INFO solver.ready ms=164
+2026-10-04T14:47:49.578Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T14:47:50.935Z INFO scan.permission granted=true status=ok
+2026-10-04T14:47:54.548Z INFO scan.capture face=F picture=1791125274548-000-F.png rgb=cee1f0,cddfec,aa0007,c7e032,00ae3f,acbdc8,a3b600,003d72,85960e
+2026-10-04T14:47:54.648Z INFO scan.lock lock=true
+2026-10-04T14:47:55.929Z INFO scan.face face=F rgb=cee1f0,cddfec,aa0007,c7e032,00ae3f,acbdc8,a3b600,003d72,85960e recognised=F
+2026-10-04T14:48:38.993Z INFO scan.capture face=R picture=1791125318993-001-R.png rgb=26c561,01be48,bfced7,9b0001,940000,e82e00,99a2a7,007517,00315d
+2026-10-04T14:48:43.684Z INFO scan.face face=R rgb=26c561,01be48,bfced7,9b0001,940000,e82e00,99a2a7,007517,00315d recognised=R
+2026-10-04T14:49:09.972Z INFO scan.stall where=ui ms=175
+2026-10-04T17:03:09.549Z INFO scan.stall where=ui ms=1111737
+2026-10-04T17:03:09.647Z INFO scan.stall where=camera ms=1111776
+2026-10-04T17:03:09.792Z INFO scan.stall where=ui ms=258
+2026-10-04T18:02:19.891Z INFO scan.stall where=ui ms=486320
+2026-10-04T18:02:21.285Z ERROR app.crash stack="kotlin.RuntimeException: Exception while trying to handle coroutine exception\nRuntimeException: Exception while trying to handle coroutine exception\n    at kotlin.createJsError (https://jukkakot.github.io/rubikki-solveri/rubikki.js:2:520243)\n    at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[1953]:0x1c04bc\n    at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2091]:0x1c278b\n    at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2088]:0x1c2692\n    at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2658]:0x1da379\n    at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2657]:0x1da34c\n    at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2593]:0x1d82fc\n    at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2715]:0x1db8f6\n    at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2737]:0x1dca4f\n    at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2736]:0x1dc7ac\n    Suppressed: kotlin.js.JsException: Cannot read properties of null (reading 'rangeMin')\n    TypeError: Cannot read properties of null (reading 'rangeMin')\n        at emscripten_glGetShaderPrecisionFormat (https://jukkakot.github.io/rubikki-solveri/rubikki.js:2:135564)\n        at https://jukkakot.github.io/rubikki-solveri/bfa5198fb2fe683c613a.wasm:wasm-function[10717]:0x49392d\n        at https://jukkakot.github.io/rubikki-solveri/bfa5198fb2fe683c613a.wasm:wasm-function[10706]:0x48efda\n        at https://jukkakot.github.io/rubikki-solveri/bfa5198fb2fe683c613a.wasm:wasm-function[456]:0x1db7a\n        at u_ (https://jukkakot.github.io/rubikki-solveri/rubikki.js:2:260430)\n        at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[8796]:0x2ddcc2\n        at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2433]:0x1d250b\n        at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2955]:0x1e64c6\n        at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2900]:0x1e3a04\n        at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2108]:0x1c29d3\n    Suppressed: kotlinx.coroutines.internal.DiagnosticCoroutineContextException: [androidx.compose.runtime.BroadcastFrameClock@2113146097, androidx.compose.runtime.LaunchedEffectImpl@413557102, StandaloneCoroutine{Cancelling}@971907369, FlushCoroutineDispatcher@1847372651]\n    DiagnosticCoroutineContextException: [androidx.compose.runtime.BroadcastFrameClock@2113146097, androidx.compose.runtime.LaunchedEffectImpl@413557102, StandaloneCoroutine{Cancelling}@971907369, FlushCoroutineDispatcher@1847372651]\n        at kotlin.createJsError (https://jukkakot.github.io/rubikki-solveri/rubikki.js:2:520243)\n        at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[1953]:0x1c04bc\n        at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[1954]:0x1c04fb\n        at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2090]:0x1c275e\n        at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2087]:0x1c2661\n        at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2991]:0x1e7cbf\n        at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2657]:0x1da34f\n        at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2593]:0x1d82fc\n        at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2715]:0x1db8f6\n        at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2737]:0x1dca4f\nCaused by: kotlin.js.JsException: Cannot read properties of null (reading 'rangeMin')\nTypeError: Cannot read properties of null (reading 'rangeMin')\n    at emscripten_glGetShaderPrecisionFormat (https://jukkakot.github.io/rubikki-solveri/rubikki.js:2:135564)\n    at https://jukkakot.github.io/rubikki-solveri/bfa5198fb2fe683c613a.wasm:wasm-function[10717]:0x49392d\n    at https://jukkakot.github.io/rubikki-solveri/bfa5198fb2fe683c613a.wasm:wasm-function[10706]:0x48efda\n    at https://jukkakot.github.io/rubikki-solveri/bfa5198fb2fe683c613a.wasm:wasm-function[456]:0x1db7a\n    at u_ (https://jukkakot.github.io/rubikki-solveri/rubikki.js:2:260430)\n    at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[8796]:0x2ddcc2\n    at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2433]:0x1d250b\n    at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2955]:0x1e64c6\n    at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2900]:0x1e3a04\n    at https://jukkakot.github.io/rubikki-solveri/04685ab60fb9c5729c76.wasm:wasm-function[2108]:0x1c29d3\n" msg="error: Uncaught RuntimeException: Exception while trying to handle coroutine exception"
+2026-10-04T18:02:21.295Z WARN nav.screen msg="restoring the route failed: Parent job is Cancelling"
+2026-10-04T18:02:21.305Z INFO nav.screen screen=HomeRoute
+2026-10-04T18:02:21.316Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T18:29:53.010Z INFO app.start ver=1.0.142-ca4b63f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=true
+2026-10-04T18:29:53.214Z INFO nav.screen screen=HomeRoute
+2026-10-04T18:29:54.641Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T18:29:55.019Z INFO solver.ready ms=179
+2026-10-04T18:29:56.398Z INFO scan.permission granted=true status=ok
+2026-10-04T18:30:20.999Z INFO scan.capture face=U picture=1791138620999-000-U.png rgb=797459,827b5e,872500,811a00,072641,0d2943,796400,490a06,832200
+2026-10-04T18:30:21.060Z INFO scan.lock lock=true
+2026-10-04T18:30:23.338Z INFO scan.face face=U rgb=797459,827b5e,872500,811a00,072641,0d2943,796400,490a06,832200 recognised=U
+2026-10-04T18:30:29.877Z INFO scan.capture face=R picture=1791138629877-001-R.png rgb=072037,204c1c,797159,7e1800,510f06,511207,746748,183d12,1b3e14
+2026-10-04T18:30:31.457Z INFO scan.face face=R rgb=072037,204c1c,797159,7e1800,510f06,511207,746748,183d12,1b3e14 recognised=R
+2026-10-04T18:30:34.663Z INFO scan.capture face=F picture=1791138634663-002-F.png rgb=541104,857e63,897703,7d765a,1f511d,0d2d48,766c4f,856f00,897300
+2026-10-04T18:30:35.931Z INFO scan.face face=F rgb=541104,857e63,897703,7d765a,1f511d,0d2d48,766c4f,856f00,897300 recognised=F
+2026-10-04T18:30:40.264Z INFO scan.capture face=L picture=1791138640264-003-L.png rgb=511307,1d4b1a,812200,4e0b04,881c00,887300,7a1a00,12370e,071c30
+2026-10-04T18:30:41.169Z INFO scan.face face=L rgb=511307,1d4b1a,812200,4e0b04,881c00,887300,7a1a00,12370e,071c30 recognised=L
+2026-10-04T18:30:45.139Z INFO scan.capture face=D picture=1791138645139-004-D.png rgb=0d2b44,897600,857201,021b36,887400,852100,10360b,7e1900,071d32
+2026-10-04T18:30:45.904Z INFO scan.face face=D rgb=0d2b44,897600,857201,021b36,887400,852100,10360b,7e1900,071d32 recognised=D
+2026-10-04T18:30:49.713Z INFO scan.capture face=B picture=1791138649713-005-B.png rgb=174215,531005,4f1206,031a32,7f7459,867201,3c0703,746741,193c0e
+2026-10-04T18:30:50.531Z INFO scan.face face=B rgb=174215,531005,4f1206,031a32,7f7459,867201,3c0703,746741,193c0e recognised=B
+2026-10-04T18:30:50.872Z INFO scan.done valid=false validity="ImpossiblePiece(stickers=[8, 9, 20])" uncertain=0 cube=BBOOWWYROWGBORRBGGYWYBGYRBBGWWOYYWOYRGOROYOGWGRRWBYRBG rotations=U0R0F3D1L0B0
+2026-10-04T18:30:50.875Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}"
+2026-10-04T18:30:50.890Z INFO scan.stall where=ui ms=366
+2026-10-04T18:30:59.210Z INFO nav.screen screen=HomeRoute
+2026-10-04T18:31:01.900Z INFO nav.screen screen=SettingsRoute
+2026-10-04T18:31:04.228Z INFO nav.screen screen=LogRoute
+2026-10-04T18:31:05.360Z INFO log.shared
+2026-10-04T18:31:11.066Z INFO log.shared outcome=shared
+2026-10-04T18:35:24.712Z INFO app.start ver=1.0.142-ca4b63f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T18:35:24.888Z INFO nav.screen screen=HomeRoute
+2026-10-04T18:35:26.606Z INFO solver.ready ms=149
+2026-10-04T18:38:12.723Z INFO app.start ver=1.0.142-ca4b63f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T18:38:12.880Z INFO nav.screen screen=HomeRoute
+2026-10-04T18:38:14.125Z INFO nav.screen screen=SettingsRoute
+2026-10-04T18:38:14.638Z INFO solver.ready ms=144
+2026-10-04T18:38:16.475Z INFO nav.screen screen=LogRoute
+2026-10-04T18:38:20.041Z INFO log.shared
+2026-10-04T18:38:22.686Z INFO log.shared outcome=shared
+2026-10-04T19:20:20.318Z INFO app.start ver=1.0.142-ca4b63f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:20:20.469Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:20:22.217Z INFO solver.ready ms=147
+2026-10-04T19:20:24.476Z INFO app.start ver=1.0.142-ca4b63f platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:20:24.532Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:20:24.585Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:20:26.247Z INFO solver.ready ms=156
+2026-10-04T19:21:45.090Z INFO app.start ver=1.0.148-5083ff0 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:21:45.229Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:21:45.378Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:21:47.090Z INFO solver.ready ms=195
+2026-10-04T19:21:47.332Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T19:21:48.787Z INFO scan.permission granted=true status=ok
+2026-10-04T19:22:00.010Z INFO scan.capture face=U picture=1791141720010-000-U.png rgb=45a465,a50600,ddcd11,dece16,cfd5bd,e24900,228d4b,d0bf09,34894b
+2026-10-04T19:22:00.126Z INFO scan.lock lock=true
+2026-10-04T19:22:03.169Z INFO scan.face face=U rgb=45a465,a50600,ddcd11,dece16,cfd5bd,e24900,228d4b,d0bf09,34894b recognised=U
+2026-10-04T19:22:08.798Z INFO scan.capture face=R picture=1791141728798-001-R.png rgb=e34c00,d3d8bc,9d0200,cdd2b7,a30200,dcce20,900000,650000,99947e
+2026-10-04T19:22:09.477Z INFO scan.face face=R rgb=e34c00,d3d8bc,9d0200,cdd2b7,a30200,dcce20,900000,650000,99947e recognised=R
+2026-10-04T19:34:25.307Z INFO app.start ver=1.0.148-5083ff0 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:34:25.509Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:34:27.426Z INFO solver.ready ms=150
+2026-10-04T19:34:35.867Z INFO app.start ver=1.0.148-5083ff0 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:34:35.946Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:34:36.002Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:34:37.683Z INFO solver.ready ms=170
+2026-10-04T19:34:42.527Z INFO nav.screen screen=LessonsRoute
+2026-10-04T19:34:43.562Z INFO nav.screen screen=LessonRoute/{index}
+2026-10-04T19:34:48.247Z INFO nav.screen screen=LessonsRoute
+2026-10-04T19:34:49.500Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:34:50.762Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-04T19:35:00.410Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:35:02.251Z INFO nav.screen screen=LessonsRoute
+2026-10-04T19:35:03.458Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:35:05.200Z INFO nav.screen screen=TimerRoute
+2026-10-04T19:35:10.986Z INFO nav.screen screen=ScrambleGuideRoute/{moves}
+2026-10-04T19:35:15.257Z INFO nav.screen screen=TimerRoute
+2026-10-04T19:35:18.546Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:35:19.599Z INFO nav.screen screen=TimerRoute
+2026-10-04T19:35:45.707Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:35:46.819Z INFO nav.screen screen="FreeCubeRoute?cube={cube}"
+2026-10-04T19:35:49.594Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:35:55.442Z INFO app.start ver=1.0.148-5083ff0 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:35:55.576Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:35:55.639Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:35:57.289Z INFO solver.ready ms=147
+2026-10-04T19:40:22.532Z INFO app.start ver=1.0.148-5083ff0 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:40:22.693Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:40:22.767Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:40:24.425Z INFO solver.ready ms=150
+2026-10-04T19:40:25.223Z INFO app.start ver=1.0.148-5083ff0 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:40:25.285Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:40:25.321Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:40:26.977Z INFO solver.ready ms=154
+2026-10-04T19:46:45.309Z INFO app.start ver=1.0.148-5083ff0 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:46:45.415Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:46:47.158Z INFO solver.ready ms=156
+2026-10-04T19:48:38.497Z INFO app.start ver=1.0.148-5083ff0 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:48:38.642Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:48:38.795Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:48:40.451Z INFO solver.ready ms=146
+2026-10-04T19:48:41.847Z INFO app.start ver=1.0.148-5083ff0 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:48:41.906Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:48:41.941Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:48:43.592Z INFO solver.ready ms=148
+2026-10-04T19:49:38.195Z INFO app.start ver=1.0.148-5083ff0 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:49:38.350Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:49:38.466Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:49:40.222Z INFO solver.ready ms=240
+2026-10-04T19:53:07.438Z INFO app.start ver=1.0.148-5083ff0 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:53:07.595Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:53:07.712Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:53:09.385Z INFO solver.ready ms=151
+2026-10-04T19:55:03.167Z INFO app.start ver=1.0.148-5083ff0 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:55:03.308Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:55:03.445Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:55:05.117Z INFO solver.ready ms=156
+2026-10-04T19:58:45.765Z INFO app.start ver=1.0.150-6bb8fd2 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T19:58:45.947Z INFO nav.screen screen=HomeRoute
+2026-10-04T19:58:47.879Z INFO solver.ready ms=194
+2026-10-04T19:58:49.263Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T19:58:50.796Z INFO scan.permission granted=true status=ok
+2026-10-04T20:09:55.235Z INFO app.start ver=1.0.150-6bb8fd2 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T20:09:55.423Z INFO nav.screen screen=HomeRoute
+2026-10-04T20:09:57.275Z INFO solver.ready ms=209
+2026-10-04T20:10:00.567Z INFO app.start ver=1.0.150-6bb8fd2 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T20:10:00.630Z INFO nav.screen screen=HomeRoute
+2026-10-04T20:10:00.683Z INFO nav.screen screen=HomeRoute
+2026-10-04T20:10:02.355Z INFO solver.ready ms=164
+2026-10-04T20:17:23.260Z INFO app.start ver=1.0.150-6bb8fd2 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T20:17:23.391Z INFO nav.screen screen=HomeRoute
+2026-10-04T20:17:23.516Z INFO nav.screen screen=HomeRoute
+2026-10-04T20:17:25.189Z INFO solver.ready ms=152
+2026-10-04T20:17:26.162Z INFO app.start ver=1.0.150-6bb8fd2 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T20:17:26.207Z INFO nav.screen screen=HomeRoute
+2026-10-04T20:17:26.272Z INFO nav.screen screen=HomeRoute
+2026-10-04T20:17:27.933Z INFO solver.ready ms=148
+2026-10-04T20:18:47.894Z INFO app.start ver=1.0.151-4df26a3 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T20:18:48.096Z INFO nav.screen screen=HomeRoute
+2026-10-04T20:18:48.316Z INFO nav.screen screen=HomeRoute
+2026-10-04T20:18:50.023Z INFO solver.ready ms=171
+2026-10-04T20:18:51.395Z INFO app.start ver=1.0.151-4df26a3 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-04T20:18:51.441Z INFO nav.screen screen=HomeRoute
+2026-10-04T20:18:51.506Z INFO nav.screen screen=HomeRoute
+2026-10-04T20:18:52.589Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T20:18:53.210Z INFO solver.ready ms=195
+2026-10-04T20:18:55.382Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; tried=2"
+2026-10-04T20:20:17.765Z INFO scan.capture face=F picture=1791145217765-000-F.png rgb=ffe5b8,ffffff,008bf4,43fd98,05f982,008cf4,ffffff,ffffff,00ed77
+2026-10-04T20:20:17.926Z INFO scan.lock lock=true
+2026-10-04T20:20:19.665Z INFO scan.face face=F rgb=ffe5b8,ffffff,008bf4,43fd98,05f982,008cf4,ffffff,ffffff,00ed77 recognised=F
+2026-10-04T20:20:23.404Z INFO scan.capture face=U picture=1791145223404-001-U.png rgb=ffffff,ff1a23,ff1418,fffffe,ffffff,ffffff,ffe27c,ffffff,ff1a20
+2026-10-04T20:20:24.772Z INFO scan.face face=U rgb=ffffff,ff1a23,ff1418,fffffe,ffffff,ffffff,ffe27c,ffffff,ff1a20 recognised=U
+2026-10-04T20:20:41.823Z INFO scan.capture face=B picture=1791145241823-002-B.png rgb=ffffff,00ff8e,00ff86,fffffe,00afff,ff1319,fffff8,ffcb63,ffbb5b
+2026-10-04T20:20:43.521Z INFO scan.face face=B rgb=ffffff,00ff8e,00ff86,fffffe,00afff,ff1319,fffff8,ffcb63,ffbb5b recognised=B
+2026-10-04T20:20:47.883Z INFO scan.capture face=D picture=1791145247882-003-D.png rgb=ff1d24,009dff,00fd83,77dfff,fffff2,ffac4f,00abff,ffffe5,fb1013
+2026-10-04T20:20:57.440Z INFO scan.capture face=R picture=1791145257440-004-R.png rgb=ffffff,ff262f,00a2ff,ffffff,ff585f,00ff8d,0aff96,00a7ff,ffffff
+2026-10-04T20:20:59.072Z INFO scan.face face=R rgb=ffffff,ff262f,00a2ff,ffffff,ff585f,00ff8d,0aff96,00a7ff,ffffff recognised=R
+2026-10-04T20:21:10.711Z INFO scan.capture face=D picture=1791145270711-005-D.png rgb=00a2ff,00ff91,ffaf4d,ffffff,ffdf79,ff1319,ffffff,ffffff,ffffd9
+2026-10-04T20:21:12.010Z INFO scan.face face=D rgb=00a2ff,00ff91,ffaf4d,ffffff,ffdf79,ff1319,ffffff,ffffff,ffffd9 recognised=D
+2026-10-04T20:21:16.199Z INFO scan.capture face=L picture=1791145276199-006-L.png rgb=ff141e,00a1ff,00ff8a,00a6ff,ffffff,ffc666,009dff,fffff5,f91e21
+2026-10-04T20:21:17.220Z INFO scan.face face=L rgb=ff141e,00a1ff,00ff8a,00a6ff,ffffff,ffc666,009dff,fffff5,f91e21 recognised=L
+2026-10-04T20:21:18.571Z INFO scan.done valid=false validity="ImpossiblePiece(stickers=[6, 18, 38])" uncertain=8 cube=WRROWWYWRWRBWRGGBWYWBGGBWOGBGYOYROOYRBGBOYBYROGGOBROYY rotations=U0R0F0D0L0B0
+2026-10-04T20:21:18.574Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-04T20:21:18.599Z INFO scan.stall where=ui ms=1382
+2026-10-04T20:22:26.835Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T20:22:28.265Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-04T20:22:50.234Z INFO scan.capture face=L picture=1791145370234-007-L.png rgb=ff7938,ff7f42,feff5a,ffffa5,ffffff,e20319,e1081d,fbffff,de0011
+2026-10-04T20:22:50.318Z INFO scan.lock lock=true
+2026-10-04T20:22:53.079Z INFO scan.face face=L rgb=ff7938,ff7f42,feff5a,ffffa5,ffffff,e20319,e1081d,fbffff,de0011 recognised=L
+2026-10-04T20:22:53.080Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-04T20:22:53.110Z INFO scan.check rescan=L rotation=0 colors=WRROWWYWRWRBWRGGBWOWBGGBWWGBGYOYROOYRRYYORRWRWGGOBRWOO
+2026-10-04T20:22:58.223Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T20:22:59.505Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-04T20:23:08.904Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-04T20:23:10.508Z INFO nav.screen screen=HomeRoute
+2026-10-04T20:23:17.950Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-04T20:23:18.949Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-04T20:23:38.168Z INFO scan.capture face=U picture=1791145418167-008-U.png rgb=ff832e,ff822b,feff60,ffffee,ffffff,e21007,e3231c,fbffff,de0f01
+2026-10-04T20:23:38.278Z INFO scan.lock lock=true
+2026-10-04T20:23:41.152Z INFO scan.face face=U rgb=ff832e,ff822b,feff60,ffffee,ffffff,e21007,e3231c,fbffff,de0f01 recognised=U
+2026-10-04T20:23:45.956Z INFO scan.capture face=D picture=1791145425956-009-D.png rgb=ffed60,ff1a06,f5f6e7,73ffdc,fff062,fefefe,00c8ff,ffffff,f7f8f9
+2026-10-04T20:23:51.130Z INFO nav.screen screen=HomeRoute
+2026-10-05T05:53:48.989Z INFO app.start ver=1.0.151-4df26a3 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T05:53:49.100Z INFO nav.screen screen=HomeRoute
+2026-10-05T05:53:50.847Z INFO solver.ready ms=155
+2026-10-05T06:01:20.404Z INFO app.start ver=1.0.151-4df26a3 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:01:20.547Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:01:20.656Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:01:22.314Z INFO solver.ready ms=151
+2026-10-05T06:02:09.423Z INFO app.start ver=1.0.154-129aefb platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:02:09.554Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:02:09.752Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:02:11.440Z INFO solver.ready ms=177
+2026-10-05T06:02:11.988Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-05T06:02:13.703Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T06:02:18.490Z INFO scan.capture face=U picture=1791180138489-000-U.png rgb=b0432c,bd472f,8baf3f,84a134,8294ab,6b1822,540108,7c8d9f,63161e
+2026-10-05T06:02:18.581Z INFO scan.lock lock=true
+2026-10-05T06:02:19.762Z INFO scan.face face=U rgb=b0432c,bd472f,8baf3f,84a134,8294ab,6b1822,540108,7c8d9f,63161e recognised=U
+2026-10-05T06:02:26.539Z INFO scan.capture face=L picture=1791180146539-001-L.png rgb=004385,01843b,bb442b,8aaa37,bf4930,6b1a23,78899a,7f90a2,88aa3a
+2026-10-05T06:02:27.621Z INFO scan.face face=L rgb=004385,01843b,bb442b,8aaa37,bf4930,6b1a23,78899a,7f90a2,88aa3a recognised=L
+2026-10-05T06:02:29.761Z INFO scan.capture face=F picture=1791180149761-002-F.png rgb=004486,004589,00863d,8092a7,00883f,8396a8,b53c21,01833c,7f93a5
+2026-10-05T06:02:30.406Z INFO scan.face face=F rgb=004486,004589,00863d,8092a7,00883f,8396a8,b53c21,01833c,7f93a5 recognised=F
+2026-10-05T06:02:32.837Z INFO scan.capture face=R picture=1791180152837-003-R.png rgb=7d91a3,004385,008339,007f38,6a151f,8aaa3f,003c7c,661621,7b8d9e
+2026-10-05T06:02:34.163Z INFO scan.face face=R rgb=7d91a3,004385,008339,007f38,6a151f,8aaa3f,003c7c,661621,7b8d9e recognised=R
+2026-10-05T06:02:37.182Z INFO scan.capture face=B picture=1791180157182-004-B.png rgb=86a73f,bb452c,89ac3e,b53a20,004385,04823a,ad3c23,64151e,037d39
+2026-10-05T06:02:37.802Z INFO scan.face face=B rgb=86a73f,bb452c,89ac3e,b53a20,004385,04823a,ad3c23,64151e,037d39 recognised=B
+2026-10-05T06:02:41.180Z INFO scan.capture face=D picture=1791180161180-005-D.png rgb=003b81,004487,691620,89a93a,8fb235,004485,5f030b,b74124,027f3c
+2026-10-05T06:02:42.654Z INFO scan.face face=D rgb=003b81,004487,691620,89a93a,8fb235,004485,5f030b,b74124,027f3c recognised=D
+2026-10-05T06:02:42.749Z INFO scan.done valid=true validity=Valid uncertain=0 cube=RWRRWYYOOWBGGRYBRWBBGWGWOGWGORBYYRBBBGOYORWWYYOYOBGORG rotations=U2R0F0D2L0B0
+2026-10-05T06:02:42.752Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T06:02:43.062Z INFO scan.stall where=ui ms=183
+2026-10-05T06:02:47.835Z INFO scan.check verdict=solvable cube=RWRRWYYOOWBGGRYBRWBBGWGWOGWGORBYYRBBBGOYORWWYYOYOBGORG
+2026-10-05T06:02:47.838Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T06:02:48.050Z INFO solve.done method=FAST moves=20 ms=86
+2026-10-05T06:03:03.263Z INFO solve.done method=LEARN moves=193 ms=37
+2026-10-05T06:03:13.280Z INFO solve.done method=FAST moves=20 ms=68
+2026-10-05T06:52:57.303Z INFO app.start ver=1.0.154-129aefb platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:52:57.460Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:52:58.412Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-05T06:52:59.212Z INFO solver.ready ms=156
+2026-10-05T06:52:59.733Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T06:53:00.262Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:53:01.809Z INFO app.start ver=1.0.154-129aefb platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:53:01.933Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:53:03.630Z INFO solver.ready ms=149
+2026-10-05T06:53:04.392Z INFO app.start ver=1.0.154-129aefb platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:53:04.479Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:53:04.528Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:53:05.529Z INFO app.start ver=1.0.154-129aefb platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:53:05.600Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:53:05.640Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:53:06.516Z INFO app.start ver=1.0.154-129aefb platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:53:06.555Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:53:06.591Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:53:07.479Z INFO app.start ver=1.0.154-129aefb platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:53:07.528Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:53:07.580Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:53:08.437Z INFO app.start ver=1.0.154-129aefb platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:53:08.509Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:53:08.552Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:53:10.212Z INFO solver.ready ms=151
+2026-10-05T06:57:25.217Z INFO app.start ver=1.0.154-129aefb platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:57:25.378Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:57:25.524Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:57:27.046Z INFO app.start ver=1.0.154-129aefb platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:57:27.086Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:57:27.131Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:57:28.015Z INFO app.start ver=1.0.154-129aefb platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:57:28.052Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:57:28.095Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:57:29.177Z INFO app.start ver=1.0.154-129aefb platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:57:29.245Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:57:29.279Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:57:30.941Z INFO solver.ready ms=155
+2026-10-05T06:57:33.996Z INFO app.start ver=1.0.159-c3ab2b8 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:57:34.162Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:57:34.337Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T06:57:34.619Z INFO solve.done method=FAST moves=20 ms=219
+2026-10-05T06:57:38.211Z INFO app.start ver=1.0.159-c3ab2b8 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:57:38.367Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:57:40.194Z INFO solver.ready ms=203
+2026-10-05T06:57:45.135Z INFO app.start ver=1.0.159-c3ab2b8 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T06:57:45.301Z INFO nav.screen screen=HomeRoute
+2026-10-05T06:57:47.122Z INFO solver.ready ms=203
+2026-10-05T06:57:48.721Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-05T06:57:50.626Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T06:57:59.801Z INFO scan.capture face=R picture=1791183479801-000-R.png rgb=cd3f22,91aabd,9dc649,89a0b4,d8482c,d74b32,74020d,008f3f,ce4c34
+2026-10-05T06:57:59.937Z INFO scan.lock lock=true
+2026-10-05T06:58:00.874Z INFO scan.face face=R rgb=cd3f22,91aabd,9dc649,89a0b4,d8482c,d74b32,74020d,008f3f,ce4c34 recognised=R
+2026-10-05T06:58:03.148Z INFO scan.capture face=F picture=1791183483148-001-F.png rgb=009647,7f0212,00579a,9ac343,009842,90abbc,004790,79030f,005191
+2026-10-05T07:47:53.758Z INFO app.start ver=1.0.159-c3ab2b8 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T07:47:53.920Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:47:55.056Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-05T07:47:55.659Z INFO solver.ready ms=149
+2026-10-05T07:47:56.622Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:47:56.979Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T07:47:57.775Z INFO app.start ver=1.0.159-c3ab2b8 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T07:47:57.837Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:47:57.904Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:47:59.481Z INFO app.start ver=1.0.159-c3ab2b8 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T07:47:59.537Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:47:59.589Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:48:00.273Z INFO app.start ver=1.0.159-c3ab2b8 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T07:48:00.345Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:48:00.391Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:48:02.052Z INFO solver.ready ms=149
+2026-10-05T07:48:08.250Z INFO app.start ver=1.0.159-c3ab2b8 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T07:48:08.315Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:48:09.970Z INFO app.start ver=1.0.159-c3ab2b8 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T07:48:10.031Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:48:10.080Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:48:11.274Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-05T07:48:11.763Z INFO solver.ready ms=178
+2026-10-05T07:48:12.877Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T07:48:16.241Z INFO scan.capture face=B picture=1791186496241-000-B.png rgb=931c1f,0064a3,b3c1c2,ef4f17,0066a4,00649f,8b0f0e,b8d13c,1aa53f
+2026-10-05T07:48:16.355Z INFO scan.lock lock=true
+2026-10-05T07:48:17.296Z INFO scan.face face=B rgb=931c1f,0064a3,b3c1c2,ef4f17,0066a4,00649f,8b0f0e,b8d13c,1aa53f recognised=B
+2026-10-05T07:48:21.453Z INFO scan.capture face=L picture=1791186501453-001-L.png rgb=f05420,b5c4c9,bddd3e,b1bec5,f65e30,f45d31,8f1214,06a63c,ec5f34
+2026-10-05T07:48:22.149Z INFO scan.face face=L rgb=f05420,b5c4c9,bddd3e,b1bec5,f65e30,f45d31,8f1214,06a63c,ec5f34 recognised=L
+2026-10-05T07:48:24.480Z INFO scan.capture face=F picture=1791186504480-002-F.png rgb=17a949,972024,0067a5,b6d535,0faf45,b2c2c5,00589a,911c20,00629d
+2026-10-05T07:48:25.094Z INFO scan.face face=F rgb=17a949,972024,0067a5,b6d535,0faf45,b2c2c5,00589a,911c20,00629d recognised=F
+2026-10-05T07:48:31.096Z INFO scan.capture face=R picture=1791186511096-003-R.png rgb=b5d038,98181c,17b249,eb4f1d,950a10,18b14a,8a0c10,005b9d,bad842
+2026-10-05T07:48:31.850Z INFO scan.face face=R rgb=b5d038,98181c,17b249,eb4f1d,950a10,18b14a,8a0c10,005b9d,bad842 recognised=R
+2026-10-05T07:48:35.185Z INFO scan.capture face=U picture=1791186515184-004-U.png rgb=dd4a1b,1aaf4b,1eaf4e,b6ce3d,b7c3ca,c1db49,e74d1f,005d9d,b1c0c2
+2026-10-05T07:48:35.818Z INFO scan.face face=U rgb=dd4a1b,1aaf4b,1eaf4e,b6ce3d,b7c3ca,c1db49,e74d1f,005d9d,b1c0c2 recognised=U
+2026-10-05T07:48:41.306Z INFO scan.capture face=D picture=1791186521305-005-D.png rgb=b4c2c7,fd5c27,006dad,b4c1c7,c5e431,1eb94e,b2bfc3,980a0e,bfdc49
+2026-10-05T07:48:41.959Z INFO scan.face face=D rgb=b4c2c7,fd5c27,006dad,b4c1c7,c5e431,1eb94e,b2bfc3,980a0e,bfdc49 recognised=D
+2026-10-05T07:48:42.079Z INFO scan.done valid=true validity=Valid uncertain=0 cube=GYWGWBOYOYRGORGRBYGRBYGWBRBWWWRYOYGBOWYWOORGORBWOBBRYG rotations=U3R0F0D1L0B0
+2026-10-05T07:48:42.082Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T07:48:47.158Z INFO scan.check verdict=solvable cube=GYWGWBOYOYRGORGRBYGRBYGWBRBWWWRYOYGBOWYWOORGORBWOBBRYG
+2026-10-05T07:48:47.161Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T07:48:47.548Z INFO solve.done method=FAST moves=19 ms=231
+2026-10-05T07:50:30.533Z INFO app.start ver=1.0.159-c3ab2b8 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T07:50:30.665Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:50:30.756Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T07:50:31.088Z INFO solve.done method=FAST moves=19 ms=280
+2026-10-05T07:50:32.277Z INFO solver.ready ms=0
+2026-10-05T07:51:39.911Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:51:42.477Z INFO app.start ver=1.0.159-c3ab2b8 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T07:51:42.551Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:51:42.601Z INFO nav.screen screen=HomeRoute
+2026-10-05T07:51:44.628Z INFO solver.ready ms=522
+2026-10-05T09:07:39.878Z WARN app.graphicsLost msg="reloading when visible"
+2026-10-05T09:07:43.905Z INFO app.start ver=1.0.166-caca211 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T09:07:44.113Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:07:45.350Z INFO app.start ver=1.0.166-caca211 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T09:07:45.392Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:07:45.432Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:07:46.907Z INFO app.start ver=1.0.166-caca211 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T09:07:46.974Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:07:47.024Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:07:48.775Z INFO solver.ready ms=246
+2026-10-05T09:08:12.412Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-05T09:08:14.452Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T09:08:18.184Z INFO scan.capture face=U picture=1791191298184-000-U.png rgb=0069b0,ef5c3b,b3da58,ed4b25,abc5d4,ef5939,a5bdc9,00aa4e,b0d651
+2026-10-05T09:08:18.315Z INFO scan.lock lock=true
+2026-10-05T09:08:19.024Z INFO scan.face face=U rgb=0069b0,ef5c3b,b3da58,ed4b25,abc5d4,ef5939,a5bdc9,00aa4e,b0d651 recognised=U
+2026-10-05T09:08:22.446Z INFO scan.capture face=D picture=1791191302446-001-D.png rgb=c4e2ef,c7e4f1,10cd6b,d0f75d,d2fc52,b62635,0071c3,0cc95d,0071c1
+2026-10-05T09:08:24.570Z INFO scan.face face=D rgb=c4e2ef,c7e4f1,10cd6b,d0f75d,d2fc52,b62635,0071c3,0cc95d,0071c1 recognised=D
+2026-10-05T09:08:26.156Z INFO scan.capture face=R picture=1791191306156-002-R.png rgb=14cc6c,b72c3d,007aca,cff664,b82b3b,ff6c49,00c153,b2313f,ccf460
+2026-10-05T09:08:28.196Z INFO scan.face face=R rgb=14cc6c,b72c3d,007aca,cff664,b82b3b,ff6c49,00c153,b2313f,ccf460 recognised=R
+2026-10-05T09:08:29.771Z INFO scan.capture face=B picture=1791191309771-003-B.png rgb=ae1e2c,cef663,b03442,bdd9e5,0071c5,b22e3e,fe572d,0073c0,fe6443
+2026-10-05T09:08:31.798Z INFO scan.face face=B rgb=ae1e2c,cef663,b03442,bdd9e5,0071c5,b22e3e,fe572d,0073c0,fe6443 recognised=B
+2026-10-05T09:08:33.381Z INFO scan.capture face=L picture=1791191313381-004-L.png rgb=13cc66,11cc62,ff6842,cdf465,ff6135,c2dbe7,caf059,bfd9e5,ac1a28
+2026-10-05T09:08:35.437Z INFO scan.face face=L rgb=13cc66,11cc62,ff6842,cdf465,ff6135,c2dbe7,caf059,bfd9e5,ac1a28 recognised=L
+2026-10-05T09:08:37.019Z INFO scan.capture face=F picture=1791191317019-005-F.png rgb=bfdce9,0078c7,ff6a45,006fc3,00c757,11c962,b8d3e0,0073c1,ad2f3c
+2026-10-05T09:08:39.072Z INFO scan.face face=F rgb=bfdce9,0078c7,ff6a45,006fc3,00c757,11c962,b8d3e0,0073c1,ad2f3c recognised=F
+2026-10-05T09:08:39.192Z INFO scan.done valid=true validity=Valid uncertain=0 cube=YOYOWGBOWGRBYROGRYWBOBGGWBRBYWGYWBRGGGOYOWYWRRYRWBROBO rotations=U3R0F0D1L0B0
+2026-10-05T09:08:39.195Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T09:08:39.196Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T09:08:39.446Z INFO solve.done method=FAST moves=19 ms=74
+2026-10-05T09:08:39.457Z INFO scan.stall where=ui ms=183
+2026-10-05T09:13:38.113Z INFO app.start ver=1.0.166-caca211 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T09:13:38.201Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:13:38.265Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T09:13:38.508Z INFO solve.done method=FAST moves=19 ms=193
+2026-10-05T09:13:39.375Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:13:39.782Z INFO solver.ready ms=0
+2026-10-05T09:13:41.993Z INFO app.start ver=1.0.166-caca211 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T09:13:42.054Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:13:42.093Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:13:43.057Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-05T09:13:43.756Z INFO solver.ready ms=158
+2026-10-05T09:13:44.537Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T09:13:47.520Z INFO scan.capture face=U picture=1791191627520-000-U.png rgb=a0c144,add150,a0b9c6,96a9b6,9fb6c7,a2b9c6,d34122,de4421,de4c30
+2026-10-05T09:13:47.566Z INFO scan.lock lock=true
+2026-10-05T09:13:48.283Z INFO scan.face face=U rgb=a0c144,add150,a0b9c6,96a9b6,9fb6c7,a2b9c6,d34122,de4421,de4c30 recognised=U
+2026-10-05T09:13:51.791Z INFO scan.capture face=D picture=1791191631791-001-D.png rgb=e65535,aed75a,a1bdcb,e54b27,b0d846,afd655,86020c,8e0d18,a8cf51
+2026-10-05T09:13:53.863Z INFO scan.face face=D rgb=e65535,aed75a,a1bdcb,e54b27,b0d846,afd655,86020c,8e0d18,a8cf51 recognised=D
+2026-10-05T09:13:55.976Z INFO scan.capture face=F picture=1791191635976-002-F.png rgb=09a354,0063a7,0061a2,00549f,09a854,0fa452,97b1bf,8b1824,8a222d
+2026-10-05T09:13:58.029Z INFO scan.face face=F rgb=09a354,0063a7,0061a2,00549f,09a854,0fa452,97b1bf,8b1824,8a222d recognised=F
+2026-10-05T09:14:00.617Z INFO scan.capture face=R picture=1791191640617-003-R.png rgb=a9ce4e,951420,ea5837,9bb3c2,920110,951522,0d9e4a,e54823,8c0d17
+2026-10-05T09:14:02.679Z INFO scan.face face=R rgb=a9ce4e,951420,ea5837,9bb3c2,920110,951522,0d9e4a,e54823,8c0d17 recognised=R
+2026-10-05T09:14:04.745Z INFO scan.capture face=B picture=1791191644745-004-B.png rgb=0ba850,0060aa,8f1f2c,005aa7,005ba8,0eab54,0058a3,00a348,9db7c6
+2026-10-05T09:14:06.789Z INFO scan.face face=B rgb=0ba850,0060aa,8f1f2c,005aa7,005ba8,0eab54,0058a3,00a348,9db7c6 recognised=B
+2026-10-05T09:14:08.416Z INFO scan.capture face=L picture=1791191648416-005-L.png rgb=0daf56,f25a39,b6e153,b2d856,f1522b,a9c5d5,0065ab,01ac49,00589a
+2026-10-05T09:14:10.442Z INFO scan.face face=L rgb=0daf56,f25a39,b6e153,b2d856,f1522b,a9c5d5,0065ab,01ac49,00589a recognised=L
+2026-10-05T09:14:10.539Z INFO scan.done valid=true validity=Valid uncertain=0 cube=YYWWWWOOOYROWRRGORGBBBGGWRROYWOYYRRYGOYYOWBGBGBRBBGBGW rotations=U0R0F0D0L0B0
+2026-10-05T09:14:10.547Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T09:14:10.548Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T09:14:10.704Z INFO solve.done method=FAST moves=14 ms=6
+2026-10-05T09:14:10.844Z INFO scan.stall where=ui ms=150
+2026-10-05T09:29:50.490Z WARN app.graphicsLost msg="reloading when visible"
+2026-10-05T09:29:52.219Z INFO app.start ver=1.0.166-caca211 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T09:30:32.827Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:30:33.007Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T09:30:33.281Z INFO solve.done method=FAST moves=14 ms=146
+2026-10-05T09:30:35.456Z INFO solver.ready ms=0
+2026-10-05T09:44:11.465Z WARN app.graphicsLost msg="reloading when visible"
+2026-10-05T09:44:13.513Z INFO app.start ver=1.0.166-caca211 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T09:44:13.656Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:44:14.396Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-05T09:44:15.390Z INFO solver.ready ms=156
+2026-10-05T09:44:15.935Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T09:44:18.953Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:44:21.454Z INFO app.start ver=1.0.166-caca211 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T09:44:21.527Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:44:21.575Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:44:22.979Z INFO app.start ver=1.0.166-caca211 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T09:44:23.040Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:44:23.081Z INFO nav.screen screen=HomeRoute
+2026-10-05T09:44:24.733Z INFO solver.ready ms=149
+2026-10-05T10:41:11.561Z INFO app.start ver=1.0.170-1ce2ffa platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T10:41:11.743Z INFO nav.screen screen=HomeRoute
+2026-10-05T10:41:13.571Z INFO solver.ready ms=177
+2026-10-05T10:41:14.958Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-05T10:41:16.603Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T10:41:23.671Z INFO scan.capture face=R picture=1791196883671-000-R.png rgb=c8f251,ad2837,ff6740,b8d3e3,aa0a19,ab2e3b,08bd4f,fe5728,a42c3a
+2026-10-05T10:41:23.786Z INFO scan.lock lock=true
+2026-10-05T10:41:24.673Z INFO scan.face face=R rgb=c8f251,ad2837,ff6740,b8d3e3,aa0a19,ab2e3b,08bd4f,fe5728,a42c3a recognised=R
+2026-10-05T10:41:27.751Z INFO scan.capture face=F picture=1791196887751-001-F.png rgb=0ec15c,0076c3,0074be,0069bd,10c75e,13c35e,afcdde,a31e2b,a12c39
+2026-10-05T10:41:28.471Z INFO scan.face face=F rgb=0ec15c,0076c3,0074be,0069bd,10c75e,13c35e,afcdde,a31e2b,a12c39 recognised=F
+2026-10-05T10:41:31.794Z INFO scan.capture face=L picture=1791196891794-002-L.png rgb=07c550,ff6235,c8f455,c4ee4f,ff6942,b7d4e3,0066b7,0fc156,0074bc
+2026-10-05T10:41:32.401Z INFO scan.face face=L rgb=07c550,ff6235,c8f455,c4ee4f,ff6942,b7d4e3,0066b7,0fc156,0074bc recognised=L
+2026-10-05T10:41:37.195Z INFO scan.capture face=B picture=1791196897195-003-B.png rgb=0ec659,006ec1,a02c38,006bbf,0077c6,1cc760,015e9b,10c05c,b2ccda
+2026-10-05T10:41:37.898Z INFO scan.face face=B rgb=0ec659,006ec1,a02c38,006bbf,0077c6,1cc760,015e9b,10c05c,b2ccda recognised=B
+2026-10-05T10:41:46.122Z INFO scan.capture face=U picture=1791196906122-004-U.png rgb=caf557,cef753,bdd9e7,bddae9,c0dbee,bfdae8,e35829,ef5a28,fa613c
+2026-10-05T10:41:48.148Z INFO scan.face face=U rgb=caf557,cef753,bdd9e7,bddae9,c0dbee,bfdae8,e35829,ef5a28,fa613c recognised=U
+2026-10-05T10:41:51.493Z INFO scan.capture face=D picture=1791196911493-005-D.png rgb=ff6a3f,cffa58,8b9ea8,ff612e,d1fc49,cdf55e,ac1621,ab0513,c3e64d
+2026-10-05T10:41:52.469Z INFO scan.face face=D rgb=ff6a3f,cffa58,8b9ea8,ff612e,d1fc49,cdf55e,ac1621,ab0513,c3e64d recognised=D
+2026-10-05T10:41:52.554Z INFO scan.done valid=true validity=Valid uncertain=1 cube=YYWWWWOOOYROWRRGORGBBBGGWRROYWOYYRRYGOYYOWBGBGBRBBGBGW rotations=U0R0F0D0L0B0
+2026-10-05T10:41:52.556Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T10:42:01.225Z INFO scan.check verdict=solvable cube=YYWWWWOOOYROWRRGORGBBBGGWRROYWOYYRRYGOYYOWBGBGBRBBGBGW
+2026-10-05T10:42:01.227Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T10:42:01.330Z INFO solve.done method=FAST moves=14 ms=15
+2026-10-05T11:01:02.654Z WARN app.graphicsLost msg="reloading when visible"
+2026-10-05T11:01:05.311Z INFO app.start ver=1.0.170-1ce2ffa platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T11:01:05.473Z INFO nav.screen screen=HomeRoute
+2026-10-05T11:01:07.355Z INFO solver.ready ms=164
+2026-10-05T11:01:08.587Z INFO app.start ver=1.0.170-1ce2ffa platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T11:01:08.647Z INFO nav.screen screen=HomeRoute
+2026-10-05T11:01:08.705Z INFO nav.screen screen=HomeRoute
+2026-10-05T11:01:10.133Z INFO app.start ver=1.0.170-1ce2ffa platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T11:01:10.179Z INFO nav.screen screen=HomeRoute
+2026-10-05T11:01:10.245Z INFO nav.screen screen=HomeRoute
+2026-10-05T11:01:11.930Z INFO solver.ready ms=175
+2026-10-05T11:16:31.002Z INFO app.start ver=1.0.174-d248f9a platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T11:16:31.197Z INFO nav.screen screen=HomeRoute
+2026-10-05T11:16:31.366Z INFO nav.screen screen=HomeRoute
+2026-10-05T11:16:33.171Z INFO solver.ready ms=290
+2026-10-05T11:21:18.815Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-05T11:21:20.378Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T11:21:22.888Z INFO scan.capture face=F picture=1791199282888-000-F.png rgb=18c765,0079ca,11c961,006bc0,0dca5a,d0f75a,fd5727,a3000b,0dc256
+2026-10-05T11:21:23.017Z INFO scan.lock lock=true
+2026-10-05T11:21:25.035Z INFO scan.face face=F rgb=18c765,0079ca,11c961,006bc0,0dca5a,d0f75a,fd5727,a3000b,0dc256 recognised=F
+2026-10-05T11:21:26.610Z INFO scan.capture face=R picture=1791199286610-001-R.png rgb=bad5e5,aa1e2e,a71d2c,ff5223,a80b1b,16bf60,9d000d,b5cede,b5cedc
+2026-10-05T11:21:28.698Z INFO scan.face face=R rgb=bad5e5,aa1e2e,a71d2c,ff5223,a80b1b,16bf60,9d000d,b5cede,b5cedc recognised=R
+2026-10-05T11:21:30.256Z INFO scan.capture face=B picture=1791199290256-002-B.png rgb=b3cddd,0dc057,fe5a32,9f000c,0069bb,b9d1df,005ba6,08b64b,9e2532
+2026-10-05T11:21:32.397Z INFO scan.face face=B rgb=b3cddd,0dc057,fe5a32,9f000c,0069bb,b9d1df,005ba6,08b64b,9e2532 recognised=B
+2026-10-05T11:21:34.927Z INFO scan.capture face=L picture=1791199294927-003-L.png rgb=0069ba,ff5627,c6ec4f,fe5223,ff5727,c9eb59,0061b2,b4cbda,b4ccdb
+2026-10-05T11:21:37.015Z INFO scan.face face=L rgb=0069ba,ff5627,c6ec4f,fe5223,ff5727,c9eb59,0061b2,b4cbda,b4ccdb recognised=L
+2026-10-05T11:21:38.601Z INFO scan.capture face=D picture=1791199298601-004-D.png rgb=c3e84b,01bc4d,006eba,c2e44b,c9ee53,b6d759,960009,006ab1,9ebd56
+2026-10-05T11:21:40.732Z INFO scan.face face=D rgb=c3e84b,01bc4d,006eba,c2e44b,c9ee53,b6d759,960009,006ab1,9ebd56 recognised=D
+2026-10-05T11:21:47.083Z INFO scan.capture face=U picture=1791199307083-005-U.png rgb=01c04f,bad3e2,fe5c2f,fe5325,b9d0e3,a8212f,bee145,0065b3,f95b38
+2026-10-05T11:21:49.181Z INFO scan.face face=U rgb=01c04f,bad3e2,fe5c2f,fe5325,b9d0e3,a8212f,bee145,0065b3,f95b38 recognised=U
+2026-10-05T11:21:49.300Z INFO scan.done valid=true validity=Valid uncertain=0 cube=YOGBWWOROWRRORGRWWGBGBGYORGBYYGYBYYRBOYOOYBWWWGORBWBGR rotations=U1R0F0D3L0B0
+2026-10-05T11:21:49.303Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T11:21:49.304Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T11:21:49.451Z INFO solve.done method=FAST moves=20 ms=67
+2026-10-05T11:59:36.249Z WARN app.graphicsLost msg="reloading when visible"
+2026-10-05T11:59:36.999Z INFO app.start ver=1.0.174-d248f9a platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T11:59:37.130Z INFO nav.screen screen=HomeRoute
+2026-10-05T11:59:37.252Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T11:59:37.511Z INFO solve.done method=FAST moves=20 ms=202
+2026-10-05T11:59:38.781Z INFO solver.ready ms=0
+2026-10-05T12:01:36.187Z INFO nav.screen screen=HomeRoute
+2026-10-05T12:01:37.470Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-05T12:01:39.062Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T12:01:39.362Z INFO scan.stall where=ui ms=166
+2026-10-05T12:01:42.049Z INFO scan.capture face=L picture=1791201702048-000-L.png rgb=005ea9,f95e3d,c0e35d,8f0009,f8542d,13b55b,e64b26,f2522e,16b157
+2026-10-05T12:01:42.140Z INFO scan.lock lock=true
+2026-10-05T12:01:44.141Z INFO scan.face face=L rgb=005ea9,f95e3d,c0e35d,8f0009,f8542d,13b55b,e64b26,f2522e,16b157 recognised=L
+2026-10-05T12:01:45.740Z INFO scan.capture face=F picture=1791201705740-001-F.png rgb=9d1623,0069ba,c0ea5b,98000f,00b750,c1e860,a4bfd1,970412,0069b2
+2026-10-05T12:01:47.839Z INFO scan.face face=F rgb=9d1623,0069ba,c0ea5b,98000f,00b750,c1e860,a4bfd1,970412,0069b2 recognised=F
+2026-10-05T12:01:49.452Z INFO scan.capture face=R picture=1791201709452-002-R.png rgb=10b965,a52a39,b2cfdf,fb5f41,a72a3a,b5d0e0,f4593b,b1ccdd,aecada
+2026-10-05T12:01:51.490Z INFO scan.face face=R rgb=10b965,a52a39,b2cfdf,fb5f41,a72a3a,b5d0e0,f4593b,b1ccdd,aecada recognised=R
+2026-10-05T12:01:53.111Z INFO scan.capture face=B picture=1791201713111-003-B.png rgb=f55934,0bc061,c2eb64,f6532d,0069bd,b7d1e3,005daf,b0cadd,b0cbdd
+2026-10-05T12:01:55.138Z INFO scan.face face=B rgb=f55934,0bc061,c2eb64,f6532d,0069bd,b7d1e3,005daf,b0cadd,b0cbdd recognised=B
+2026-10-05T12:02:00.864Z INFO scan.capture face=D picture=1791201720864-004-D.png rgb=00589d,0069b9,a12533,005fb3,c6ee5a,c1e869,94000d,00b452,bde360
+2026-10-05T12:02:02.956Z INFO scan.face face=D rgb=00589d,0069b9,a12533,005fb3,c6ee5a,c1e869,94000d,00b452,bde360 recognised=D
+2026-10-05T12:02:05.694Z INFO scan.capture face=U picture=1791201725693-005-U.png rgb=04b457,006fbf,fd6343,bde256,b6d0e6,c5ea66,95010f,01b554,12ba5f
+2026-10-05T12:02:07.783Z INFO scan.face face=U rgb=04b457,006fbf,fd6343,bde256,b6d0e6,c5ea66,95010f,01b554,12ba5f recognised=U
+2026-10-05T12:02:07.885Z INFO scan.done valid=true validity=Valid uncertain=0 cube=RYGGWBGYOGRWORWOWWRBYRGYWRBRYYBYGBBRBOYROGOOGOGYOBWBWW rotations=U1R0F0D3L0B0
+2026-10-05T12:02:07.888Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T12:02:07.888Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T12:02:08.160Z INFO solve.done method=FAST moves=17 ms=50
+2026-10-05T12:02:08.163Z INFO scan.stall where=ui ms=166
+2026-10-05T12:03:05.400Z INFO nav.screen screen=HomeRoute
+2026-10-05T12:19:30.417Z INFO app.start ver=1.0.174-d248f9a platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T12:19:30.580Z INFO nav.screen screen=HomeRoute
+2026-10-05T12:19:31.545Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-05T12:19:32.337Z INFO solver.ready ms=170
+2026-10-05T12:19:33.154Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T12:19:35.709Z INFO scan.capture face=R picture=1791202775709-000-R.png rgb=004179,8696a2,8797a2,bb2f11,6e050f,0e863a,7f8c97,108332,8fa936
+2026-10-05T12:19:35.745Z INFO scan.lock lock=true
+2026-10-05T12:19:37.768Z INFO scan.face face=R rgb=004179,8696a2,8797a2,bb2f11,6e050f,0e863a,7f8c97,108332,8fa936 recognised=R
+2026-10-05T12:19:39.372Z INFO scan.capture face=U picture=1791202779372-001-U.png rgb=680b12,8faa36,0a8638,808e98,8493a1,004b84,630107,84929d,8fab2f
+2026-10-05T12:19:41.426Z INFO scan.face face=U rgb=680b12,8faa36,0a8638,808e98,8493a1,004b84,630107,84929d,8fab2f recognised=U
+2026-10-05T12:19:43.028Z INFO scan.capture face=L picture=1791202783028-002-L.png rgb=69060e,70141e,be3e22,8aa328,c03d20,004980,b82f10,bd3b1d,0c8034
+2026-10-05T12:19:45.077Z INFO scan.face face=L rgb=69060e,70141e,be3e22,8aa328,c03d20,004980,b82f10,bd3b1d,0c8034 recognised=L
+2026-10-05T12:19:46.645Z INFO scan.capture face=D picture=1791202786645-003-D.png rgb=157f35,6f141e,bf3b20,ba2e0e,8fab2e,8fa935,67080d,0d8035,00467c
+2026-10-05T12:19:48.718Z INFO scan.face face=D rgb=157f35,6f141e,bf3b20,ba2e0e,8fab2e,8fa935,67080d,0d8035,00467c recognised=D
+2026-10-05T12:19:50.899Z INFO scan.capture face=F picture=1791202790899-004-F.png rgb=87959f,71131e,004a82,007c2d,038535,004b83,828f99,004980,8ea934
+2026-10-05T12:19:52.946Z INFO scan.face face=F rgb=87959f,71131e,004a82,007c2d,038535,004b83,828f99,004980,8ea934 recognised=F
+2026-10-05T12:19:55.103Z INFO scan.capture face=B picture=1791202795103-005-B.png rgb=88a32d,be3c20,bc4025,838e97,004880,8fa636,0c782e,6d1219,004479
+2026-10-05T12:19:57.177Z INFO scan.face face=B rgb=88a32d,be3c20,bc4025,838e97,004880,8fa636,0c782e,6d1219,004479 recognised=B
+2026-10-05T12:19:57.281Z INFO scan.done valid=true validity=Valid uncertain=0 cube=YWRBWWGYRWGYWRGBOWWRBGGBWBYGROOYYRGBOYROORGBOBRGYBWOOY rotations=U2R3F0D0L1B2
+2026-10-05T12:19:57.284Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T12:19:57.285Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T12:19:57.421Z INFO solve.done method=FAST moves=19 ms=32
+2026-10-05T12:19:57.616Z INFO scan.stall where=ui ms=183
+2026-10-05T12:19:59.797Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T12:20:00.857Z INFO nav.screen screen=HomeRoute
+2026-10-05T12:20:02.059Z INFO nav.screen screen=SettingsRoute
+2026-10-05T12:20:04.022Z INFO nav.screen screen=LogRoute
+2026-10-05T12:20:05.091Z INFO log.shared
+2026-10-05T12:20:54.275Z INFO app.start ver=1.0.174-d248f9a platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T12:20:54.444Z INFO nav.screen screen=HomeRoute
+2026-10-05T12:20:56.312Z INFO solver.ready ms=285
+2026-10-05T12:21:14.007Z INFO app.start ver=1.0.174-d248f9a platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T13:21:40.671Z WARN app.graphicsLost msg="reloading when visible"
+2026-10-05T13:21:41.089Z INFO nav.screen screen=HomeRoute
+2026-10-05T13:59:36.774Z INFO app.start ver=1.0.181-9d8f7e5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T13:59:36.964Z INFO nav.screen screen=HomeRoute
+2026-10-05T13:59:38.853Z INFO solver.ready ms=189
+2026-10-05T13:59:42.872Z INFO app.start ver=1.0.181-9d8f7e5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T13:59:42.918Z INFO nav.screen screen=HomeRoute
+2026-10-05T13:59:42.969Z INFO nav.screen screen=HomeRoute
+2026-10-05T13:59:44.656Z INFO solver.ready ms=176
+2026-10-05T14:13:30.444Z INFO app.start ver=1.0.181-9d8f7e5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T14:13:30.691Z INFO nav.screen screen=HomeRoute
+2026-10-05T14:13:30.922Z INFO nav.screen screen=HomeRoute
+2026-10-05T14:13:32.625Z INFO solver.ready ms=193
+2026-10-05T14:13:34.978Z INFO app.start ver=1.0.181-9d8f7e5 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T14:13:35.053Z INFO nav.screen screen=HomeRoute
+2026-10-05T14:13:35.109Z INFO nav.screen screen=HomeRoute
+2026-10-05T14:13:38.283Z INFO solver.ready ms=810
+2026-10-05T14:25:22.503Z WARN app.graphicsLost msg="reloading when visible"
+2026-10-05T14:25:24.960Z INFO app.start ver=1.0.184-c9552d7 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T14:25:31.793Z INFO app.start ver=1.0.184-c9552d7 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T14:25:31.943Z INFO nav.screen screen=HomeRoute
+2026-10-05T14:25:33.864Z INFO solver.ready ms=191
+2026-10-05T14:25:37.481Z INFO nav.screen screen=VideoScanRoute
+2026-10-05T14:25:39.139Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T14:25:40.628Z INFO scan.lock lock=true
+2026-10-05T14:25:46.073Z INFO scan.video finderMs=13 size=289x360
+2026-10-05T14:25:52.976Z INFO scan.video finderMs=15 size=289x360
+2026-10-05T14:26:00.226Z INFO scan.video finderMs=14 size=289x360
+2026-10-05T14:26:02.217Z INFO scan.done way=video valid=true uncertain=0 cube=YWRBWWGYRWGYWRGBOWWRBGGBWBYGROOYYRGBOYROORGBOBRGYBWOOY rotations=U0R0F3D3L3B2
+2026-10-05T14:26:02.222Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T14:26:02.223Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T14:26:02.413Z INFO solve.done method=FAST moves=19 ms=35
+2026-10-05T14:31:49.266Z WARN app.graphicsLost msg="reloading when visible"
+2026-10-05T14:31:50.970Z INFO app.start ver=1.0.184-c9552d7 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T14:31:51.084Z INFO nav.screen screen=HomeRoute
+2026-10-05T14:31:52.227Z INFO nav.screen screen="ScanRoute?face={face}"
+2026-10-05T14:31:52.825Z INFO solver.ready ms=143
+2026-10-05T14:31:53.164Z INFO nav.screen screen=HomeRoute
+2026-10-05T14:31:53.745Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T14:31:54.152Z INFO nav.screen screen=VideoScanRoute
+2026-10-05T14:31:55.213Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T14:31:56.530Z INFO scan.lock lock=true
+2026-10-05T14:32:02.227Z INFO scan.video finderMs=10 size=289x360
+2026-10-05T14:32:08.870Z INFO scan.done way=video valid=true uncertain=0 cube=GRBBWBOOWRWYYRRORRWBGGGGRWYBGGOYWWWBRYGGORBYYOYYBBOWOO rotations=U0R3F0D0L1B2
+2026-10-05T14:32:08.872Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T14:32:08.873Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T14:32:09.042Z INFO solve.done method=FAST moves=20 ms=106
+2026-10-05T14:32:09.546Z INFO scan.video finderMs=12 size=289x360
+2026-10-05T14:36:31.651Z INFO nav.screen screen=HomeRoute
+2026-10-05T14:36:31.662Z INFO nav.screen screen=VideoScanRoute
+2026-10-05T14:36:33.147Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T14:36:56.087Z INFO scan.stall where=camera ms=21280
+2026-10-05T14:36:57.216Z INFO scan.stall where=camera ms=1143
+2026-10-05T14:36:57.907Z INFO scan.lock lock=true
+2026-10-05T14:37:02.313Z INFO scan.video finderMs=13 size=289x360
+2026-10-05T14:37:09.306Z INFO scan.video finderMs=14 size=289x360
+2026-10-05T14:37:09.614Z INFO scan.done way=video valid=true uncertain=0 cube=OYOBWYYRBYOWORRYGWOWRBGGWBRROGWYWWGRYRGYOWOOGBGBYBBBRG rotations=U0R0F0D3L0B0
+2026-10-05T14:37:09.621Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T14:37:09.622Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T14:37:09.746Z INFO solve.done method=FAST moves=11 ms=10
+2026-10-05T14:38:11.820Z INFO nav.screen screen=HomeRoute
+2026-10-05T14:38:19.016Z INFO nav.screen screen=VideoScanRoute
+2026-10-05T14:38:20.504Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T14:38:21.751Z INFO scan.lock lock=true
+2026-10-05T14:38:27.467Z INFO scan.video finderMs=11 size=289x360
+2026-10-05T14:38:29.443Z INFO scan.stall where=camera ms=376
+2026-10-05T14:38:29.622Z INFO scan.done way=video valid=true uncertain=0 cube=WWWWWWWWWRRRRRRRRRGGGGGGGGGYYYYYYYYYOOOOOOOOOBBBBBBBBB rotations=U0R0F0D0L0B0
+2026-10-05T14:38:29.626Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T14:38:29.627Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T14:38:29.707Z INFO solve.done method=FAST moves=0 ms=1
+2026-10-05T14:38:31.825Z INFO nav.screen screen=HomeRoute
+2026-10-05T15:09:35.646Z WARN app.graphicsLost msg="reloading when visible"
+2026-10-05T15:09:36.899Z INFO app.start ver=1.0.184-c9552d7 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T15:09:37.075Z INFO nav.screen screen=HomeRoute
+2026-10-05T15:09:37.206Z INFO nav.screen screen=HomeRoute
+2026-10-05T15:09:40.070Z INFO solver.ready ms=742
+2026-10-05T16:29:10.333Z INFO app.start ver=1.0.193-6bb6dc2 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T16:29:10.568Z INFO nav.screen screen=HomeRoute
+2026-10-05T16:29:12.441Z INFO solver.ready ms=199
+2026-10-05T16:29:12.457Z INFO nav.screen screen=VideoScanRoute
+2026-10-05T16:29:14.071Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T16:29:14.497Z INFO scan.lock lock=true
+2026-10-05T16:29:21.069Z INFO scan.video finderMs=10 size=289x360
+2026-10-05T16:29:24.346Z INFO scan.stall where=camera ms=325
+2026-10-05T16:29:24.660Z INFO scan.done way=video valid=true uncertain=0 cube=WWWWWWWWWRRRRRRRRRGGGGGGGGGYYYYYYYYYOOOOOOOOOBBBBBBBBB rotations=U0R0F0D0L0B0
+2026-10-05T16:29:24.664Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T16:29:24.665Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T16:29:24.762Z INFO solve.done method=FAST moves=0 ms=1
+2026-10-05T16:29:26.248Z INFO nav.screen screen=HomeRoute
+2026-10-05T16:29:26.249Z INFO nav.screen screen=VideoScanRoute
+2026-10-05T16:29:27.564Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T16:29:34.442Z INFO scan.video finderMs=2 size=289x360
+2026-10-05T16:29:37.235Z INFO nav.screen screen=HomeRoute
+2026-10-05T16:29:38.442Z INFO nav.screen screen=VideoScanRoute
+2026-10-05T16:29:39.815Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T16:29:41.151Z INFO scan.lock lock=true
+2026-10-05T16:29:46.849Z INFO scan.video finderMs=15 size=289x360
+2026-10-05T16:29:49.582Z INFO scan.stall where=camera ms=328
+2026-10-05T16:29:49.886Z INFO scan.done way=video valid=true uncertain=0 cube=WWWWWWWWWRRRRRRRRRGGGGGGGGGYYYYYYYYYOOOOOOOOOBBBBBBBBB rotations=U0R0F0D0L0B0
+2026-10-05T16:29:49.889Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T16:29:49.890Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T16:29:49.965Z INFO solve.done method=FAST moves=0 ms=1
+2026-10-05T17:11:11.731Z INFO app.start ver=1.0.193-6bb6dc2 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T17:11:11.967Z INFO nav.screen screen=HomeRoute
+2026-10-05T17:11:14.760Z INFO solver.ready ms=964
+2026-10-05T18:09:36.509Z INFO app.start ver=1.0.193-6bb6dc2 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T18:09:36.640Z INFO nav.screen screen=HomeRoute
+2026-10-05T18:09:37.900Z INFO nav.screen screen=VideoScanRoute
+2026-10-05T18:09:38.380Z INFO solver.ready ms=148
+2026-10-05T18:09:39.516Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T18:09:39.906Z INFO scan.lock lock=true
+2026-10-05T18:09:46.655Z INFO scan.video finderMs=22 size=289x360
+2026-10-05T18:09:53.774Z INFO scan.video finderMs=17 size=289x360
+2026-10-05T18:10:01.019Z INFO scan.video finderMs=22 size=289x360
+2026-10-05T18:10:08.177Z INFO scan.video finderMs=18 size=289x360
+2026-10-05T18:10:15.417Z INFO scan.video finderMs=17 size=289x360
+2026-10-05T18:10:22.618Z INFO scan.video finderMs=17 size=289x360
+2026-10-05T18:10:29.985Z INFO scan.video finderMs=18 size=289x360
+2026-10-05T18:10:37.162Z INFO scan.video finderMs=19 size=289x360
+2026-10-05T18:10:44.572Z INFO scan.video finderMs=17 size=289x360
+2026-10-05T18:10:51.720Z INFO scan.video finderMs=19 size=289x360
+2026-10-05T18:10:59.055Z INFO scan.video finderMs=20 size=289x360
+2026-10-05T18:11:06.222Z INFO scan.video finderMs=21 size=289x360
+2026-10-05T18:11:13.517Z INFO scan.video finderMs=19 size=289x360
+2026-10-05T18:11:20.907Z INFO scan.video finderMs=21 size=289x360
+2026-10-05T18:11:28.016Z INFO scan.video finderMs=19 size=289x360
+2026-10-05T18:11:35.242Z INFO scan.video finderMs=18 size=289x360
+2026-10-05T18:11:42.712Z INFO scan.video finderMs=21 size=289x360
+2026-10-05T18:11:50.079Z INFO scan.video finderMs=21 size=289x360
+2026-10-05T18:11:57.461Z INFO scan.video finderMs=21 size=289x360
+2026-10-05T18:12:04.864Z INFO scan.video finderMs=19 size=289x360
+2026-10-05T18:12:12.029Z INFO scan.video finderMs=5 size=289x360
+2026-10-05T18:36:39.508Z INFO app.start ver=1.0.193-6bb6dc2 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T18:36:39.677Z INFO nav.screen screen=HomeRoute
+2026-10-05T18:36:41.419Z INFO solver.ready ms=148
+2026-10-05T18:36:42.309Z INFO nav.screen screen=VideoScanRoute
+2026-10-05T18:36:44.172Z INFO scan.permission granted=true status=ok camera="camera 0, facing back; torch=true; remembered"
+2026-10-05T18:36:44.580Z INFO scan.lock lock=true
+2026-10-05T18:36:51.282Z INFO scan.video finderMs=19 size=289x360
+2026-10-05T18:36:56.202Z INFO scan.done way=video valid=true uncertain=0 cube=BRGBWRGRBOGWGRBGYGWWYOGWBROYBYGYOOBYRWRGOWWYROYWYBOROB rotations=U2R3F1D0L1B1
+2026-10-05T18:36:56.207Z INFO nav.screen screen="ManualInputRoute?cube={cube}&marked={marked}&fromScan={fromScan}&confident={confident}"
+2026-10-05T18:36:56.208Z INFO nav.screen screen=SolveRoute/{cube}
+2026-10-05T18:36:56.496Z INFO solve.done method=FAST moves=21 ms=214
+2026-10-05T18:36:56.561Z INFO scan.stall where=camera ms=306
+2026-10-05T18:40:06.925Z INFO app.start ver=1.0.193-6bb6dc2 platform=web agent="Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36" crashedLastTime=false
+2026-10-05T18:40:07.092Z INFO nav.screen screen=HomeRoute
+2026-10-05T18:40:08.908Z INFO solver.ready ms=212
+2026-10-05T18:40:12.962Z INFO nav.screen screen=SettingsRoute
+2026-10-05T18:40:16.273Z INFO nav.screen screen=LogRoute
+2026-10-05T18:40:17.712Z INFO log.shared

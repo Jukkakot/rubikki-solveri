@@ -1,12 +1,10 @@
 package fi.jukkakot.rubikkisolveri.cube.scan
 
 import fi.jukkakot.rubikkisolveri.cube.ColorScheme
-import fi.jukkakot.rubikkisolveri.cube.Corner
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeCheck
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.CubeEditor
-import fi.jukkakot.rubikkisolveri.cube.Edge
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.Stickers
 import fi.jukkakot.rubikkisolveri.cube.Validity
@@ -42,14 +40,15 @@ enum class Tilt {
 data class FoundFace(val reading: FaceReading, val names: List<CubeColor?>, val recognised: List<Boolean>)
 
 /**
- * What the video scan knows after a frame. [stickers] are the recognised colours (URFDLB, net
- * order; null = not yet), [leading] the colour most readings name for each sticker not yet
- * recognised (null for the recognised ones and those without readings), [contradictions] the
- * stickers whose readings disagree, [found] the faces in this frame, [pose] how the cube was last
- * seen held, [orientation] how it is turned in this frame (null when no face with a settled rotation
- * is in view), [hint] the tilt that brings most missing stickers into view (only while a face is in
- * view and its pose is known), [newStickers] how many stickers were recognised with this frame.
- * [complete]: all 54 recognised and a possible cube; [finished]: complete for [VideoScan.FINISH_MILLIS].
+ * What the video scan knows after a frame. [stickers] are the known colours (URFDLB, net order;
+ * null = not yet): the best possible cube's colour where its margin is clear ([BestCube]), so a
+ * sticker can be known without being seen. [leading] is the colour most readings name for each
+ * sticker not yet known (null for the known ones and those without readings), [contradictions] the
+ * unknown stickers whose readings disagree, [found] the faces in this frame, [pose] how the cube was
+ * last seen held, [orientation] how it is turned in this frame (null when no face with a settled
+ * rotation is in view), [hint] the tilt that brings most missing stickers into view (only while a
+ * face is in view and its pose is known), [newStickers] how many stickers became known with this
+ * frame. [complete]: the best cube is clear; [finished]: complete for [VideoScan.FINISH_MILLIS].
  */
 data class VideoScanState(
     val stickers: List<CubeColor?>,
@@ -74,12 +73,12 @@ data class VideoScanState(
  * The scan from continuous video (`video-scan`): every full face found in a frame ([FaceReading])
  * votes for its stickers. Faces are told apart by their centre colour (named regardless of
  * brightness, then together once all six are seen). Each face keeps its readings in its own "frame"
- * coordinates (one reading's way round); a sticker is recognised once [MIN_VOTES] readings agree
- * with a clear margin, and a recognised sticker keeps its colour while it still leads, so a single
- * wrong frame changes nothing. How each face sits in the net comes from corner views (two faces in
- * one frame share an edge), else from a search over the faces' rotations ([RotationSearch] once all
- * stickers are known, a search over the pieces known so far before that). Pure Kotlin, one code
- * base for the phone and the browser.
+ * coordinates (one reading's way round) and counts the votes per sticker. How each face sits in the
+ * net comes from corner views (two faces in one frame share an edge), else from the turns that make
+ * the best possible cube cheapest. The votes, turned into the net, are the evidence for [BestCube]:
+ * the possible cube that fits them best, known sticker by sticker where it clearly beats every other
+ * possible cube ([CLEAR_MARGIN]), so a single wrong frame changes nothing and a misread sticker that
+ * fits no real piece is corrected by the rest. Pure Kotlin, one code base for the phone and the browser.
  */
 class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     private class Reading(val face: FaceReading, var group: Group) {
@@ -111,6 +110,9 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** The colour with the most votes per place (recognised or not). */
         var leading: List<CubeColor?> = List(9) { null }
+
+        /** Votes per place and colour (by ordinal). */
+        var counts: List<IntArray> = List(9) { IntArray(6) }
         var disputed: Set<Int> = emptySet()
         var samples: List<Rgb?> = List(9) { null }
         val inliers: List<Reading> get() = readings.filter { it.inlier }
@@ -119,11 +121,12 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     private val groups = LinkedHashMap<CubeColor, Group>()
     private var rotations: Map<Face, Int> = emptyMap()
 
-    /** Faces whose rotation is settled (corner views, or a search with one answer). */
+    /** Faces whose rotation is settled (corner views, or every other turn makes a clearly costlier cube). */
     private var settled: Set<Face> = emptySet()
-    private var validity: Validity? = null
-    private var ambiguous: Set<Face> = emptySet()
     private var rotationKey: String? = null
+    private var sinceRotations = 0
+    private var evidence: StickerEvidence = StickerEvidence.EMPTY
+    private var best: BestCube? = null
     private var lastPose: Pose? = null
     private var lastOrientation: Orientation? = null
     private var lastRecognised = 0
@@ -153,16 +156,33 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         groups.values.forEach { consensus(it) }
         updateRotations()
 
-        val net = netOf { it.stickers }
+        evidence = evidenceFor(rotations)
+        val best = BestCube.solve(evidence, scheme)
+        this.best = best
+        val seen = Face.entries.filter { groups[scheme[it]] != null }
+        val complete = best != null && seen.all { it in settled } && best.clearness(evidence) >= CLEAR_MARGIN
+        // Known: from the best cube where it is clear, else from the votes alone.
+        val voted = netOf { it.stickers }
+        val net = List(Stickers.COUNT) { i ->
+            val face = Face.entries[i / 9]
+            val clear = when {
+                best == null -> false
+                complete -> true
+                i % 9 == CENTRE -> face in seen
+                face in seen && face !in settled -> false
+                else -> best.supportedMargin(i, evidence) >= CLEAR_MARGIN
+            }
+            if (clear) best!!.cube[i] else voted[i]
+        }
         val contradictions = HashSet<Int>()
         for (face in Face.entries) {
             val group = groups[scheme[face]] ?: continue
             val k = rotations[face] ?: 0
-            for (n in 0 until 9) if (RotationSearch.turnIndex(n, k) in group.disputed) contradictions += face.ordinal * 9 + n
+            for (n in 0 until 9) {
+                val i = face.ordinal * 9 + n
+                if (RotationSearch.turnIndex(n, k) in group.disputed && net[i] == null) contradictions += i
+            }
         }
-        val all = net.all { it != null }
-        if (all) validity?.let { contradictions += it.markedStickers }
-        val complete = all && contradictions.isEmpty() && validity?.isValid == true && (ambiguous - settled).isEmpty()
         if (!complete) completeSince = null else if (completeSince == null) completeSince = nowMillis
 
         val usable = fresh.filterNotNull()
@@ -178,7 +198,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             leading = leading,
             orientation = orientation,
             contradictions = contradictions,
-            found = faces.mapIndexed { i, face -> foundFace(face, fresh[i]) },
+            found = faces.mapIndexed { i, face -> foundFace(face, fresh[i], net) },
             pose = lastPose,
             hint = pose?.let { hint(it, net, contradictions) },
             newStickers = (recognised - lastRecognised).coerceAtLeast(0),
@@ -190,16 +210,19 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     }
 
     /**
-     * The scan as it stands, for the colour check (and the solution when it is sure): the recognised
-     * colours, the centres of faces not seen from the colour scheme, missing and disputed stickers
-     * marked as uncertain.
+     * The scan as it stands, for the colour check (and the solution when it is sure): the known
+     * colours, the leading colour of the others (marked uncertain), the centres of faces not seen
+     * from the colour scheme. Known stickers whose colour came from the rest of the cube (never seen,
+     * or their readings not sure or not agreeing) are [ScanOutcome.inferred].
      */
     fun outcome(): ScanOutcome {
-        val net = netOf { it.stickers }.mapIndexed { i, c -> c ?: if (i % 9 == CENTRE) scheme[Face.entries[i / 9]] else null }
+        val known = state.stickers
+        val net = known.mapIndexed { i, c -> c ?: if (i % 9 == CENTRE) scheme[Face.entries[i / 9]] else state.leading[i] }
         val editor = CubeEditor(net, scheme)
-        val uncertain = HashSet(state.contradictions)
-        net.indices.filterTo(uncertain) { net[it] == null }
-        for (face in ambiguous - settled) (0 until 9).filter { it != CENTRE }.mapTo(uncertain) { face.ordinal * 9 + it }
+        // A face whose rotation is not settled may sit turned wrong in the net: all of it is doubtful.
+        val turnedUnsure = Face.entries.filter { groups[scheme[it]] != null && it !in settled && !state.complete }
+        val uncertain = known.indices.filter { (known[it] == null || Face.entries[it / 9] in turnedUnsure) && it % 9 != CENTRE }.toSet()
+        val inferred = known.indices.filter { known[it] != null && it % 9 != CENTRE && evidence.sure(it) != known[it] }.toSet()
         val cube = editor.toCube()
         val samples = netOf { it.samples }
         return ScanOutcome(
@@ -208,6 +231,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             validity = cube?.let { CubeCheck.validity(it, scheme) } ?: Validity.WrongColorCount(editor.counts().filterValues { it != 9 }),
             samples = if (samples.all { it != null }) samples.map { it!! } else emptyList(),
             rotations = rotations,
+            inferred = inferred,
         )
     }
 
@@ -293,10 +317,12 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val leading = arrayOfNulls<CubeColor>(9)
         val samples = arrayOfNulls<Rgb>(9)
         val disputed = HashSet<Int>()
+        val votes = List(9) { IntArray(6) }
         for (n in 0 until 9) {
             val counts = HashMap<CubeColor, Int>()
             val voters = inliers.mapNotNull { r -> r.names[RotationSearch.turnIndex(n, r.turn)]?.let { r to it } }
             for ((_, c) in voters) counts[c] = (counts[c] ?: 0) + 1
+            for ((c, v) in counts) votes[n][c.ordinal] = v
             val ranked = counts.entries.sortedByDescending { it.value }
             val lead = ranked.getOrNull(0)
             leading[n] = lead?.key
@@ -322,6 +348,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         }
         g.stickers = stickers.toList()
         g.leading = leading.toList()
+        g.counts = votes
         g.samples = samples.toList()
         g.disputed = disputed
     }
@@ -329,11 +356,13 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     /**
      * How each face sits in the net: corner views first (a reading's side towards a neighbouring
      * face, turned to the group's frame, against the side that neighbour is on in the net). The
-     * other faces are searched: with every sticker known, [RotationSearch]; before that, the turns
-     * giving the most real pieces among the pieces fully known, settled when only one turn does.
+     * other faces take the turns that make the best possible cube cheapest (a few rounds of trying
+     * each face's other turns); a face is settled when each other turn that reads it differently
+     * makes the best cube at least [CLEAR_MARGIN] costlier. Worked out again when the leading
+     * colours change, else every [ROTATION_EVERY] frames as the votes grow.
      */
     private fun updateRotations() {
-        val evidence = HashMap<Face, IntArray>()
+        val views = HashMap<Face, IntArray>()
         for (g in groups.values) {
             val face = scheme.faceOf(g.color)
             for (r in g.readings) {
@@ -341,73 +370,52 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
                 for ((side, other) in r.neighbours) {
                     if (other.removed || !other.inlier || other.group === g) continue
                     val netSide = netSide(face, scheme.faceOf(other.group.color)) ?: continue
-                    evidence.getOrPut(face) { IntArray(4) }[(netSide - (side + r.turn)).mod(4)]++
+                    views.getOrPut(face) { IntArray(4) }[(netSide - (side + r.turn)).mod(4)]++
                 }
             }
         }
-        val known = evidence.mapNotNull { (face, votes) ->
+        val known = views.mapNotNull { (face, votes) ->
             val top = votes.indices.maxBy { votes[it] }
             val second = votes.indices.filter { it != top }.maxOf { votes[it] }
             if (votes[top] >= MIN_EVIDENCE && votes[top] > second) face to top else null
         }.toMap()
 
-        val frames = Face.entries.associateWith { groups[scheme[it]]?.stickers }
-        val key = known.toString() + frames.values.joinToString("|") { s -> s?.joinToString("") { it?.letter?.toString() ?: "." } ?: "-" }
-        if (key == rotationKey) return
+        val key = known.toString() + groups.values.joinToString("|") { g -> g.color.letter + g.leading.joinToString("") { it?.letter?.toString() ?: "." } }
+        if (key == rotationKey && ++sinceRotations < ROTATION_EVERY) return
         rotationKey = key
+        sinceRotations = 0
 
-        if (frames.values.all { s -> s != null && s.all { it != null } }) {
-            val colors = Face.entries.flatMap { frames.getValue(it)!!.map { c -> c!! } }
-            var result = RotationSearch.search(colors, scheme, renamePairs = false, fixed = known)
-            if (!result.validity.isValid && known.isNotEmpty()) {
-                val free = RotationSearch.search(colors, scheme, renamePairs = false)
-                if (free.validity.isValid) result = free
+        val free = Face.entries.filter { groups[scheme[it]] != null && it !in known }
+        val turns = HashMap(Face.entries.associateWith { known[it] ?: rotations[it] ?: 0 })
+        fun costWith(face: Face, k: Int) = BestCube.cost(evidenceFor(HashMap(turns).also { it[face] = k }), scheme)
+        var cost = BestCube.cost(evidenceFor(turns), scheme)
+        repeat(2) {
+            for (face in free) for (k in 0 until 4) {
+                if (k == turns[face]) continue
+                val c = costWith(face, k)
+                if (c < cost - 1e-9) {
+                    cost = c
+                    turns[face] = k
+                }
             }
-            rotations = result.rotations
-            validity = result.validity
-            ambiguous = result.ambiguous
-            settled = known.keys + (Face.entries.toSet() - result.ambiguous)
-            return
         }
-        validity = null
-        ambiguous = emptySet()
-        val free = Face.entries.filter { frames[it] != null && it !in known }
-        var bestScore = -1
-        val bests = ArrayList<IntArray>()
-        val turns = IntArray(free.size)
-        val net = arrayOfNulls<CubeColor>(Stickers.COUNT)
-        for (combo in 0 until (1 shl (2 * free.size))) {
-            for (i in free.indices) turns[i] = (combo shr (2 * i)) and 3
-            for (face in Face.entries) {
-                val frame = frames[face]
-                val k = known[face] ?: free.indexOf(face).let { if (it < 0) 0 else turns[it] }
-                for (n in 0 until 9) net[face.ordinal * 9 + n] = frame?.get(RotationSearch.turnIndex(n, k))
-            }
-            val score = realPieces(net)
-            if (score > bestScore) {
-                bestScore = score
-                bests.clear()
-            }
-            if (score == bestScore) bests += turns.copyOf()
+        rotations = turns
+        settled = known.keys + free.filter { face ->
+            val leading = groups.getValue(scheme[face]).leading
+            val now = turns.getValue(face)
+            (0 until 4).filter { k -> k != now && (0 until 9).any { leading[RotationSearch.turnIndex(it, k)] != leading[RotationSearch.turnIndex(it, now)] } }
+                .all { k -> costWith(face, k) - cost >= CLEAR_MARGIN }
         }
-        val chosen = bests.minBy { t -> t.sumOf { minOf(it, 4 - it) } }
-        rotations = Face.entries.associateWith { face -> known[face] ?: free.indexOf(face).let { if (it < 0) 0 else chosen[it] } }
-        settled = known.keys + free.filterIndexed { i, _ -> bests.all { it[i] == chosen[i] } }
     }
 
-    /** Pieces whose stickers are all known and form a real corner or edge. */
-    private fun realPieces(net: Array<CubeColor?>): Int {
-        var count = 0
-        for (c in Corner.entries) {
-            val faces = c.stickers.map { net[it]?.let(scheme::faceOf) }
-            if (faces.all { it != null } && faces in realCorners) count++
-        }
-        for (e in Edge.entries) {
-            val faces = e.stickers.map { net[it]?.let(scheme::faceOf) }
-            if (faces.all { it != null } && faces in realEdges) count++
-        }
-        return count
-    }
+    /** The groups' votes as evidence per net sticker, each face's frame turned by [turns] (centres: none). */
+    private fun evidenceFor(turns: Map<Face, Int>): StickerEvidence = StickerEvidence(
+        Face.entries.flatMap { face ->
+            val group = groups[scheme[face]]
+            val k = turns[face] ?: 0
+            List(9) { n -> if (group == null || n == CENTRE) IntArray(6) else group.counts[RotationSearch.turnIndex(n, k)] }
+        },
+    )
 
     /** The colours of each face in the net, from each group's frame turned by its rotation. */
     private fun <T> netOf(get: (Group) -> List<T?>): List<T?> = Face.entries.flatMap { face ->
@@ -441,11 +449,15 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         return Orientation.choose(candidates, front.normal, main.face.centre, others, lastOrientation)
     }
 
-    /** [face] as the scan took it in this frame: names and recognised places in reading order. */
-    private fun foundFace(face: FaceReading, r: Reading?): FoundFace {
+    /** [face] as the scan took it in this frame: names in reading order, and which of its places are known in [net]. */
+    private fun foundFace(face: FaceReading, r: Reading?, net: List<CubeColor?>): FoundFace {
         if (r == null || r.removed) return FoundFace(face, List(9) { null }, List(9) { false })
         val recognised = MutableList(9) { false }
-        if (r.inlier) for (n in 0 until 9) recognised[RotationSearch.turnIndex(n, r.turn)] = r.group.stickers[n] != null
+        if (r.inlier) {
+            val netFace = scheme.faceOf(r.group.color)
+            val k = rotations[netFace] ?: 0
+            for (j in 0 until 9) recognised[RotationSearch.turnIndex(RotationSearch.turnIndex(j, k), r.turn)] = net[netFace.ordinal * 9 + j] != null
+        }
         return FoundFace(face, r.names.toList(), recognised)
     }
 
@@ -470,8 +482,12 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         /** How long the whole cube must stay recognised before the scan finishes. */
         const val FINISH_MILLIS = 500L
 
-        private val realCorners: Set<List<Face>> = Corner.entries.flatMap { c -> (0 until 3).map { s -> List(3) { c.faces[(s + it) % 3] } } }.toSet()
-        private val realEdges: Set<List<Face>> = Edge.entries.flatMap { listOf(it.faces, it.faces.reversed()) }.toSet()
+        /** The best cube is clear when every place's margin reaches this ([BestCube.clearness]; chosen by simulation, `video-scan-progress` findings). */
+        const val CLEAR_MARGIN = 3.0
+
+        /** Frames between working the faces' rotations out again while the leading colours stay the same. */
+        const val ROTATION_EVERY = 10
+
 
         /** The quarter turns (clockwise) bringing [a] closest to [b], and how many stickers then agree. */
         fun bestTurn(a: List<CubeColor?>, b: List<CubeColor?>): Pair<Int, Int> =

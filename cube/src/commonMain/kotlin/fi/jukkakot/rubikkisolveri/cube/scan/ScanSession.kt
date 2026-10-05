@@ -32,7 +32,9 @@ sealed interface ScanEvent {
  * The finished scan: the colours, which stickers to double-check, whether it can be solved, and the
  * 54 raw readings (URFDLB, net order) the colours were worked out from. [rotations] is how many
  * quarter turns clockwise each face's capture was turned to net order, and [from] which face's
- * capture ended up on each face (see [RotationResult]); the pictures turn the same way.
+ * capture ended up on each face (see [RotationResult]); the pictures turn the same way. [inferred]
+ * stickers were not read clearly but follow from the rest of the cube (video scan): shown marked in
+ * the check without making the scan unsure.
  */
 data class ScanOutcome(
     val editor: CubeEditor,
@@ -41,6 +43,7 @@ data class ScanOutcome(
     val samples: List<Rgb> = emptyList(),
     val rotations: Map<Face, Int> = emptyMap(),
     val from: Map<Face, Face> = emptyMap(),
+    val inferred: Set<Int> = emptySet(),
 ) {
     /** Faces whose capture ended up on another face, as "captured>used" (for the log), or null. */
     val renamed: String?

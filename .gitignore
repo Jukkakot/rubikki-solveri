@@ -20,3 +20,5 @@ node_modules/
 # Test videos are large: kept locally only (testdata/video/<date>/*.mp4), frames extracted from them too.
 testdata/video/**/*.mp4
 testdata/video/**/frames/
+# Simulation tables (ScanSimulation, SIMULATION=<runs>); the numbers that matter go into findings.
+testdata/video/simulation*.txt

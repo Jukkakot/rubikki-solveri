@@ -26,6 +26,9 @@ class VideoScanHarness {
     private val root = File("../testdata/video/2026-10-05/frames")
     private val videos = listOf("20261005_151828" to "free angles, fingers", "20261005_151903" to "straight on, table")
 
+    /** The evening videos of 2026-10-05 (light: table by the window, dark room, dim ceiling light, another room); fixtures only. */
+    private val evening = listOf("20261005_213729", "20261005_213817", "20261005_213850", "20261005_213929")
+
     /** The scan right after the videos (scan-log.txt, 12:19:57Z), URFDLB. */
     private val truth = "YWRBWWGYRWGYWRGBOWWRBGGBWBYGROOYYRGBOYROORGBOBRGYBWOOY"
     private val trueFaces = truth.chunked(9).map { face -> face.map { CubeColor.fromLetter(it) } }
@@ -108,7 +111,7 @@ class VideoScanHarness {
         assumeTrue("set VIDEO_HARNESS=1 to run", System.getenv("VIDEO_HARNESS") == "1")
         assumeTrue("frames not extracted", videos.all { File(root, it.first).isDirectory })
         val dir = File("src/jvmTest/resources/video").apply { mkdirs() }
-        for ((video, _) in videos) {
+        for (video in videos.map { it.first } + evening.filter { File(root, it).isDirectory }) {
             val files = File(root, video).listFiles { f -> f.name.endsWith(".png") }!!.sortedBy { it.name }
             val text = files.joinToString("\n", postfix = "\n") { file ->
                 VideoFixtures.line(file.name.removeSuffix(".png"), find(ImageIO.read(file)).let { it.faces + it.partial }.map { FaceReading.of(it) })

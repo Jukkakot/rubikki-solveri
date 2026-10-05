@@ -19,6 +19,12 @@ object VideoFixtures {
     /** Straight on, from a table; hardly any corner views. */
     const val STRAIGHT = "20261005_151903"
 
+    /** URFDLB colours of the cube in the evening videos (the video scan in good light just before them, log 18:36:56Z). */
+    const val EVENING_TRUTH = "BRGBWRGRBOGWGRBGYGWWYOGWBROYBYGYOOBYRWRGOWWYROYWYBOROB"
+
+    /** Evening videos, frames to clear when all 54 had to be confirmed one by one (null: never): table by the window, dark room, dim ceiling light, another room. */
+    val EVENING = mapOf("20261005_213729" to 120, "20261005_213817" to 121, "20261005_213850" to null, "20261005_213929" to null)
+
     data class Frame(val name: String, val faces: List<FaceReading>)
 
     fun line(name: String, faces: List<FaceReading>): String = buildString {

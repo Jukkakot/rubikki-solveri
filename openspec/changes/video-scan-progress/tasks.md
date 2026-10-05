@@ -2,10 +2,10 @@
 
 ## 1. Best possible cube (cube)
 
-- [ ] 1.1 Sticker evidence: per-colour vote counts per net sticker, cost = −log smoothed share, red/orange lending to each other. Verify: unit tests (clear votes → low cost; red votes leave orange cheaper than blue).
-- [ ] 1.2 Best cube by pieces: corner and edge assignments (Hungarian, twist/flip inside the cost), cheapest fix for twist, flip and parity; margins per slot. Verify: unit tests (full right evidence → that cube; one orange read as red → right cube; two corner stickers known → third known; empty evidence → not clear).
-- [ ] 1.3 Simulation harness (design 4): random cubes and scans with realistic misreads; wrong finishes and stickers read at finish per threshold; pick T; write `findings.md`. Verify: a JVM test runs a smaller simulation with the chosen T and asserts zero wrong finishes.
-- [ ] 1.4 `VideoScan` uses it: `known` per sticker, `clear`/`finished` from margins with the support guard, outcome marks structure-decided stickers uncertain. Verify: replay tests on both videos (true cube, never a wrong clear cube, frames to clear printed and fewer than today).
+- [x] 1.1 Sticker evidence: per-colour vote counts per net sticker, cost = −log smoothed share, red/orange lending to each other. Verify: unit tests (clear votes → low cost; red votes leave orange cheaper than blue).
+- [x] 1.2 Best cube by pieces: corner and edge assignments (Hungarian, twist/flip inside the cost), cheapest fix for twist, flip and parity; margins per slot. Verify: unit tests (full right evidence → that cube; one orange read as red → right cube; two corner stickers known → third known; empty evidence → not clear).
+- [x] 1.3 Simulation harness (design 4): random cubes and scans with realistic misreads; wrong finishes and stickers read at finish per threshold; pick T; write `findings.md`. Verify: a JVM test runs a smaller simulation with the chosen T and asserts zero wrong finishes.
+- [x] 1.4 `VideoScan` uses it: `known` per sticker, `clear`/`finished` from margins with the support guard, outcome marks structure-decided stickers uncertain. Verify: replay tests on both videos (true cube, never a wrong clear cube, frames to clear printed and fewer than today).
 - [ ] 1.5 Stall reasons (dark, no cube, no progress / nothing fits) and `reset()`. Verify: unit tests with synthetic frames and times.
 - [ ] 1.6 Projection of every sticker into the picture from the orientation and the main face; sides facing the camera. Verify: unit tests against synthetic projections (known rotation → sticker points within a fraction of a step).
 

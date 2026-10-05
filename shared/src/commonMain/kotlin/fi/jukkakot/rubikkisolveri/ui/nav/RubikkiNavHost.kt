@@ -279,12 +279,13 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
 /**
  * Where a finished scan goes: the check next to the pictures, and for a sure scan (valid, nothing
  * uncertain or marked) straight on to the solution, which leaves the check behind it so going back
- * from the solution opens it.
+ * from the solution opens it. Stickers known only from the rest of the cube are marked in the check
+ * without stopping a sure scan.
  */
 fun afterScan(outcome: ScanOutcome): Pair<ManualInputRoute, SolveRoute?> {
     val check = ManualInputRoute(
         outcome.editor.encode(),
-        outcome.marked.joinToString(","),
+        (outcome.marked + outcome.inferred).sorted().joinToString(","),
         fromScan = true,
         confident = outcome.isConfident,
     )
