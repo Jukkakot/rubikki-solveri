@@ -7,7 +7,7 @@ import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 /**
  * The face readings of the test videos of 2026-10-05, one line per frame (written by
  * [VideoScanHarness.writeFixtures]): `<frame>` then per full face found
- * ` | cx cy ux uy vx vy rrggbb,…` (centre, steps, nine colours in reading order).
+ * ` | cx cy ux uy vx vy rrggbb,…` (centre, steps, nine colours in reading order, `-` for a sticker not found).
  */
 object VideoFixtures {
     /** URFDLB colours of the cube in both videos (the scan right after them). */
@@ -27,7 +27,7 @@ object VideoFixtures {
             append(" | ")
             append(listOf(f.centre.x, f.centre.y, f.u.x, f.u.y, f.v.x, f.v.y).joinToString(" ") { "%.1f".format(java.util.Locale.ROOT, it) })
             append(' ')
-            append(f.colors.joinToString(",") { it.toHex() })
+            append(f.colors.joinToString(",") { it?.toHex() ?: "-" })
         }
     }
 
@@ -40,7 +40,7 @@ object VideoFixtures {
                 parts.drop(1).map { face ->
                     val tokens = face.trim().split(" ")
                     val n = tokens.take(6).map { it.toDouble() }
-                    FaceReading(tokens[6].split(",").map { Rgb.fromHex(it) }, Point(n[0], n[1]), Point(n[2], n[3]), Point(n[4], n[5]))
+                    FaceReading(tokens[6].split(",").map { if (it == "-") null else Rgb.fromHex(it) }, Point(n[0], n[1]), Point(n[2], n[3]), Point(n[4], n[5]))
                 },
             )
         }

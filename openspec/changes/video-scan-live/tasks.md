@@ -2,8 +2,8 @@
 
 ## 1. Partial faces (cube)
 
-- [ ] 1.1 `FaceReading` with missing stickers (null colours); `VideoScan` takes partial faces: grouped by centre (none → dropped), turn found on the present stickers, votes only when all but at most one agree with the group, never an anchor. Verify: unit tests (a partial face votes for its eight stickers; one with a wrong lattice does not vote; no centre → ignored).
-- [ ] 1.2 Harness writes partial faces into the fixtures; replay tests feed them. Verify: both videos still give the true cube, no recognised sticker changes colour, and the replay prints frames-to-complete with and without partials (expected: fewer with).
+- [x] 1.1 `FaceReading` with missing stickers (null colours); `VideoScan` takes partial faces: grouped by centre (none → dropped), turn found on the present stickers, votes only when all but at most one agree with the group, never an anchor. Verify: unit tests (a partial face votes for its eight stickers; one with a wrong lattice does not vote; no centre → ignored).
+- [x] 1.2 Harness writes partial faces into the fixtures; replay tests feed them. Verify: both videos still give the true cube, no recognised sticker changes colour, and the replay prints frames-to-complete with and without partials (expected: fewer with).
 
 ## 2. Spike: smaller pieces (cube)
 

@@ -3,14 +3,18 @@ package fi.jukkakot.rubikkisolveri.cube.scan
 import kotlin.math.abs
 
 /**
- * One full face found in a frame: the nine readings in reading order (row by row as seen, [u] along
- * a row to the right, [v] down, not mirrored; see [FaceLattice]) and where the face lies in the
- * frame ([centre] and the steps [u], [v] between neighbouring stickers, in frame pixels).
+ * One face found in a frame: the nine readings in reading order (row by row as seen, [u] along
+ * a row to the right, [v] down, not mirrored; see [FaceLattice]; null where a sticker was not found,
+ * e.g. under a finger) and where the face lies in the frame ([centre] and the steps [u], [v] between
+ * neighbouring stickers, in frame pixels).
  */
-data class FaceReading(val colors: List<Rgb>, val centre: Point, val u: Point, val v: Point) {
+data class FaceReading(val colors: List<Rgb?>, val centre: Point, val u: Point, val v: Point) {
     init {
         require(colors.size == 9)
     }
+
+    /** All nine stickers found. */
+    val isFull: Boolean get() = colors.all { it != null }
 
     /** Size of one sticker cell in the frame (pixels²); the largest face is the one most towards the camera. */
     val area: Double get() = abs(u.cross(v))
@@ -47,6 +51,6 @@ data class FaceReading(val colors: List<Rgb>, val centre: Point, val u: Point, v
         /** How far off to the side it may lie, as a share of [NEIGHBOUR_STEPS]. */
         const val NEIGHBOUR_SIDEWAYS = 0.5
 
-        fun of(lattice: FaceLattice): FaceReading = FaceReading(lattice.colors, lattice.centre, lattice.u, lattice.v)
+        fun of(lattice: FaceLattice): FaceReading = FaceReading(lattice.stickers.map { it?.color }, lattice.centre, lattice.u, lattice.v)
     }
 }

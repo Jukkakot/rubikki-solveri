@@ -71,9 +71,12 @@ data class VideoScanState(
  * base for the phone and the browser.
  */
 class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
-    private class Reading(val rgb: List<Rgb>, val area: Double, var group: Group) {
-        val labs: List<Lab> = rgb.map { it.toLab() }
-        var names: List<CubeColor> = emptyList()
+    private class Reading(val rgb: List<Rgb?>, val area: Double, var group: Group) {
+        val labs: List<Lab?> = rgb.map { it?.toLab() }
+        var names: List<CubeColor?> = emptyList()
+
+        /** All nine stickers found; only a full reading can be a group's anchor. */
+        val full: Boolean = rgb.all { it != null }
 
         /** Quarter turns clockwise that bring this reading to its group's frame. */
         var turn = 0
@@ -112,15 +115,21 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     var state: VideoScanState = VideoScanState.EMPTY
         private set
 
-    /** Handles the full faces found in one frame taken at [nowMillis]. */
+    /**
+     * Handles the faces found in one frame taken at [nowMillis]. A partial face (stickers missing)
+     * counts only with its centre and only for a face already started by a full one.
+     */
     fun onFrame(faces: List<FaceReading>, nowMillis: Long): VideoScanState {
         val fresh = faces.map { face ->
-            val color = nameCentre(face.colors[CENTRE])
-            val group = groups.getOrPut(color) { Group(color) }
+            val centre = face.colors[CENTRE] ?: return@map null
+            val color = nameCentre(centre)
+            val group = if (face.isFull) groups.getOrPut(color) { Group(color) } else groups[color] ?: return@map null
             Reading(face.colors, face.area, group).also { group.add(it) }
         }
         for (i in faces.indices) for (j in faces.indices) {
-            if (i != j) faces[i].sideTowards(faces[j])?.let { fresh[i].neighbours += it to fresh[j] }
+            val a = fresh[i] ?: continue
+            val b = fresh[j] ?: continue
+            if (i != j) faces[i].sideTowards(faces[j])?.let { a.neighbours += it to b }
         }
         nameJointly()
         renameStickers()
@@ -139,7 +148,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val complete = all && contradictions.isEmpty() && validity?.isValid == true && (ambiguous - settled).isEmpty()
         if (!complete) completeSince = null else if (completeSince == null) completeSince = nowMillis
 
-        val pose = poseOf(fresh)
+        val pose = poseOf(fresh.filterNotNull())
         if (pose != null) lastPose = pose
         val recognised = net.count { it != null }
         state = VideoScanState(
@@ -186,7 +195,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
     private fun meanCentre(group: Group): Rgb {
         val list = group.inliers.ifEmpty { group.readings }
-        return Rgb(list.sumOf { it.rgb[CENTRE].r } / list.size, list.sumOf { it.rgb[CENTRE].g } / list.size, list.sumOf { it.rgb[CENTRE].b } / list.size)
+        return Rgb(list.sumOf { it.rgb[CENTRE]!!.r } / list.size, list.sumOf { it.rgb[CENTRE]!!.g } / list.size, list.sumOf { it.rgb[CENTRE]!!.b } / list.size)
     }
 
     /** Once all six faces are seen well, their centres are named together (each colour once, the best fit). */
@@ -205,9 +214,9 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
     /** Every sticker named with the cube's own centres as references (the guided scan's live reading). */
     private fun renameStickers() {
-        val refs = ColorClassifier.references(groups.mapValues { (_, g) -> g.inliers.ifEmpty { g.readings }.map { it.labs[CENTRE] } })
+        val refs = ColorClassifier.references(groups.mapValues { (_, g) -> g.inliers.ifEmpty { g.readings }.map { it.labs[CENTRE]!! } })
         for (g in groups.values) for (r in g.readings) {
-            r.names = r.rgb.mapIndexed { n, rgb -> if (n == CENTRE) g.color else ColorClassifier.live(rgb, refs) }
+            r.names = r.rgb.mapIndexed { n, rgb -> if (n == CENTRE) g.color else rgb?.let { ColorClassifier.live(it, refs) } }
         }
     }
 
@@ -221,8 +230,9 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     }
 
     /**
-     * The group's anchor is the reading most others agree with (in some rotation); readings agreeing
-     * with it on [MIN_AGREE] stickers vote, each turned to the group's frame.
+     * The group's anchor is the full reading most others agree with (in some rotation); full readings
+     * agreeing with it on [MIN_AGREE] stickers vote, each turned to the group's frame. A partial
+     * reading votes when all but one of its stickers agree with the anchor in a single best turn.
      */
     private fun consensus(g: Group) {
         val rs = g.readings
@@ -234,7 +244,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             }
         }
         val current = rs.indexOf(g.anchor)
-        val best = rs.indices.maxWith(compareBy<Int> { support[it] }.thenBy { if (it == current) 1 else 0 }.thenBy { -it })
+        val best = rs.indices.filter { rs[it].full }.maxWith(compareBy<Int> { support[it] }.thenBy { if (it == current) 1 else 0 }.thenBy { -it })
         val anchor = rs[best]
         if (anchor !== g.anchor) {
             // Keep the frame: turn the new anchor the way it fits the colours known so far.
@@ -246,7 +256,13 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         for (r in rs) {
             val (k, agree) = bestTurn(r.names, anchor.names)
             r.turn = (k + g.anchorTurn) % 4
-            r.inlier = agree >= MIN_AGREE
+            r.inlier = if (r.full) {
+                agree >= MIN_AGREE
+            } else {
+                val present = r.names.count { it != null }
+                val unique = (0 until 4).none { j -> j != k && agreeing(r.names, anchor.names, j) == agree }
+                agree >= present - 1 && unique
+            }
         }
         val inliers = g.inliers
         val stickers = arrayOfNulls<CubeColor>(9)
@@ -254,7 +270,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val disputed = HashSet<Int>()
         for (n in 0 until 9) {
             val counts = HashMap<CubeColor, Int>()
-            val voters = inliers.map { it to it.names[RotationSearch.turnIndex(n, it.turn)] }
+            val voters = inliers.mapNotNull { r -> r.names[RotationSearch.turnIndex(n, r.turn)]?.let { r to it } }
             for ((_, c) in voters) counts[c] = (counts[c] ?: 0) + 1
             val ranked = counts.entries.sortedByDescending { it.value }
             val lead = ranked.getOrNull(0)
@@ -270,7 +286,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             g.sticky[n] = color
             stickers[n] = color
             if (color != null) {
-                val agreeing = voters.filter { it.second == color }.map { it.first.rgb[RotationSearch.turnIndex(n, it.first.turn)] }
+                val agreeing = voters.filter { it.second == color }.map { it.first.rgb[RotationSearch.turnIndex(n, it.first.turn)]!! }
                 samples[n] = Rgb(
                     FrameSampler.median(agreeing.map { it.r }),
                     FrameSampler.median(agreeing.map { it.g }),
@@ -408,8 +424,12 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** The quarter turns (clockwise) bringing [a] closest to [b], and how many stickers then agree. */
         fun bestTurn(a: List<CubeColor?>, b: List<CubeColor?>): Pair<Int, Int> =
-            (0 until 4).map { k -> k to (0 until 9).count { n -> b[n] != null && a[RotationSearch.turnIndex(n, k)] == b[n] } }
+            (0 until 4).map { k -> k to agreeing(a, b, k) }
                 .maxWith(compareBy<Pair<Int, Int>> { it.second }.thenBy { -it.first })
+
+        /** How many stickers of [a], turned [k] quarter turns, agree with [b] (missing ones never agree). */
+        private fun agreeing(a: List<CubeColor?>, b: List<CubeColor?>, k: Int): Int =
+            (0 until 9).count { n -> b[n] != null && a[RotationSearch.turnIndex(n, k)] == b[n] }
 
         /** The side (0 top, 1 right, 2 bottom, 3 left) of [face] in the net that [other] lies across, or null when they do not touch. */
         fun netSide(face: Face, other: Face): Int? = (0 until 4).firstOrNull { neighbourAt(face, it) == other }

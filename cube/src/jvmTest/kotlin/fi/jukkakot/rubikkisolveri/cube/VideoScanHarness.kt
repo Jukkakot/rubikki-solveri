@@ -100,7 +100,7 @@ class VideoScanHarness {
     }
 
     /**
-     * `video-scan` task 1.1: the full faces found in every frame, saved as the fixtures the
+     * `video-scan` task 1.1: the full and partial faces found in every frame, saved as the fixtures the
      * [VideoScanTest]s replay (`src/jvmTest/resources/video/<video>.txt`, see [VideoFixtures]).
      */
     @Test
@@ -111,7 +111,7 @@ class VideoScanHarness {
         for ((video, _) in videos) {
             val files = File(root, video).listFiles { f -> f.name.endsWith(".png") }!!.sortedBy { it.name }
             val text = files.joinToString("\n", postfix = "\n") { file ->
-                VideoFixtures.line(file.name.removeSuffix(".png"), find(ImageIO.read(file)).faces.map { FaceReading.of(it) })
+                VideoFixtures.line(file.name.removeSuffix(".png"), find(ImageIO.read(file)).let { it.faces + it.partial }.map { FaceReading.of(it) })
             }
             File(dir, "$video.txt").writeText(text)
         }

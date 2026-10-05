@@ -19,8 +19,10 @@ class VideoScanTest {
     private val truth = Cube.fromColorString(VideoFixtures.TRUTH)
 
     /** Replays a test video's face readings at 10 fps; returns every frame's state. */
-    private fun replay(video: String, scan: VideoScan = VideoScan()): List<VideoScanState> =
-        VideoFixtures.load(video).mapIndexed { i, frame -> scan.onFrame(frame.faces, i * 100L) }
+    private fun replay(video: String, scan: VideoScan = VideoScan()): List<VideoScanState> = replay(VideoFixtures.load(video), scan)
+
+    private fun replay(frames: List<VideoFixtures.Frame>, scan: VideoScan = VideoScan()): List<VideoScanState> =
+        frames.mapIndexed { i, frame -> scan.onFrame(frame.faces, i * 100L) }
 
     @Test
     fun angledVideoGivesTheTrueCube() {
@@ -51,12 +53,28 @@ class VideoScanTest {
         }
     }
 
+    /** Frames until the cube is first complete (null: never) and stickers recognised at the halfway frame, replaying only the faces [keep] lets through. */
+    private fun speed(video: String, keep: (FaceReading) -> Boolean): Pair<Int?, Int> {
+        val states = replay(VideoFixtures.load(video).map { f -> f.copy(faces = f.faces.filter(keep)) })
+        return states.indexOfFirst { it.complete }.takeIf { it >= 0 } to states[states.size / 2].recognised
+    }
+
+    @Test
+    fun partialFacesDoNotSlowTheScan() {
+        for (video in listOf(VideoFixtures.ANGLED, VideoFixtures.STRAIGHT)) {
+            val without = speed(video) { it.isFull }
+            val with = speed(video) { true }
+            println("$video frames to complete / recognised at halfway: full faces only $without, with partial faces $with")
+            assertTrue(with.first != null && without.first != null && with.first!! <= without.first!!, "$video: $with vs $without")
+        }
+    }
+
     /** Readings of [face] of the true cube in its net order, as the default palette would read them. */
-    private fun reading(face: Face, turn: Int = 0, wrong: Int? = null, centre: Point = Point(100.0, 100.0)): FaceReading {
+    private fun reading(face: Face, turn: Int = 0, wrong: Int? = null, centre: Point = Point(100.0, 100.0), missing: Set<Int> = emptySet()): FaceReading {
         val nine = (0 until 9).map { truth[face.ordinal * 9 + it] }.let { RotationSearch.turned(it, turn) }
         val colors = nine.mapIndexed { n, c ->
             val color = if (n == wrong) CubeColor.entries.first { it != c && it != nine[4] } else c
-            ColorClassifier.DEFAULT_PALETTE.getValue(color)
+            if (n in missing) null else ColorClassifier.DEFAULT_PALETTE.getValue(color)
         }
         return FaceReading(colors, centre, Point(30.0, 0.0), Point(0.0, 30.0))
     }
@@ -102,6 +120,39 @@ class VideoScanTest {
         assertEquals(Tilt.DOWN, VideoScan.hint(Pose(Face.F, Face.D), stickers, emptySet()))
         assertNull(VideoScan.hint(Pose(Face.D, Face.F), stickers, emptySet()), "already in view")
         assertNull(VideoScan.hint(Pose(Face.F, Face.U), truth.toList(), emptySet()), "nothing missing")
+    }
+
+    private fun recognisedOn(state: VideoScanState, face: Face) = (0 until 9).filter { state.stickers[face.ordinal * 9 + it] != null }
+
+    @Test
+    fun aPartialFaceVotesForTheStickersItShows() {
+        val scan = VideoScan()
+        repeat(2) { scan.onFrame(listOf(reading(Face.U)), it * 100L) }
+        val s = scan.onFrame(listOf(reading(Face.U, turn = 1, missing = setOf(1))), 200)
+        // Missing place 1 of the turned reading is a different place of the face; the other eight reach three votes.
+        assertEquals(8, recognisedOn(s, Face.U).size)
+        for (n in recognisedOn(s, Face.U)) assertEquals(truth[Face.U.ordinal * 9 + n], s.stickers[Face.U.ordinal * 9 + n])
+    }
+
+    @Test
+    fun aPartialFaceWithAWrongLatticeDoesNotVote() {
+        val scan = VideoScan()
+        repeat(2) { scan.onFrame(listOf(reading(Face.U)), it * 100L) }
+        // The stickers of another face around the right centre: a lattice across the cube's edge.
+        val r = reading(Face.R, missing = setOf(0))
+        val wrong = r.copy(colors = r.colors.toMutableList().also { it[4] = reading(Face.U).colors[4] })
+        val s = scan.onFrame(listOf(wrong, wrong), 200)
+        assertEquals(emptyList(), recognisedOn(s, Face.U))
+    }
+
+    @Test
+    fun aPartialFaceWithoutItsCentreOrBeforeAnyFullFaceIsIgnored() {
+        val scan = VideoScan()
+        repeat(3) { scan.onFrame(listOf(reading(Face.U, missing = setOf(0))), it * 100L) }
+        assertEquals(0, scan.state.recognised, "no full face yet")
+        repeat(2) { scan.onFrame(listOf(reading(Face.U)), 300 + it * 100L) }
+        val s = scan.onFrame(listOf(reading(Face.U, missing = setOf(4))), 500)
+        assertEquals(emptyList(), recognisedOn(s, Face.U))
     }
 
     @Test
