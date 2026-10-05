@@ -50,7 +50,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 40 | `video-scan` | done | Scan by turning the cube in front of the camera: a grey 3D progress cube in the camera corner fills sticker by sticker, a turning-hint arrow on it; offered beside the guided scan (default) until it proves reliable on the phone |
 | 41 | `video-scan-live` | done | Video scan feels live: faces with a finger over a sticker count, a dot in the read colour on every sticker on the camera picture, the progress cube follows the real cube smoothly and shows unconfirmed stickers faintly |
 | 42 | `video-scan-progress` | done | Video scan finishes on the most likely possible cube (unseen stickers follow from the rest, a misread one is corrected), progress marked on the real cube in the picture with a turn arrow beside it, a restart panel with the reason when it cannot get on, log snapshots; progress cube removed (phone testing 2026-10-05) |
-| 43 | `video-scan-light` | planned | Video scan reads colours in warm, cool and dim light (light colour taken out, glare left out, readings between two colours stay uncertain so the cube decides); the stall panel becomes a notice that never blocks scanning, with a torch button (phone testing 2026-10-05) |
+| 43 | `video-scan-light` | done | Video scan reads colours in dim, warm light: readings between two colours stay uncertain (soft votes) so the cube decides, glare left out, washed-out readings count little; both dim test videos now finish; the stall panel became a notice at the bottom of the picture that never blocks scanning, with a torch button; torch re-meters the camera; ticks only when confirmed; the browser shows the camera's own sharp video (phone testing 2026-10-05) |
 
 ## Backlog
 

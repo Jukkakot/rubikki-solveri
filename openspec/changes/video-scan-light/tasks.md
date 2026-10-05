@@ -17,4 +17,4 @@
 
 ## 3. Docs
 
-- [ ] 3.1 `docs/architecture.md` video scan and browser camera where the map changes; roadmap row `video-scan-light` done.
+- [x] 3.1 `docs/architecture.md` video scan and browser camera where the map changes; roadmap row `video-scan-light` done.
