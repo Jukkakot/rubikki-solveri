@@ -6,7 +6,7 @@ The user wants to scan by just turning the cube in front of the camera, the app 
 state bit by bit from the video, with no separate captures (the current guided scan stays as an
 option) and a visual sign of what is recognised already. That needs finding the cube's faces
 anywhere in a frame, also at an angle, which the app cannot do today (it reads a fixed grid). This
-spike finds out offline, on the user's own videos, whether that works well enough before anything
+spike is step 1 of `video-scan` (the feature's design and specs); it finds out offline, on the user's own videos, whether that works well enough before anything
 is built into the app.
 
 ## What Changes

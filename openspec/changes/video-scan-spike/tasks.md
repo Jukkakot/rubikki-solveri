@@ -11,5 +11,5 @@
 
 ## 3. Harness and numbers
 
-- [ ] 3.1 JVM test harness (skipped when the frames are missing, so CI passes): per video, frames with ≥1 lattice, lattices per frame, sticker colours vs the true state (best rotation), faces seen, and whether the assembled cube equals the true state. Verify: the harness prints a table for both videos.
+- [ ] 3.1 JVM test harness (skipped when the frames are missing, so CI passes): per video, frames with ≥1 lattice, lattices per frame, sticker colours vs the true state (best rotation), faces seen, whether the assembled cube equals the true state, how many frames show two or three faces together (needed for face rotations and the pose in `video-scan`), how many lattices miss only one or two stickers (the future sticker-by-sticker input), and JVM milliseconds per frame. Verify: the harness prints a table for both videos.
 - [ ] 3.2 Tune the thresholds once on the numbers (no overfitting to single frames), write `findings.md` in this change: numbers, example frames where it fails, and a go / no-go proposal for the live feature. Verify: findings written; the user decides the next step.
