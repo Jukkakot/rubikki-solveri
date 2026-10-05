@@ -61,6 +61,36 @@ sticker steps.
    `restart`, `leave` (back pressed, with the snapshot). A video scan of a minute gives some 30
    lines.
 
+## Decisions made while implementing (Claude, autopilot)
+
+10. **Known = clear margin or votes.** A sticker counts as known when its piece place's margin
+    clears T, else when its votes alone confirm it (the earlier rule: 3 agreeing readings, twice the
+    next). Margins alone left a single face shown with no solid marks at all (the piece behind a
+    white sticker is open until more is seen). A seen face's centre counts as known.
+11. **Lending capped at 2 votes**, smoothing 1: a red/orange difference grows with the readings
+    (5 → 0.69, 20 → 1.95) instead of stopping at a fixed ratio. Vote-sure for the support guard
+    needs 6 readings for red/orange, 3 for the others.
+12. **Face rotations from the same cost.** Faces without corner views take the turns that make the
+    best cube cheapest; a face is settled when every turn that reads it differently costs at least T
+    more. Worked out when the leading colours change, else every 10 frames (it costs some 20
+    best-cube solves). Replaces the real-piece count and `RotationSearch` in the video scan.
+13. **T = 3.0** from 1000 simulated runs, not 10 000 (12 minutes for 1000; no wrong finish from
+    T = 1.5 up). Margins capped at 15 and searched with early stops: 1.7 ms per frame on the JVM.
+14. **Brightness cannot tell dim warm light**: the camera evens exposure out (evening videos:
+    median sticker brightness 130–209 whether they fail or not). "Too dark" is real darkness only
+    (median under 70 for 3 s); dim warm light shows as "stuck" (the colours fit no cube clearly), so
+    the stuck panel's tip is "Kokeile toista valoa". No cube: 8 s without a face.
+15. **Results on the test videos** (frames to clear, before → now): angled 226 → 225, straight
+    143 → 141, evening window 120 → 117, evening dark room 121 → 119; the two evening videos in dim
+    ceiling light / another room read red as orange on a whole side and never clear (before: never
+    complete either). The angled video waits for a good view of D, whose early readings are
+    consistently wrong. The gain is in misread cases (simulation), not in clean videos.
+16. **Screen**: marks on found faces in their read colour (solid when known, ring when not), on
+    projected sides in the known colour or a white ring; mark size from each side's own sticker
+    spacing (a side at an angle is narrower). The count line ("54/54 tarraa") is gone; status texts
+    are two or three words. Stickers known only from the rest go to the check as marked
+    (`ScanOutcome.inferred`) without stopping a sure scan.
+
 ## Risks
 
 - The structure can make a wrong cube look clear when a whole piece was misread consistently; the

@@ -11,11 +11,11 @@
 
 ## 2. Screen (shared)
 
-- [ ] 2.1 Overlay: solid / empty marks on the projected stickers of sides facing the camera, found faces as fallback, tick on done sides; progress cube removed; done-sides row of six colours under the picture. Verify: smoke test renders with a partly known state.
-- [ ] 2.2 Turn arrow on the picture beside the cube; few-word status. Verify: covered by the smoke test.
-- [ ] 2.3 Restart panel (icon, short tip, restart button, "Korjaa värit") per stall reason; small lamp notice for dim light; the bottom button renamed to "Korjaa värit" (fi + en). Verify: Compose test that a stall shows the panel and restart clears the progress.
-- [ ] 2.4 Log lines: snapshot every 2 s, side / clear / stall / restart / leave. Verify: unit test of the snapshot line's content from a state.
+- [x] 2.1 Overlay: solid / empty marks on the projected stickers of sides facing the camera, found faces as fallback, tick on done sides; progress cube removed; done-sides row of six colours under the picture. Verify: smoke test renders with a partly known state.
+- [x] 2.2 Turn arrow on the picture beside the cube; few-word status. Verify: covered by the smoke test.
+- [x] 2.3 Restart panel (icon, short tip, restart button, "Korjaa värit") per stall reason; small lamp notice for dim light; the bottom button renamed to "Korjaa värit" (fi + en). Verify: Compose test that a stall shows the panel and restart clears the progress.
+- [x] 2.4 Log lines: snapshot every 2 s, side / clear / stall / restart / leave. Verify: unit test of the snapshot line's content from a state.
 
 ## 3. Docs
 
-- [ ] 3.1 `docs/architecture.md` video scan section where the map changes; roadmap row 42 `video-scan-progress` done.
+- [x] 3.1 `docs/architecture.md` video scan section where the map changes; roadmap row 42 `video-scan-progress` done.

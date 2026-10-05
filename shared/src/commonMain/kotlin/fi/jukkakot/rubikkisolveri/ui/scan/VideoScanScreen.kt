@@ -1,5 +1,6 @@
 package fi.jukkakot.rubikkisolveri.ui.scan
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,10 +25,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.withFrameMillis
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -37,18 +39,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import fi.jukkakot.rubikkisolveri.cube.ColorScheme
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceFinder
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
-import fi.jukkakot.rubikkisolveri.cube.scan.FoundFace
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
+import fi.jukkakot.rubikkisolveri.cube.scan.Stall
 import fi.jukkakot.rubikkisolveri.cube.scan.Tilt
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
@@ -58,27 +63,24 @@ import fi.jukkakot.rubikkisolveri.res.*
 import fi.jukkakot.rubikkisolveri.ui.common.BackButton
 import fi.jukkakot.rubikkisolveri.ui.common.FitColumn
 import fi.jukkakot.rubikkisolveri.ui.common.RoundIconToggle
-import fi.jukkakot.rubikkisolveri.ui.cube3d.Cube3D
-import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeScene
-import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeViewState
 import fi.jukkakot.rubikkisolveri.ui.cube3d.StickerColors
-import fi.jukkakot.rubikkisolveri.ui.cube3d.holdFor
 import fi.jukkakot.rubikkisolveri.ui.elapsedMillis
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-/** The faces (full and partial) [FaceFinder] found in one camera picture of [width]×[height] pixels. */
-class FoundFaces(val faces: List<FaceReading>, val width: Int, val height: Int)
+/** The faces (full and partial) [FaceFinder] found in one camera picture of [width]×[height] pixels, in [finderMs]. */
+class FoundFaces(val faces: List<FaceReading>, val width: Int, val height: Int, val finderMs: Long = 0)
 
 /**
  * The video scan: the camera's pictures go through [FaceFinder] off the main thread (in the browser
- * Dispatchers.Default is the page's one thread; its time per frame is logged), the faces found to
- * [VideoScanContent].
+ * Dispatchers.Default is the page's one thread; its time per frame goes into the log's snapshots),
+ * the faces found to [VideoScanContent].
  */
 @Composable
 fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome) -> Unit) {
@@ -91,17 +93,10 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
         var cameraFailed by remember { mutableStateOf(false) }
         LaunchedEffect(images) {
             withContext(Dispatchers.Default) {
-                var count = 0
-                var millis = 0L
                 images.collect { image ->
                     val start = elapsedMillis()
                     val faces = FaceFinder.find(image.argb, image.width, image.height).let { it.faces + it.partial }.map(FaceReading::of)
-                    millis += elapsedMillis() - start
-                    if (++count % TIMING_FRAMES == 0) {
-                        AppLog.info(Evt.SCAN_VIDEO, null, "finderMs" to millis / TIMING_FRAMES, "size" to "${image.width}x${image.height}")
-                        millis = 0
-                    }
-                    found.emit(FoundFaces(faces, image.width, image.height))
+                    found.emit(FoundFaces(faces, image.width, image.height, elapsedMillis() - start))
                 }
             }
         }
@@ -131,11 +126,13 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
 
 /**
  * The video scan without the camera: [found] are the faces of each picture, [preview] draws the
- * camera. The camera picture is large, the faces found outlined on it with a dot in the colour read
- * for each sticker; the progress cube sits in its
- * top corner with the turning hint's arrow on it, the hint's line below the picture. Exposure is
- * locked once the first face is found. All recognised and possible for half a second → [onResult];
- * "check now" hands over what is known. [clock] is the time in milliseconds (tests pass their own).
+ * camera. The progress is drawn on the real cube in the picture ([CubeMarks]): a solid dot per known
+ * sticker, an empty ring per sticker still needed, a tick on each side done; a large arrow beside the
+ * cube shows which way to turn it, and a row of the six side colours under the picture tells which
+ * sides are done. When the scan cannot get on, a panel says why and offers to start again (the
+ * camera keeps running) or to fix the colours by hand. Exposure is locked once the first face is
+ * found. Clear for half a second → [onResult]; "fix colours" hands over what is known. [clock] is
+ * the time in milliseconds (tests pass their own).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -157,6 +154,7 @@ fun VideoScanContent(
     var picture by remember { mutableStateOf<FoundFaces?>(null) }
     var seenFace by remember { mutableStateOf(false) }
     var done by remember { mutableStateOf(false) }
+    val log = remember { ScanLogger() }
     val haptics = LocalHapticFeedback.current
 
     fun finish(outcome: ScanOutcome) {
@@ -167,6 +165,7 @@ fun VideoScanContent(
             "way" to "video",
             "valid" to outcome.validity.isValid,
             "uncertain" to outcome.uncertain.size,
+            "inferred" to outcome.inferred.size,
             "cube" to outcome.editor.encode(),
             "rotations" to Face.entries.joinToString("") { "${it.name}${outcome.rotations[it] ?: 0}" },
         )
@@ -178,9 +177,11 @@ fun VideoScanContent(
         found.collect { f ->
             if (done) return@collect
             val now = clock()
+            val before = state
             state = scan.onFrame(f.faces, now)
             picture = f
             if (f.faces.isNotEmpty()) seenFace = true
+            log.onFrame(before, state, f, now)
             if (state.newStickers > 0 && now - lastBuzz >= BUZZ_MILLIS) {
                 lastBuzz = now
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -189,6 +190,13 @@ fun VideoScanContent(
         }
     }
     LaunchedEffect(seenFace) { onLockExposure(seenFace) }
+    DisposableEffect(Unit) { onDispose { if (!done) log.leave(state) } }
+
+    fun restart() {
+        log.restart(state)
+        scan.reset()
+        state = scan.state
+    }
 
     Scaffold(
         topBar = {
@@ -228,166 +236,291 @@ fun VideoScanContent(
                 } else {
                     preview(Modifier.fillMaxSize())
                 }
-                picture?.let { FaceMarks(state.found, it.width, it.height, Modifier.fillMaxSize()) }
-                ProgressCube(state, Modifier.align(Alignment.TopEnd).padding(10.dp))
+                picture?.let { p ->
+                    CubeMarks(state, p.width, p.height, Modifier.fillMaxSize())
+                    TurnArrow(state, p.width, p.height, Modifier.fillMaxSize())
+                }
+                if (state.dim && state.stall == null) DimNotice(Modifier.align(Alignment.TopStart).padding(10.dp))
+                state.stall?.let { stall ->
+                    RestartPanel(stall, onRestart = ::restart, onFix = { finish(scan.outcome()) }, Modifier.align(Alignment.Center))
+                }
             }
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(statusText(state), style = MaterialTheme.typography.titleSmall)
-                Text(
-                    stringResource(Res.string.video_count, state.recognised),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                DoneSides(VideoScanLog.doneSides(state))
             }
         }
     }
+}
+
+/** The turning points of the scan and a snapshot every two seconds, into the log. */
+private class ScanLogger {
+    private var lastSnapshot: Long? = null
+    private var frames = 0
+    private var faces = 0
+    private var finderMs = 0L
+
+    fun onFrame(before: VideoScanState, now: VideoScanState, f: FoundFaces, at: Long) {
+        frames++
+        faces += f.faces.size
+        finderMs += f.finderMs
+        for (side in VideoScanLog.doneSides(now) - VideoScanLog.doneSides(before)) event("side", "side" to side.name)
+        if (now.complete && !before.complete) event("clear")
+        val stall = now.stall
+        if (stall != null && stall != before.stall) event("stall", "reason" to stall.name.lowercase())
+        val last = lastSnapshot ?: at.also { lastSnapshot = it }
+        if (at - last >= VideoScanLog.SNAPSHOT_MILLIS) {
+            snapshot(now)
+            lastSnapshot = at
+        }
+    }
+
+    fun restart(state: VideoScanState) = event("restart", "reason" to state.stall?.name?.lowercase())
+
+    fun leave(state: VideoScanState) {
+        event("leave")
+        snapshot(state)
+    }
+
+    private fun snapshot(state: VideoScanState) {
+        val n = frames.coerceAtLeast(1)
+        AppLog.info(Evt.SCAN_VIDEO, null, *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n))
+        frames = 0
+        faces = 0
+        finderMs = 0
+    }
+
+    private fun event(kind: String, vararg fields: Pair<String, Any?>) = AppLog.info(Evt.SCAN_VIDEO, null, "kind" to kind, *fields)
 }
 
 @Composable
 private fun statusText(state: VideoScanState): String {
     val hint = state.hint
-    return when {
-        state.complete -> stringResource(Res.string.video_status_done)
-        state.contradictions.isNotEmpty() -> stringResource(Res.string.video_status_marked)
-        hint != null -> stringResource(
-            when (hint) {
+    return stringResource(
+        when {
+            state.complete -> Res.string.video_status_done
+            hint != null -> when (hint) {
                 Tilt.UP -> Res.string.video_hint_up
                 Tilt.DOWN -> Res.string.video_hint_down
                 Tilt.LEFT -> Res.string.video_hint_left
                 Tilt.RIGHT -> Res.string.video_hint_right
-            },
-        )
-        state.found.isEmpty() -> stringResource(Res.string.video_status_find)
-        else -> stringResource(Res.string.video_status_keep)
-    }
+            }
+            state.found.isEmpty() -> Res.string.video_status_find
+            else -> Res.string.video_status_keep
+        },
+    )
 }
 
 /**
- * The faces found in the latest picture of [width]×[height] pixels: a thin, dim outline and a round
- * dot per sticker in the colour it was read as, solid once recognised, faint before. The picture
- * fills the box (both are the visible part).
+ * The progress on the real cube in the latest picture of [width]×[height] pixels (the picture fills
+ * the box). With the cube's pose known, every sticker of the sides facing the camera is marked where
+ * it lies: a solid dot in its colour when known, an empty ring when still needed. The faces found in
+ * the picture win over the projection there: each sticker is marked in the colour it was read as,
+ * solid once known. A side done gets a tick at its centre.
  */
 @Composable
-private fun FaceMarks(found: List<FoundFace>, width: Int, height: Int, modifier: Modifier) {
+private fun CubeMarks(state: VideoScanState, width: Int, height: Int, modifier: Modifier) {
+    val done = VideoScanLog.doneSides(state)
     Canvas(modifier) {
         val sx = size.width / width
         val sy = size.height / height
         fun at(p: Point) = Offset((p.x * sx).toFloat(), (p.y * sy).toFloat())
-        val path = Path()
-        for (face in found) {
+        val foundSides = HashSet<Int>()
+        val ticks = ArrayList<Pair<Offset, Float>>()
+        for (face in state.found) {
             val reading = face.reading
-            val corners = reading.outline.map(::at)
-            path.reset()
-            path.moveTo(corners[0].x, corners[0].y)
-            for (c in corners.drop(1)) path.lineTo(c.x, c.y)
-            path.close()
-            drawPath(path, Color.Black.copy(alpha = 0.25f), style = Stroke(3.dp.toPx(), join = StrokeJoin.Round))
-            drawPath(path, OUTLINE.copy(alpha = 0.5f), style = Stroke(1.5.dp.toPx(), join = StrokeJoin.Round))
             val step = minOf(reading.u.length * sx, reading.v.length * sy).toFloat()
-            val radius = step * DOT_SHARE / 2
             for (n in 0 until 9) {
                 val name = face.names[n] ?: continue
-                val centre = at(reading.centre + reading.u * (n % 3 - 1.0) + reading.v * (n / 3 - 1.0))
-                val alpha = if (face.recognised[n]) 1f else FAINT_DOT
-                drawCircle(StickerColors.of(name).copy(alpha = alpha), radius, centre)
-                drawCircle(StickerColors.PLASTIC.copy(alpha = alpha), radius, centre, style = Stroke(maxOf(1f, radius * 0.18f)))
+                mark(at(reading.centre + reading.u * (n % 3 - 1.0) + reading.v * (n / 3 - 1.0)), step, StickerColors.of(name), face.recognised[n])
+            }
+            // The side this face is, once its centre is named: the centre's colour tells it.
+            val side = face.names[4]?.let { c -> Face.entries.firstOrNull { ColorScheme.STANDARD[it] == c } }
+            if (side != null) {
+                foundSides += side.ordinal
+                if (side in done) ticks += at(reading.centre) to step
             }
         }
+        state.projection?.let { projection ->
+            for (side in projection.facing) {
+                if (side.ordinal in foundSides) continue
+                // A side seen at an angle is narrower: its marks follow its own sticker spacing.
+                val p = { n: Int -> at(projection.points[side.ordinal * 9 + n]) }
+                val step = minOf((p(1) - p(0)).getDistance(), (p(3) - p(0)).getDistance())
+                for (n in 0 until 9) {
+                    val i = side.ordinal * 9 + n
+                    val color = state.stickers[i]
+                    mark(at(projection.points[i]), step, color?.let(StickerColors::of) ?: NEEDED, color != null)
+                }
+                if (side in done) ticks += at(projection.points[side.ordinal * 9 + 4]) to step
+            }
+        }
+        for ((centre, step) in ticks) tick(centre, step * TICK_SHARE)
     }
+}
+
+/** A sticker's mark: a solid dot in [color] when [solid], else an empty ring; smaller than the sticker. */
+private fun DrawScope.mark(centre: Offset, step: Float, color: Color, solid: Boolean) {
+    val radius = step * DOT_SHARE / 2
+    if (solid) {
+        drawCircle(color, radius, centre)
+        drawCircle(StickerColors.PLASTIC, radius, centre, style = Stroke(maxOf(1f, radius * 0.18f)))
+    } else {
+        drawCircle(StickerColors.PLASTIC.copy(alpha = 0.6f), radius, centre, style = Stroke(maxOf(2f, radius * 0.5f)))
+        drawCircle(color, radius, centre, style = Stroke(maxOf(1.5f, radius * 0.28f)))
+    }
+}
+
+/** A white tick with a dark outline, [size] wide, centred on [centre]. */
+private fun DrawScope.tick(centre: Offset, size: Float) {
+    val path = Path().apply {
+        moveTo(centre.x - size * 0.45f, centre.y)
+        lineTo(centre.x - size * 0.12f, centre.y + size * 0.32f)
+        lineTo(centre.x + size * 0.45f, centre.y - size * 0.35f)
+    }
+    drawPath(path, StickerColors.PLASTIC, style = Stroke(size * 0.3f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    drawPath(path, Color.White, style = Stroke(size * 0.16f, cap = StrokeCap.Round, join = StrokeJoin.Round))
 }
 
 /**
- * The cube as recognised so far, small on a dark rounded backing: grey until a sticker has readings,
- * then its leading colour faintly, fully once recognised; contradictions marked. It eases towards
- * the real cube's orientation at display rate (with the usual tilt so three faces show) and stays
- * put while none is known; the turning hint's arrow on it.
+ * The turning hint as a large arrow beside the real cube, on the side the cube should move towards
+ * and pointing that way; it fades out while no face is found.
  */
 @Composable
-private fun ProgressCube(state: VideoScanState, modifier: Modifier) {
-    val view = remember { CubeViewState() }
-    val target = state.orientation?.let { CubeScene.viewFor(holdFor(it)) }
-    LaunchedEffect(target) {
-        if (target == null) return@LaunchedEffect
-        var last = withFrameMillis { it }
-        while (view.rotation.angleTo(target) > SETTLED_RADIANS) {
-            val now = withFrameMillis { it }
-            view.rotation = view.rotation.easeTowards(target, (now - last).toFloat())
-            last = now
-        }
-    }
-    Box(modifier.size(PROGRESS_SIZE.dp).background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(16.dp)).padding(6.dp)) {
-        Cube3D(
-            colors = progressColors(state),
-            modifier = Modifier.fillMaxSize(),
-            viewState = view,
-            marked = state.contradictions,
-            draggable = false,
-            description = stringResource(Res.string.video_progress, state.recognised),
-        )
-        state.hint?.let { TiltArrow(it, Modifier.fillMaxSize()) }
-    }
-}
-
-/** Recognised stickers in full, those with readings faintly (a third of the colour over grey), the rest grey. */
-fun progressColors(state: VideoScanState): List<Color> = state.stickers.indices.map { i ->
-    val known = state.stickers[i]
-    val lead = state.leading[i]
-    when {
-        known != null -> StickerColors.of(known)
-        lead != null -> lerp(StickerColors.UNKNOWN, StickerColors.of(lead), FAINT_STICKER)
-        else -> StickerColors.UNKNOWN
-    }
-}
-
-/** A straight arrow across the progress cube, the way the real cube's front should move. */
-@Composable
-private fun TiltArrow(tilt: Tilt, modifier: Modifier) {
+private fun TurnArrow(state: VideoScanState, width: Int, height: Int, modifier: Modifier) {
+    var last by remember { mutableStateOf<Pair<Tilt, List<Point>>?>(null) }
+    val hint = state.hint
+    val outline = cubeOutline(state)
+    if (hint != null && outline.isNotEmpty()) last = hint to outline
+    val alpha by animateFloatAsState(if (hint != null && outline.isNotEmpty()) 1f else 0f)
+    val (tilt, points) = last ?: return
+    if (alpha == 0f) return
     Canvas(modifier) {
+        val sx = size.width / width
+        val sy = size.height / height
         val (dx, dy) = when (tilt) {
             Tilt.UP -> 0f to -1f
             Tilt.DOWN -> 0f to 1f
             Tilt.LEFT -> -1f to 0f
             Tilt.RIGHT -> 1f to 0f
         }
-        val half = size.minDimension * 0.34f
-        val c = center
-        val start = Offset(c.x - dx * half, c.y - dy * half)
-        val end = Offset(c.x + dx * half, c.y + dy * half)
-        val head = size.minDimension * 0.16f
-        val width = size.minDimension * 0.06f
-        val shaftEnd = Offset(end.x - dx * head * 0.8f, end.y - dy * head * 0.8f)
-        drawLine(StickerColors.ARROW_OUTLINE, start, shaftEnd, width * 1.7f, cap = StrokeCap.Round)
-        drawLine(StickerColors.ARROW, start, shaftEnd, width, cap = StrokeCap.Round)
-        val tip = Path().apply {
-            moveTo(end.x + dx * head * 0.2f, end.y + dy * head * 0.2f)
-            lineTo(end.x - dx * head - dy * head * 0.6f, end.y - dy * head + dx * head * 0.6f)
-            lineTo(end.x - dx * head + dy * head * 0.6f, end.y - dy * head - dx * head * 0.6f)
-            close()
+        val shown = points.map { Offset((it.x * sx).toFloat(), (it.y * sy).toFloat()) }
+        // The cube's middle across the arrow, and its edge in the arrow's direction.
+        val across = if (dx != 0f) shown.map { it.y } else shown.map { it.x }
+        val middle = (across.min() + across.max()) / 2
+        val edge = shown.maxOf { it.x * dx + it.y * dy }
+        val length = size.minDimension * 0.22f
+        val margin = 8.dp.toPx()
+        val along = edge + 12.dp.toPx() + length / 2
+        val mid = if (dx != 0f) {
+            Offset(
+                (along * dx).coerceIn(margin + length / 2, size.width - margin - length / 2),
+                middle.coerceIn(margin + length * 0.3f, size.height - margin - length * 0.3f),
+            )
+        } else {
+            Offset(
+                middle.coerceIn(margin + length * 0.3f, size.width - margin - length * 0.3f),
+                (along * dy).coerceIn(margin + length / 2, size.height - margin - length / 2),
+            )
         }
-        drawPath(tip, StickerColors.ARROW_OUTLINE, style = Stroke(width * 0.6f, join = StrokeJoin.Round))
-        drawPath(tip, StickerColors.ARROW)
+        arrow(mid, dx, dy, length, alpha)
     }
 }
 
-/** Fixed, not a theme colour: drawn on the camera image in both themes. */
-private val OUTLINE = Color(0xFF4DD0E1)
+/** The points the real cube covers in the picture: its projected sides facing the camera and the faces found. */
+private fun cubeOutline(state: VideoScanState): List<Point> {
+    val points = ArrayList<Point>()
+    state.projection?.let { p -> p.facing.forEach { f -> (0 until 9).mapTo(points) { p.points[f.ordinal * 9 + it] } } }
+    state.found.forEach { points += it.reading.outline }
+    return points
+}
 
-private const val PROGRESS_SIZE = 116
+/** A straight arrow of [length] centred on [mid], pointing along ([dx], [dy]). */
+private fun DrawScope.arrow(mid: Offset, dx: Float, dy: Float, length: Float, alpha: Float) {
+    val start = Offset(mid.x - dx * length / 2, mid.y - dy * length / 2)
+    val end = Offset(mid.x + dx * length / 2, mid.y + dy * length / 2)
+    val head = length * 0.38f
+    val width = length * 0.14f
+    val shaftEnd = Offset(end.x - dx * head * 0.8f, end.y - dy * head * 0.8f)
+    val outline = StickerColors.ARROW_OUTLINE.copy(alpha = alpha)
+    val fill = StickerColors.ARROW.copy(alpha = alpha)
+    drawLine(outline, start, shaftEnd, width * 1.6f, cap = StrokeCap.Round)
+    drawLine(fill, start, shaftEnd, width, cap = StrokeCap.Round)
+    val tip = Path().apply {
+        moveTo(end.x + dx * head * 0.15f, end.y + dy * head * 0.15f)
+        lineTo(end.x - dx * head - dy * head * 0.6f, end.y - dy * head + dx * head * 0.6f)
+        lineTo(end.x - dx * head + dy * head * 0.6f, end.y - dy * head - dx * head * 0.6f)
+        close()
+    }
+    drawPath(tip, outline, style = Stroke(width * 0.5f, join = StrokeJoin.Round))
+    drawPath(tip, fill)
+}
 
-/** A sticker's dot on the camera picture, as a share of its step. */
+/** A small notice on the picture that the light is dim, before the scan stalls. */
+@Composable
+private fun DimNotice(modifier: Modifier) {
+    Row(
+        modifier.background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(painterResource(Res.drawable.ic_torch), contentDescription = null, tint = StickerColors.ARROW, modifier = Modifier.size(18.dp))
+        Text(stringResource(Res.string.video_dim), color = Color.White, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+/** Why the scan cannot get on (icon and a short tip), with "start over" and "fix colours". */
+@Composable
+private fun RestartPanel(stall: Stall, onRestart: () -> Unit, onFix: () -> Unit, modifier: Modifier) {
+    val (icon, tip) = when (stall) {
+        Stall.DARK -> Res.drawable.ic_torch to Res.string.video_stall_dark
+        Stall.NO_CUBE -> Res.drawable.ic_cube to Res.string.video_stall_no_cube
+        Stall.STUCK -> Res.drawable.ic_reset_view to Res.string.video_stall_stuck
+    }
+    Column(
+        modifier.padding(24.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.shapes.extraLarge).padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        PanelIcon(icon)
+        Text(stringResource(tip), style = MaterialTheme.typography.titleMedium)
+        Button(onClick = onRestart, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(Res.string.video_restart)) }
+        OutlinedButton(onClick = onFix, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(Res.string.video_check)) }
+    }
+}
+
+@Composable
+private fun PanelIcon(icon: DrawableResource) {
+    Box(Modifier.size(56.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape), contentAlignment = Alignment.Center) {
+        Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(32.dp))
+    }
+}
+
+/** The six side colours in a row, a tick on each side whose stickers are all known. */
+@Composable
+private fun DoneSides(done: Set<Face>) {
+    val description = stringResource(Res.string.video_sides_done, done.size)
+    Row(Modifier.semantics { contentDescription = description }, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        for (side in Face.entries) {
+            val isDone = side in done
+            Canvas(Modifier.size(28.dp)) {
+                val radius = size.minDimension / 2
+                drawCircle(StickerColors.of(ColorScheme.STANDARD[side]).copy(alpha = if (isDone) 1f else 0.35f), radius)
+                drawCircle(StickerColors.PLASTIC, radius, style = Stroke(2.dp.toPx()))
+                if (isDone) tick(center, radius * 1.3f)
+            }
+        }
+    }
+}
+
+/** Ring colour of a sticker still needed (fixed, drawn on the camera picture in both themes). */
+private val NEEDED = Color.White
+
+/** A sticker's mark on the camera picture, as a share of its step. */
 private const val DOT_SHARE = 0.5f
 
-/** Opacity of a dot whose sticker is not yet recognised. */
-private const val FAINT_DOT = 0.45f
-
-/** How much of its leading colour an unrecognised sticker shows on the progress cube. */
-private const val FAINT_STICKER = 0.33f
-
-/** The progress cube stops easing within this of its target (0.2°). */
-private const val SETTLED_RADIANS = 0.0035f
-
-/** Frames between two timing lines in the log. */
-private const val TIMING_FRAMES = 50
+/** A done side's tick, as a share of a sticker step. */
+private const val TICK_SHARE = 0.9f
 
 /** Shortest gap between two vibrations for new stickers. */
 private const val BUZZ_MILLIS = 300L

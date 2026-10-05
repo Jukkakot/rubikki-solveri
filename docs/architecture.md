@@ -129,17 +129,23 @@ Video scan pipeline (`video-scan`):
    ≤ 360 px (`FrameSampler.upright` on Android; the browser passes its 360-px preview as is).
 2. `cube/scan/FaceFinder`: full 3×3 lattices (and partial ones with 7–8 stickers) anywhere in the picture (spike `video-scan-spike`,
    findings in its archive); run on `Dispatchers.Default` (the page's one thread in the browser; no
-   Web Worker yet, `scan.video` logs the finder's ms per frame to decide).
-3. `cube/scan/VideoScan`: votes per sticker (partial faces vote, never anchor), face rotations,
-   pose, orientation (`Orientation`, weak perspective from one face's steps), turning hint and
-   finishing (decisions in the `video-scan` and `video-scan-live` archives; smaller pieces measured
-   and dropped there). Regression data: the test videos' finder output in
-   `cube/src/jvmTest/resources/video/` (`VideoScanTest`; regenerate with
-   `VideoScanHarness.writeFixtures`, frames local only).
-4. `ui/scan/VideoScanScreen`: camera, outlines with a dot per sticker in its read colour, the
-   progress cube (`Cube3D` easing towards `holdFor(orientation)` every display frame, unrecognised
-   stickers faint), hint line; the result goes through `afterScan` like the guided scan's (no face
-   pictures).
+   Web Worker yet, the `scan.video` snapshots log the finder's ms per frame to decide).
+3. `cube/scan/VideoScan`: votes per sticker (partial faces vote, never anchor), pose, orientation
+   (`Orientation`, weak perspective from one face's steps), turning hint, stall reasons and
+   `reset()`. The votes are evidence for `BestCube` (`video-scan-progress`): the possible cube that
+   fits them best, piece by piece, with a margin per piece place; a sticker is known when its
+   place's margin clears `CLEAR_MARGIN` (chosen by `ScanSimulation`, findings in the archive) or by
+   its votes alone, and the scan finishes when the whole cube is clear, unseen stickers included.
+   Face rotations come from the same cost. `CubeProjection` puts every sticker into the picture.
+   Earlier decisions in the `video-scan` and `video-scan-live` archives. Regression data: the test
+   videos' finder output in `cube/src/jvmTest/resources/video/` (`VideoScanTest`, the true cubes in
+   `VideoFixtures`; regenerate with `VideoScanHarness.writeFixtures`, videos and frames local only
+   under `testdata/video/`).
+4. `ui/scan/VideoScanScreen`: camera with the progress drawn on the real cube (marks on the
+   projected stickers of the sides facing the camera, the found faces' own lattices where they are,
+   ticks on done sides), the turn arrow beside the cube, done-sides row, restart panel per stall
+   reason; log lines from `VideoScanLog`. The result goes through `afterScan` like the guided scan's
+   (stickers known only from the rest of the cube are marked in the check; no face pictures).
 
 ## Beginner solver — Implemented
 
@@ -274,7 +280,7 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 | `PracticeRoute(stage, seed)` | Practice | the solution screen limited to one stage |
 | `TimerRoute`, `HistoryRoute`, `ScrambleGuideRoute(moves)` | Timer, history, guided scramble | |
 | `ScanRoute(face?)` | Scan (with `face`: that face only, back to the check) | camera permission, grid, live dots, auto-capture; one screen (actions in the bottom bar, status and review texts on the camera); result → solve or check |
-| `VideoScanRoute` | Video scan (beta) | camera picture with found faces outlined, progress cube with the hint arrow in its corner, hint line; "Tarkista nyt" hands over what is known; result → solve or check |
+| `VideoScanRoute` | Video scan (beta) | camera picture with marks on the real cube (solid = known, ring = needed, tick = side done), turn arrow beside it, short status, done-sides row; restart panel when stuck; "Korjaa värit" hands over what is known; result → solve or check |
 | `ManualInputRoute(cube?, marked?, fromScan, confident)` | Manual input / check a scan | one screen (palette, ‹ › and check in the bottom bar); face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution. From a scan: the face-by-face check (`ScanCheck`): checked faces ticked in the face map, "N faces left", the face's camera picture beside the grid (`LastScan`), "Kuvaa uudelleen" (one-face scan) and "Näyttää oikealta" in place of ‹ › and check, the verdict line, "scan the whole cube again" in the menu |
 | `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
 | `SolveRoute(cube)` | Solution | background solve, then the move guide stepper; camera mode follows on the real cube |

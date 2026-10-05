@@ -3,22 +3,19 @@ package fi.jukkakot.rubikkisolveri.ui
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import fi.jukkakot.rubikkisolveri.cube.Cube
-import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.Stickers
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
-import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
-import fi.jukkakot.rubikkisolveri.ui.cube3d.StickerColors
 import fi.jukkakot.rubikkisolveri.ui.nav.afterScan
 import fi.jukkakot.rubikkisolveri.ui.scan.FoundFaces
 import fi.jukkakot.rubikkisolveri.ui.scan.VideoScanContent
-import fi.jukkakot.rubikkisolveri.ui.scan.progressColors
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
 import kotlinx.coroutines.flow.MutableSharedFlow
 import org.junit.Rule
@@ -69,35 +66,31 @@ class VideoScanScreenTest {
     @Test
     fun stickersFillInAndExposureLocksOnTheFirstFace() {
         scan()
-        compose.onNodeWithText("0/54 tarraa").assertExists()
-        compose.onNodeWithText("Tarkista nyt").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()
+        compose.onNodeWithText("Korjaa värit").assertIsNotEnabled()
         show(face(Face.U), times = 3)
-        compose.onNodeWithText("9/54 tarraa").assertExists()
-        compose.onNodeWithText("Tarkista nyt").assertIsEnabled()
+        // The face in view, read three times: its side is done and drawn with a tick in the row.
+        compose.onNodeWithContentDescription("Valmiit sivut: 1/6").assertExists()
+        compose.onNodeWithText("Korjaa värit").assertIsEnabled()
         assertEquals(listOf(false, true), locks)
     }
 
     @Test
-    fun aPartlyReadCubeShowsFaintColoursAndPartialFacesCount() {
+    fun partialFacesCountAndAPartlyKnownCubeRenders() {
         scan()
         // A face with a sticker hidden, then the face in full: the full one starts it, both are drawn.
         val partial = face(Face.U).let { it.copy(colors = it.colors.toMutableList().also { c -> c[1] = null }) }
         show(face(Face.U), partial, face(Face.U).copy(centre = Point(180.0, 120.0)))
-        // Three votes for the eight it shows, two for the hidden one.
-        compose.onNodeWithText("8/54 tarraa").assertExists()
+        // Three votes for the eight it shows, two for the hidden one: not done yet.
+        compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()
         show(face(Face.U))
-        compose.onNodeWithText("9/54 tarraa").assertExists()
-        val state = VideoScanState.EMPTY.copy(leading = List(Stickers.COUNT) { if (it < 9) CubeColor.RED else null })
-        val colors = progressColors(state)
-        assertTrue(colors[0] != StickerColors.UNKNOWN && colors[0] != StickerColors.of(CubeColor.RED), "faint")
-        assertEquals(StickerColors.UNKNOWN, colors[9])
+        compose.onNodeWithContentDescription("Valmiit sivut: 1/6").assertExists()
     }
 
     @Test
-    fun wholeCubeSeenOpensTheSolutionAfterHalfASecond() {
+    fun wholeCubeSeenOpensTheSolution() {
         scan()
-        for (f in Face.entries) show(face(f), times = 3)
-        assertNull(outcome, "not before half a second")
+        for (f in Face.entries) show(face(f), times = 10)
         show(times = 6)
         val result = assertNotNull(outcome)
         assertEquals(cube.toColorString(), result.editor.encode())
@@ -108,10 +101,24 @@ class VideoScanScreenTest {
     fun stopEarlyOpensTheCheckWithTheMissingMarked() {
         scan()
         show(face(Face.U), times = 3)
-        compose.onNodeWithText("Tarkista nyt").performClick()
+        compose.onNodeWithText("Korjaa värit").performClick()
         val result = assertNotNull(outcome)
         val missing = (0 until Stickers.COUNT).filter { it / 9 != Face.U.ordinal && it % 9 != 4 }
         assertTrue(result.marked.containsAll(missing))
         assertNull(afterScan(result).second, "unsure: the check")
+    }
+
+    @Test
+    fun aStallShowsTheReasonAndStartingOverClearsTheProgress() {
+        scan()
+        // The same face for over fifteen seconds: nothing new becomes known.
+        show(face(Face.U), times = 160)
+        compose.onNodeWithText("Kokeile toista valoa").assertExists()
+        compose.onNodeWithText("Aloita alusta").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Aloita alusta").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()
+        compose.onNodeWithText("Korjaa värit").assertIsNotEnabled()
+        assertNull(outcome)
     }
 }
