@@ -2,8 +2,7 @@
 
 ### Requirement: Reading in different light
 The video scan SHALL read colours the same in warm, cool or dim light as in daylight as far as the
-picture allows: the colour cast of the light SHALL be taken out using the cube's white stickers, a
-sticker's shine SHALL not change its colour, a reading washed out by too much light SHALL count
+picture allows: a sticker's shine SHALL not change its colour, a reading washed out by too much light SHALL count
 little, and a reading between two colours SHALL count as uncertain between them rather than as a
 sure one, so that the rest of the cube decides. Turning the torch on or off SHALL let the camera
 adjust to the new light before readings count again. A cube read in poor light SHALL still never

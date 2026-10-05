@@ -17,8 +17,6 @@ Phone test of `video-scan-progress` (user): the restart panel covers the cube an
 - **Readings stay as sure as they are:** each reading tells how well it fits every colour, not just
   its nearest one. A borderline red/orange reading stays borderline, and the best possible cube
   decides from the rest of the cube (`BestCube` evidence becomes fractional votes).
-- **Light colour taken out:** before colours are read, each frame's colour cast is estimated from
-  its white stickers and removed, so warm or bluish light reads like daylight.
 - **Glare left out:** a sticker's colour ignores its washed-out brightest pixels.
 - **Torch from the notice:** where the device has a torch, the "more light" / stuck notice offers to
   turn it on.
@@ -42,14 +40,14 @@ wrong, the simulation shows no wrong finish with the threshold (re-checked, re-c
 ### New Capabilities
 
 ### Modified Capabilities
-- `video-scan`: readings counted by how well they fit each colour; light colour, glare and washed-out
-  readings handled; torch re-meters; tick only when confirmed; the restart panel becomes a
+- `video-scan`: readings counted by how well they fit each colour; glare and washed-out readings
+  handled; torch re-meters; tick only when confirmed; the restart panel becomes a
   non-blocking notice with a torch toggle.
 - `web-app`: the browser's camera picture as sharp and smooth as the camera delivers it.
 
 ## Impact
 
-Modules: `cube` (colour fit per reading, light correction, glare in `FaceFinder`'s sticker colour,
+Modules: `cube` (colour fit per reading, glare in `FaceFinder`'s sticker colour,
 fractional evidence in `BestCube`/`VideoScan`, fixtures regenerated), `shared` (notice, torch
 toggle, texts, re-metering), `web` (video element under the app, re-metering in `platform.mjs`) and
 `app` (tests).

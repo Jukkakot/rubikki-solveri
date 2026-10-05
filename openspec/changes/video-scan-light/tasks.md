@@ -3,7 +3,7 @@
 ## 1. Reading in different light (cube)
 
 - [x] 1.1 Measuring harness (design 1): per video, distances of true red and orange readings to both references, raw; table into `findings.md`. Verify: runs on all six fixtures, numbers printed.
-- [ ] 1.2 Light correction per frame (design 2). Verify: unit test (a frame tinted warm reads like the untinted one); harness numbers before/after in `findings.md`.
+- [x] 1.2 Light correction per frame (design 2). Verify: unit test (a frame tinted warm reads like the untinted one); harness numbers before/after in `findings.md`.
 - [ ] 1.3 Glare left out of a sticker's colour (design 4); fixtures regenerated. Verify: unit test (a blob with a bright washed-out patch keeps its colour); all video tests still pass.
 - [ ] 1.4 Soft votes through groups and `StickerEvidence`, washed-out readings weighted down (design 3, 8). Verify: unit tests (a borderline red/orange reading gives each about half; a washed-out one counts little; clear readings unchanged); video tests: both dim evening videos clear with the true cube, frames to clear on the others not worse.
 - [ ] 1.5 Side confirmed only by the best cube's margin (design 9). Verify: unit test (a side read many times but not confirmed has no tick).

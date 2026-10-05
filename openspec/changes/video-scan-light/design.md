@@ -73,3 +73,13 @@ classifier.
   to clear.
 - If the dim videos still do not finish, the findings say why and the change stops there (no further
   tricks inside this change).
+
+## Decisions made while implementing
+
+- **No light correction in the scan (decision 2 dropped by decision 1's rule).** Measured per frame
+  from the brightest near-grey readings and from the truly white stickers, it did not separate red
+  from orange on the dim videos and spread the good ones more (findings 1.2): the camera's white
+  balance already makes white grey. The reds that read orange-ish are on the side turned to the
+  lamp (brighter, so the tone curve makes them more orange), which a per-frame colour correction
+  cannot undo. The correction stays in the test harness; the spec's sentence on the light's colour
+  cast is dropped.
