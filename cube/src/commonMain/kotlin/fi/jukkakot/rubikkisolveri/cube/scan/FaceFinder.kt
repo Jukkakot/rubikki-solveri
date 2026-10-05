@@ -254,14 +254,39 @@ object FaceFinder {
         return found
     }
 
-    private fun medianColor(pixels: IntArray, count: Int, r: IntArray, g: IntArray, b: IntArray): Rgb {
+    /**
+     * The sticker's colour: the per-channel median of its pixels after leaving out glare, the pixels
+     * much brighter and much greyer than the darker half of the blob (a lamp's reflection). A blob
+     * whose darker half is itself near grey (a white sticker) keeps all its pixels.
+     */
+    internal fun medianColor(pixels: IntArray, count: Int, r: IntArray, g: IntArray, b: IntArray): Rgb {
+        fun bright(i: Int) = maxOf(r[i], g[i], b[i])
+        fun saturation(i: Int) = bright(i).let { top -> if (top == 0) 0.0 else (top - minOf(r[i], g[i], b[i])).toDouble() / top }
+        val byBrightness = IntArray(count) { pixels[it] }.sortedBy { bright(it) }
+        val darker = byBrightness.subList(0, (count + 1) / 2)
+        val baseSaturation = darker.map { saturation(it) }.sorted()[darker.size / 2]
+        val baseBright = bright(darker[darker.size / 2])
+        val kept = if (baseSaturation < GLARE_MIN_SATURATION) {
+            byBrightness
+        } else {
+            byBrightness.filter { bright(it) <= baseBright * GLARE_BRIGHTER || saturation(it) >= baseSaturation * GLARE_GREYER }
+        }
         fun median(ch: IntArray): Int {
-            val values = IntArray(count) { ch[pixels[it]] }
+            val values = IntArray(kept.size) { ch[kept[it]] }
             values.sort()
-            return values[count / 2]
+            return values[kept.size / 2]
         }
         return Rgb(median(r), median(g), median(b))
     }
+
+    /** A blob whose darker half is less saturated than this is white (or grey): no glare is left out. */
+    const val GLARE_MIN_SATURATION = 0.25
+
+    /** Glare is brighter than the darker half's median by this factor … */
+    const val GLARE_BRIGHTER = 1.1
+
+    /** … and less saturated than this share of the darker half's. */
+    const val GLARE_GREYER = 0.6
 
     /** The best lattice with blob [c] in the middle (the most stickers, then the best [FaceLattice.quality]), or null. */
     private fun lattice(blobs: List<Blob>, c: Int): FaceLattice? {

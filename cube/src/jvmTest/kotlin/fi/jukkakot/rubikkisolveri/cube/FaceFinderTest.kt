@@ -1,5 +1,6 @@
 package fi.jukkakot.rubikkisolveri.cube
 
+import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceFinder
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
@@ -8,6 +9,7 @@ import javax.imageio.ImageIO
 import kotlin.math.floor
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class FaceFinderTest {
     private val width = 360
@@ -77,5 +79,22 @@ class FaceFinderTest {
         val argb = IntArray(image.width * image.height) { image.getRGB(it % image.width, it / image.width) }
         val result = FaceFinder.find(argb, image.width, image.height)
         assertEquals(1, result.faces.size, "blobs ${result.blobs.size}")
+    }
+
+    /** The colour [FaceFinder] gives a blob of [pixels]. */
+    private fun colorOf(pixels: List<Rgb>): Rgb =
+        FaceFinder.medianColor(IntArray(pixels.size) { it }, pixels.size, IntArray(pixels.size) { pixels[it].r }, IntArray(pixels.size) { pixels[it].g }, IntArray(pixels.size) { pixels[it].b })
+
+    @Test
+    fun aBrightWashedOutPatchDoesNotChangeAStickersColour() {
+        val red = List(45) { Rgb(186 + it % 9, 22 + it % 7, 30 + it % 5) }
+        // A lamp's reflection over more than half the sticker: from pale red to nearly white.
+        val glare = List(55) { k -> Rgb(minOf(255, 225 + k), 120 + 2 * k, 120 + 2 * k) }
+        val color = colorOf(red + glare)
+        assertEquals(CubeColor.RED, ColorClassifier.live(color), color.toHex())
+        assertTrue(color.g < 40, color.toHex())
+        // A white sticker with a brighter patch keeps it (all its pixels are near grey).
+        val white = colorOf(List(60) { Rgb(200, 200, 195) } + List(40) { Rgb(250, 250, 250) })
+        assertEquals(Rgb(200, 200, 195), white)
     }
 }

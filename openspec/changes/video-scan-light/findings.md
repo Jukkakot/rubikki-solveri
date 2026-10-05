@@ -53,3 +53,12 @@ brighter, and the camera's tone curve lifts green out of black faster than red: 
 looks more orange. This depends on each side's brightness, not on the light's colour, so a
 per-frame colour correction cannot remove it. On average a red reading still lies nearer red
 (7.1 vs 9.3): votes that keep how sure each reading is (1.4) are the lever.
+
+## 1.3 Glare
+
+A sticker's colour now leaves out pixels much brighter (× 1.1) and much greyer (under 0.6 of the
+saturation) than the darker half of its blob; white stickers keep all theirs. Fixtures regenerated:
+47 of 1128 lines changed. A strong reflection rarely joins a sticker's blob at all (the finder grows
+blobs only within 60 of their mean colour, so it leaves a hole), so only mild sheen was affected.
+The red/orange table is unchanged to one decimal; frames to clear 210, 140, 117, 120 (213817: 119
+before), the dim two still never.
