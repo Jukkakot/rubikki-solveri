@@ -36,3 +36,5 @@ external fun cameraTorchSupported(): Boolean
 external fun cameraInfo(): String
 external fun cameraSetTorch(on: Boolean)
 external fun cameraLockExposure(lock: Boolean): String
+external fun cameraShow(x: Double, y: Double, w: Double, h: Double)
+external fun cameraHide()

@@ -316,9 +316,10 @@
     <string name="video_status_done">Done!</string>
     <string name="video_check">Fix colours</string>
     <string name="video_restart">Start over</string>
-    <string name="video_stall_dark">More light</string>
-    <string name="video_stall_no_cube">Show the cube</string>
-    <string name="video_stall_stuck">Try other light</string>
+    <string name="video_notice_dark">Poor light</string>
+    <string name="video_notice_no_cube">No cube in view</string>
+    <string name="video_notice_stuck">Colours don't fit</string>
+    <string name="video_notice_close">Close the notice</string>
     <string name="video_dim">Dim light</string>
     <string name="video_sides_done">Sides done: %1$d/6</string>
 </resources>

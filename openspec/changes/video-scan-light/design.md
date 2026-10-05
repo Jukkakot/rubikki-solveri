@@ -94,3 +94,20 @@ classifier.
   1.4 showed the best cube was already right there, only short of 3.0), and no test video is slower.
 - **Tick from the best cube only for the done-sides row and the marks' ticks** (`VideoScanState.confirmed`);
   the "side" log line follows the ticks.
+- **Notice layout.** A card across the bottom of the picture: icon and description on one line,
+  then "Aloita alusta", "Korjaa värit" and the torch chip ("Taskulamppu", shown for poor light and
+  colours that don't fit when the device has a torch), wrapping to a second row on a phone. The
+  picture outside it is one transparent tap target labelled "Sulje ilmoitus" for screen readers;
+  closing is logged (`kind=dismiss`). The stuck description is "Värit eivät täsmää" as designed.
+- **Re-metering lives in the shared video scan screen**, so the phone and the browser behave the
+  same: the screen turns the lock off for a second after a torch change (`LightSettle`), skips those
+  frames, then locks again. The guided scan is unchanged (not in this change's spec).
+- **Bug fixed on the way:** once a face had 40 readings, the reading just added was the one dropped,
+  so a side held in view for over four seconds lost its marks and pose. The newest reading is now
+  never dropped (test `aFaceHeldLongStillShowsItsReading`).
+- **Browser picture:** the camera's `<video>` is fixed under the app (`#app` above it), placed on the
+  preview box's window bounds in CSS pixels, `object-fit: cover` (the same centred crop as the
+  reading); the box clears its pixels (`BlendMode.Clear`), so the rounded corners of the picture
+  stay. The 360-px copy is read only for the video scan's faces; the guided scan reads its square
+  as before. Checked in desktop Chromium with a fake camera: both scans show the video, and leaving
+  the scan hides it.

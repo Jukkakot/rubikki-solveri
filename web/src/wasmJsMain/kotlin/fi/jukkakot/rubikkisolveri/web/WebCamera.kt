@@ -1,6 +1,5 @@
 package fi.jukkakot.rubikkisolveri.web
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,10 +21,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asComposeImageBitmap
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
@@ -42,13 +45,9 @@ import fi.jukkakot.rubikkisolveri.ui.CameraArgs
 import fi.jukkakot.rubikkisolveri.ui.elapsedMillis
 import fi.jukkakot.rubikkisolveri.ui.scan.coverCrop
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.skia.Bitmap
-import org.jetbrains.skia.ColorAlphaType
-import org.jetbrains.skia.ColorType
-import org.jetbrains.skia.ImageInfo
 import org.khronos.webgl.toByteArray
 
-/** The preview's long side in pixels: lower it if the phone shows fewer than 10 frames a second. */
+/** The long side of the scaled copy the video scan finds faces in (the picture itself is the camera's own video). */
 const val PREVIEW_LONG_SIDE = 360
 
 /** The grid square's size for reading colours (the grid's cells ≈ 63 px, like the phone's analysis). */
@@ -120,8 +119,9 @@ private fun WebCameraGate(
 @Composable
 private fun WebCameraPreview(args: CameraArgs) {
     val current by rememberUpdatedState(args)
-    var image by remember { mutableStateOf<ImageBitmap?>(null) }
     var box by remember { mutableStateOf(IntSize.Zero) }
+    var place by remember { mutableStateOf<Rect?>(null) }
+    val density = LocalDensity.current.density
     var running by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
@@ -139,6 +139,16 @@ private fun WebCameraPreview(args: CameraArgs) {
         onDispose {
             live = false
             cameraRelease()
+            cameraHide()
+        }
+    }
+    // The camera's own video under the app, where the box is (CSS pixels).
+    LaunchedEffect(running, place, density) {
+        val p = place
+        if (running && p != null && p.width > 0f && p.height > 0f) {
+            cameraShow(p.left / density.toDouble(), p.top / density.toDouble(), p.width / density.toDouble(), p.height / density.toDouble())
+        } else {
+            cameraHide()
         }
     }
     LaunchedEffect(running, args.torch) { if (running) cameraSetTorch(args.torch) }
@@ -169,14 +179,13 @@ private fun WebCameraPreview(args: CameraArgs) {
                 // The picture first, so it belongs to the same frame as the readings.
                 current.onPicture?.invoke(FrameSampler.picture(frame))
                 current.onSamples(FrameSampler.sample(frame))
-                val preview = cameraPreviewData().toByteArray()
-                val pw = cameraPreviewWidth()
-                val ph = cameraPreviewHeight()
-                image = rgbaBitmap(preview, pw, ph)
-                // The video scan looks for faces in the preview itself: the visible part, upright.
+                // The video scan looks for faces in the scaled copy of the visible part, upright.
                 current.onImage?.let { onImage ->
                     if (now - lastImage >= IMAGE_MILLIS) {
                         lastImage = now
+                        val preview = cameraPreviewData().toByteArray()
+                        val pw = cameraPreviewWidth()
+                        val ph = cameraPreviewHeight()
                         onImage(ArgbImage(IntArray(pw * ph) { i -> argb(preview, i * 4) }, pw, ph))
                     }
                 }
@@ -185,18 +194,14 @@ private fun WebCameraPreview(args: CameraArgs) {
             }
         }
     }
-    Box(args.modifier.clipToBounds().onSizeChanged { box = it }) {
-        image?.let { Image(it, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-    }
+    // The box is a hole in the app's drawing: the video under it shows through, the marks are drawn on top.
+    Box(
+        args.modifier.clipToBounds()
+            .onSizeChanged { box = it }
+            .onGloballyPositioned { place = it.boundsInWindow() }
+            .drawBehind { drawRect(Color.Black, blendMode = BlendMode.Clear) },
+    )
 }
 
 private fun argb(rgba: ByteArray, i: Int): Int =
     (0xff shl 24) or ((rgba[i].toInt() and 0xff) shl 16) or ((rgba[i + 1].toInt() and 0xff) shl 8) or (rgba[i + 2].toInt() and 0xff)
-
-private fun rgbaBitmap(bytes: ByteArray, width: Int, height: Int): ImageBitmap {
-    val bitmap = Bitmap()
-    bitmap.allocPixels(ImageInfo(width, height, ColorType.RGBA_8888, ColorAlphaType.UNPREMUL))
-    bitmap.installPixels(bytes)
-    return bitmap.asComposeImageBitmap()
-}
-

@@ -254,9 +254,9 @@ class ScreenshotTest {
     @Test
     fun videoScan() = shot("video-scan") { ForcedDark { VideoScanShot(frames = 6) } }
 
-    /** The video scan stalled (the same faces for over fifteen seconds): the restart panel. */
+    /** The video scan stalled (the same faces for over twenty seconds): the notice at the bottom of the picture. */
     @Test
-    fun videoScanStall() = shot("video-scan-stall") { ForcedDark { VideoScanShot(frames = 170) } }
+    fun videoScanStall() = shot("video-scan-stall", waitForText = "Värit eivät täsmää") { ForcedDark { VideoScanShot(frames = 260) } }
 
     @androidx.compose.runtime.Composable
     private fun VideoScanShot(frames: Int) {

@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; background: #1E2A3A; }
-    #app { position: fixed; inset: 0; }
+    #app { position: fixed; inset: 0; z-index: 1; } /* above the camera video (platform.mjs) */
     .note {
       position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
       justify-content: center; gap: 12px; padding: 24px; box-sizing: border-box; text-align: center;

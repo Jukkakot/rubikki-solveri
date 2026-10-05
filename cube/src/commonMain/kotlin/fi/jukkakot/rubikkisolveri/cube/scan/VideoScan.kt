@@ -358,7 +358,8 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     private fun Group.add(reading: Reading) {
         readings += reading
         if (readings.size > MAX_READINGS) {
-            val drop = readings.firstOrNull { !it.inlier && it !== anchor } ?: readings.first { it !== anchor }
+            // Never the reading just added: it has not been judged yet, and this frame's marks come from it.
+            val drop = readings.firstOrNull { !it.inlier && it !== anchor && it !== reading } ?: readings.first { it !== anchor && it !== reading }
             drop.removed = true
             readings.remove(drop)
         }
@@ -587,14 +588,14 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
          */
         const val DIM_BELOW = 70
 
-        /** Too dark this long: stall. */
-        const val DARK_MILLIS = 3_000L
+        /** Too dark this long: stall (each stall 5 s later than at first, so the notice does not come too eagerly; user, 2026-10-05). */
+        const val DARK_MILLIS = 8_000L
 
         /** No face found this long: stall. */
-        const val NO_CUBE_MILLIS = 8_000L
+        const val NO_CUBE_MILLIS = 13_000L
 
-        /** No more stickers known this long with the cube in view: stall (user, 2026-10-05). */
-        const val STUCK_MILLIS = 15_000L
+        /** No more stickers known this long with the cube in view: stall. */
+        const val STUCK_MILLIS = 20_000L
 
         /** A face found this recently counts as the cube in view. */
         const val IN_VIEW_MILLIS = 1_000L

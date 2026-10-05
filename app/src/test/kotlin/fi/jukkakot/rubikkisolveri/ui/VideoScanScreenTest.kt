@@ -1,11 +1,13 @@
 package fi.jukkakot.rubikkisolveri.ui
 
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.Stickers
@@ -69,8 +71,8 @@ class VideoScanScreenTest {
         compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()
         compose.onNodeWithText("Korjaa värit").assertIsNotEnabled()
         show(face(Face.U), times = 3)
-        // The face in view, read three times: its side is done and drawn with a tick in the row.
-        compose.onNodeWithContentDescription("Valmiit sivut: 1/6").assertExists()
+        // The face in view, read three times: its stickers are known, but no tick until the rest of the cube confirms it.
+        compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()
         compose.onNodeWithText("Korjaa värit").assertIsEnabled()
         assertEquals(listOf(false, true), locks)
     }
@@ -81,10 +83,8 @@ class VideoScanScreenTest {
         // A face with a sticker hidden, then the face in full: the full one starts it, both are drawn.
         val partial = face(Face.U).let { it.copy(colors = it.colors.toMutableList().also { c -> c[1] = null }) }
         show(face(Face.U), partial, face(Face.U).copy(centre = Point(180.0, 120.0)))
-        // Three votes for the eight it shows, two for the hidden one: not done yet.
         compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()
-        show(face(Face.U))
-        compose.onNodeWithContentDescription("Valmiit sivut: 1/6").assertExists()
+        compose.onNodeWithText("Korjaa värit").assertIsEnabled()
     }
 
     @Test
@@ -111,14 +111,41 @@ class VideoScanScreenTest {
     @Test
     fun aStallShowsTheReasonAndStartingOverClearsTheProgress() {
         scan()
-        // The same face for over fifteen seconds: nothing new becomes known.
-        show(face(Face.U), times = 160)
-        compose.onNodeWithText("Kokeile toista valoa").assertExists()
+        // The same face for over twenty seconds: nothing new becomes known.
+        show(face(Face.U), times = 150)
+        compose.onNodeWithText("Värit eivät täsmää").assertDoesNotExist()
+        show(face(Face.U), times = 60)
+        compose.onNodeWithText("Värit eivät täsmää").assertExists()
+        compose.onNodeWithText("Taskulamppu").assertExists()
         compose.onNodeWithText("Aloita alusta").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Aloita alusta").assertDoesNotExist()
         compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()
         compose.onNodeWithText("Korjaa värit").assertIsNotEnabled()
         assertNull(outcome)
+    }
+
+    @Test
+    fun scanningGoesOnWithTheNoticeShown() {
+        scan()
+        show(face(Face.U), times = 210)
+        compose.onNodeWithText("Värit eivät täsmää").assertExists()
+        // The user keeps turning the cube: new stickers become known and the notice goes.
+        show(face(Face.F), times = 3)
+        compose.onNodeWithText("Värit eivät täsmää").assertDoesNotExist()
+    }
+
+    @Test
+    fun aTapOutsideClosesTheNoticeForGood() {
+        scan()
+        show(face(Face.U), times = 210)
+        // The picture's close action (in the test layout the picture is small and the notice covers its middle).
+        compose.onNodeWithContentDescription("Sulje ilmoitus").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        compose.onNodeWithText("Värit eivät täsmää").assertDoesNotExist()
+        // Still stuck, but the same reason does not come back in this scan.
+        show(face(Face.U), times = 30)
+        compose.onNodeWithText("Värit eivät täsmää").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Sulje ilmoitus").assertDoesNotExist()
     }
 }

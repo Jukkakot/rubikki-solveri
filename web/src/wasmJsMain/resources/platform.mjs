@@ -177,8 +177,8 @@ export function cameraAcquire(done) {
         v.muted = true;
         v.playsInline = true;
         v.setAttribute('playsinline', '');
-        v.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
-        document.body.appendChild(v);
+        v.style.cssText = HIDDEN;
+        document.body.insertBefore(v, document.body.firstChild);
         cam.video = v;
       }
       cam.video.srcObject = stream;
@@ -203,6 +203,24 @@ export function cameraAcquire(done) {
 export function cameraRelease() {
   cam.users = Math.max(0, cam.users - 1);
   if (cam.users === 0 && cam.stream) camStop();
+}
+
+// The camera's picture as the user sees it: the video element itself, under the app's canvas, where
+// the preview box is (the box is drawn transparent). Shown at the camera's own resolution and frame
+// rate; the scaled copies above are only for reading.
+
+const HIDDEN = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;z-index:0';
+
+/** Shows the camera's video at [x, y] (CSS pixels from the page's top left), [w]×[h], cropped to cover. */
+export function cameraShow(x, y, w, h) {
+  const v = cam.video;
+  if (!v) return;
+  v.style.cssText = `position:fixed;left:${x}px;top:${y}px;width:${w}px;height:${h}px;object-fit:cover;pointer-events:none;z-index:0`;
+}
+
+/** Hides the video again (it keeps playing for the reading). */
+export function cameraHide() {
+  if (cam.video) cam.video.style.cssText = HIDDEN;
 }
 
 export function cameraVideoWidth() {

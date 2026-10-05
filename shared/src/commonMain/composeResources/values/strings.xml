@@ -317,9 +317,10 @@
     <string name="video_status_done">Valmis!</string>
     <string name="video_check">Korjaa värit</string>
     <string name="video_restart">Aloita alusta</string>
-    <string name="video_stall_dark">Lisää valoa</string>
-    <string name="video_stall_no_cube">Näytä kuutio</string>
-    <string name="video_stall_stuck">Kokeile toista valoa</string>
+    <string name="video_notice_dark">Heikko valaistus</string>
+    <string name="video_notice_no_cube">Kuutiota ei näy</string>
+    <string name="video_notice_stuck">Värit eivät täsmää</string>
+    <string name="video_notice_close">Sulje ilmoitus</string>
     <string name="video_dim">Hämärää</string>
     <string name="video_sides_done">Valmiit sivut: %1$d/6</string>
 </resources>

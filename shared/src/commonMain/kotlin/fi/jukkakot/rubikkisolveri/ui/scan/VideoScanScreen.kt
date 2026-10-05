@@ -3,9 +3,14 @@ package fi.jukkakot.rubikkisolveri.ui.scan
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,10 +19,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -42,6 +47,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -51,6 +57,7 @@ import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceFinder
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
+import fi.jukkakot.rubikkisolveri.cube.scan.LightSettle
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.cube.scan.Stall
@@ -70,7 +77,6 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.withContext
-import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -129,10 +135,12 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
  * camera. The progress is drawn on the real cube in the picture ([CubeMarks]): a solid dot per known
  * sticker, an empty ring per sticker still needed, a tick on each side done; a large arrow beside the
  * cube shows which way to turn it, and a row of the six side colours under the picture tells which
- * sides are done. When the scan cannot get on, a panel says why and offers to start again (the
- * camera keeps running) or to fix the colours by hand. Exposure is locked once the first face is
- * found. Clear for half a second → [onResult]; "fix colours" hands over what is known. [clock] is
- * the time in milliseconds (tests pass their own).
+ * sides are done. When the scan cannot get on, a notice at the bottom of the picture describes why
+ * and offers to start again (the camera keeps running), to fix the colours by hand and the torch;
+ * scanning goes on underneath, and a tap on the picture outside it closes it for that reason (until
+ * a restart). Exposure is locked once the first face is found, and metered again for a second whenever
+ * the torch is turned on or off (those frames are not read). Clear for half a second → [onResult];
+ * "fix colours" hands over what is known. [clock] is the time in milliseconds (tests pass their own).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -154,6 +162,10 @@ fun VideoScanContent(
     var picture by remember { mutableStateOf<FoundFaces?>(null) }
     var seenFace by remember { mutableStateOf(false) }
     var done by remember { mutableStateOf(false) }
+    var dismissed by remember { mutableStateOf(emptySet<Stall>()) }
+    val settle = remember { LightSettle() }
+    var settling by remember { mutableStateOf(false) }
+    var lastTorch by remember { mutableStateOf(torch) }
     val log = remember { ScanLogger() }
     val haptics = LocalHapticFeedback.current
 
@@ -177,6 +189,11 @@ fun VideoScanContent(
         found.collect { f ->
             if (done) return@collect
             val now = clock()
+            if (settle.settling(now)) {
+                picture = f
+                return@collect
+            }
+            settling = false
             val before = state
             state = scan.onFrame(f.faces, now)
             picture = f
@@ -189,13 +206,21 @@ fun VideoScanContent(
             if (state.finished) finish(scan.outcome())
         }
     }
-    LaunchedEffect(seenFace) { onLockExposure(seenFace) }
+    // The torch changes the light: the camera meters again before its frames are read and locked.
+    LaunchedEffect(torch) {
+        if (torch == lastTorch) return@LaunchedEffect
+        lastTorch = torch
+        settle.start(clock())
+        settling = true
+    }
+    LaunchedEffect(seenFace, settling) { onLockExposure(seenFace && !settling) }
     DisposableEffect(Unit) { onDispose { if (!done) log.leave(state) } }
 
     fun restart() {
         log.restart(state)
         scan.reset()
         state = scan.state
+        dismissed = emptySet()
     }
 
     Scaffold(
@@ -240,9 +265,27 @@ fun VideoScanContent(
                     CubeMarks(state, p.width, p.height, Modifier.fillMaxSize())
                     TurnArrow(state, p.width, p.height, Modifier.fillMaxSize())
                 }
-                if (state.dim && state.stall == null) DimNotice(Modifier.align(Alignment.TopStart).padding(10.dp))
-                state.stall?.let { stall ->
-                    RestartPanel(stall, onRestart = ::restart, onFix = { finish(scan.outcome()) }, Modifier.align(Alignment.Center))
+                val stall = state.stall?.takeIf { it !in dismissed }
+                if (state.dim && stall == null) DimNotice(Modifier.align(Alignment.TopStart).padding(10.dp))
+                if (stall != null) {
+                    // A tap on the picture outside the notice closes it; that reason does not come back.
+                    val close = stringResource(Res.string.video_notice_close)
+                    Box(
+                        Modifier.fillMaxSize()
+                            .semantics { contentDescription = close }
+                            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                                log.dismiss(stall)
+                                dismissed = dismissed + stall
+                            },
+                    )
+                    StallNotice(
+                        stall,
+                        torch = torch.takeIf { torchAvailable && stall != Stall.NO_CUBE },
+                        onTorch = onTorch,
+                        onRestart = ::restart,
+                        onFix = { finish(scan.outcome()) },
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -276,6 +319,8 @@ private class ScanLogger {
     }
 
     fun restart(state: VideoScanState) = event("restart", "reason" to state.stall?.name?.lowercase())
+
+    fun dismiss(stall: Stall) = event("dismiss", "reason" to stall.name.lowercase())
 
     fun leave(state: VideoScanState) {
         event("leave")
@@ -469,30 +514,44 @@ private fun DimNotice(modifier: Modifier) {
     }
 }
 
-/** Why the scan cannot get on (icon and a short tip), with "start over" and "fix colours". */
+/**
+ * Why the scan cannot get on, described (icon and a few words), at the bottom of the picture without
+ * covering the cube: "start over", "fix colours" and, where [torch] is given (the device has one and
+ * the reason is the light or no progress), the torch.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun RestartPanel(stall: Stall, onRestart: () -> Unit, onFix: () -> Unit, modifier: Modifier) {
-    val (icon, tip) = when (stall) {
-        Stall.DARK -> Res.drawable.ic_torch to Res.string.video_stall_dark
-        Stall.NO_CUBE -> Res.drawable.ic_cube to Res.string.video_stall_no_cube
-        Stall.STUCK -> Res.drawable.ic_reset_view to Res.string.video_stall_stuck
+private fun StallNotice(stall: Stall, torch: Boolean?, onTorch: (Boolean) -> Unit, onRestart: () -> Unit, onFix: () -> Unit, modifier: Modifier) {
+    val (icon, text) = when (stall) {
+        Stall.DARK -> Res.drawable.ic_torch to Res.string.video_notice_dark
+        Stall.NO_CUBE -> Res.drawable.ic_cube to Res.string.video_notice_no_cube
+        Stall.STUCK -> Res.drawable.ic_reset_view to Res.string.video_notice_stuck
     }
     Column(
-        modifier.padding(24.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.shapes.extraLarge).padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier.fillMaxWidth().padding(10.dp)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f), MaterialTheme.shapes.large)
+            // Taps on the notice itself do not reach the picture behind it (which closes it).
+            .pointerInput(Unit) { detectTapGestures { } }
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        PanelIcon(icon)
-        Text(stringResource(tip), style = MaterialTheme.typography.titleMedium)
-        Button(onClick = onRestart, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(Res.string.video_restart)) }
-        OutlinedButton(onClick = onFix, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(Res.string.video_check)) }
-    }
-}
-
-@Composable
-private fun PanelIcon(icon: DrawableResource) {
-    Box(Modifier.size(56.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape), contentAlignment = Alignment.Center) {
-        Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(32.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Icon(painterResource(icon), contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+            Text(stringResource(text), style = MaterialTheme.typography.titleSmall)
+        }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            OutlinedButton(onClick = onRestart, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(Res.string.video_restart)) }
+            OutlinedButton(onClick = onFix, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(Res.string.video_check)) }
+            if (torch != null) {
+                FilterChip(
+                    selected = torch,
+                    onClick = { onTorch(!torch) },
+                    label = { Text(stringResource(Res.string.scan_torch)) },
+                    leadingIcon = { Icon(painterResource(Res.drawable.ic_torch), contentDescription = null, modifier = Modifier.size(18.dp)) },
+                    modifier = Modifier.heightIn(min = 48.dp),
+                )
+            }
+        }
     }
 }
 

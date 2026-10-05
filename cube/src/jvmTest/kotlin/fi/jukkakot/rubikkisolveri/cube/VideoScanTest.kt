@@ -257,31 +257,33 @@ class VideoScanTest {
         assertTrue(first.dim)
         assertNull(first.stall)
         var s = first
-        for (t in 100L..3_000L step 100) s = scan.onFrame(listOf(dark(Face.U, 0.2)), t)
+        for (t in 100L..7_900L step 100) s = scan.onFrame(listOf(dark(Face.U, 0.2)), t)
+        assertNull(s.stall, "not before eight seconds")
+        s = scan.onFrame(listOf(dark(Face.U, 0.2)), 8_000)
         assertEquals(Stall.DARK, s.stall)
-        assertTrue(!scan.onFrame(listOf(reading(Face.U)), 3_100).dim)
+        assertTrue(!scan.onFrame(listOf(reading(Face.U)), 8_100).dim)
     }
 
     @Test
     fun noCubeForAWhileStalls() {
         val scan = VideoScan()
         scan.onFrame(listOf(reading(Face.U)), 0)
-        assertNull(scan.onFrame(emptyList(), 7_000).stall)
-        assertEquals(Stall.NO_CUBE, scan.onFrame(emptyList(), 8_000).stall)
-        assertNull(scan.onFrame(listOf(reading(Face.U)), 8_100).stall, "cube back in view")
+        assertNull(scan.onFrame(emptyList(), 12_000).stall)
+        assertEquals(Stall.NO_CUBE, scan.onFrame(emptyList(), 13_000).stall)
+        assertNull(scan.onFrame(listOf(reading(Face.U)), 13_100).stall, "cube back in view")
     }
 
     @Test
-    fun theSameFaceForFifteenSecondsStallsAndRestartClearsIt() {
+    fun theSameFaceForTwentySecondsStallsAndRestartClearsIt() {
         val scan = VideoScan()
         var s = VideoScanState.EMPTY
-        for (t in 0L..14_000L step 200) s = scan.onFrame(listOf(reading(Face.U)), t)
+        for (t in 0L..19_000L step 200) s = scan.onFrame(listOf(reading(Face.U)), t)
         assertNull(s.stall)
-        for (t in 14_200L..15_400L step 200) s = scan.onFrame(listOf(reading(Face.U)), t)
+        for (t in 19_200L..20_400L step 200) s = scan.onFrame(listOf(reading(Face.U)), t)
         assertEquals(Stall.STUCK, s.stall)
         scan.reset()
         assertEquals(0, scan.state.recognised)
-        val again = scan.onFrame(listOf(reading(Face.U)), 15_600)
+        val again = scan.onFrame(listOf(reading(Face.U)), 20_600)
         assertNull(again.stall)
         assertEquals(1, again.recognised, "only the centre after one frame")
     }
@@ -320,5 +322,14 @@ class VideoScanTest {
         var t = 2_000L
         for (face in faces) repeat(10) { if (!scan.state.complete) scan.onFrame(listOf(face), t).also { t += 100 } }
         assertEquals(Face.entries.toSet(), scan.state.confirmed)
+    }
+
+    @Test
+    fun aFaceHeldLongStillShowsItsReading() {
+        val scan = VideoScan()
+        var s = VideoScanState.EMPTY
+        // More frames than a face keeps readings: the newest is never the one dropped.
+        repeat(VideoScan.MAX_READINGS + 20) { s = scan.onFrame(listOf(reading(Face.U)), it * 100L) }
+        assertEquals(9, s.found.single().names.count { it != null })
     }
 }
