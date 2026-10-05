@@ -7,8 +7,8 @@
 
 ## 2. Spike: smaller pieces (cube)
 
-- [ ] 2.1 Lower the finder's hit floor for lattices that include the centre (4–6 stickers) behind a setting; measure on both videos with the replay: final cube, wrong recognised stickers at any frame, frames to complete, stickers recognised at the halfway frame. Write `findings.md` in this change.
-- [ ] 2.2 Apply the criterion in `design.md`: go → feed the pieces like partial faces, fixtures and replay tests updated; no-go → floor stays at 7, setting removed. Verify: replay tests green either way.
+- [x] 2.1 Lower the finder's hit floor for lattices that include the centre (4–6 stickers) behind a setting; measure on both videos with the replay: final cube, wrong recognised stickers at any frame, frames to complete, stickers recognised at the halfway frame. Write `findings.md` in this change.
+- [x] 2.2 Apply the criterion in `design.md`: go → feed the pieces like partial faces, fixtures and replay tests updated; no-go → floor stays at 7, setting removed. Verify: replay tests green either way.
 
 ## 3. Orientation and faint stickers (cube)
 
