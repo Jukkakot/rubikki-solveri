@@ -27,10 +27,20 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import kotlin.math.PI
 
-/** The curved direction arrow of [move], with a dark outline and a head at its end. */
-private fun DrawScope.drawArrow(move: Move, view: Quat, path: Path, mirror: Boolean) {
+/**
+ * The curved direction arrow of [move], with a dark outline, a head at its end and in the middle
+ * of the arc a badge with the number of quarter turns ("×1", "×2").
+ */
+private fun DrawScope.drawArrow(move: Move, view: Quat, path: Path, mirror: Boolean, text: TextMeasurer) {
     val points = CubeScene.arrow(move, view).map { CubeScene.projectPoint(it, view, size.width, size.height, mirror) }
     // Sized by the cube on screen.
     val cubeSize = CubeScene.fit(size.width, size.height, mirror).scale
@@ -59,6 +69,19 @@ private fun DrawScope.drawArrow(move: Move, view: Quat, path: Path, mirror: Bool
     }
     drawPath(head, StickerColors.ARROW_OUTLINE, style = Stroke(width * 0.6f, join = androidx.compose.ui.graphics.StrokeJoin.Round))
     drawPath(head, StickerColors.ARROW)
+    // The count badge: a pill in the arrow's colours on the middle of the arc.
+    val (mx, my) = points[points.size / 2]
+    val label = text.measure(
+        "×${if (move.quarterTurns == 2) 2 else 1}",
+        TextStyle(color = StickerColors.ARROW_OUTLINE, fontSize = (cubeSize * 0.07f).toSp(), fontWeight = FontWeight.Bold),
+    )
+    val h = label.size.height * 1.15f
+    val w = maxOf(h, label.size.width + h * 0.5f)
+    val corner = CornerRadius(h / 2, h / 2)
+    val topLeft = Offset(mx - w / 2, my - h / 2)
+    drawRoundRect(StickerColors.ARROW, topLeft, Size(w, h), corner)
+    drawRoundRect(StickerColors.ARROW_OUTLINE, topLeft, Size(w, h), corner, style = Stroke(width * 0.6f))
+    drawText(label, topLeft = Offset(mx - label.size.width / 2f, my - label.size.height / 2f))
 }
 
 /** Real-cube sticker colours; not themed, they must match the cube in the user's hand. */
@@ -137,6 +160,7 @@ fun Cube3D(
 ) {
     var size by remember { mutableStateOf(Size.Zero) }
     val path = remember { Path() }
+    val textMeasurer = rememberTextMeasurer()
     val glassPath = remember { Path() }
     // The frame contrasts with the light glass: secondary on a light background, its dark container on a dark one.
     val scheme = MaterialTheme.colorScheme
@@ -184,7 +208,7 @@ fun Cube3D(
             }
         }
         drawQuads(CubeScene.project(quads, view, size.width, size.height, highlight, mirror), colors, marked, path)
-        if (showArrow) drawArrow(arrow!!, view, path, mirror)
+        if (showArrow) drawArrow(arrow!!, view, path, mirror, textMeasurer)
     }
 }
 

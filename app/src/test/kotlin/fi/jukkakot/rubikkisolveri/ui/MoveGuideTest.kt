@@ -78,6 +78,18 @@ class MoveGuideTest {
     }
 
     @Test
+    fun theDemoRepeatsAfterThreeSeconds() {
+        stepper()
+        compose.mainClock.advanceTimeBy(1_500)
+        compose.runOnIdle { assertEquals(1, demos) }
+        compose.mainClock.advanceTimeBy(StepperState.REPEAT_MS + 500)
+        compose.runOnIdle {
+            assertEquals(2, demos, "played again")
+            assertEquals(start.apply(moves.take(1)), state.animator.cube)
+        }
+    }
+
+    @Test
     fun showPlaysAfterATapDuringATurn() {
         stepper()
         // The automatic demo is turning: tap show again, then show plays a full turn.

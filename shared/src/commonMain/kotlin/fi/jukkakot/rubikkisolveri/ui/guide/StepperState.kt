@@ -16,6 +16,7 @@ import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeAnimator
 import fi.jukkakot.rubikkisolveri.ui.cube3d.rememberCubeAnimator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -89,17 +90,24 @@ class StepperState(
         }
     }
 
-    /** Waits for the cube to settle on the new step, then demos it once. */
+    /** Waits for the cube to settle on the new step, then demos it, and again every [REPEAT_MS] at rest. */
     suspend fun autoDemo() {
         if (isFinished || animator.isInstant) return
         val at = index
         snapshotFlow { animator.pending }.first { it == 0 }
         delay(AUTO_DEMO_DELAY_MS)
         if (index == at && animator.pending == 0 && animator.cube == cubeAt(at)) demo()
+        // Then again whenever the cube has rested after the move for a while (a show restarts the wait).
+        snapshotFlow { animator.pending == 0 && animator.cube == cubeAt(at + 1) }.collectLatest { resting ->
+            if (!resting) return@collectLatest
+            delay(REPEAT_MS)
+            if (index == at) demo()
+        }
     }
 
     companion object {
         const val AUTO_DEMO_DELAY_MS = 500L
+        const val REPEAT_MS = 3_000L
     }
 }
 

@@ -45,6 +45,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 35 | `step-settle` | done | Guide demo stays after the move, "Tein sen" nods instead of replaying the turn, back unchanged; no arrow in the mirror, a hidden face's arrow goes around the outside of its layer; solved cube hops, spins and bursts confetti (phone testing 2026-10-05) |
 | 36 | `scan-quick-flow` | done | Each captured face is accepted by itself after 2 s (a touch stops it); a sure scan skips the colour check and opens the solution, with the check behind it; the guide shows the arrow 1.5 s before the demo (phone testing 2026-10-05) |
 | 37 | `guide-fixes` | done | Arrow shown the whole time a move is presented (also during and after the demo), 0.5 s pause before the demo, no nod (vibration stays), show always plays: a tap during a turn no longer stopped the animator for good (phone testing 2026-10-05) |
+| 38 | `arrow-count-loop` | done | A "×1"/"×2" badge in the middle of the guide arrow; the demo repeats 3 s after it ends until the user moves on (phone testing 2026-10-05) |
 
 ## Backlog
 
