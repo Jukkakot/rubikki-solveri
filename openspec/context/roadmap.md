@@ -54,6 +54,10 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
     touch stops it, "Kuvaa uudelleen" at hand). This page shows raw camera colours with no
     confidence yet, so presumably always. Only this page: not the learn method's goal card, not
     the per-face "Näyttää oikealta" of the colour check (user, 2026-10-05).
+  - final colour check ("Tarkista värit"): skip it when the scan is valid and confident and go
+    straight to the solution; it opens only when something is uncertain or wrong (user,
+    2026-10-05; reverses scan-dim-light's "check after every scan"). Open: a way back to the
+    check from the solution if the colours turn out wrong (e.g. a "Värit väärin?" link)?
 
 - camera follow: notice when the cube is held differently, or keep helping in any orientation
   (after the user has tried camera follow; from `steady-cube`).
