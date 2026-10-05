@@ -72,6 +72,7 @@ a cube while its layers are turned; tracking pieces from frame to frame by motio
 User answers 2026-10-05 (mockups https://claude.ai/artifact/PoE7Ldoxa2VFt2TWKvYdoW): round dots;
 dimmed outline; two levels on the progress cube (faint from the first reading, full when
 recognised, grey only with no reading); full 3D following; follow only faces with a settled
-rotation; a partial face without its centre is dropped.
+rotation; a partial face without its centre is dropped; autopilot decides on the smaller pieces
+by the criterion above, with the numbers in the summary.
 
-- Who decides on the smaller pieces after the spike (asked again in text).
+None open.
