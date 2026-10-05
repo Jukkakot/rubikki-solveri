@@ -4,6 +4,7 @@ package fi.jukkakot.rubikkisolveri.log
 enum class Evt(val id: String) {
     APP_START("app.start"),
     APP_CRASH("app.crash"),
+    APP_GRAPHICS_LOST("app.graphicsLost"),
     NAV_SCREEN("nav.screen"),
     SETTINGS_CHANGED("settings.changed"),
     LOG_SHARED("log.shared"),

@@ -38,9 +38,15 @@ class WebServices {
         AppLog.install(logger)
         store.remove(StoreKeys.CRASHED)
         persistStorage()
+        var reloadingForGraphics = false
         installCrashHooks { report ->
             logger.writeNow(Level.ERROR, Evt.APP_CRASH, report.substringBefore('\n'), "stack" to report.substringAfter('\n', ""))
-            store.set(StoreKeys.CRASHED, Clock.System.now().toEpochMilliseconds().toString())
+            // The engine fails on its first frame after lost graphics; the reload is the recovery.
+            if (!reloadingForGraphics) store.set(StoreKeys.CRASHED, Clock.System.now().toEpochMilliseconds().toString())
+        }
+        installGraphicsLostHook { willReload ->
+            reloadingForGraphics = willReload
+            logger.writeNow(Level.WARN, Evt.APP_GRAPHICS_LOST, if (willReload) "reloading when visible" else "lost again soon after a reload")
         }
         BrowserHooks.reducedMotion = ::reducedMotion
         BrowserHooks.formatDateTime = { millis, language, timeOnly -> formatDateTime(millis.toDouble(), language, timeOnly) }

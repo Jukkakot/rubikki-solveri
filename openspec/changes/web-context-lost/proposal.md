@@ -17,8 +17,9 @@ null; user's log 2026-10-04 21:02). No upstream fix was found.
 - Decisions taken here (no `design.md`, small change):
   - Guard against a reload loop: at most one automatic reload per 30 s (kept in session storage);
     a second loss inside that window is only logged and the crash path handles it as before.
-  - The listener lives in `platform.mjs` with the other browser calls, catching the event in the
-    capture phase on `document`, so it does not depend on where the drawing engine puts its canvas.
+  - The listener lives in `platform.mjs` with the other browser calls. The engine's canvas sits in
+    a shadow root and the event does not leave it, so `getContext` is wrapped and every canvas that
+    gets a WebGL context is watched (found while implementing).
 
 ## Capabilities
 
@@ -30,4 +31,5 @@ null; user's log 2026-10-04 21:02). No upstream fix was found.
 ## Impact
 
 Web module only (`web/src/wasmJsMain/resources/platform.mjs`, `Main.kt` / `WebServices.kt` for the
-log line and the crash flag, `web/smoke/smoke.mjs`). `cube`, `shared` and `app` are untouched.
+log line and the crash flag, `web/smoke/smoke.mjs`), plus one new log event in `shared`
+(`app.graphicsLost`). `cube` and `app` are untouched.

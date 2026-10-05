@@ -11,7 +11,7 @@ There is no server: "operations" means getting the app onto the phone and findin
 - The version name is `1.0.<commit count>-<short commit>`; the log's `app.start` line and
   Settings → About show it.
 - CI also builds the browser version and runs its smoke test (`web/smoke/smoke.mjs`: the page
-  starts without errors, the solver's speed via `?selftest`); on a push to `main` its `pages` job
+  starts without errors and survives lost WebGL graphics by reloading, the solver's speed via `?selftest`); on a push to `main` its `pages` job
   publishes that same build (see Browser version). `pages.yml` is only a manual rebuild (Run
   workflow). Pages is set to "GitHub Actions" as its source (done 2026-10-04 with
   `gh api -X POST repos/Jukkakot/rubikki-solveri/pages -f build_type=workflow`).

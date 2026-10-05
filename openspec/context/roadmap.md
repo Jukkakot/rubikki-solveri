@@ -41,6 +41,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 31 | `fit-screen` | done | Screens with actions fit in portrait without scrolling: trimmed spacing, the big element shrinks (200 dp floor) |
 | 32 | `real-mirror` | done | A framed mirror behind the guide cube in the 3D scene, a true reflection of the back; replaces the mirror card; one steady view and one move wording everywhere, learn method included (user decisions 2026-10-04) |
 | 33 | `scan-dim-light` | done | Forgiving scan in dim, warm light: bigger averaged cell reading, brightness-independent face naming, the six centres named together at the end (silent fix, next-best namings), the colour check after every scan (user, 2026-10-04) |
+| 34 | `web-context-lost` | done | Browser app reloads itself silently on the same screen when the phone takes its graphics away in a background tab, instead of crashing on return |
 
 ## Backlog
 
@@ -54,7 +55,3 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
   (web-app design, Risks).
 
 - `solve-challenge`: learning mode on the solve screen: show the position to reach next, the user tries it themselves, a "hint" button reveals the moves step by step; the target shown as the turnable 3D cube
-
-- browser crash after the tab was in the background for minutes: the WebGL context is lost and
-  Compose fails on return ("Exception while trying to handle coroutine exception",
-  `glGetShaderPrecisionFormat` null; user's log 2026-10-04 21:02).

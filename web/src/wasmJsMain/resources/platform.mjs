@@ -374,6 +374,44 @@ function download(blob, name) {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
+// --- Lost graphics -------------------------------------------------------------------------------
+// Phone browsers drop a background tab's WebGL context, and the drawing engine cannot recover: its
+// next frame fails. The page reloads itself instead once it is visible (the route is in the URL).
+// The canvas sits in Compose's shadow root and the event does not leave it, so every canvas that
+// gets a WebGL context is watched (getContext is wrapped before Compose creates its canvas).
+
+const GRAPHICS_RELOAD_KEY = 'rubikki.graphicsReloadAt';
+const GRAPHICS_RELOAD_GAP_MS = 30000;
+
+/** [report] gets true when the page will reload, false when it reloaded too recently to try again. */
+export function installGraphicsLostHook(report) {
+  let pending = false;
+  const onLost = () => {
+    if (pending) return;
+    let last = 0;
+    try { last = Number(sessionStorage.getItem(GRAPHICS_RELOAD_KEY)) || 0; } catch (e) { /* blocked */ }
+    if (Date.now() - last < GRAPHICS_RELOAD_GAP_MS) {
+      report(false);
+      return;
+    }
+    pending = true;
+    try { sessionStorage.setItem(GRAPHICS_RELOAD_KEY, String(Date.now())); } catch (e) { /* blocked */ }
+    report(true);
+    if (!document.hidden) location.reload();
+    else document.addEventListener('visibilitychange', () => { if (!document.hidden) location.reload(); });
+  };
+  const watched = new WeakSet();
+  const getContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, ...rest) {
+    const ctx = getContext.call(this, type, ...rest);
+    if (ctx && String(type).startsWith('webgl') && !watched.has(this)) {
+      watched.add(this);
+      this.addEventListener('webglcontextlost', onLost);
+    }
+    return ctx;
+  };
+}
+
 /** Uncaught errors and rejected promises: [report] gets "kind: message\nstack". */
 export function installCrashHooks(report) {
   window.addEventListener('error', (e) => {
