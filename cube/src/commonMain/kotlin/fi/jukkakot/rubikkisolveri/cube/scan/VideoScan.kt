@@ -49,6 +49,10 @@ data class FoundFace(val reading: FaceReading, val names: List<CubeColor?>, val 
  * rotation is in view), [hint] the tilt that brings most missing stickers into view (only while a
  * face is in view and its pose is known), [newStickers] how many stickers became known with this
  * frame. [complete]: the best cube is clear; [finished]: complete for [VideoScan.FINISH_MILLIS].
+ * [clearness] is the best cube's smallest supported margin, [brightness] the median sticker
+ * brightness of the faces in this frame (null without one), [dim] whether that is too dark, [stall]
+ * why the scan cannot get on, if it cannot. [projection] is where every sticker lies in this frame
+ * (null without [orientation]).
  */
 data class VideoScanState(
     val stickers: List<CubeColor?>,
@@ -61,6 +65,11 @@ data class VideoScanState(
     val finished: Boolean,
     val leading: List<CubeColor?> = List(Stickers.COUNT) { null },
     val orientation: Orientation? = null,
+    val clearness: Double = 0.0,
+    val brightness: Int? = null,
+    val dim: Boolean = false,
+    val stall: Stall? = null,
+    val projection: CubeProjection? = null,
 ) {
     val recognised: Int get() = stickers.count { it != null }
 
@@ -68,6 +77,9 @@ data class VideoScanState(
         val EMPTY = VideoScanState(List(Stickers.COUNT) { null }, emptySet(), emptyList(), null, null, 0, false, false)
     }
 }
+
+/** Why the video scan cannot get on: too dark, no cube in view, or nothing new known for a while. */
+enum class Stall { DARK, NO_CUBE, STUCK }
 
 /**
  * The scan from continuous video (`video-scan`): every full face found in a frame ([FaceReading])
@@ -131,6 +143,11 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     private var lastOrientation: Orientation? = null
     private var lastRecognised = 0
     private var completeSince: Long? = null
+    private var startedAt: Long? = null
+    private var lastFaceAt: Long? = null
+    private var dimSince: Long? = null
+    private var progressAt = 0L
+    private var mostKnown = 0
 
     var state: VideoScanState = VideoScanState.EMPTY
         private set
@@ -160,7 +177,8 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val best = BestCube.solve(evidence, scheme)
         this.best = best
         val seen = Face.entries.filter { groups[scheme[it]] != null }
-        val complete = best != null && seen.all { it in settled } && best.clearness(evidence) >= CLEAR_MARGIN
+        val clearness = best?.clearness(evidence) ?: 0.0
+        val complete = best != null && seen.all { it in settled } && clearness >= CLEAR_MARGIN
         // Known: from the best cube where it is clear, else from the votes alone.
         val voted = netOf { it.stickers }
         val net = List(Stickers.COUNT) { i ->
@@ -190,13 +208,17 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val pose = main?.let { poseOf(it) }
         if (pose != null) lastPose = pose
         val orientation = main?.let { orientationOf(it, usable) }
+        val projection = if (main != null && orientation != null) projectionOf(main, orientation) else null
         if (orientation != null) lastOrientation = orientation
         val recognised = net.count { it != null }
         val leading = netOf { it.leading }.mapIndexed { i, c -> if (net[i] == null) c else null }
+        val brightness = brightness(faces)
+        val dim = brightness != null && brightness < DIM_BELOW
         state = VideoScanState(
             stickers = net,
             leading = leading,
             orientation = orientation,
+            projection = projection,
             contradictions = contradictions,
             found = faces.mapIndexed { i, face -> foundFace(face, fresh[i], net) },
             pose = lastPose,
@@ -204,9 +226,59 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             newStickers = (recognised - lastRecognised).coerceAtLeast(0),
             complete = complete,
             finished = complete && nowMillis - completeSince!! >= FINISH_MILLIS,
+            clearness = clearness,
+            brightness = brightness,
+            dim = dim,
+            stall = stall(nowMillis, faces.isNotEmpty(), brightness, dim, recognised, complete),
         )
         lastRecognised = recognised
         return state
+    }
+
+    /**
+     * Why the scan cannot get on at [now]: too dark for [DARK_MILLIS] (judged only while faces are
+     * found), no face found for [NO_CUBE_MILLIS], or the cube in view but no more stickers known than
+     * ever before for [STUCK_MILLIS] (also when the readings fit no possible cube clearly).
+     */
+    private fun stall(now: Long, anyFace: Boolean, brightness: Int?, dim: Boolean, known: Int, complete: Boolean): Stall? {
+        val start = startedAt ?: now.also {
+            startedAt = it
+            progressAt = it
+        }
+        if (anyFace) lastFaceAt = now
+        if (brightness != null) dimSince = if (dim) dimSince ?: now else null
+        if (known > mostKnown || complete) {
+            mostKnown = maxOf(mostKnown, known)
+            progressAt = now
+        }
+        return when {
+            complete -> null
+            dimSince?.let { now - it >= DARK_MILLIS } == true -> Stall.DARK
+            now - (lastFaceAt ?: start) >= NO_CUBE_MILLIS -> Stall.NO_CUBE
+            now - progressAt >= STUCK_MILLIS && lastFaceAt?.let { now - it < IN_VIEW_MILLIS } == true -> Stall.STUCK
+            else -> null
+        }
+    }
+
+    /** Starts the scan again from nothing (the camera keeps running). */
+    fun reset() {
+        groups.clear()
+        rotations = emptyMap()
+        settled = emptySet()
+        rotationKey = null
+        sinceRotations = 0
+        evidence = StickerEvidence.EMPTY
+        best = null
+        lastPose = null
+        lastOrientation = null
+        lastRecognised = 0
+        completeSince = null
+        startedAt = null
+        lastFaceAt = null
+        dimSince = null
+        progressAt = 0L
+        mostKnown = 0
+        state = VideoScanState.EMPTY
     }
 
     /**
@@ -449,6 +521,13 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         return Orientation.choose(candidates, front.normal, main.face.centre, others, lastOrientation)
     }
 
+    /** Every sticker projected into this frame from [main] and the cube's [orientation]. */
+    private fun projectionOf(main: Reading, orientation: Orientation): CubeProjection? {
+        val front = scheme.faceOf(main.group.color)
+        val k = netTurn(main)
+        return CubeProjection.of(orientation, front, main.face.centre, main.face.u, main.face.v, sideVector(front, k + 1), sideVector(front, k + 2))
+    }
+
     /** [face] as the scan took it in this frame: names in reading order, and which of its places are known in [net]. */
     private fun foundFace(face: FaceReading, r: Reading?, net: List<CubeColor?>): FoundFace {
         if (r == null || r.removed) return FoundFace(face, List(9) { null }, List(9) { false })
@@ -487,6 +566,31 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** Frames between working the faces' rotations out again while the leading colours stay the same. */
         const val ROTATION_EVERY = 10
+
+        /**
+         * Median sticker brightness (brightest channel) under which the picture is too dark. The camera
+         * evens out exposure, so dim warm light does not show here (evening videos: median 130 to 209,
+         * failing or not); only real darkness does (`video-scan-progress` findings).
+         */
+        const val DIM_BELOW = 70
+
+        /** Too dark this long: stall. */
+        const val DARK_MILLIS = 3_000L
+
+        /** No face found this long: stall. */
+        const val NO_CUBE_MILLIS = 8_000L
+
+        /** No more stickers known this long with the cube in view: stall (user, 2026-10-05). */
+        const val STUCK_MILLIS = 15_000L
+
+        /** A face found this recently counts as the cube in view. */
+        const val IN_VIEW_MILLIS = 1_000L
+
+        /** Median brightness (brightest channel) of the stickers of [faces], or null without any. */
+        fun brightness(faces: List<FaceReading>): Int? {
+            val values = faces.flatMap { f -> f.colors.filterNotNull().map { maxOf(it.r, it.g, it.b) } }.sorted()
+            return if (values.isEmpty()) null else values[values.size / 2]
+        }
 
 
         /** The quarter turns (clockwise) bringing [a] closest to [b], and how many stickers then agree. */

@@ -7,7 +7,9 @@ import fi.jukkakot.rubikkisolveri.cube.scan.RgbaFrame
 import fi.jukkakot.rubikkisolveri.cube.scan.Orientation
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.Pose
+import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.cube.scan.RotationSearch
+import fi.jukkakot.rubikkisolveri.cube.scan.Stall
 import fi.jukkakot.rubikkisolveri.cube.scan.Tilt
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
@@ -238,5 +240,47 @@ class VideoScanTest {
         repeat(5) { scan.onFrame(emptyList(), t); t += 100 }
         assertTrue(scan.state.finished)
         assertEquals(VideoFixtures.TRUTH, scan.outcome().editor.encode())
+    }
+
+    /** [face] read as in [reading], all colours scaled by [light] (a dark picture). */
+    private fun dark(face: Face, light: Double): FaceReading {
+        val r = reading(face)
+        return r.copy(colors = r.colors.map { c -> c?.let { Rgb((it.r * light).toInt(), (it.g * light).toInt(), (it.b * light).toInt()) } })
+    }
+
+    @Test
+    fun darkPictureIsToldAtOnceAndStallsAfterAWhile() {
+        val scan = VideoScan()
+        val first = scan.onFrame(listOf(dark(Face.U, 0.2)), 0)
+        assertTrue(first.dim)
+        assertNull(first.stall)
+        var s = first
+        for (t in 100L..3_000L step 100) s = scan.onFrame(listOf(dark(Face.U, 0.2)), t)
+        assertEquals(Stall.DARK, s.stall)
+        assertTrue(!scan.onFrame(listOf(reading(Face.U)), 3_100).dim)
+    }
+
+    @Test
+    fun noCubeForAWhileStalls() {
+        val scan = VideoScan()
+        scan.onFrame(listOf(reading(Face.U)), 0)
+        assertNull(scan.onFrame(emptyList(), 7_000).stall)
+        assertEquals(Stall.NO_CUBE, scan.onFrame(emptyList(), 8_000).stall)
+        assertNull(scan.onFrame(listOf(reading(Face.U)), 8_100).stall, "cube back in view")
+    }
+
+    @Test
+    fun theSameFaceForFifteenSecondsStallsAndRestartClearsIt() {
+        val scan = VideoScan()
+        var s = VideoScanState.EMPTY
+        for (t in 0L..14_000L step 200) s = scan.onFrame(listOf(reading(Face.U)), t)
+        assertNull(s.stall)
+        for (t in 14_200L..15_400L step 200) s = scan.onFrame(listOf(reading(Face.U)), t)
+        assertEquals(Stall.STUCK, s.stall)
+        scan.reset()
+        assertEquals(0, scan.state.recognised)
+        val again = scan.onFrame(listOf(reading(Face.U)), 15_600)
+        assertNull(again.stall)
+        assertEquals(1, again.recognised, "only the centre after one frame")
     }
 }
