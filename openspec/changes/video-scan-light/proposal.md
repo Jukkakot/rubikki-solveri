@@ -23,8 +23,16 @@ Phone test of `video-scan-progress` (user): the restart panel covers the cube an
 - **Torch from the notice:** where the device has a torch, the "more light" / stuck notice offers to
   turn it on.
 - **The stall panel becomes a notice** at the bottom of the picture that does not cover the cube;
-  scanning goes on underneath, the notice goes away when new stickers become known, and a tap
-  anywhere outside it closes it. "Start over" and "fix colours" stay in the notice only.
+  scanning goes on underneath, the notice stays at least 5 s and then goes once the scan gets on, a
+  tap anywhere outside it closes it for good (that reason). It describes the situation ("Heikko
+  valaistus") instead of giving orders. "Start over" and "fix colours" stay in the notice only.
+- **Torch re-meters the camera:** turning it on or off lets exposure and white balance settle and
+  lock again (screenshots 2026-10-05: torch on after the lock washed the picture out). Washed-out
+  readings count little.
+- **Tick only when confirmed:** a side gets its tick when the rest of the cube confirms it, not on
+  its own readings.
+- **Sharp browser picture:** the browser shows the camera's own video under the app (today a
+  360-px copy redrawn at most 15 times a second: blurry and jerky).
 
 Target: both dim evening videos finish with the true cube, no other test video gets slower or
 wrong, the simulation shows no wrong finish with the threshold (re-checked, re-chosen if needed).
@@ -34,11 +42,14 @@ wrong, the simulation shows no wrong finish with the threshold (re-checked, re-c
 ### New Capabilities
 
 ### Modified Capabilities
-- `video-scan`: readings counted by how well they fit each colour; light colour and glare taken out;
-  the restart panel becomes a non-blocking notice with an optional torch button.
+- `video-scan`: readings counted by how well they fit each colour; light colour, glare and washed-out
+  readings handled; torch re-meters; tick only when confirmed; the restart panel becomes a
+  non-blocking notice with a torch toggle.
+- `web-app`: the browser's camera picture as sharp and smooth as the camera delivers it.
 
 ## Impact
 
 Modules: `cube` (colour fit per reading, light correction, glare in `FaceFinder`'s sticker colour,
-fractional evidence in `BestCube`/`VideoScan`, fixtures regenerated) and `shared` (notice, torch
-button, texts). `app` and `web` unchanged (both already switch the torch).
+fractional evidence in `BestCube`/`VideoScan`, fixtures regenerated), `shared` (notice, torch
+toggle, texts, re-metering), `web` (video element under the app, re-metering in `platform.mjs`) and
+`app` (tests).
