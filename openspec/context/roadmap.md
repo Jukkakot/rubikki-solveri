@@ -60,4 +60,7 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
   phone's browser is slow: warm-up over 4 s or a solve over 2 s measured with `?selftest`
   (web-app design, Risks).
 
+- `solve-to-target`: the user picks the end state to reach (e.g. a pattern or any chosen cube, not
+  only solved) and the guide leads to exactly that state (user, 2026-10-05).
+
 - `solve-challenge`: learning mode on the solve screen: show the position to reach next, the user tries it themselves, a "hint" button reveals the moves step by step; the target shown as the turnable 3D cube
