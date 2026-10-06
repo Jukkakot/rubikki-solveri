@@ -47,7 +47,7 @@ class HandsfreeTest {
     fun waitsPerSpeedAndHalfTurnsGetMore() {
         val quarter = Notation.parse("R")[0]
         val half = Notation.parse("R2")[0]
-        assertEquals(listOf(4_000L, 2_400L, 1_200L), HandsfreeSpeed.entries.map { it.waitMs(quarter) })
+        assertEquals(listOf(3_600L, 2_100L, 1_000L), HandsfreeSpeed.entries.map { it.waitMs(quarter) })
         HandsfreeSpeed.entries.forEach { assertTrue(it.waitMs(half) > it.waitMs(quarter), "$it half turn") }
         assertEquals(HandsfreeSpeed.NORMAL, HandsfreeSpeed.fromName(null))
     }

@@ -4,9 +4,9 @@ import fi.jukkakot.rubikkisolveri.cube.Move
 
 /** How long handsfree gives for a quarter turn after its demo has ended. */
 enum class HandsfreeSpeed(val quarterMs: Long) {
-    SLOW(4_000),
-    NORMAL(2_400),
-    FAST(1_200),
+    SLOW(3_600),
+    NORMAL(2_100),
+    FAST(1_000),
     ;
 
     /** The time to do [move]: a half turn gets [HALF_TURN_FACTOR] times a quarter turn's. */
