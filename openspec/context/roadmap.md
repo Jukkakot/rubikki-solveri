@@ -66,7 +66,8 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
   `.claude/`.
 
 - camera follow: notice when the cube is held differently, or keep helping in any orientation
-  (after the user has tried camera follow; from `steady-cube`).
+  (after the user has tried camera follow; from `steady-cube`). Proposal `camera-follow-any-way`
+  drafted 2026-10-06 (commit 9a0a469) and parked: hard to film the cube while turning it.
 
 - ~~`web-solver-worker`~~ dropped 2026-10-06: `?selftest` on the user's phone (Samsung Internet)
   gave warmup 126–141 ms and solve 148–196 ms, far under the 4 s / 2 s limits.
