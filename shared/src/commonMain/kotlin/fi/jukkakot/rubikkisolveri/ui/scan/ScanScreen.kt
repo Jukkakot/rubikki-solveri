@@ -107,6 +107,7 @@ fun ScanScreen(
     only: FaceView? = null,
     onFace: (FaceView, List<Rgb>) -> Unit = { _, _ -> },
     pictures: ScanPictureStore = NoScanPictures,
+    onSwitch: (() -> Unit)? = null,
 ) {
     CameraPermissionGate(
         alternative = stringResource(Res.string.scan_manual) to onManual,
@@ -142,6 +143,7 @@ fun ScanScreen(
                 onResult(outcome)
             },
             only = only,
+            onSwitch = onSwitch,
             onFace = { view, samples ->
                 // Still as seen: the check turns it once it knows how the face was held.
                 LastScan.pictures = LastScan.pictures + facePictures
@@ -202,6 +204,7 @@ fun ScanContent(
     only: FaceView? = null,
     onFace: (FaceView, List<Rgb>) -> Unit = { _, _ -> },
     torchAvailable: Boolean = true,
+    onSwitch: (() -> Unit)? = null,
     preview: @Composable (Modifier) -> Unit,
 ) {
     val session = remember { ScanSession(holdMillis = holdMillis, only = only) }
@@ -316,6 +319,9 @@ fun ScanContent(
                 title = { Text(stringResource(Res.string.scan_title)) },
                 navigationIcon = { Box(Modifier.padding(horizontal = 8.dp)) { BackButton(onBack) } },
                 actions = {
+                    if (onSwitch != null) {
+                        TextButton(onClick = onSwitch) { Text(stringResource(Res.string.scan_switch_video), maxLines = 1) }
+                    }
                     if (torchAvailable) {
                         RoundIconToggle(checked = torch, onCheckedChange = onTorch, modifier = Modifier.padding(horizontal = 8.dp)) {
                             Icon(painterResource(Res.drawable.ic_torch), contentDescription = stringResource(Res.string.scan_torch))

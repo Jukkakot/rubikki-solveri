@@ -26,6 +26,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -95,7 +96,7 @@ class FoundFaces(val faces: List<FaceReading>, val width: Int, val height: Int, 
  * thread). The finder's time per frame goes into the log's snapshots.
  */
 @Composable
-fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome) -> Unit) {
+fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome) -> Unit, onSwitch: (() -> Unit)? = null) {
     CameraPermissionGate(alternative = stringResource(Res.string.scan_manual) to onManual) {
         val images = remember { MutableSharedFlow<ArgbImage>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST) }
         val found = remember { MutableSharedFlow<FoundFaces>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST) }
@@ -121,6 +122,7 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
             torchAvailable = torchAvailable,
             onBack = onBack,
             onManual = onManual,
+            onSwitch = onSwitch,
             onResult = onResult,
             cameraFailed = cameraFailed,
             maxDarker = maxDarker,
@@ -170,6 +172,7 @@ fun VideoScanContent(
     maxDarker: Int = ExposureControl.MAX_DARKER,
     onExposure: (CameraSettings) -> Unit = {},
     clock: () -> Long = ::elapsedMillis,
+    onSwitch: (() -> Unit)? = null,
     preview: @Composable (Modifier) -> Unit,
 ) {
     val scan = remember { VideoScan() }
@@ -245,6 +248,9 @@ fun VideoScanContent(
                 title = { Text(stringResource(Res.string.video_title)) },
                 navigationIcon = { Box(Modifier.padding(horizontal = 8.dp)) { BackButton(onBack) } },
                 actions = {
+                    if (onSwitch != null) {
+                        TextButton(onClick = onSwitch) { Text(stringResource(Res.string.scan_switch_photo), maxLines = 1) }
+                    }
                     if (torchAvailable) {
                         RoundIconToggle(checked = torch, onCheckedChange = onTorch, modifier = Modifier.padding(horizontal = 8.dp)) {
                             Icon(painterResource(Res.drawable.ic_torch), contentDescription = stringResource(Res.string.scan_torch))

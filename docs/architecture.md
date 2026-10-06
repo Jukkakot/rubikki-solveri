@@ -123,8 +123,10 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
 
 ### Two ways to scan
 
-The guided scan above is the default (`ScanRoute`, the home screen's primary button); the video scan
-(`VideoScanRoute`, "Skannaa videolta (kokeilu)" tile) is offered beside it until it proves reliable.
+The video scan (`VideoScanRoute`) is the default since `video-primary` (2026-10-06): the home
+screen's primary button and the check's "scan again" open it. Its top bar's "Kuva kerrallaan"
+replaces it with the guided scan above (`ScanRoute`), whose "Videolla" switches back; a one-face
+rescan from the check stays guided.
 Video scan pipeline (`video-scan`):
 
 1. `CameraPreview(onImage)`: about fifteen times a second (every 66 ms) the visible picture
@@ -303,12 +305,12 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 
 | Route | Screen | Notes |
 |---|---|---|
-| `HomeRoute` | Home | spinning hero cube; scan as the primary button; tiles: video scan (beta), manual input, learn, timer, free cube; best-time summary |
+| `HomeRoute` | Home | spinning hero cube; scan (video) as the primary button; tiles: manual input, learn, timer, free cube; best-time summary |
 | `LessonsRoute`, `LessonRoute(index)` | Lessons | basics + 7 stages, algorithm demos |
 | `PracticeRoute(stage, seed)` | Practice | the solution screen limited to one stage |
 | `TimerRoute`, `HistoryRoute`, `ScrambleGuideRoute(moves)` | Timer, history, guided scramble | |
 | `ScanRoute(face?)` | Scan (with `face`: that face only, back to the check) | camera permission, grid, live dots, auto-capture; one screen (actions in the bottom bar, status and review texts on the camera); result → solve or check |
-| `VideoScanRoute` | Video scan (beta) | camera picture with marks on the real cube (solid = known, ring = needed, tick = side confirmed), turn arrow beside it, short status, done-sides row; a notice at the bottom of the picture when stuck (scanning goes on); "Korjaa värit" hands over what is known; result → solve or check |
+| `VideoScanRoute` | Video scan (the default scan) | camera picture with marks on the real cube (solid = known, ring = needed, tick = side confirmed), turn arrow beside it, short status, done-sides row; a notice at the bottom of the picture when stuck (scanning goes on); "Korjaa värit" hands over what is known; result → solve or check |
 | `ManualInputRoute(cube?, marked?, fromScan, confident)` | Manual input / check a scan | one screen (palette, ‹ › and check in the bottom bar); face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution. From a scan: the face-by-face check (`ScanCheck`): checked faces ticked in the face map, "N faces left", the face's camera picture beside the grid (`LastScan`), "Kuvaa uudelleen" (one-face scan) and "Näyttää oikealta" in place of ‹ › and check, the verdict line, "scan the whole cube again" in the menu |
 | `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
 | `SolveRoute(cube)` | Solution | background solve, then the move guide stepper; camera mode follows on the real cube |

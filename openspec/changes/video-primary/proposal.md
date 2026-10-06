@@ -16,6 +16,8 @@ home screen has hardly any space left for the cube.
 - Every "scan" entry that starts a whole new scan (home, the manual input screen's scan link) opens
   the video scan. Rescanning one face from the colour check stays in the guided scan (it scans just
   that face).
+- The video scan's title becomes "Skannaa" / "Scan" (was "Videoskannaus"), so it fits the top bar
+  beside "Kuva kerrallaan" and the torch (decided while implementing).
 - No remembered choice: scanning always starts as video (user, 2026-10-06).
 - Modules: shared (home, both scan screens, navigation, texts). No change to cube or app.
 

@@ -305,8 +305,7 @@
     <string name="camera_denied_web">The camera is blocked for this page. Allow it in the browser's site settings (the lock or settings icon in the address bar) and reload the page. You can also enter the colours by hand.</string>
     <string name="about_text_web">Rubikki Solveri scans your cube and teaches you to solve it. Everything runs in the browser: no pictures or data are sent anywhere.</string>
     <string name="version_built">Built %1$s</string>
-    <string name="home_video_scan">Scan from video (beta)</string>
-    <string name="video_title">Video scan</string>
+    <string name="video_title">Scan</string>
     <string name="video_status_find">Show the cube to the camera</string>
     <string name="video_status_keep">Turn it slowly</string>
     <string name="video_hint_up">Bottom into view</string>
@@ -322,4 +321,6 @@
     <string name="video_notice_close">Close the notice</string>
     <string name="video_dim">Dim light</string>
     <string name="video_sides_done">Sides done: %1$d/6</string>
+    <string name="scan_switch_photo">Face by face</string>
+    <string name="scan_switch_video">Video</string>
 </resources>

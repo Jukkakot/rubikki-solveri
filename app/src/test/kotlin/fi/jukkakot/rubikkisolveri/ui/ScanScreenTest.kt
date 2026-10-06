@@ -57,6 +57,18 @@ class ScanScreenTest {
         }
     }
 
+    @Test
+    fun switchesToVideo() {
+        var switched = false
+        compose.setContent {
+            RubikkiTheme(dynamicColor = false) {
+                ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {}, onSwitch = { switched = true }, preview = {})
+            }
+        }
+        compose.onNodeWithText("Videolla").performClick()
+        assertTrue(switched)
+    }
+
     private fun faceSamples(view: FaceView, turn: Int = 0) =
         RotationSearch.turned((1..9).map { ColorClassifier.DEFAULT_PALETTE.getValue(cube.colorAt(view.face, it)) }, turn)
 

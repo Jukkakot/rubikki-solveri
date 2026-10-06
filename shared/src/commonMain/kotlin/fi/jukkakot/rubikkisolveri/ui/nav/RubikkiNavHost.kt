@@ -81,10 +81,8 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
         composable<HomeRoute> {
             val timed by actions.progress.timedSolves.collectAsStateWithLifecycle(emptyList())
             HomeScreen(
-                primary = HomeEntry(Res.string.home_scan, Res.drawable.ic_camera) { navController.navigate(ScanRoute()) },
+                primary = HomeEntry(Res.string.home_scan, Res.drawable.ic_video) { navController.navigate(VideoScanRoute) },
                 entries = listOf(
-                    // The guided scan stays the default (primary); the video scan is offered right after it.
-                    HomeEntry(Res.string.home_video_scan, Res.drawable.ic_video) { navController.navigate(VideoScanRoute) },
                     HomeEntry(Res.string.home_manual, Res.drawable.ic_palette) { navController.navigate(ManualInputRoute()) },
                     HomeEntry(Res.string.home_learn, Res.drawable.ic_school) { navController.navigate(LessonsRoute) },
                     HomeEntry(Res.string.home_timer, Res.drawable.ic_timer) { navController.navigate(TimerRoute) },
@@ -132,7 +130,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 confident = route.confident,
                 pictures = if (route.fromScan) LastScan.pictures else emptyMap(),
                 onScanAgain = if (route.fromScan) {
-                    { navController.navigate(ScanRoute()) { popUpTo<ManualInputRoute> { inclusive = true } } }
+                    { navController.navigate(VideoScanRoute) { popUpTo<ManualInputRoute> { inclusive = true } } }
                 } else {
                     null
                 },
@@ -156,6 +154,12 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                     }
                 },
                 only = only,
+                // The whole scan can switch to the video scan, which takes its place.
+                onSwitch = if (only == null) {
+                    { navController.navigate(VideoScanRoute) { popUpTo<ScanRoute> { inclusive = true } } }
+                } else {
+                    null
+                },
                 onFace = { view, samples ->
                     LastScan.rescanned = view to samples
                     navController.popBackStack()
@@ -172,6 +176,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
             ForcedDark { VideoScanScreen(
                 onBack = { navController.popBackStack() },
                 onManual = { navController.navigate(ManualInputRoute()) { popUpTo<VideoScanRoute> { inclusive = true } } },
+                onSwitch = { navController.navigate(ScanRoute()) { popUpTo<VideoScanRoute> { inclusive = true } } },
                 onResult = { outcome ->
                     // No face pictures from a video; the readings let the check re-read a rescanned face.
                     LastScan.pictures = emptyMap()

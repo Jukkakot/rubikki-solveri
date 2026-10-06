@@ -272,6 +272,7 @@ class ScreenshotTest {
         fi.jukkakot.rubikkisolveri.ui.scan.VideoScanContent(
             kotlinx.coroutines.flow.flowOf(*Array(frames) { view }), torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {},
             clock = { t.also { t += 100 } },
+            onSwitch = {},
             preview = { androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530)))) },
         )
     }
@@ -281,6 +282,7 @@ class ScreenshotTest {
     fun scanShort() = shot("scan-short") { ForcedDark {
         fi.jukkakot.rubikkisolveri.ui.scan.ScanContent(
             kotlinx.coroutines.flow.emptyFlow(), torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {},
+            onSwitch = {},
             preview = { androidx.compose.foundation.layout.Box(it.then(Modifier.background(androidx.compose.ui.graphics.Color(0xFF3A3530)))) },
         )
     } }
@@ -310,7 +312,7 @@ class ScreenshotTest {
     @Composable
     private fun Home() {
         fi.jukkakot.rubikkisolveri.ui.home.HomeScreen(
-            primary = fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_scan, Res.drawable.ic_camera) {},
+            primary = fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_scan, Res.drawable.ic_video) {},
             entries = listOf(
                 fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_manual, Res.drawable.ic_palette) {},
                 fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_learn, Res.drawable.ic_school) {},

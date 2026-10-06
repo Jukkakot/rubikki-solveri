@@ -67,6 +67,18 @@ class VideoScanScreenTest {
     }
 
     @Test
+    fun switchesToOneFaceAtATime() {
+        var switched = false
+        compose.setContent {
+            RubikkiTheme(dynamicColor = false) {
+                VideoScanContent(found, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {}, onSwitch = { switched = true }, preview = {})
+            }
+        }
+        compose.onNodeWithText("Kuva kerrallaan").performClick()
+        assertTrue(switched)
+    }
+
+    @Test
     fun stickersFillInAndTheCameraMetersOnTheFaceThenLocks() {
         scan()
         compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()

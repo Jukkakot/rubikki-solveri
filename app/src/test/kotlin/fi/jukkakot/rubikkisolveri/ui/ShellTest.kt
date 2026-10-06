@@ -21,7 +21,6 @@ import fi.jukkakot.rubikkisolveri.ui.nav.HomeRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.LogRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.ManualInputRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.SolveRoute
-import fi.jukkakot.rubikkisolveri.ui.nav.ScanRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.VideoScanRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.LessonsRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.TimerRoute
@@ -134,16 +133,9 @@ class ShellTest {
     }
 
     @Test
-    fun openTheScan() {
+    fun theScanStartsAsVideo() {
         start()
         compose.onNodeWithText("Skannaa kuutio").performClick()
-        assertTrue(isOn(ScanRoute()))
-    }
-
-    @Test
-    fun bothWaysToScanAreOffered() {
-        start()
-        compose.onNodeWithText("Skannaa videolta (kokeilu)").performClick()
         assertTrue(isOn(VideoScanRoute))
     }
 
