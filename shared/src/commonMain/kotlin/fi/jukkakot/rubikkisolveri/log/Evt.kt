@@ -21,6 +21,8 @@ enum class Evt(val id: String) {
     SCAN_ERROR("scan.error"),
     SCAN_CHECK("scan.check"),
     SCAN_VIDEO("scan.video"),
+    SCAN_CAMERA("scan.camera"),
+    SCAN_WORKER("scan.worker"),
     FOLLOW_EVENT("follow.event"),
 }
 

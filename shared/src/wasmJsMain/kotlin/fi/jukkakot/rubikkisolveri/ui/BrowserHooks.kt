@@ -3,6 +3,7 @@ package fi.jukkakot.rubikkisolveri.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
+import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 
 /**
@@ -31,8 +32,9 @@ class CameraArgs(
     val onSamples: (List<Rgb>) -> Unit,
     val onError: (Throwable) -> Unit,
     val modifier: Modifier,
-    val lockExposure: Boolean,
+    val exposure: CameraSettings,
     val onPicture: ((IntArray) -> Unit)?,
     val onTorchAvailable: (Boolean) -> Unit,
     val onImage: ((ArgbImage) -> Unit)? = null,
+    val onMaxDarker: (Int) -> Unit = {},
 )

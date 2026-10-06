@@ -3,6 +3,7 @@ package fi.jukkakot.rubikkisolveri.ui.scan
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
+import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.ui.BrowserHooks
 import fi.jukkakot.rubikkisolveri.ui.CameraArgs
@@ -13,11 +14,12 @@ actual fun CameraPreview(
     onSamples: (List<Rgb>) -> Unit,
     onError: (Throwable) -> Unit,
     modifier: Modifier,
-    lockExposure: Boolean,
+    exposure: CameraSettings,
     onPicture: ((IntArray) -> Unit)?,
     onTorchAvailable: (Boolean) -> Unit,
     onImage: ((ArgbImage) -> Unit)?,
-) = BrowserHooks.cameraPreview(CameraArgs(torch, onSamples, onError, modifier, lockExposure, onPicture, onTorchAvailable, onImage))
+    onMaxDarker: (Int) -> Unit,
+) = BrowserHooks.cameraPreview(CameraArgs(torch, onSamples, onError, modifier, exposure, onPicture, onTorchAvailable, onImage, onMaxDarker))
 
 @Composable
 actual fun CameraPermissionGate(

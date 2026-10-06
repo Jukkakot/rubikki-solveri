@@ -70,6 +70,7 @@ import androidx.compose.ui.unit.min
 import fi.jukkakot.rubikkisolveri.res.*
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.FaceView
+import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
 import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanEvent
@@ -165,7 +166,7 @@ fun ScanScreen(
             preview = { modifier ->
                 CameraPreview(
                     torch = torch,
-                    lockExposure = lockExposure,
+                    exposure = CameraSettings(lock = lockExposure),
                     onSamples = { frames.tryEmit(it) },
                     onPicture = { latestPicture.store(it to FrameSampler.check(it)) },
                     onTorchAvailable = { torchAvailable = it },

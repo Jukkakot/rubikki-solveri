@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performSemanticsAction
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.Stickers
+import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
@@ -37,7 +38,7 @@ class VideoScanScreenTest {
 
     private val found = MutableSharedFlow<FoundFaces>(extraBufferCapacity = 64)
     private var outcome: ScanOutcome? = null
-    private val locks = ArrayList<Boolean>()
+    private val settings = ArrayList<CameraSettings>()
     private var now = 0L
     private val cube = Cube.solved().apply("R U F' D2 L B")
 
@@ -46,7 +47,7 @@ class VideoScanScreenTest {
             RubikkiTheme(dynamicColor = false) {
                 VideoScanContent(
                     found, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = { outcome = it },
-                    onLockExposure = { locks += it }, clock = { now }, preview = {},
+                    onExposure = { settings += it }, clock = { now }, preview = {},
                 )
             }
         }
@@ -66,15 +67,19 @@ class VideoScanScreenTest {
     }
 
     @Test
-    fun stickersFillInAndExposureLocksOnTheFirstFace() {
+    fun stickersFillInAndTheCameraMetersOnTheFaceThenLocks() {
         scan()
         compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()
+        compose.onNodeWithText("Korjaa värit").assertIsNotEnabled()
+        // The first face: the camera meters and focuses at it, and its frames are not read while it adjusts.
+        show(face(Face.U), times = 6)
+        assertEquals(listOf(CameraSettings(meter = Point(0.5, 0.5), focus = Point(0.5, 0.5))), settings)
         compose.onNodeWithText("Korjaa värit").assertIsNotEnabled()
         show(face(Face.U), times = 3)
         // The face in view, read three times: its stickers are known, but no tick until the rest of the cube confirms it.
         compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()
         compose.onNodeWithText("Korjaa värit").assertIsEnabled()
-        assertEquals(listOf(false, true), locks)
+        assertEquals(CameraSettings(meter = Point(0.5, 0.5), focus = Point(0.5, 0.5), lock = true), settings.last())
     }
 
     @Test
@@ -82,7 +87,7 @@ class VideoScanScreenTest {
         scan()
         // A face with a sticker hidden, then the face in full: the full one starts it, both are drawn.
         val partial = face(Face.U).let { it.copy(colors = it.colors.toMutableList().also { c -> c[1] = null }) }
-        show(face(Face.U), partial, face(Face.U).copy(centre = Point(180.0, 120.0)))
+        show(face(Face.U), partial, face(Face.U).copy(centre = Point(180.0, 120.0)), times = 7)
         compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()
         compose.onNodeWithText("Korjaa värit").assertIsEnabled()
     }
@@ -100,7 +105,7 @@ class VideoScanScreenTest {
     @Test
     fun stopEarlyOpensTheCheckWithTheMissingMarked() {
         scan()
-        show(face(Face.U), times = 3)
+        show(face(Face.U), times = 9)
         compose.onNodeWithText("Korjaa värit").performClick()
         val result = assertNotNull(outcome)
         val missing = (0 until Stickers.COUNT).filter { it / 9 != Face.U.ordinal && it % 9 != 4 }

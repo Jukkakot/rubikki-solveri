@@ -129,6 +129,28 @@ object FrameSampler {
         return ArgbImage(argb, w, h)
     }
 
+    /**
+     * A point of the [upright] picture ([share] of its width and height) as a share of the whole
+     * unrotated [width]×[height] frame, whose crop is [cropLeft]..[cropBottom] and [rotation] its turn
+     * (`camera-exposure` design 3: where the camera measures light and focuses).
+     */
+    fun toFrameShare(
+        share: Point,
+        width: Int,
+        height: Int,
+        rotation: Int,
+        cropLeft: Int = 0,
+        cropTop: Int = 0,
+        cropRight: Int = width,
+        cropBottom: Int = height,
+    ): Point {
+        val (fx, fy) = toFrame(share.x.toFloat(), share.y.toFloat(), rotation)
+        return Point(
+            ((cropLeft + fx.toDouble() * (cropRight - cropLeft)) / width).coerceIn(0.0, 1.0),
+            ((cropTop + fy.toDouble() * (cropBottom - cropTop)) / height).coerceIn(0.0, 1.0),
+        )
+    }
+
     /** The face finder's frames: shorter side in pixels (the test videos' frames were 360×640). */
     const val FINDER_SHORT_SIDE = 360
 

@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
+import fi.jukkakot.rubikkisolveri.cube.scan.ExposureSteps
 import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
 import fi.jukkakot.rubikkisolveri.cube.scan.RgbaFrame
 import fi.jukkakot.rubikkisolveri.log.AppLog
@@ -56,8 +57,8 @@ const val ANALYSIS_SIZE = 264
 /** Frames are read at most this often (about 15 a second). */
 private const val FRAME_MILLIS = 66L
 
-/** The video scan's pictures at most this often (about ten a second). */
-private const val IMAGE_MILLIS = 100L
+/** The video scan's pictures at most this often (about fifteen a second). */
+private const val IMAGE_MILLIS = 66L
 
 /** Camera frames this far apart are a stall worth logging (as on the phone). */
 private const val CAMERA_STALL_MILLIS = 300L
@@ -152,21 +153,53 @@ private fun WebCameraPreview(args: CameraArgs) {
         }
     }
     LaunchedEffect(running, args.torch) { if (running) cameraSetTorch(args.torch) }
-    LaunchedEffect(running, args.lockExposure) {
-        if (running && args.lockExposure) AppLog.info(Evt.SCAN_LOCK, null, "lock" to cameraLockExposure(true))
+    // How far below its own exposure the camera can be set (`camera-exposure` design 2).
+    LaunchedEffect(running) {
+        if (!running) return@LaunchedEffect
+        val step = cameraCompensationStep()
+        current.onMaxDarker(ExposureSteps.maxDarker(step, compensationIndex(cameraCompensationMin(), step)))
+    }
+    // Darker first: the browser applies exposure compensation only while exposure is not held.
+    LaunchedEffect(running, args.exposure.darker) {
+        val step = cameraCompensationStep()
+        if (running && step > 0) {
+            cameraSetCompensation(ExposureSteps.index(args.exposure.darker, step, compensationIndex(cameraCompensationMin(), step)) * step)
+        }
+    }
+    LaunchedEffect(running, args.exposure.lock) {
+        if (running && args.exposure.lock) AppLog.info(Evt.SCAN_LOCK, null, "lock" to cameraLockExposure(true))
         else if (running) cameraLockExposure(false)
+    }
+    // Measure and focus at the cube: the point of the visible picture in the whole video frame (the cover crop).
+    LaunchedEffect(running, box, args.exposure.meter, args.exposure.focus) {
+        val vw = cameraVideoWidth()
+        val vh = cameraVideoHeight()
+        if (!running || vw == 0 || vh == 0) return@LaunchedEffect
+        val point = args.exposure.focus ?: args.exposure.meter
+        if (point == null) {
+            cameraPointOfInterest(-1.0, -1.0)
+        } else {
+            val crop = coverCrop(vw, vh, box.width, box.height)
+            val p = FrameSampler.toFrameShare(point, vw, vh, 0, crop.x, crop.y, crop.x + crop.width, crop.y + crop.height)
+            cameraPointOfInterest(p.x, p.y)
+        }
     }
     LaunchedEffect(running, box) {
         if (!running || box.width == 0 || box.height == 0) return@LaunchedEffect
         var lastRead = 0L
         var lastFrame = 0L
         var lastImage = 0L
+        var logged = false
         while (true) {
             val now = withFrameMillis { elapsedMillis() }
             if (now - lastRead < FRAME_MILLIS) continue
             val vw = cameraVideoWidth()
             val vh = cameraVideoHeight()
             if (vw == 0 || vh == 0) continue
+            if (!logged) {
+                logged = true
+                AppLog.info(Evt.SCAN_CAMERA, null, "camera" to cameraInfo().ifEmpty { null }, "size" to "${vw}x$vh", "abilities" to cameraAbilities())
+            }
             val crop = coverCrop(vw, vh, box.width, box.height)
             if (!cameraGrab(crop.x, crop.y, crop.width, crop.height, PREVIEW_LONG_SIDE, ANALYSIS_SIZE)) continue
             lastRead = now
@@ -202,6 +235,9 @@ private fun WebCameraPreview(args: CameraArgs) {
             .drawBehind { drawRect(Color.Black, blendMode = BlendMode.Clear) },
     )
 }
+
+/** The camera's compensation index of [ev] at [step] EV a step. */
+private fun compensationIndex(ev: Double, step: Double): Int = if (step > 0) kotlin.math.round(ev / step).toInt() else 0
 
 private fun argb(rgba: ByteArray, i: Int): Int =
     (0xff shl 24) or ((rgba[i].toInt() and 0xff) shl 16) or ((rgba[i + 1].toInt() and 0xff) shl 8) or (rgba[i + 2].toInt() and 0xff)

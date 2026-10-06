@@ -3,14 +3,18 @@ package fi.jukkakot.rubikkisolveri.ui.scan
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
+import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 
 /**
  * The back camera's preview. Every analysed frame is read through the grid and its nine readings
  * passed to [onSamples] (possibly on a background thread); [onPicture] gets the grid picture of the
- * same frame. [lockExposure] holds the current exposure and white balance where the camera can.
- * [onTorchAvailable] says whether the camera has a torch the app can switch. [onImage] gets, about
- * ten times a second, the whole visible picture upright (`FrameSampler.upright`) for the video scan.
+ * same frame. [exposure] says where the camera measures light and focuses (shares of [onImage]'s
+ * upright picture), how many steps darker it is set and whether exposure and white balance are held,
+ * each where the camera can. [onTorchAvailable] says whether the camera has a torch the app can
+ * switch. [onImage] gets, about fifteen times a second, the whole visible picture upright
+ * (`FrameSampler.upright`) for the video scan. [onMaxDarker] gets how many steps darker the camera
+ * can be set once it is open (0 = it cannot).
  */
 @Composable
 expect fun CameraPreview(
@@ -18,10 +22,11 @@ expect fun CameraPreview(
     onSamples: (List<Rgb>) -> Unit,
     onError: (Throwable) -> Unit,
     modifier: Modifier = Modifier,
-    lockExposure: Boolean = false,
+    exposure: CameraSettings = CameraSettings.FREE,
     onPicture: ((IntArray) -> Unit)? = null,
     onTorchAvailable: (Boolean) -> Unit = {},
     onImage: ((ArgbImage) -> Unit)? = null,
+    onMaxDarker: (Int) -> Unit = {},
 )
 
 /**

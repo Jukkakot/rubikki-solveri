@@ -295,6 +295,68 @@ export function cameraLockExposure(lock) {
   return String(!!lock);
 }
 
+// The video scan sets the camera for the cube (`camera-exposure` design 4): where it measures light
+// and focuses, and how far below its own exposure. Each only where the browser lists it; the rest is
+// skipped and named in the `scan.camera` line.
+
+function supported(name) {
+  try { return !!(navigator.mediaDevices.getSupportedConstraints() || {})[name]; } catch (e) { return false; }
+}
+
+function compensation() {
+  const c = capabilities().exposureCompensation;
+  return c && typeof c.min === 'number' && typeof c.step === 'number' && c.step > 0 && c.min < 0 ? c : null;
+}
+
+/** The lowest exposure compensation (EV, 0 when it cannot be set). */
+export function cameraCompensationMin() {
+  const c = compensation();
+  return c ? c.min : 0;
+}
+
+/** The exposure compensation's step (EV, 0 when it cannot be set). */
+export function cameraCompensationStep() {
+  const c = compensation();
+  return c ? c.step : 0;
+}
+
+/** Sets the exposure compensation to [ev] where the camera can. */
+export function cameraSetCompensation(ev) {
+  const t = camTrack();
+  if (t && compensation()) t.applyConstraints({ advanced: [{ exposureCompensation: ev }] }).catch(() => {});
+}
+
+function focusModes() {
+  const m = capabilities().focusMode;
+  return Array.isArray(m) ? m : [];
+}
+
+/**
+ * Measures light and focuses at ([x], [y]) (shares of the whole video frame) where the browser lets
+ * the page; a negative [x] goes back to the whole picture. Continuous focus where offered, else one
+ * focus at the point.
+ */
+export function cameraPointOfInterest(x, y) {
+  const t = camTrack();
+  if (!t) return;
+  const c = {};
+  if (supported('pointsOfInterest')) c.pointsOfInterest = x < 0 ? [] : [{ x, y }];
+  const modes = focusModes();
+  if (x >= 0 && modes.includes('continuous')) c.focusMode = 'continuous';
+  else if (x >= 0 && modes.includes('single-shot')) c.focusMode = 'single-shot';
+  if (Object.keys(c).length > 0) t.applyConstraints({ advanced: [c] }).catch(() => {});
+}
+
+/** What the camera lets the page do, for the log: focus modes, compensation, point, torch, lock. */
+export function cameraAbilities() {
+  const caps = capabilities();
+  const c = compensation();
+  const modes = focusModes();
+  const lock = Array.isArray(caps.exposureMode) && caps.exposureMode.includes('manual');
+  return `focus=${modes.length ? modes.join(',') : 'none'}; compensation=${c ? `${c.min}..${c.max} step ${c.step}` : 'none'}; ` +
+    `point=${supported('pointsOfInterest')}; torch=${!!caps.torch}; lock=${lock}`;
+}
+
 // --- Page ----------------------------------------------------------------------------------------
 
 export function log(level, line) {

@@ -55,9 +55,10 @@ import androidx.compose.ui.unit.dp
 import fi.jukkakot.rubikkisolveri.cube.ColorScheme
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
+import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
+import fi.jukkakot.rubikkisolveri.cube.scan.ExposureControl
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceFinder
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
-import fi.jukkakot.rubikkisolveri.cube.scan.LightSettle
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.cube.scan.Stall
@@ -79,6 +80,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import kotlin.math.roundToInt
 
 /** The faces (full and partial) [FaceFinder] found in one camera picture of [width]×[height] pixels, in [finderMs]. */
 class FoundFaces(val faces: List<FaceReading>, val width: Int, val height: Int, val finderMs: Long = 0)
@@ -95,7 +97,8 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
         val found = remember { MutableSharedFlow<FoundFaces>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST) }
         var torch by remember { mutableStateOf(false) }
         var torchAvailable by remember { mutableStateOf(false) }
-        var lockExposure by remember { mutableStateOf(false) }
+        var exposure by remember { mutableStateOf(CameraSettings.FREE) }
+        var maxDarker by remember { mutableStateOf(0) }
         var cameraFailed by remember { mutableStateOf(false) }
         LaunchedEffect(images) {
             withContext(Dispatchers.Default) {
@@ -115,16 +118,18 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
             onManual = onManual,
             onResult = onResult,
             cameraFailed = cameraFailed,
-            onLockExposure = { lockExposure = it },
+            maxDarker = maxDarker,
+            onExposure = { exposure = it },
         ) { modifier ->
             CameraPreview(
                 torch = torch,
                 onSamples = {},
                 onError = { cameraFailed = true },
                 modifier = modifier,
-                lockExposure = lockExposure,
+                exposure = exposure,
                 onTorchAvailable = { torchAvailable = it },
                 onImage = { images.tryEmit(it) },
+                onMaxDarker = { maxDarker = it },
             )
         }
     }
@@ -138,9 +143,11 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
  * sides are done. When the scan cannot get on, a notice at the bottom of the picture describes why
  * and offers to start again (the camera keeps running), to fix the colours by hand and the torch;
  * scanning goes on underneath, and a tap on the picture outside it closes it for that reason (until
- * a restart). Exposure is locked once the first face is found, and metered again for a second whenever
- * the torch is turned on or off (those frames are not read). Clear for half a second → [onResult];
- * "fix colours" hands over what is known. [clock] is the time in milliseconds (tests pass their own).
+ * a restart). The camera is set through [onExposure] by [ExposureControl]: metered and focused on the
+ * cube once a face is found, made darker (up to [maxDarker] steps) while the stickers wash out, then
+ * locked; the torch turned on or off meters again. Frames are not read while the camera adjusts.
+ * Clear for half a second → [onResult]; "fix colours" hands over what is known. [clock] is the time in
+ * milliseconds (tests pass their own).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -153,18 +160,18 @@ fun VideoScanContent(
     onResult: (ScanOutcome) -> Unit,
     cameraFailed: Boolean = false,
     torchAvailable: Boolean = true,
-    onLockExposure: (Boolean) -> Unit = {},
+    maxDarker: Int = ExposureControl.MAX_DARKER,
+    onExposure: (CameraSettings) -> Unit = {},
     clock: () -> Long = ::elapsedMillis,
     preview: @Composable (Modifier) -> Unit,
 ) {
     val scan = remember { VideoScan() }
     var state by remember { mutableStateOf(VideoScanState.EMPTY) }
     var picture by remember { mutableStateOf<FoundFaces?>(null) }
-    var seenFace by remember { mutableStateOf(false) }
     var done by remember { mutableStateOf(false) }
     var dismissed by remember { mutableStateOf(emptySet<Stall>()) }
-    val settle = remember { LightSettle() }
-    var settling by remember { mutableStateOf(false) }
+    val exposure = remember { ExposureControl() }
+    exposure.maxDarker = maxDarker
     var lastTorch by remember { mutableStateOf(torch) }
     val log = remember { ScanLogger() }
     val haptics = LocalHapticFeedback.current
@@ -189,16 +196,19 @@ fun VideoScanContent(
         found.collect { f ->
             if (done) return@collect
             val now = clock()
-            if (settle.settling(now)) {
+            val before = exposure.settings
+            val frame = exposure.onFrame(f.faces, f.width, f.height, now)
+            if (exposure.settings != before) onExposure(exposure.settings)
+            frame.lockedWashed?.let { log.lock(exposure.settings.darker, it) }
+            log.picture(f, now)
+            if (!frame.read) {
                 picture = f
                 return@collect
             }
-            settling = false
-            val before = state
+            val stateBefore = state
             state = scan.onFrame(f.faces, now)
             picture = f
-            if (f.faces.isNotEmpty()) seenFace = true
-            log.onFrame(before, state, f, now)
+            log.onFrame(stateBefore, state, now, torch, exposure.settings.darker)
             if (state.newStickers > 0 && now - lastBuzz >= BUZZ_MILLIS) {
                 lastBuzz = now
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -210,11 +220,10 @@ fun VideoScanContent(
     LaunchedEffect(torch) {
         if (torch == lastTorch) return@LaunchedEffect
         lastTorch = torch
-        settle.start(clock())
-        settling = true
+        exposure.onTorch(torch, clock())
+        onExposure(exposure.settings)
     }
-    LaunchedEffect(seenFace, settling) { onLockExposure(seenFace && !settling) }
-    DisposableEffect(Unit) { onDispose { if (!done) log.leave(state) } }
+    DisposableEffect(Unit) { onDispose { if (!done) log.leave(state, clock(), torch, exposure.settings.darker) } }
 
     fun restart() {
         log.restart(state)
@@ -303,33 +312,43 @@ private class ScanLogger {
     private var faces = 0
     private var finderMs = 0L
 
-    fun onFrame(before: VideoScanState, now: VideoScanState, f: FoundFaces, at: Long) {
+    /** Every picture the finder read, whether the scan took it or not (the camera was adjusting). */
+    fun picture(f: FoundFaces, at: Long) {
+        if (lastSnapshot == null) lastSnapshot = at
         frames++
         faces += f.faces.size
         finderMs += f.finderMs
+    }
+
+    fun onFrame(before: VideoScanState, now: VideoScanState, at: Long, torch: Boolean, darker: Int) {
         for (side in VideoScanLog.doneSides(now) - VideoScanLog.doneSides(before)) event("side", "side" to side.name)
         if (now.complete && !before.complete) event("clear")
         val stall = now.stall
         if (stall != null && stall != before.stall) event("stall", "reason" to stall.name.lowercase())
-        val last = lastSnapshot ?: at.also { lastSnapshot = it }
-        if (at - last >= VideoScanLog.SNAPSHOT_MILLIS) {
-            snapshot(now)
-            lastSnapshot = at
-        }
+        val last = lastSnapshot ?: at
+        if (at - last >= VideoScanLog.SNAPSHOT_MILLIS) snapshot(now, at, torch, darker)
     }
+
+    fun lock(darker: Int, washed: Double) = event("lock", "darker" to darker, "washed" to (washed * 100).roundToInt())
 
     fun restart(state: VideoScanState) = event("restart", "reason" to state.stall?.name?.lowercase())
 
     fun dismiss(stall: Stall) = event("dismiss", "reason" to stall.name.lowercase())
 
-    fun leave(state: VideoScanState) {
+    fun leave(state: VideoScanState, at: Long, torch: Boolean, darker: Int) {
         event("leave")
-        snapshot(state)
+        snapshot(state, at, torch, darker)
     }
 
-    private fun snapshot(state: VideoScanState) {
+    private fun snapshot(state: VideoScanState, at: Long, torch: Boolean, darker: Int) {
         val n = frames.coerceAtLeast(1)
-        AppLog.info(Evt.SCAN_VIDEO, null, *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n))
+        val seconds = (at - (lastSnapshot ?: at)) / 1000.0
+        val fps = if (seconds > 0) frames / seconds else 0.0
+        AppLog.info(
+            Evt.SCAN_VIDEO, null,
+            *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n, fps, torch, darker),
+        )
+        lastSnapshot = at
         frames = 0
         faces = 0
         finderMs = 0
