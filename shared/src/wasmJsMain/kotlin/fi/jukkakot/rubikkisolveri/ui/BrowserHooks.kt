@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
 import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
+import fi.jukkakot.rubikkisolveri.ui.scan.FoundFaces
 
 /**
  * The browser functions the shared screens need. All JavaScript lives in the `web` module's
@@ -37,4 +38,6 @@ class CameraArgs(
     val onTorchAvailable: (Boolean) -> Unit,
     val onImage: ((ArgbImage) -> Unit)? = null,
     val onMaxDarker: (Int) -> Unit = {},
+    val onFaces: ((FoundFaces) -> Unit)? = null,
+    val onWorker: (Boolean) -> Unit = {},
 )

@@ -93,3 +93,24 @@ torch cover that).
 - Lowering exposure darkens the room too; the scan reads only the stickers, so that is fine, but the
   picture looks darker to the user.
 - 15 pictures a second costs battery.
+
+## Implementation decisions
+
+- **Darkest step:** once locked at the darkest step the camera allows, washed-out readings do not
+  start metering again (it could not go darker; it would only loop).
+- **Point moves while metering:** the 0.6 s wait starts again, since the camera measures anew there.
+- **After the wait without a face:** the frame is read (nothing to read) and the controller keeps
+  waiting for a face to judge; a torch change before any face changes nothing (still searching).
+- **Steps are half-EV units in `cube`** (`ExposureSteps`): the platforms turn them into the camera's
+  own index (Android `ExposureState`, browser `exposureCompensation` min/step), so both share the
+  arithmetic and its tests.
+- **Browser focus:** `focusMode: continuous` with the point where offered, else `single-shot`. The
+  compensation is applied before the lock (browsers apply it only while exposure is automatic).
+- **`scan.camera`** is logged by every camera use (guided scan and follow too), on Android at the
+  first analysed frame so it carries the analysis size.
+- **Worker's answer:** the faces as one comma-separated line of numbers (`FaceCodec`), cheap to
+  cross the JS boundary. Until the worker says it is ready (and after it fails) the page reads the
+  pictures itself, so the scan starts at once. Where `createImageBitmap` fails the page transfers
+  canvas A's pixels instead.
+- **Fake-camera check** (`web/smoke/video.mjs`) is a local tool, not in CI: it needs a cube video
+  (`.y4m`), which is too large for the repository.

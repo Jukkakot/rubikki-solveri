@@ -163,6 +163,8 @@ actual fun CameraPreview(
     onTorchAvailable: (Boolean) -> Unit,
     onImage: ((ArgbImage) -> Unit)?,
     onMaxDarker: (Int) -> Unit,
+    onFaces: ((FoundFaces) -> Unit)?,
+    onWorker: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current

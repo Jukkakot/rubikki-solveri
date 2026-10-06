@@ -19,7 +19,9 @@ actual fun CameraPreview(
     onTorchAvailable: (Boolean) -> Unit,
     onImage: ((ArgbImage) -> Unit)?,
     onMaxDarker: (Int) -> Unit,
-) = BrowserHooks.cameraPreview(CameraArgs(torch, onSamples, onError, modifier, exposure, onPicture, onTorchAvailable, onImage, onMaxDarker))
+    onFaces: ((FoundFaces) -> Unit)?,
+    onWorker: (Boolean) -> Unit,
+) = BrowserHooks.cameraPreview(CameraArgs(torch, onSamples, onError, modifier, exposure, onPicture, onTorchAvailable, onImage, onMaxDarker, onFaces, onWorker))
 
 @Composable
 actual fun CameraPermissionGate(

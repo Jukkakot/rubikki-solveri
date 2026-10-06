@@ -78,7 +78,18 @@ val writePrecache = tasks.register<WritePrecache>("writePrecache") {
     outputs.upToDateWhen { false }
 }
 
-tasks.matching { it.name == "wasmJsBrowserDistribution" }.configureEach { finalizedBy(writePrecache) }
+// The scan worker (`webworker`, `camera-exposure` design 8) beside the app, before the precache list is written.
+val copyScanWorker = tasks.register<Copy>("copyScanWorker") {
+    from(project(":webworker").tasks.named("wasmJsBrowserDistribution")) {
+        include("scan-worker.js", "*.wasm")
+    }
+    into(layout.buildDirectory.dir("dist/wasmJs/productionExecutable"))
+}
+
+writePrecache.configure { dependsOn(copyScanWorker) }
+
+tasks.matching { it.name == "wasmJsBrowserDistribution" }.configureEach { finalizedBy(copyScanWorker, writePrecache) }
+copyScanWorker.configure { mustRunAfter(tasks.matching { it.name == "wasmJsBrowserDistribution" }) }
 
 kotlin {
     @OptIn(ExperimentalWasmDsl::class)

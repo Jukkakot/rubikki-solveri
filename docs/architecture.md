@@ -10,6 +10,8 @@ roadmap change.
 | `cube` | Kotlin Multiplatform library (JVM + browser/Wasm), no Android imports | Cube state, moves, validity, colour classification, solvers |
 | `shared` | Kotlin Multiplatform library (Android + browser/Wasm), Compose Multiplatform | Every screen, navigation, theme, 3D view; texts, fonts, icons and licence texts as Compose resources; the platform seams (see Platforms) |
 | `app` | Android application | `MainActivity`, Room, DataStore settings, per-app language, file log, crash handler, share intent |
+| `web` | Kotlin/Wasm browser application | Browser shell: `platform.mjs` (all JavaScript), camera, storage, service worker |
+| `webworker` | Kotlin/Wasm worker (`scan-worker.js`) | The video scan's `FaceFinder` off the page's thread; depends only on `cube`, copied into `web`'s distribution |
 
 `app` → `shared` → `cube`, never the other way. Anything that can be computed without a phone goes
 into `cube`, so it is tested by plain JVM unit tests. Packages did not change when code moved to
@@ -125,16 +127,33 @@ The guided scan above is the default (`ScanRoute`, the home screen's primary but
 (`VideoScanRoute`, "Skannaa videolta (kokeilu)" tile) is offered beside it until it proves reliable.
 Video scan pipeline (`video-scan`):
 
-1. `CameraPreview(onImage)`: about ten times a second the visible picture upright, short side
-   ≤ 360 px (`FrameSampler.upright` on Android; the browser passes its 360-px copy as is). In the
-   browser the picture the user sees is the camera's own `<video>`, placed under the app's canvas
-   where the preview box is; the box draws itself transparent (`web/WebCamera.kt`,
-   `cameraShow` in `platform.mjs`), so the marks are drawn on top of the full-resolution video.
-   Turning the torch on or off unlocks exposure and white balance for a second (`LightSettle`;
-   those frames are not read), then they lock again.
+1. `CameraPreview(onImage)`: about fifteen times a second (every 66 ms) the visible picture
+   upright, short side ≤ 360 px (`FrameSampler.upright` on Android; the browser passes its 360-px
+   copy as is). In the browser the picture the user sees is the camera's own `<video>`, placed
+   under the app's canvas where the preview box is; the box draws itself transparent
+   (`web/WebCamera.kt`, `cameraShow` in `platform.mjs`), so the marks are drawn on top of the
+   full-resolution video.
+   Camera control (`camera-exposure`): `cube/scan/ExposureControl` decides per frame what the
+   camera does (`CameraSettings`: metering point, focus point, steps darker, lock). Searching →
+   a face found: meter and focus at the largest face's centre and wait 0.6 s → more than a third of
+   the readings washed out (`VideoScan.WASHED_FROM`): one half-EV step darker and wait again, else
+   (or at the darkest step, at most −2 EV) lock exposure and white balance. Washed out for 2 s after
+   the lock, or the torch turned on or off (off: back to 0 steps), meters again. Frames are not read
+   while it waits. The point follows the cube (> 15 % of the picture) while unlocked; once locked
+   only focus follows, at most once a second. Android: `FocusMeteringAction` (point converted to the
+   sensor frame by `FrameSampler.toFrameShare`), `setExposureCompensationIndex`, the Camera2 AE/AWB
+   lock. Browser: `pointsOfInterest`, `focusMode`, `exposureCompensation` (each only if the browser
+   lists it; the point converted through the cover crop), the `exposureMode` lock. Camera steps per
+   controller step: `ExposureSteps`. When the camera opens a `scan.camera` line says what it can do.
 2. `cube/scan/FaceFinder`: full 3×3 lattices (and partial ones with 7–8 stickers) anywhere in the picture (spike `video-scan-spike`,
-   findings in its archive); run on `Dispatchers.Default` (the page's one thread in the browser; no
-   Web Worker yet, the `scan.video` snapshots log the finder's ms per frame to decide).
+   findings in its archive); run on `Dispatchers.Default` on Android. In the browser it runs in a
+   Web Worker (`webworker` module, `scan-worker.js`): the page makes an `ImageBitmap` of the visible
+   part at 360 px (`createImageBitmap`, or canvas A's pixels where that fails), transfers it, the
+   worker reads its pixels in an `OffscreenCanvas` and sends the faces back as numbers
+   (`FaceCodec`); one picture at a time, only the newest waits. If the worker cannot start or
+   throws, the page reads on its own thread as before (`scan.worker` line with the reason;
+   snapshots carry `worker=true/false`). `web/smoke/video.mjs` runs the video scan in Chromium
+   with a fake camera (`--no-worker` blocks the worker).
 3. `cube/scan/VideoScan`: votes per sticker (partial faces vote, never anchor), pose, orientation
    (`Orientation`, weak perspective from one face's steps), turning hint, stall reasons and
    `reset()`. The votes are evidence for `BestCube` (`video-scan-progress`): the possible cube that

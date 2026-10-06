@@ -357,6 +357,121 @@ export function cameraAbilities() {
     `point=${supported('pointsOfInterest')}; torch=${!!caps.torch}; lock=${lock}`;
 }
 
+// The video scan's faces are found in a Web Worker (`scan-worker.js`, the webworker module), so the
+// page's one thread only draws (`camera-exposure` design 8). One picture at a time is in the worker;
+// a newer one waits in place of an older (only the newest is kept). Kotlin falls back to reading on
+// the page when the worker fails.
+
+const scan = { worker: null, ready: false, busy: false, pending: null, onFaces: null, onFail: null, timer: 0 };
+const WORKER_START_MS = 15000;
+
+function workerFail(reason) {
+  const onFail = scan.onFail;
+  scanWorkerStop();
+  if (onFail) onFail(reason);
+}
+
+function workerPost(msg) {
+  scan.busy = true;
+  scan.worker.postMessage(msg, msg.bitmap ? [msg.bitmap] : [msg.data]);
+}
+
+/** Starts the worker; [onFaces] gets each picture's faces as numbers, [onFail] the reason it cannot be used. */
+export function scanWorkerStart(onFaces, onFail) {
+  scanWorkerStop();
+  scan.onFaces = onFaces;
+  scan.onFail = onFail;
+  if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined') {
+    workerFail('not supported');
+    return;
+  }
+  let w;
+  try {
+    w = new Worker('scan-worker.js');
+  } catch (e) {
+    workerFail((e && e.name) || 'Error');
+    return;
+  }
+  scan.worker = w;
+  scan.timer = setTimeout(() => { if (scan.worker === w && !scan.ready) workerFail('no answer'); }, WORKER_START_MS);
+  w.onerror = (e) => { if (scan.worker === w) workerFail('error: ' + ((e && e.message) || 'load failed')); };
+  w.onmessage = (e) => {
+    if (scan.worker !== w) return;
+    const m = e.data || {};
+    if (m.ready) {
+      scan.ready = true;
+      clearTimeout(scan.timer);
+      return;
+    }
+    if (m.error) {
+      workerFail('error: ' + m.error);
+      return;
+    }
+    scan.busy = false;
+    if (scan.pending) {
+      const next = scan.pending;
+      scan.pending = null;
+      workerPost(next);
+    }
+    if (scan.onFaces) scan.onFaces(m.faces);
+  };
+}
+
+/** Whether pictures can go to the worker. */
+export function scanWorkerReady() {
+  return !!(scan.worker && scan.ready);
+}
+
+function workerQueue(msg) {
+  if (!scan.worker) {
+    if (msg.bitmap) msg.bitmap.close();
+    return;
+  }
+  if (!scan.busy) {
+    workerPost(msg);
+    return;
+  }
+  if (scan.pending && scan.pending.bitmap) scan.pending.bitmap.close();
+  scan.pending = msg;
+}
+
+/**
+ * Sends the newest frame's visible part [x,y,w,h] to the worker scaled so its long side is
+ * [previewLong]: as an ImageBitmap made by the browser, or where it cannot make one, as canvas A's
+ * pixels (drawn by the last cameraGrab).
+ */
+export function scanWorkerSend(x, y, w, h, previewLong) {
+  const v = cam.video;
+  if (!scanWorkerReady() || !v) return;
+  const scale = previewLong / Math.max(w, h);
+  const pw = Math.max(1, Math.round(w * scale));
+  const ph = Math.max(1, Math.round(h * scale));
+  if (typeof createImageBitmap === 'function') {
+    createImageBitmap(v, x, y, w, h, { resizeWidth: pw, resizeHeight: ph, resizeQuality: 'low' })
+      .then((bitmap) => workerQueue({ bitmap }))
+      .catch(() => sendCanvas());
+  } else {
+    sendCanvas();
+  }
+}
+
+function sendCanvas() {
+  const data = ctxA.getImageData(0, 0, canvasA.width, canvasA.height).data;
+  workerQueue({ width: canvasA.width, height: canvasA.height, data: data.buffer });
+}
+
+export function scanWorkerStop() {
+  clearTimeout(scan.timer);
+  if (scan.worker) scan.worker.terminate();
+  if (scan.pending && scan.pending.bitmap) scan.pending.bitmap.close();
+  scan.worker = null;
+  scan.ready = false;
+  scan.busy = false;
+  scan.pending = null;
+  scan.onFaces = null;
+  scan.onFail = null;
+}
+
 // --- Page ----------------------------------------------------------------------------------------
 
 export function log(level, line) {

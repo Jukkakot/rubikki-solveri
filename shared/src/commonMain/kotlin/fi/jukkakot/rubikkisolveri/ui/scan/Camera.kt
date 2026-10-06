@@ -14,7 +14,9 @@ import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
  * each where the camera can. [onTorchAvailable] says whether the camera has a torch the app can
  * switch. [onImage] gets, about fifteen times a second, the whole visible picture upright
  * (`FrameSampler.upright`) for the video scan. [onMaxDarker] gets how many steps darker the camera
- * can be set once it is open (0 = it cannot).
+ * can be set once it is open (0 = it cannot). Where the platform finds the video scan's faces
+ * itself (the browser's worker), they go to [onFaces] instead of [onImage], and [onWorker] says
+ * whether that works (true once it runs, false when the pictures go to [onImage] after all).
  */
 @Composable
 expect fun CameraPreview(
@@ -27,6 +29,8 @@ expect fun CameraPreview(
     onTorchAvailable: (Boolean) -> Unit = {},
     onImage: ((ArgbImage) -> Unit)? = null,
     onMaxDarker: (Int) -> Unit = {},
+    onFaces: ((FoundFaces) -> Unit)? = null,
+    onWorker: (Boolean) -> Unit = {},
 )
 
 /**

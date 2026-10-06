@@ -13,9 +13,9 @@
 
 ## 3. Browser worker (webworker, web)
 
-- [ ] 3.1 `webworker` module: Kotlin/Wasm worker running `FaceFinder` on transferred pictures, faces back as numbers (design 8); copied into the web distribution and precache. Verify: unit test of the faces' encoding round trip (JVM, shared code in `cube`); web build contains the worker.
-- [ ] 3.2 Page side: pictures as `ImageBitmap` to the worker, newest only, faces back into the video scan; fallback to the page's thread; `scan.worker` line, `worker` in the snapshot (design 8–9). Verify: desktop Chromium with a fake camera: the video scan runs with `worker=true`, no page errors; with the worker blocked it falls back; phone check listed for the user.
+- [x] 3.1 `webworker` module: Kotlin/Wasm worker running `FaceFinder` on transferred pictures, faces back as numbers (design 8); copied into the web distribution and precache. Verify: unit test of the faces' encoding round trip (JVM, shared code in `cube`); web build contains the worker.
+- [x] 3.2 Page side: pictures as `ImageBitmap` to the worker, newest only, faces back into the video scan; fallback to the page's thread; `scan.worker` line, `worker` in the snapshot (design 8–9). Verify: desktop Chromium with a fake camera: the video scan runs with `worker=true`, no page errors; with the worker blocked it falls back; phone check listed for the user.
 
 ## 4. Docs
 
-- [ ] 4.1 `docs/architecture.md` video scan camera control and the browser worker (and `development.md` if the build changes); roadmap row `camera-exposure` done.
+- [x] 4.1 `docs/architecture.md` video scan camera control and the browser worker (and `development.md` if the build changes); roadmap row `camera-exposure` done.

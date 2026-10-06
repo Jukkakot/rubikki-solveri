@@ -20,7 +20,7 @@ function fail(message) {
 
 await mkdir(out, { recursive: true });
 const { server, url } = await serve(dist);
-const browser = await chromium.launch();
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 try {
   const context = await browser.newContext({ viewport: { width: 412, height: 915 }, locale: 'fi-FI', deviceScaleFactor: 1 });
   const page = await context.newPage();

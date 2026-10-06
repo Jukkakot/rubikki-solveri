@@ -30,6 +30,11 @@ Run before every commit (CI runs the same):
   test can switch with `@Config(qualifiers = "en")`.
 - `lint`: Android lint, warnings are errors. Dependency-version checks are off (updated by hand).
 - The debug APK lands in `app/build/outputs/apk/debug/`.
+- Browser: `./gradlew :web:wasmJsBrowserDistribution` builds the app and copies the scan worker
+  (`webworker`) beside it. The video scan with a fake camera:
+  `node web/smoke/video.mjs web/build/dist/wasmJs/productionExecutable [cube.y4m] [--no-worker]`
+  (`CHROMIUM_PATH` for a Chromium other than Playwright's own). The development server
+  (`wasmJsBrowserDevelopmentRun`) has no worker; the video scan then reads on the page.
 
 ## Testing approach
 

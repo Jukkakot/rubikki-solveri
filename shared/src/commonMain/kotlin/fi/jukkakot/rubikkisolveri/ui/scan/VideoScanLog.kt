@@ -15,7 +15,8 @@ object VideoScanLog {
      * What the scan knows in [state]: known stickers per side ("U9 R4 …"), the cube as 54 letters
      * with `?` where not known, the smallest margin, brightness, faces per frame and finder time
      * (both averaged since the last snapshot), pictures read per second, the torch, how many steps
-     * darker the camera is set, the stall if any.
+     * darker the camera is set, whether the browser's worker found the faces (null on the phone), the
+     * stall if any.
      */
     fun snapshot(
         state: VideoScanState,
@@ -24,6 +25,7 @@ object VideoScanLog {
         fps: Double = 0.0,
         torch: Boolean = false,
         darker: Int = 0,
+        worker: Boolean? = null,
     ): Array<Pair<String, Any?>> = arrayOf(
         "kind" to "snapshot",
         "known" to Face.entries.joinToString(" ") { f -> "${f.name}${(0 until 9).count { state.stickers[f.ordinal * 9 + it] != null }}" },
@@ -35,6 +37,7 @@ object VideoScanLog {
         "fps" to tenths(fps),
         "torch" to torch,
         "darker" to darker,
+        "worker" to worker,
         "stall" to state.stall?.name?.lowercase(),
     )
 

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
 import fi.jukkakot.rubikkisolveri.cube.scan.ExposureSteps
+import fi.jukkakot.rubikkisolveri.cube.scan.FaceCodec
 import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
 import fi.jukkakot.rubikkisolveri.cube.scan.RgbaFrame
 import fi.jukkakot.rubikkisolveri.log.AppLog
@@ -44,6 +45,7 @@ import fi.jukkakot.rubikkisolveri.res.scan_permission_title
 import fi.jukkakot.rubikkisolveri.ui.BrowserHooks
 import fi.jukkakot.rubikkisolveri.ui.CameraArgs
 import fi.jukkakot.rubikkisolveri.ui.elapsedMillis
+import fi.jukkakot.rubikkisolveri.ui.scan.FoundFaces
 import fi.jukkakot.rubikkisolveri.ui.scan.coverCrop
 import org.jetbrains.compose.resources.stringResource
 import org.khronos.webgl.toByteArray
@@ -153,6 +155,35 @@ private fun WebCameraPreview(args: CameraArgs) {
         }
     }
     LaunchedEffect(running, args.torch) { if (running) cameraSetTorch(args.torch) }
+    // The video scan's faces are found in the worker; until it runs, or if it fails, on the page.
+    var worker by remember { mutableStateOf<Boolean?>(null) }
+    val wantsWorker = args.onFaces != null && args.onImage != null
+    DisposableEffect(running, wantsWorker) {
+        if (running && wantsWorker) {
+            val started = elapsedMillis()
+            scanWorkerStart(
+                { text ->
+                    try {
+                        val f = FaceCodec.decode(text)
+                        if (worker != true) {
+                            worker = true
+                            current.onWorker(true)
+                            AppLog.info(Evt.SCAN_WORKER, null, "worker" to true, "startMs" to elapsedMillis() - started)
+                        }
+                        current.onFaces?.invoke(FoundFaces(f.faces, f.width, f.height, f.finderMs, worker = true))
+                    } catch (e: Throwable) {
+                        AppLog.logger.error(Evt.SCAN_ERROR, e, "worker faces")
+                    }
+                },
+                { reason ->
+                    worker = false
+                    current.onWorker(false)
+                    AppLog.info(Evt.SCAN_WORKER, null, "worker" to false, "reason" to reason)
+                },
+            )
+        }
+        onDispose { scanWorkerStop() }
+    }
     // How far below its own exposure the camera can be set (`camera-exposure` design 2).
     LaunchedEffect(running) {
         if (!running) return@LaunchedEffect
@@ -212,9 +243,13 @@ private fun WebCameraPreview(args: CameraArgs) {
                 // The picture first, so it belongs to the same frame as the readings.
                 current.onPicture?.invoke(FrameSampler.picture(frame))
                 current.onSamples(FrameSampler.sample(frame))
-                // The video scan looks for faces in the scaled copy of the visible part, upright.
+                // The video scan looks for faces in the scaled copy of the visible part, upright: in
+                // the worker once it runs, else on the page.
                 current.onImage?.let { onImage ->
-                    if (now - lastImage >= IMAGE_MILLIS) {
+                    if (now - lastImage >= IMAGE_MILLIS && worker != false && scanWorkerReady()) {
+                        lastImage = now
+                        scanWorkerSend(crop.x, crop.y, crop.width, crop.height, PREVIEW_LONG_SIDE)
+                    } else if (now - lastImage >= IMAGE_MILLIS) {
                         lastImage = now
                         val preview = cameraPreviewData().toByteArray()
                         val pw = cameraPreviewWidth()

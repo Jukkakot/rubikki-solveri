@@ -82,13 +82,17 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
-/** The faces (full and partial) [FaceFinder] found in one camera picture of [width]×[height] pixels, in [finderMs]. */
-class FoundFaces(val faces: List<FaceReading>, val width: Int, val height: Int, val finderMs: Long = 0)
+/**
+ * The faces (full and partial) [FaceFinder] found in one camera picture of [width]×[height] pixels, in
+ * [finderMs]; [worker] whether the browser's worker found them (null where there is none: the phone).
+ */
+class FoundFaces(val faces: List<FaceReading>, val width: Int, val height: Int, val finderMs: Long = 0, val worker: Boolean? = null)
 
 /**
- * The video scan: the camera's pictures go through [FaceFinder] off the main thread (in the browser
- * Dispatchers.Default is the page's one thread; its time per frame goes into the log's snapshots),
- * the faces found to [VideoScanContent].
+ * The video scan: the camera's pictures go through [FaceFinder] off the main thread, the faces found
+ * to [VideoScanContent]. In the browser the camera hands over the faces its worker found; only when
+ * the worker cannot run do the pictures come here (Dispatchers.Default is then the page's one
+ * thread). The finder's time per frame goes into the log's snapshots.
  */
 @Composable
 fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome) -> Unit) {
@@ -100,12 +104,13 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
         var exposure by remember { mutableStateOf(CameraSettings.FREE) }
         var maxDarker by remember { mutableStateOf(0) }
         var cameraFailed by remember { mutableStateOf(false) }
+        var worker by remember { mutableStateOf<Boolean?>(null) }
         LaunchedEffect(images) {
             withContext(Dispatchers.Default) {
                 images.collect { image ->
                     val start = elapsedMillis()
                     val faces = FaceFinder.find(image.argb, image.width, image.height).let { it.faces + it.partial }.map(FaceReading::of)
-                    found.emit(FoundFaces(faces, image.width, image.height, elapsedMillis() - start))
+                    found.emit(FoundFaces(faces, image.width, image.height, elapsedMillis() - start, worker?.let { false }))
                 }
             }
         }
@@ -130,6 +135,8 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
                 onTorchAvailable = { torchAvailable = it },
                 onImage = { images.tryEmit(it) },
                 onMaxDarker = { maxDarker = it },
+                onFaces = { found.tryEmit(it) },
+                onWorker = { worker = it },
             )
         }
     }
@@ -311,6 +318,7 @@ private class ScanLogger {
     private var frames = 0
     private var faces = 0
     private var finderMs = 0L
+    private var worker: Boolean? = null
 
     /** Every picture the finder read, whether the scan took it or not (the camera was adjusting). */
     fun picture(f: FoundFaces, at: Long) {
@@ -318,6 +326,7 @@ private class ScanLogger {
         frames++
         faces += f.faces.size
         finderMs += f.finderMs
+        worker = f.worker
     }
 
     fun onFrame(before: VideoScanState, now: VideoScanState, at: Long, torch: Boolean, darker: Int) {
@@ -346,7 +355,7 @@ private class ScanLogger {
         val fps = if (seconds > 0) frames / seconds else 0.0
         AppLog.info(
             Evt.SCAN_VIDEO, null,
-            *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n, fps, torch, darker),
+            *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n, fps, torch, darker, worker),
         )
         lastSnapshot = at
         frames = 0
