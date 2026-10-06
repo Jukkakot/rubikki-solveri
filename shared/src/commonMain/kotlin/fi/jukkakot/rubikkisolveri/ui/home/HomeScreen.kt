@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +38,8 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.input.pointer.pointerInput
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.pluralStringResource
@@ -161,7 +162,12 @@ private fun ColumnScope.Hero(spin: Boolean) {
         description = stringResource(Res.string.home_cube_description),
         modifier = Modifier
             .weight(1f, fill = false)
-            .aspectRatio(1f)
+            // A square that fits the space left; aspectRatio would overflow onto the texts when space runs out (browser).
+            .layout { measurable, constraints ->
+                val side = minOf(constraints.maxWidth, constraints.maxHeight)
+                val placeable = measurable.measure(Constraints.fixed(side, side))
+                layout(side, side) { placeable.place(0, 0) }
+            }
             .align(Alignment.CenterHorizontally)
             .pointerInput(Unit) {
                 awaitPointerEventScope {
