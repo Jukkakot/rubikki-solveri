@@ -2,10 +2,12 @@ package fi.jukkakot.rubikkisolveri.cube.solve
 
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeCheck
+import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.Move
 import fi.jukkakot.rubikkisolveri.cube.Notation
 import fi.jukkakot.rubikkisolveri.cube.Sequences
 import fi.jukkakot.rubikkisolveri.cube.Validity
+import fi.jukkakot.rubikkisolveri.cube.solve.min2phase.Relative
 import fi.jukkakot.rubikkisolveri.cube.solve.min2phase.Search
 import fi.jukkakot.rubikkisolveri.cube.solve.min2phase.Tools
 import kotlin.random.Random
@@ -53,6 +55,29 @@ object TwoPhaseSolver {
         val millis = start.elapsedNow().inWholeMilliseconds
         if (text.startsWith("Error")) return SolveResult.Failed(text)
         return SolveResult.Solved(Notation.parse(text), millis)
+    }
+
+    /**
+     * Moves that take [from] to exactly [to] (same centres), about as short as a solve: the
+     * two-phase search on the cube between them. [to] must be a possible cube with [from]'s centres.
+     */
+    fun solve(from: Cube, to: Cube): SolveResult {
+        if (to.isSolved && Face.entries.all { to.centre(it) == from.centre(it) }) return solve(from)
+        for (cube in listOf(from, to)) {
+            val validity = CubeCheck.validity(cube)
+            if (!validity.isValid) return SolveResult.Invalid(validity)
+        }
+        if (Face.entries.any { from.centre(it) != to.centre(it) }) return SolveResult.Failed("Centres differ")
+        val start = TimeSource.Monotonic.markNow()
+        warmUp()
+        if (from == to) return SolveResult.Solved(emptyList(), 0)
+        // The target's facelets name each sticker by the face whose centre has that colour in [from].
+        val faceOf = Face.entries.associateBy { from.centre(it) }
+        val target = to.toList().joinToString("") { faceOf.getValue(it).name }
+        val between = Relative.between(from.toFaceletString(), target)
+        val text = Search().solution(between, MAX_LENGTH, PROBE_LIMIT, IMPROVE_PROBES, 0)
+        if (text.startsWith("Error")) return SolveResult.Failed(text)
+        return SolveResult.Solved(Notation.parse(text), start.elapsedNow().inWholeMilliseconds)
     }
 
     /**

@@ -187,7 +187,7 @@ private fun ColumnScope.Hero(spin: Boolean) {
     )
 }
 
-/** The scan as the one filled button, the other features as a 2×2 grid of tonal tiles. */
+/** The scan as the one filled button, the other features as tonal tiles two to a row (a lone last tile spans the row). */
 @Composable
 private fun Actions(primary: HomeEntry, entries: List<HomeEntry>) {
     Button(onClick = primary.onOpen, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
@@ -209,7 +209,6 @@ private fun Actions(primary: HomeEntry, entries: List<HomeEntry>) {
                     }
                 }
             }
-            if (pair.size == 1) Spacer(Modifier.weight(1f))
         }
     }
 }

@@ -63,6 +63,12 @@ Services that differ per platform come in through `AppActions` (`progress`, `sca
 - `solve/TwoPhaseSolver`: checks validity, then `Search().solution(facelets, 21, 100 000 probes,
   1000 min probes)`: ≤ 21 moves, about 19 on average, ~25 ms on a desktop. `warmUp()` builds the
   tables (called from `RubikkiApp` on a background thread). `randomStateScramble()` for practice.
+- Solving to a target (`solve-to-target`): `TwoPhaseSolver.solve(from, to)` searches the cube
+  X = to⁻¹·from (`min2phase/Relative`, cubie multiply), whose solution made on `from` ends in `to`;
+  as short as a normal solve. Centres must match (`CubePattern.cube(like)` builds patterns on the
+  start's centres). `cube/SolveTarget` (solved, pattern, stage, painted; `encode()` for routes),
+  `cube/Patterns` (`CubePattern`: the move sequences from solved, look-checked in `SolveTargetTest`).
+  Stage targets cut the learn plan after that stage (`planTarget` in `ui/solve/SolveScreen`).
 
 ## Camera scan — Implemented
 
@@ -313,7 +319,8 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 | `VideoScanRoute` | Video scan (the default scan) | camera picture with marks on the real cube (solid = known, ring = needed, tick = side confirmed), turn arrow beside it, short status, done-sides row; a notice at the bottom of the picture when stuck (scanning goes on); "Korjaa värit" hands over what is known; result → solve or check |
 | `ManualInputRoute(cube?, marked?, fromScan, confident)` | Manual input / check a scan | one screen (palette, ‹ › and check in the bottom bar); face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution. From a scan: the face-by-face check (`ScanCheck`): checked faces ticked in the face map, "N faces left", the face's camera picture beside the grid (`LastScan`), "Kuvaa uudelleen" (one-face scan) and "Näyttää oikealta" in place of ‹ › and check, the verdict line, "scan the whole cube again" in the menu |
 | `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
-| `SolveRoute(cube)` | Solution | background solve, then the move guide stepper; camera mode follows on the real cube |
+| `SolveRoute(cube, target?)` | Solution | background solve, then the move guide stepper; camera mode follows on the real cube; a target row ("Kohde … Vaihda"); a pattern or painted target hides the method choice (shortest only), a stage target uses the learn method |
+| `TargetRoute(start, current?, fromSolve)` | Choose a target | surprise, pattern gallery (tap → large preview → "Valitse"), stages, "Maalaa oma" (`ManualInputRoute(targetStart = …)`); a choice replaces the solution screen it came from, or from home (tile "Kuviot") opens on top of the picker |
 | `SettingsRoute`, `LogRoute` | Settings, log | the log viewer splits each line (`LogLine.parse`), shows its time in the phone's zone and the app language's format (`LogTime.format`, only the time for today) and colours it by level (error/warn/debug/info; the level word shown for non-INFO) |
 
 ## Release build — Implemented

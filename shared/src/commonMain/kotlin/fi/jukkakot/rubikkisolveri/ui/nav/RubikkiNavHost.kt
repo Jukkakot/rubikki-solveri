@@ -47,6 +47,8 @@ import fi.jukkakot.rubikkisolveri.Platform
 import fi.jukkakot.rubikkisolveri.log.NoScanPictures
 import fi.jukkakot.rubikkisolveri.log.ScanPictureStore
 import fi.jukkakot.rubikkisolveri.ui.home.HomeEntry
+import fi.jukkakot.rubikkisolveri.cube.SolveTarget
+import fi.jukkakot.rubikkisolveri.ui.target.TargetScreen
 import fi.jukkakot.rubikkisolveri.ui.home.HomeSummary
 import fi.jukkakot.rubikkisolveri.ui.home.HomeScreen
 import fi.jukkakot.rubikkisolveri.ui.log.LogScreen
@@ -77,6 +79,13 @@ class AppActions(
 @Composable
 fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
     val scope = rememberCoroutineScope()
+    // A chosen target opens its solution: in place of the solution screen the picker came from,
+    // or (from home) on top of the picker.
+    fun chooseTarget(start: String, target: SolveTarget, fromSolve: Boolean) {
+        navController.navigate(SolveRoute(start, target.encode())) {
+            if (fromSolve) popUpTo<SolveRoute> { inclusive = true } else popUpTo<TargetRoute> { inclusive = false }
+        }
+    }
     NavHost(navController = navController, startDestination = HomeRoute) {
         composable<HomeRoute> {
             val timed by actions.progress.timedSolves.collectAsStateWithLifecycle(emptyList())
@@ -87,6 +96,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                     HomeEntry(Res.string.home_learn, Res.drawable.ic_school) { navController.navigate(LessonsRoute) },
                     HomeEntry(Res.string.home_timer, Res.drawable.ic_timer) { navController.navigate(TimerRoute) },
                     HomeEntry(Res.string.home_free_cube, Res.drawable.ic_cube) { navController.navigate(FreeCubeRoute()) },
+                    HomeEntry(Res.string.home_patterns, Res.drawable.ic_pattern) { navController.navigate(TargetRoute(Cube.solved().toColorString())) },
                 ),
                 onOpenSettings = { navController.navigate(SettingsRoute) },
                 version = actions.version,
@@ -113,6 +123,16 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
         }
         composable<ManualInputRoute> { entry ->
             val route = entry.toRoute<ManualInputRoute>()
+            if (route.targetStart != null) {
+                ManualInputScreen(
+                    onBack = { navController.popBackStack() },
+                    onValid = { cube -> chooseTarget(route.targetStart, SolveTarget.Painted(cube), route.targetFromSolve) },
+                    initial = route.cube?.let(CubeEditor::decode) ?: CubeEditor.empty(),
+                    title = Res.string.target_paint_title,
+                    onScanFace = null,
+                )
+                return@composable
+            }
             val initial = route.cube?.let(CubeEditor::decode) ?: CubeEditor.empty()
             val marked = route.marked?.split(',')?.mapNotNull { it.toIntOrNull() }?.toSet().orEmpty()
             // The colour check after a scan is part of the scan, so it stays dark like it.
@@ -196,12 +216,30 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
             )
         }
         composable<SolveRoute> { entry ->
+            val route = entry.toRoute<SolveRoute>()
             SolveScreen(
-                cube = Cube.fromColorString(entry.toRoute<SolveRoute>().cube),
+                cube = Cube.fromColorString(route.cube),
+                target = SolveTarget.decode(route.target),
+                onChangeTarget = { navController.navigate(TargetRoute(route.cube, route.target, fromSolve = true)) },
                 onBack = { navController.popBackStack() },
                 onHome = { navController.popBackStack(HomeRoute, inclusive = false) },
                 showNotation = actions.showNotation,
                 onFinished = { method, moves, millis -> scope.launch { actions.progress.addGuided(method.name, moves, millis) } },
+            )
+        }
+        composable<TargetRoute> { entry ->
+            val route = entry.toRoute<TargetRoute>()
+            val start = Cube.fromColorString(route.start)
+            val current = SolveTarget.decode(route.current)
+            TargetScreen(
+                start = start,
+                current = current,
+                onChoose = { chooseTarget(route.start, it, route.fromSolve) },
+                onPaint = {
+                    val from = current.cubeFor(start) ?: SolveTarget.Solved.cubeFor(start)!!
+                    navController.navigate(ManualInputRoute(CubeEditor.of(from).encode(), targetStart = route.start, targetFromSolve = route.fromSolve))
+                },
+                onBack = { navController.popBackStack() },
             )
         }
         composable<LessonsRoute> {

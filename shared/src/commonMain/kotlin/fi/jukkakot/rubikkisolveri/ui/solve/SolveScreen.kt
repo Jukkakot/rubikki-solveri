@@ -56,6 +56,7 @@ import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeCheck
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.Move
+import fi.jukkakot.rubikkisolveri.cube.SolveTarget
 import fi.jukkakot.rubikkisolveri.cube.Validity
 import fi.jukkakot.rubikkisolveri.cube.beginner.BeginnerSolver
 import fi.jukkakot.rubikkisolveri.cube.beginner.Stage
@@ -82,6 +83,8 @@ import fi.jukkakot.rubikkisolveri.ui.guide.MoveWordsText
 import fi.jukkakot.rubikkisolveri.ui.guide.StepperState
 import fi.jukkakot.rubikkisolveri.ui.guide.rememberStepperState
 import fi.jukkakot.rubikkisolveri.ui.scan.CameraPermissionGate
+import fi.jukkakot.rubikkisolveri.ui.target.TargetPicture
+import fi.jukkakot.rubikkisolveri.ui.target.targetName
 import fi.jukkakot.rubikkisolveri.ui.scan.CameraPreview
 import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
 import kotlin.concurrent.atomics.AtomicBoolean
@@ -134,6 +137,36 @@ val BACKGROUND_PLANNER: Planner = { cube, method ->
     withContext(Dispatchers.Default) { plan(cube, method) }
 }
 
+/** Plans the way from [cube] to a target other than solved. */
+typealias TargetPlanner = suspend (Cube, SolveTarget) -> SolvePlan
+
+/**
+ * Plans the way to [target] on the calling thread: the shortest moves to a whole target cube, or
+ * the learn method cut after the target stage.
+ */
+fun planTarget(cube: Cube, target: SolveTarget): SolvePlan {
+    val validity = CubeCheck.validity(cube)
+    if (!validity.isValid) return SolvePlan.Invalid(validity)
+    val whole = target.cubeFor(cube)
+    if (whole == null) {
+        val stage = (target as SolveTarget.StageDone).stage
+        val steps = BeginnerSolver.solve(cube).steps.filter { it.stage <= stage }
+        return SolvePlan.Ready(steps.flatMap { it.moves }, steps)
+    }
+    return when (val r = TwoPhaseSolver.solve(cube, whole)) {
+        is SolveResult.Solved -> SolvePlan.Ready(r.moves, null)
+        is SolveResult.Invalid -> SolvePlan.Invalid(r.reason)
+        is SolveResult.Failed -> SolvePlan.Failed(r.message)
+    }.also {
+        AppLog.info(Evt.SOLVE_DONE, null, "target" to target.encode().take(40), "moves" to ((it as? SolvePlan.Ready)?.moves?.size ?: -1))
+    }
+}
+
+val BACKGROUND_TARGET_PLANNER: TargetPlanner = { cube, target ->
+    withFrameNanos { }
+    withContext(Dispatchers.Default) { planTarget(cube, target) }
+}
+
 /** Finds a solution for [cube] in the background (shortest or step by step), then steps through it. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -150,12 +183,22 @@ fun SolveScreen(
     finishedText: String? = null,
     homeLabel: String? = null,
     onFinished: (method: SolveMethod, moves: Int, durationMillis: Long) -> Unit = { _, _, _ -> },
+    target: SolveTarget = SolveTarget.Solved,
+    onChangeTarget: (() -> Unit)? = null,
+    targetPlanner: TargetPlanner = BACKGROUND_TARGET_PLANNER,
 ) {
     var follow by rememberSaveable { mutableStateOf(false) }
     var method by rememberSaveable { mutableStateOf(initialMethod) }
-    val result by produceState<SolvePlan?>(null, cube, method) {
+    val toSolved = target == SolveTarget.Solved
+    val result by produceState<SolvePlan?>(null, cube, method, target) {
         value = null
-        value = planner(cube, method)
+        value = if (toSolved) planner(cube, method) else targetPlanner(cube, target)
+    }
+    // A target other than solved: patterns and painted cubes take the shortest way, stages the learn method.
+    val shownMethod = when {
+        toSolved -> method
+        target is SolveTarget.StageDone -> SolveMethod.LEARN
+        else -> SolveMethod.FAST
     }
     Scaffold(
         topBar = {
@@ -173,8 +216,11 @@ fun SolveScreen(
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            if (!cube.isSolved && !practice) {
+            if (!cube.isSolved && !practice && toSolved) {
                 MethodChoice(method, onChoose = { method = it }, modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp))
+            }
+            if (onChangeTarget != null) {
+                TargetRow(cube, target, onChangeTarget, Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp))
             }
             Box(Modifier.fillMaxSize()) {
                 when (val r = result) {
@@ -186,11 +232,17 @@ fun SolveScreen(
                     is SolvePlan.Failed -> Message(stringResource(Res.string.solve_failed), stringResource(Res.string.solve_fix), onBack)
                     is SolvePlan.Ready ->
                         if (r.moves.isEmpty()) {
-                            Message(stringResource(Res.string.solve_already), stringResource(Res.string.solve_home), onHome)
+                            val already = stringResource(if (toSolved) Res.string.solve_already else Res.string.target_already)
+                            if (onChangeTarget != null) {
+                                Message(already, stringResource(Res.string.target_pick_pattern), onChangeTarget, stringResource(Res.string.solve_home) to onHome)
+                            } else {
+                                Message(already, stringResource(Res.string.solve_home), onHome)
+                            }
                         } else {
-                            key(method) {
-                                Stepper(cube, r, showNotation, onHome, follow, { follow = false }, followPanel, finishedText, homeLabel) { moves, millis ->
-                                    onFinished(method, moves, millis)
+                            val finished = finishedText ?: if (toSolved) null else stringResource(Res.string.target_reached)
+                            key(shownMethod, target) {
+                                Stepper(cube, r, showNotation, onHome, follow, { follow = false }, followPanel, finished, homeLabel) { moves, millis ->
+                                    onFinished(shownMethod, moves, millis)
                                 }
                             }
                         }
@@ -216,10 +268,24 @@ private fun MethodChoice(method: SolveMethod, onChoose: (SolveMethod) -> Unit, m
 }
 
 @Composable
-private fun Message(text: String, action: String, onAction: () -> Unit) {
+private fun Message(text: String, action: String, onAction: () -> Unit, secondary: Pair<String, () -> Unit>? = null) {
     Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(text, style = MaterialTheme.typography.titleMedium)
         Button(onClick = onAction) { Text(action) }
+        secondary?.let { (label, onClick) -> OutlinedButton(onClick = onClick) { Text(label) } }
+    }
+}
+
+/** Where the guide leads: a small picture and name of [target], and a button to change it. */
+@Composable
+private fun TargetRow(start: Cube, target: SolveTarget, onChange: () -> Unit, modifier: Modifier) {
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        TargetPicture(target, start, Modifier.size(40.dp))
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(Res.string.target_label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(targetName(target), style = MaterialTheme.typography.titleSmall)
+        }
+        OutlinedButton(onClick = onChange, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(Res.string.target_change)) }
     }
 }
 

@@ -15,6 +15,8 @@ data object LogRoute
  * Manual input, empty or prefilled: [cube] is a `CubeEditor.encode()` string, [marked] comma-separated
  * sticker indices to mark, [fromScan] when a scan hands over its result for checking, [confident]
  * when that scan was valid and sure (the check then goes on to the solution by itself).
+ * With [targetStart] (a colour string) it paints a target for that starting cube instead
+ * (`solve-to-target`); [targetFromSolve] as in [TargetRoute].
  */
 @Serializable
 data class ManualInputRoute(
@@ -22,6 +24,8 @@ data class ManualInputRoute(
     val marked: String? = null,
     val fromScan: Boolean = false,
     val confident: Boolean = false,
+    val targetStart: String? = null,
+    val targetFromSolve: Boolean = false,
 )
 
 /** The scan; with [face] (a `FaceView` name) only that face, rescanned from the check. */
@@ -32,9 +36,16 @@ data class ScanRoute(val face: String? = null)
 @Serializable
 data class FreeCubeRoute(val cube: String? = null)
 
-/** [cube] is a colour string (see Cube.toColorString). */
+/** [cube] is a colour string (see Cube.toColorString); [target] a `SolveTarget.encode()` string (null: solved). */
 @Serializable
-data class SolveRoute(val cube: String)
+data class SolveRoute(val cube: String, val target: String? = null)
+
+/**
+ * Choosing a target for [start] (colour string); [current] is the target now. [fromSolve]: opened
+ * from a solution screen, which the chosen target's solution replaces.
+ */
+@Serializable
+data class TargetRoute(val start: String, val current: String? = null, val fromSolve: Boolean = false)
 
 @Serializable
 data object LessonsRoute

@@ -318,6 +318,7 @@ class ScreenshotTest {
                 fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_learn, Res.drawable.ic_school) {},
                 fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_timer, Res.drawable.ic_timer) {},
                 fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_free_cube, Res.drawable.ic_cube) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_patterns, Res.drawable.ic_pattern) {},
             ),
             onOpenSettings = {}, crashedLastTime = false, onShowLog = {}, onCrashNoticeShown = {},
             version = "1.0.51-0365b23 · 3.10.2026 11.30",
@@ -328,6 +329,20 @@ class ScreenshotTest {
 
     @Test
     fun home() = shot("home") { Home() }
+
+    @Test
+    fun targets() = shot("targets") {
+        fi.jukkakot.rubikkisolveri.ui.target.TargetScreen(Cube.solved(), fi.jukkakot.rubikkisolveri.cube.SolveTarget.Solved, onChoose = {}, onPaint = {}, onBack = {})
+    }
+
+    @Test
+    fun solveToPattern() = shot("solve-target", waitForText = "Siirto 1/") {
+        SolveScreen(
+            Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {}, planner = INLINE_PLANNER,
+            target = fi.jukkakot.rubikkisolveri.cube.SolveTarget.Pattern(fi.jukkakot.rubikkisolveri.cube.CubePattern.CUBE_IN_CUBE),
+            onChangeTarget = {}, targetPlanner = INLINE_TARGET_PLANNER,
+        )
+    }
 
     @Test
     @Config(qualifiers = "fi-w891dp-h411dp-land-xxhdpi")

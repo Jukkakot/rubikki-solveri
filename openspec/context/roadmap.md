@@ -53,6 +53,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 43 | `video-scan-light` | done | Video scan reads colours in dim, warm light: readings between two colours stay uncertain (soft votes) so the cube decides, glare left out, washed-out readings count little; both dim test videos now finish; the stall panel became a notice at the bottom of the picture that never blocks scanning, with a torch button; torch re-meters the camera; ticks only when confirmed; the browser shows the camera's own sharp video (phone testing 2026-10-05) |
 | 44 | `camera-exposure` | done | Video scan camera measures light and focuses on the cube and goes darker while stickers wash out (torch in a dark room), then locks; about 15 pictures a second, in the browser read in a Web Worker off the page's thread; log tells fps and what the camera can do (user's log 2026-10-05, Galaxy S24) |
 | 45 | `video-primary` | done | Video scan is the default: the home screen's scan button opens it (video icon, no "(kokeilu)" tile), "Kuva kerrallaan" switches to the guided scan and "Videolla" back (user, 2026-10-06) |
+| 46 | `solve-to-target` | done | Choose where the cube ends: pattern gallery (11 patterns), surprise, "up to a stage", or paint one's own; target row on the solution screen, "Kuviot" tile on home; the shortest way straight from the cube to the target (user, 2026-10-06) |
 
 ## Backlog
 
@@ -72,7 +73,7 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
 - ~~`web-solver-worker`~~ dropped 2026-10-06: `?selftest` on the user's phone (Samsung Internet)
   gave warmup 126–141 ms and solve 148–196 ms, far under the 4 s / 2 s limits.
 
-- `solve-to-target`: the user picks the end state to reach (e.g. a pattern or any chosen cube, not
-  only solved) and the guide leads to exactly that state (user, 2026-10-05).
+- More ways to pick a target (after `solve-to-target`, 2026-10-06): type or paste a move sequence,
+  scan the target from another cube, a partial target ("only this side matters").
 
 - `solve-challenge`: learning mode on the solve screen: show the position to reach next, the user tries it themselves, a "hint" button reveals the moves step by step; the target shown as the turnable 3D cube

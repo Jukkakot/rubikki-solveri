@@ -39,12 +39,13 @@ colour here" targets (backlog ideas 6, 8, 11 from 2026-10-06); saving painted ta
    dropped rather than guessed further. Names get the app's playful voice (e.g. "Shakkilauta",
    "Kuutio kuutiossa", "Superflippi", "Anakonda").
 
-4. **Picker screen (`TargetRoute`).** One scrolling screen, three sections: a "Yllätä minut"
-   button and the gallery grid, the stages list, "Maalaa oma" button. Gallery pictures are 2D
-   isometric drawings of U, F, R (a Canvas, cheap in a grid of 12; a `Cube3D` per tile would mean a
-   dozen 3D views). Tap → bottom sheet with a large `GoalCube(large = true)` and "Valitse". The
-   picker returns the target to the solution screen (nav result), or from home navigates to
-   `SolveRoute(solved, target)`.
+4. **Picker screen (`TargetRoute`).** One scrolling grid: a "Yllätä minut" button, the gallery
+   (three per row), the stages list, "Maalaa oma". Gallery thumbnails are small still `GoalCube`s,
+   as in the lessons list (decided while implementing: consistency over a new 2D drawing; the
+   lessons list already shows eight of them without trouble). Tap → an `AlertDialog` with a large
+   turnable `GoalCube` and "Valitse", like the stage goal dialog on the solution screen. A choice
+   navigates to `SolveRoute(start, target)`: from a solution screen it replaces that screen (and the
+   picker), from home it stays on top of the picker so back returns to the gallery.
 
 5. **Stage target.** LEARN plan cut after the last step of the chosen stage; the method choice is
    hidden (as in practice). Stage pictures: `StageGoalPicture`.
