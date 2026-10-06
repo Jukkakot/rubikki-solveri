@@ -9,6 +9,13 @@ Read `openspec/context/roadmap.md` and run `openspec list`, then tell the user i
 lines where the project stands (last finished change, active change and its task progress, the
 natural next step).
 
+## Specs first (decided 2026-10-06)
+
+Before proposing anything or reading code, read the specs of the parts concerned
+(`openspec/specs/<capability>/spec.md`) and, where the reasons matter, the archived changes'
+`design.md`. Read code only where the specs do not answer. When a suggestion changes specced
+behaviour, say so. Idea talks go through `/opsx:explore`, which loads `openspec/config.yaml`.
+
 ## Phases
 
 - **Spec phase (now):** write proposal, design, specs and tasks for one change, then stop for the
