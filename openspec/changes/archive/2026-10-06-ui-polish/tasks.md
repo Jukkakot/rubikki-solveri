@@ -66,7 +66,7 @@
 
 ## 6. Finish
 
-- [ ] 6.1 Update the screenshot tests for home, the start screen and the guide. Run
+- [x] 6.1 Update the screenshot tests for home, the start screen and the guide. Run
   `./gradlew test lint assembleDebug` and verify that it passes.
 - [x] 6.2 Update the docs pages that describe home, the solution screen or the scan's back
   behaviour (`docs/README.md`, `docs/architecture.md` where they mention them). In

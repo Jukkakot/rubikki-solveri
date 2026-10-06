@@ -50,12 +50,13 @@ time cannot be read, the version alone SHALL be shown.
 
 ### Requirement: Home screen layout
 The app SHALL open on a home screen that shows the app name and the 3D cube, which turns slowly on
-its own and can be turned by dragging. Scanning the cube SHALL be the one primary action, shown
-larger and more prominent than the rest. The other main features (enter colours by hand, learn,
-timer and statistics, free cube, patterns) SHALL be shown as equal secondary entries, each with an icon and
-a label; there SHALL be no separate entry for a second way of scanning. The whole screen SHALL fit
-a phone screen in portrait and in landscape without scrolling, also in the phone's browser, where
-the cube shrinks to the space left and never covers the texts.
+its own and can be turned by dragging. The cube SHALL be the scan action: a tap on it, or on the round
+camera button on its lower edge, SHALL open the scan; a drag SHALL only turn it. The other main
+features (enter colours by hand, learn, timer and statistics, free cube, patterns) SHALL be shown
+below as a row of equal icons, each with a one-word label; there SHALL be no separate entry for a
+second way of scanning and no tagline. The whole screen SHALL fit a phone screen in portrait and in
+landscape without scrolling, also in the phone's browser, where the cube shrinks to the space left
+and never covers the texts.
 
 #### Scenario: App starts on home
 - **WHEN** the user opens the app
@@ -63,18 +64,22 @@ the cube shrinks to the space left and never covers the texts.
 
 #### Scenario: Scan is the main action
 - **WHEN** the home screen is shown
-- **THEN** "scan the cube" is the single most prominent action and the other features are shown as smaller entries of equal weight
+- **THEN** the cube with its round camera button is the single most prominent action and the other features are shown as a row of smaller icons of equal weight
+
+#### Scenario: Tap the cube to scan
+- **WHEN** the user taps the cube on the home screen
+- **THEN** the video scan opens
 
 #### Scenario: Turn the cube
 - **WHEN** the user drags the cube on the home screen
-- **THEN** the cube turns with the finger, and it resumes turning on its own after the user lets go
+- **THEN** the cube turns with the finger and no scan opens, and it resumes turning on its own after the user lets go
 
 #### Scenario: Open manual input
 - **WHEN** the user taps "enter colours by hand"
 - **THEN** the manual input screen opens on the front face
 
 #### Scenario: Open the scan
-- **WHEN** the user taps "scan the cube"
+- **WHEN** the user taps the round camera button
 - **THEN** the video scan opens
 
 #### Scenario: Open lessons
@@ -91,23 +96,11 @@ the cube shrinks to the space left and never covers the texts.
 
 #### Scenario: Little room in the browser
 - **WHEN** the home screen is shown in a phone browser whose bars take much of the height
-- **THEN** the cube is drawn smaller in the space between the name and the tagline, and neither text is covered
+- **THEN** the cube is drawn smaller in the space between the name and the icon row, and no text is covered
 
 #### Scenario: Open patterns
 - **WHEN** the user taps "patterns"
 - **THEN** the target picker opens for a cube that is solved now
-
-### Requirement: Solve summary on the home screen
-When the user has timed solves, the home screen SHALL show one short line with the best time and
-the number of timed solves. When there are none, the line SHALL NOT be shown.
-
-#### Scenario: With timed solves
-- **WHEN** the user has timed solves and opens the home screen
-- **THEN** a line shows the best time and how many timed solves there are
-
-#### Scenario: No timed solves
-- **WHEN** the user has no timed solves
-- **THEN** no summary line is shown
 
 ### Requirement: Screens fit without scrolling
 In portrait, every screen with actions (solution in both methods including camera follow, free

@@ -52,13 +52,14 @@ other than other colours.
 ### Requirement: Finish the video scan
 The scan SHALL finish when one possible cube fits what has been read clearly better than any other
 possible cube, and this holds for about half a second; not every sticker needs to have been seen.
-The solution SHALL then open, with the colour check behind it as for a sure guided scan, stickers
-known only from the others marked there. The user SHALL be able to stop earlier and open the check
-with what is known. The scan SHALL never stay with everything read and nothing happening.
+The solution's start screen SHALL then open with a new scan behind it, as for a sure guided scan;
+stickers known only from the others are marked in the colour check reached from the guide's menu.
+The user SHALL be able to stop earlier and open the check with what is known. The scan SHALL never
+stay with everything read and nothing happening.
 
 #### Scenario: Whole cube seen
 - **WHEN** the cube that fits the readings is clear for half a second
-- **THEN** the solution opens and going back shows the check
+- **THEN** the start screen opens, and going back starts a new scan
 
 #### Scenario: Orange read as red
 - **WHEN** one orange sticker has been read as red, so no real piece fits it
