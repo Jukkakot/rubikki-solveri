@@ -49,6 +49,7 @@ class WebServices {
             logger.writeNow(Level.WARN, Evt.APP_GRAPHICS_LOST, if (willReload) "reloading when visible" else "lost again soon after a reload")
         }
         BrowserHooks.reducedMotion = ::reducedMotion
+        BrowserHooks.keepScreenOn = ::keepScreenOn
         BrowserHooks.formatDateTime = { millis, language, timeOnly -> formatDateTime(millis.toDouble(), language, timeOnly) }
         installCamera()
         storageWarning?.let { logger.warn(Evt.APP_START, "storage unavailable, keeping data in memory: ${it.message}") }

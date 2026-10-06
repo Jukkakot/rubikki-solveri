@@ -12,6 +12,9 @@ import fi.jukkakot.rubikkisolveri.ui.scan.FoundFaces
  * `platform.mjs`; `web` fills these in at start, before the first frame.
  */
 object BrowserHooks {
+    /** Takes or releases a screen wake lock (silently nothing where unsupported). */
+    var keepScreenOn: (Boolean) -> Unit = {}
+
     /** `prefers-reduced-motion: reduce`. */
     var reducedMotion: () -> Boolean = { false }
 

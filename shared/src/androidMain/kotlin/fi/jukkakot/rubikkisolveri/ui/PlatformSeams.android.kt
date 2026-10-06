@@ -72,3 +72,12 @@ actual object LocalFormats {
 
 @Composable
 actual fun currentLanguage(): String = LocalConfiguration.current.locales[0].toLanguageTag()
+
+@Composable
+actual fun KeepScreenOn() {
+    val view = LocalView.current
+    DisposableEffect(view) {
+        view.keepScreenOn = true
+        onDispose { view.keepScreenOn = false }
+    }
+}

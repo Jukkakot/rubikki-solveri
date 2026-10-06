@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -34,12 +35,18 @@ class StepperState(
     val animator: CubeAnimator,
     private val scope: CoroutineScope,
     private val onDemoTick: () -> Unit = {},
+    private val onHandsfreeWarn: () -> Unit = {},
+    private val onHandsfreeAdvance: () -> Unit = {},
 ) {
     var index by mutableIntStateOf(initialIndex)
         private set
 
     /** Counts finishes reached by [done]: the solved cube celebrates. */
     var celebrations by mutableIntStateOf(0)
+        private set
+
+    /** How much of the current move's handsfree time has passed, 0..1 (0 while its demo plays). */
+    var handsfreeProgress by mutableFloatStateOf(0f)
         private set
 
     val current: Move? get() = moves.getOrNull(index)
@@ -105,21 +112,63 @@ class StepperState(
         }
     }
 
+    /**
+     * One handsfree step: demos the current move, waits its time at [speed] (a light warning
+     * shortly before the end) and then confirms it as "done" does. No demo repeat meanwhile; with
+     * animations off the time starts at once.
+     */
+    suspend fun handsfreeStep(speed: HandsfreeSpeed) {
+        val move = current ?: return
+        val at = index
+        handsfreeProgress = 0f
+        if (!animator.isInstant) {
+            snapshotFlow { animator.pending }.first { it == 0 }
+            delay(AUTO_DEMO_DELAY_MS)
+            demo()
+            snapshotFlow { animator.pending }.first { it == 0 }
+        }
+        val wait = speed.waitMs(move)
+        var passed = 0L
+        var warned = false
+        while (passed < wait) {
+            val step = minOf(HANDSFREE_FRAME_MS, wait - passed)
+            delay(step)
+            passed += step
+            handsfreeProgress = passed / wait.toFloat()
+            if (!warned && passed >= wait - HandsfreeSpeed.WARN_BEFORE_MS) {
+                warned = true
+                onHandsfreeWarn()
+            }
+        }
+        if (index != at) return
+        onHandsfreeAdvance()
+        handsfreeProgress = 0f
+        done()
+    }
+
     companion object {
         const val AUTO_DEMO_DELAY_MS = 500L
         const val REPEAT_MS = 3_000L
+        private const val HANDSFREE_FRAME_MS = 50L
     }
 }
 
 @Composable
-fun rememberStepperState(start: Cube, moves: List<Move>, onDemoTick: () -> Unit = {}): StepperState {
+fun rememberStepperState(
+    start: Cube,
+    moves: List<Move>,
+    onDemoTick: () -> Unit = {},
+    handsfree: HandsfreeSpeed? = null,
+    onHandsfreeWarn: () -> Unit = {},
+    onHandsfreeAdvance: () -> Unit = {},
+): StepperState {
     var savedIndex by rememberSaveable { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
     val animator = rememberCubeAnimator(start.apply(moves.take(savedIndex)))
-    val state = remember { StepperState(start, moves, savedIndex, animator, scope, onDemoTick) }
-    LaunchedEffect(state.index) {
+    val state = remember { StepperState(start, moves, savedIndex, animator, scope, onDemoTick, onHandsfreeWarn, onHandsfreeAdvance) }
+    LaunchedEffect(state.index, handsfree) {
         savedIndex = state.index
-        state.autoDemo()
+        if (handsfree != null) state.handsfreeStep(handsfree) else state.autoDemo()
     }
     return state
 }

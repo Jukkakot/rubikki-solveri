@@ -52,6 +52,7 @@ fun WebApp(services: WebServices) {
     val settings = services.settings
     val themeMode by settings.themeMode.collectAsState()
     val showNotation by settings.showNotation.collectAsState()
+    val handsfreeSpeed by settings.handsfreeSpeed.collectAsState()
     val navController = rememberNavController()
     val language = currentLanguage()
     val built = LocalFormats.shortDateTime(BuildInfo.BUILT_AT, language)
@@ -132,6 +133,11 @@ fun WebApp(services: WebServices) {
                             onShowNotation = { show ->
                                 logger.info(Evt.SETTINGS_CHANGED, null, "notation" to show)
                                 settings.setShowNotation(show)
+                            },
+                            handsfreeSpeed = handsfreeSpeed,
+                            onHandsfreeSpeed = { speed ->
+                                logger.info(Evt.SETTINGS_CHANGED, null, "handsfreeSpeed" to speed.name)
+                                settings.setHandsfreeSpeed(speed)
                             },
                             progress = services.progress,
                             scanPictures = services.scanPictures,

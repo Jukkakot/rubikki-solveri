@@ -17,6 +17,7 @@ external fun reload()
 external fun queryFlag(name: String): Boolean
 external fun setThemeColor(color: String)
 external fun reducedMotion(): Boolean
+external fun keepScreenOn(on: Boolean)
 external fun vibrate(ms: Int)
 external fun formatDateTime(epochMillis: Double, language: String, timeOnly: Boolean): String
 external fun installCrashHooks(report: (String) -> Unit)

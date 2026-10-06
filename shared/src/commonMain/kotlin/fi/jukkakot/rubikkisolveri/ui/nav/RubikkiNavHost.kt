@@ -35,6 +35,7 @@ import kotlin.random.Random
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fi.jukkakot.rubikkisolveri.cube.Notation
+import fi.jukkakot.rubikkisolveri.ui.guide.HandsfreeSpeed
 import fi.jukkakot.rubikkisolveri.progress.InMemoryProgressRepository
 import fi.jukkakot.rubikkisolveri.progress.ProgressRepository
 import fi.jukkakot.rubikkisolveri.ui.progress.HistoryScreen
@@ -69,6 +70,8 @@ class AppActions(
     val version: String,
     val showNotation: Boolean = false,
     val onShowNotation: (Boolean) -> Unit = {},
+    val handsfreeSpeed: HandsfreeSpeed = HandsfreeSpeed.NORMAL,
+    val onHandsfreeSpeed: (HandsfreeSpeed) -> Unit = {},
     val progress: ProgressRepository = InMemoryProgressRepository(),
     /** The idle spin of the home cube; off in tests, whose clock would never go idle. */
     val homeSpin: Boolean = true,
@@ -224,6 +227,8 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 onBack = { navController.popBackStack() },
                 onHome = { navController.popBackStack(HomeRoute, inclusive = false) },
                 showNotation = actions.showNotation,
+                handsfreeSpeed = actions.handsfreeSpeed,
+                onHandsfreeSpeed = actions.onHandsfreeSpeed,
                 onFinished = { method, moves, millis -> scope.launch { actions.progress.addGuided(method.name, moves, millis) } },
             )
         }

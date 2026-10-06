@@ -54,7 +54,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 44 | `camera-exposure` | done | Video scan camera measures light and focuses on the cube and goes darker while stickers wash out (torch in a dark room), then locks; about 15 pictures a second, in the browser read in a Web Worker off the page's thread; log tells fps and what the camera can do (user's log 2026-10-05, Galaxy S24) |
 | 45 | `video-primary` | done | Video scan is the default: the home screen's scan button opens it (video icon, no "(kokeilu)" tile), "Kuva kerrallaan" switches to the guided scan and "Videolla" back (user, 2026-10-06) |
 | 46 | `solve-to-target` | done | Choose where the cube ends: pattern gallery (11 patterns), surprise, "up to a stage", or paint one's own; target row on the solution screen, "Kuviot" tile on home; the shortest way straight from the cube to the target (user, 2026-10-06) |
-| 47 | `handsfree-guide` | specced | Shortest-solution guide without aiming at a button: tap the cube = done; handsfree mode after "Valmis" advances by itself at a chosen speed (bar, vibration before the next move), any touch stops it (user, 2026-10-06) |
+| 47 | `handsfree-guide` | done | Shortest-solution guide without aiming at a button: tap the cube = done; handsfree mode after "Valmis" advances by itself at a chosen speed (bar, vibration before the next move), any touch stops it (user, 2026-10-06) |
 
 ## Backlog
 

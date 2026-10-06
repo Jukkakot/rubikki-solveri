@@ -36,3 +36,7 @@ expect object LocalFormats {
 /** The language the texts are shown in now ("fi", "en"). */
 @Composable
 expect fun currentLanguage(): String
+
+/** Keeps the screen from turning off while this is in the composition. */
+@Composable
+expect fun KeepScreenOn()

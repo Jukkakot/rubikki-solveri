@@ -2,6 +2,7 @@ package fi.jukkakot.rubikkisolveri.ui
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asComposeImageBitmap
@@ -60,3 +61,11 @@ actual object LocalFormats {
 
 @Composable
 actual fun currentLanguage(): String = Locale.current.toLanguageTag()
+
+@Composable
+actual fun KeepScreenOn() {
+    DisposableEffect(Unit) {
+        BrowserHooks.keepScreenOn(true)
+        onDispose { BrowserHooks.keepScreenOn(false) }
+    }
+}

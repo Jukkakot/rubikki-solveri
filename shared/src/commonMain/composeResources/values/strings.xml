@@ -94,6 +94,16 @@
     <string name="solve_step">Siirto %1$d/%2$d</string>
     <string name="solve_done_move">Tein sen</string>
     <string name="solve_show">Näytä</string>
+    <string name="solve_tap_hint">Napauta kuutiota = tein sen · raahaa = käännä</string>
+    <string name="handsfree">Handsfree</string>
+    <string name="handsfree_text">Ota kuutio käteen. Ohje näyttää siirron ja jatkaa itse seuraavaan, kun aika on kulunut. Kosketus näyttöön pysäyttää.</string>
+    <string name="handsfree_speed">Tahti</string>
+    <string name="handsfree_slow">Hidas</string>
+    <string name="handsfree_normal">Normaali</string>
+    <string name="handsfree_fast">Nopea</string>
+    <string name="handsfree_go">Valmis</string>
+    <string name="handsfree_cancel">Peruuta</string>
+    <string name="handsfree_stop_hint">Kosketa näyttöä pysäyttääksesi</string>
     <string name="solve_previous">Edellinen</string>
     <string name="solve_finished">Valmis! Kuutio on ratkaistu.</string>
     <string name="solve_already">Kuutio on jo ratkaistu!</string>

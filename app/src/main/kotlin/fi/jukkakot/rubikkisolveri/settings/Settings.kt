@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import fi.jukkakot.rubikkisolveri.ui.guide.HandsfreeSpeed
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -34,9 +35,17 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         store.edit { it[NOTATION] = show }
     }
 
+    /** The handsfree guide's speed, remembered between solves. */
+    val handsfreeSpeed: Flow<HandsfreeSpeed> = store.data.map { HandsfreeSpeed.fromName(it[HANDSFREE_SPEED]) }
+
+    suspend fun setHandsfreeSpeed(speed: HandsfreeSpeed) {
+        store.edit { it[HANDSFREE_SPEED] = speed.name }
+    }
+
     private companion object {
         val THEME = stringPreferencesKey("theme_mode")
         val NOTATION = booleanPreferencesKey("show_notation")
+        val HANDSFREE_SPEED = stringPreferencesKey("handsfree_speed")
     }
 }
 

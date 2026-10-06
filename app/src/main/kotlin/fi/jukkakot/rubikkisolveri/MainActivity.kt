@@ -21,6 +21,7 @@ import fi.jukkakot.rubikkisolveri.settings.LanguageSetting
 import fi.jukkakot.rubikkisolveri.settings.SettingsRepository
 import fi.jukkakot.rubikkisolveri.settings.ThemeMode
 import fi.jukkakot.rubikkisolveri.log.ScanPictures
+import fi.jukkakot.rubikkisolveri.ui.guide.HandsfreeSpeed
 import fi.jukkakot.rubikkisolveri.ui.log.shareLogIntent
 import fi.jukkakot.rubikkisolveri.ui.nav.AppActions
 import fi.jukkakot.rubikkisolveri.ui.nav.RubikkiNavHost
@@ -41,6 +42,7 @@ class MainActivity : AppCompatActivity() {
         setContent {
             val themeMode by settings.themeMode.collectAsStateWithLifecycle(ThemeMode.SYSTEM)
             val showNotation by settings.showNotation.collectAsStateWithLifecycle(false)
+            val handsfreeSpeed by settings.handsfreeSpeed.collectAsStateWithLifecycle(HandsfreeSpeed.NORMAL)
             val scope = rememberCoroutineScope()
             val navController = rememberNavController()
             DisposableEffect(navController) {
@@ -87,6 +89,11 @@ class MainActivity : AppCompatActivity() {
                         onShowNotation = { show ->
                             logger.info(Evt.SETTINGS_CHANGED, null, "notation" to show)
                             scope.launch { settings.setShowNotation(show) }
+                        },
+                        handsfreeSpeed = handsfreeSpeed,
+                        onHandsfreeSpeed = { speed ->
+                            logger.info(Evt.SETTINGS_CHANGED, null, "handsfreeSpeed" to speed.name)
+                            scope.launch { settings.setHandsfreeSpeed(speed) }
                         },
                         scanPictures = ScanPictures.of(this),
                     ),

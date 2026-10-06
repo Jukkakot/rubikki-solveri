@@ -4,6 +4,8 @@ import fi.jukkakot.rubikkisolveri.ui.elapsedMillis
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -46,6 +48,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalHapticFeedback
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -80,7 +84,9 @@ import fi.jukkakot.rubikkisolveri.ui.lessons.StageGoalCube
 import fi.jukkakot.rubikkisolveri.ui.lessons.StageGoalPicture
 import fi.jukkakot.rubikkisolveri.ui.guide.GuideCube
 import fi.jukkakot.rubikkisolveri.ui.guide.MoveWordsText
+import fi.jukkakot.rubikkisolveri.ui.guide.HandsfreeSpeed
 import fi.jukkakot.rubikkisolveri.ui.guide.StepperState
+import fi.jukkakot.rubikkisolveri.ui.KeepScreenOn
 import fi.jukkakot.rubikkisolveri.ui.guide.rememberStepperState
 import fi.jukkakot.rubikkisolveri.ui.scan.CameraPermissionGate
 import fi.jukkakot.rubikkisolveri.ui.target.TargetPicture
@@ -186,8 +192,14 @@ fun SolveScreen(
     target: SolveTarget = SolveTarget.Solved,
     onChangeTarget: (() -> Unit)? = null,
     targetPlanner: TargetPlanner = BACKGROUND_TARGET_PLANNER,
+    handsfreeSpeed: HandsfreeSpeed = HandsfreeSpeed.NORMAL,
+    onHandsfreeSpeed: (HandsfreeSpeed) -> Unit = {},
 ) {
     var follow by rememberSaveable { mutableStateOf(false) }
+    // Handsfree is chosen each time: not saved, and leaving the screen ends it.
+    var handsfreeAsk by remember { mutableStateOf(false) }
+    var handsfree by remember { mutableStateOf(false) }
+    var speed by remember(handsfreeSpeed) { mutableStateOf(handsfreeSpeed) }
     var method by rememberSaveable { mutableStateOf(initialMethod) }
     val toSolved = target == SolveTarget.Solved
     val result by produceState<SolvePlan?>(null, cube, method, target) {
@@ -200,56 +212,122 @@ fun SolveScreen(
         target is SolveTarget.StageDone -> SolveMethod.LEARN
         else -> SolveMethod.FAST
     }
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(title ?: stringResource(Res.string.solve_title)) },
-                navigationIcon = { Box(Modifier.padding(horizontal = 8.dp)) { BackButton(onBack) } },
-                actions = {
-                    if ((result as? SolvePlan.Ready)?.moves?.isNotEmpty() == true) {
-                        RoundIconToggle(checked = follow, onCheckedChange = { follow = it }, modifier = Modifier.padding(horizontal = 8.dp)) {
-                            Icon(painterResource(Res.drawable.ic_camera), contentDescription = stringResource(Res.string.follow_camera))
-                        }
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            if (!cube.isSolved && !practice && toSolved) {
-                MethodChoice(method, onChoose = { method = it }, modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp))
-            }
-            if (onChangeTarget != null) {
-                TargetRow(cube, target, onChangeTarget, Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp))
-            }
-            Box(Modifier.fillMaxSize()) {
-                when (val r = result) {
-                    null -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator()
-                        Text(stringResource(Res.string.solve_working), modifier = Modifier.padding(16.dp))
-                    }
-                    is SolvePlan.Invalid -> Message(validityMessage(r.validity), stringResource(Res.string.solve_fix), onBack)
-                    is SolvePlan.Failed -> Message(stringResource(Res.string.solve_failed), stringResource(Res.string.solve_fix), onBack)
-                    is SolvePlan.Ready ->
-                        if (r.moves.isEmpty()) {
-                            val already = stringResource(if (toSolved) Res.string.solve_already else Res.string.target_already)
-                            if (onChangeTarget != null) {
-                                Message(already, stringResource(Res.string.target_pick_pattern), onChangeTarget, stringResource(Res.string.solve_home) to onHome)
-                            } else {
-                                Message(already, stringResource(Res.string.solve_home), onHome)
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(title ?: stringResource(Res.string.solve_title)) },
+                    navigationIcon = { Box(Modifier.padding(horizontal = 8.dp)) { BackButton(onBack) } },
+                    actions = {
+                        if ((result as? SolvePlan.Ready)?.moves?.isNotEmpty() == true) {
+                            RoundIconToggle(checked = follow, onCheckedChange = { follow = it }, modifier = Modifier.padding(horizontal = 8.dp)) {
+                                Icon(painterResource(Res.drawable.ic_camera), contentDescription = stringResource(Res.string.follow_camera))
                             }
-                        } else {
-                            val finished = finishedText ?: if (toSolved) null else stringResource(Res.string.target_reached)
-                            key(shownMethod, target) {
-                                Stepper(cube, r, showNotation, onHome, follow, { follow = false }, followPanel, finished, homeLabel) { moves, millis ->
-                                    onFinished(shownMethod, moves, millis)
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            Column(Modifier.fillMaxSize().padding(padding)) {
+                if (!cube.isSolved && !practice && toSolved) {
+                    MethodChoice(method, onChoose = { method = it }, modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp))
+                }
+                if (onChangeTarget != null) {
+                    TargetRow(cube, target, onChangeTarget, Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp))
+                }
+                Box(Modifier.fillMaxSize()) {
+                    when (val r = result) {
+                        null -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator()
+                            Text(stringResource(Res.string.solve_working), modifier = Modifier.padding(16.dp))
+                        }
+                        is SolvePlan.Invalid -> Message(validityMessage(r.validity), stringResource(Res.string.solve_fix), onBack)
+                        is SolvePlan.Failed -> Message(stringResource(Res.string.solve_failed), stringResource(Res.string.solve_fix), onBack)
+                        is SolvePlan.Ready ->
+                            if (r.moves.isEmpty()) {
+                                val already = stringResource(if (toSolved) Res.string.solve_already else Res.string.target_already)
+                                if (onChangeTarget != null) {
+                                    Message(already, stringResource(Res.string.target_pick_pattern), onChangeTarget, stringResource(Res.string.solve_home) to onHome)
+                                } else {
+                                    Message(already, stringResource(Res.string.solve_home), onHome)
+                                }
+                            } else {
+                                val finished = finishedText ?: if (toSolved) null else stringResource(Res.string.target_reached)
+                                key(shownMethod, target) {
+                                    Stepper(
+                                        cube, r, showNotation, onHome, follow, { follow = false }, followPanel, finished, homeLabel,
+                                        // Tap to confirm and handsfree: only the shortest solution (also to a target).
+                                        shortest = r.steps == null && !practice,
+                                        handsfree = if (handsfree) speed else null,
+                                        onHandsfree = { handsfreeAsk = true },
+                                        onHandsfreeEnd = { handsfree = false },
+                                    ) { moves, millis ->
+                                        onFinished(shownMethod, moves, millis)
+                                    }
                                 }
                             }
-                        }
+                    }
                 }
             }
         }
+        if (handsfree) {
+            KeepScreenOn()
+            // Any touch anywhere stops handsfree and does nothing else.
+            Box(
+                Modifier.fillMaxSize().testTag(HANDSFREE_STOP_TAG).pointerInput(Unit) {
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false).consume()
+                        handsfree = false
+                    }
+                },
+            )
+        }
     }
+    if (handsfreeAsk) {
+        HandsfreeDialog(
+            speed = speed,
+            onSpeed = { speed = it },
+            onGo = {
+                handsfreeAsk = false
+                onHandsfreeSpeed(speed)
+                handsfree = true
+            },
+            onCancel = { handsfreeAsk = false },
+        )
+    }
+}
+
+/** Test tag of the layer that stops handsfree on any touch. */
+const val HANDSFREE_STOP_TAG = "handsfree_stop"
+
+@Composable
+private fun HandsfreeDialog(speed: HandsfreeSpeed, onSpeed: (HandsfreeSpeed) -> Unit, onGo: () -> Unit, onCancel: () -> Unit) {
+    val labels = mapOf(
+        HandsfreeSpeed.SLOW to Res.string.handsfree_slow,
+        HandsfreeSpeed.NORMAL to Res.string.handsfree_normal,
+        HandsfreeSpeed.FAST to Res.string.handsfree_fast,
+    )
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(stringResource(Res.string.handsfree)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(Res.string.handsfree_text))
+                Text(stringResource(Res.string.handsfree_speed), style = MaterialTheme.typography.labelLarge)
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    HandsfreeSpeed.entries.forEachIndexed { i, s ->
+                        SegmentedButton(
+                            selected = s == speed,
+                            onClick = { onSpeed(s) },
+                            shape = SegmentedButtonDefaults.itemShape(i, HandsfreeSpeed.entries.size),
+                        ) { Text(stringResource(labels.getValue(s))) }
+                    }
+                }
+            }
+        },
+        confirmButton = { BigButton(onClick = onGo) { Text(stringResource(Res.string.handsfree_go)) } },
+        dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(Res.string.handsfree_cancel)) } },
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -300,11 +378,29 @@ private fun Stepper(
     followPanel: @Composable (state: StepperState) -> Unit,
     finishedText: String?,
     homeLabel: String?,
+    shortest: Boolean = false,
+    handsfree: HandsfreeSpeed? = null,
+    onHandsfree: () -> Unit = {},
+    onHandsfreeEnd: () -> Unit = {},
     onFinished: (moves: Int, durationMillis: Long) -> Unit,
 ) {
     val moves = plan.moves
     val haptics = LocalHapticFeedback.current
-    val state = rememberStepperState(start, moves, onDemoTick = { haptics.performHapticFeedback(HapticFeedbackType.SegmentTick) })
+    val running = handsfree != null && !follow
+    val state = rememberStepperState(
+        start, moves,
+        onDemoTick = { haptics.performHapticFeedback(HapticFeedbackType.SegmentTick) },
+        handsfree = handsfree?.takeIf { !follow },
+        onHandsfreeWarn = { haptics.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick) },
+        onHandsfreeAdvance = { haptics.performHapticFeedback(HapticFeedbackType.Confirm) },
+    )
+    val confirm = {
+        haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+        state.done()
+    }
+    // The tap hint stays until the first move of the solve is confirmed.
+    var confirmedOnce by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(state.index) { if (state.index > 0) confirmedOnce = true }
     val index = state.index
     val now = state.cubeAt(index)
     val startedAt = remember { elapsedMillis() }
@@ -314,6 +410,7 @@ private fun Stepper(
     val showGoal = stage != null && !state.isFinished && seenStages and (1 shl stage.ordinal) == 0
     var reported by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(state.isFinished) {
+        if (state.isFinished) onHandsfreeEnd()
         if (state.isFinished && !reported) {
             reported = true
             onFinished(moves.size, elapsedMillis() - startedAt)
@@ -353,7 +450,13 @@ private fun Stepper(
                     followPanel(state)
                 }
             } else {
-                GuideCube(state, mirror = true)
+                val tap = shortest && !state.isFinished
+                GuideCube(
+                    state,
+                    mirror = true,
+                    onTap = confirm.takeIf { tap },
+                    hint = stringResource(Res.string.solve_tap_hint).takeIf { tap && !running && !confirmedOnce },
+                )
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -372,19 +475,31 @@ private fun Stepper(
         } else {
             Text(finishedText ?: stringResource(Res.string.solve_finished), style = MaterialTheme.typography.headlineSmall)
         }
+        if (running && !state.isFinished) {
+            // Handsfree: the time left instead of the buttons (a touch anywhere stops it).
+            Column(Modifier.heightIn(min = 56.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                LinearProgressIndicator(
+                    progress = { state.handsfreeProgress },
+                    modifier = Modifier.fillMaxWidth().height(16.dp),
+                    gapSize = 0.dp,
+                    drawStopIndicator = {},
+                )
+                Text(stringResource(Res.string.handsfree_stop_hint), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            return@FitColumn
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             RoundIconButton(onClick = state::back, enabled = index > 0, size = 56.dp) {
                 Icon(painterResource(Res.drawable.ic_undo), contentDescription = stringResource(Res.string.solve_previous))
             }
             if (!state.isFinished) {
+                if (shortest && !follow) {
+                    RoundIconButton(onClick = onHandsfree, size = 56.dp) {
+                        Icon(painterResource(Res.drawable.ic_handsfree), contentDescription = stringResource(Res.string.handsfree))
+                    }
+                }
                 OutlinedButton(onClick = state::demo, modifier = Modifier.heightIn(min = 56.dp)) { Text(stringResource(Res.string.solve_show)) }
-                BigButton(
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                        state.done()
-                    },
-                    modifier = Modifier.weight(1f),
-                ) { Text(stringResource(Res.string.solve_done_move)) }
+                BigButton(onClick = confirm, modifier = Modifier.weight(1f)) { Text(stringResource(Res.string.solve_done_move)) }
             } else {
                 BigButton(onClick = onHome, modifier = Modifier.weight(1f)) { Text(homeLabel ?: stringResource(Res.string.solve_home)) }
             }

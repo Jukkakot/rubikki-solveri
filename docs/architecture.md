@@ -288,6 +288,14 @@ yellow cross, yellow edges, yellow corners into place, yellow corners turned.
   the holding view (top left/right, sides up/down, back by its top row, front clockwise), whole-cube
   turns by centres. Other texts use the same layer/direction words.
 - Haptics: `Confirm` on done, `SegmentTick` at the end of each demo.
+- Hands-free (shortest solution only, `Stepper(shortest = true)` in `SolveScreen`; not learn,
+  practice, scramble or camera follow): a tap on `GuideCube` (`onTap`) is done, with a hint chip
+  until the first confirm. The play button opens `HandsfreeDialog` (speed, "Valmis"); then
+  `StepperState.handsfreeStep` demos, waits `HandsfreeSpeed.waitMs` (warning tick before the end)
+  and confirms, without the 3 s demo repeat. A full-screen layer over the `Scaffold` stops it on
+  any touch; `KeepScreenOn` (platform seam: view flag / browser wake lock) holds while it runs.
+  Speed is a setting (DataStore / `StoredSettings`); handsfree itself is not saved. Why: the user
+  wanted to keep both hands on the cube; spoken commands were left out as fragile (2026-10-06).
 
 ## Camera follow — Implemented
 

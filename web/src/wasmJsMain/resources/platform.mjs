@@ -502,6 +502,29 @@ export function reducedMotion() {
   return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
 
+// A screen wake lock while wanted; the browser drops it when the page is hidden, so it is taken
+// again when the page shows.
+let wakeWanted = false;
+let wakeLock = null;
+
+async function takeWakeLock() {
+  try {
+    if (wakeWanted && !wakeLock && navigator.wakeLock && document.visibilityState === 'visible') {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+      if (!wakeWanted) { wakeLock.release(); wakeLock = null; }
+    }
+  } catch (e) { /* not allowed or not supported: silent */ }
+}
+
+document.addEventListener('visibilitychange', takeWakeLock);
+
+export function keepScreenOn(on) {
+  wakeWanted = on;
+  if (on) takeWakeLock();
+  else if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+
 export function vibrate(ms) {
   try {
     if (navigator.vibrate) navigator.vibrate(ms);
