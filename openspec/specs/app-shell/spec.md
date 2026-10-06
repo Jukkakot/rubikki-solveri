@@ -53,7 +53,9 @@ The app SHALL open on a home screen that shows the app name and the 3D cube, whi
 its own and can be turned by dragging. Scanning the cube SHALL be the one primary action, shown
 larger and more prominent than the rest. The other main features (enter colours by hand, learn,
 timer and statistics, free cube) SHALL be shown as equal secondary entries, each with an icon and
-a label. The whole screen SHALL fit a phone screen in portrait and in landscape without scrolling.
+a label; there SHALL be no separate entry for a second way of scanning. The whole screen SHALL fit
+a phone screen in portrait and in landscape without scrolling, also in the phone's browser, where
+the cube shrinks to the space left and never covers the texts.
 
 #### Scenario: App starts on home
 - **WHEN** the user opens the app
@@ -73,7 +75,7 @@ a label. The whole screen SHALL fit a phone screen in portrait and in landscape 
 
 #### Scenario: Open the scan
 - **WHEN** the user taps "scan the cube"
-- **THEN** the scan screen opens
+- **THEN** the video scan opens
 
 #### Scenario: Open lessons
 - **WHEN** the user taps "learn"
@@ -86,6 +88,10 @@ a label. The whole screen SHALL fit a phone screen in portrait and in landscape 
 #### Scenario: Open the free cube
 - **WHEN** the user taps "free cube"
 - **THEN** the free cube screen opens
+
+#### Scenario: Little room in the browser
+- **WHEN** the home screen is shown in a phone browser whose bars take much of the height
+- **THEN** the cube is drawn smaller in the space between the name and the tagline, and neither text is covered
 
 ### Requirement: Solve summary on the home screen
 When the user has timed solves, the home screen SHALL show one short line with the best time and
