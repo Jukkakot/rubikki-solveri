@@ -103,7 +103,9 @@ denied, the screen SHALL explain how to allow the camera in the browser's site s
 manual input instead. The torch button SHALL be shown only when the camera supports a torch. When
 the camera supports it, exposure and white balance SHALL be locked at the first capture as on the
 phone; when it does not, the scan SHALL work without the lock and the log SHALL say the lock is not
-supported. The camera picture SHALL be shown as sharp and as smooth as the camera delivers it (its
+supported. In the video scan the browser camera SHALL measure light and focus on the cube and be made
+darker when the stickers wash out, as on the phone, as far as the browser lets the page control the
+camera; what it does not allow SHALL be skipped without harm and named in the log. The camera picture SHALL be shown as sharp and as smooth as the camera delivers it (its
 own resolution, about the camera's frame rate), whatever size the colours are read at, with the
 scan's marks drawn on top in the right places.
 
@@ -118,6 +120,10 @@ scan's marks drawn on top in the right places.
 #### Scenario: Back camera with a torch
 - **WHEN** the phone has several back cameras and the browser opens one without a torch
 - **THEN** the scan switches to a back camera that has one, shows the torch button, and opens that camera directly next time
+
+#### Scenario: Torch-lit cube in the browser
+- **WHEN** the user scans in the phone's browser in a dark room with the torch on
+- **THEN** the stickers are not washed out once the scan has settled, as in the phone app
 
 #### Scenario: Camera denied
 - **WHEN** the user blocks the camera for the page
@@ -193,11 +199,18 @@ and its download button SHALL lead to the latest Android APK.
 ### Requirement: Speed in the browser
 In Chrome on the reference phone, the shortest solution SHALL appear within two seconds of
 opening the solution screen, and the beginner solution within one second. The one-time
-preparation of the solver after start SHALL NOT delay the home screen's first appearance.
+preparation of the solver after start SHALL NOT delay the home screen's first appearance. The
+video scan in the browser SHALL read about as many pictures a second as the phone app, with the
+camera picture and the marks staying smooth, by doing its reading away from the page's drawing;
+where that is not possible it SHALL work as before.
 
 #### Scenario: Solve in the browser
 - **WHEN** the user opens the solution of a scanned cube in the phone's browser after the app has been open a few seconds
 - **THEN** the first move is shown within two seconds
+
+#### Scenario: Video scan keeps up in the browser
+- **WHEN** the user turns the cube in front of the camera in the video scan in the phone's browser
+- **THEN** the picture stays smooth and the scan reads about as many pictures a second as the phone app, as the log shows
 
 ### Requirement: Recovering from lost graphics
 When the browser takes away the page's graphics (typically after the tab was in the background for
