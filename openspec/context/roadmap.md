@@ -67,9 +67,8 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
 - camera follow: notice when the cube is held differently, or keep helping in any orientation
   (after the user has tried camera follow; from `steady-cube`).
 
-- `web-solver-worker`: run the solver in a Web Worker (a second instance of the wasm module) if the
-  phone's browser is slow: warm-up over 4 s or a solve over 2 s measured with `?selftest`
-  (web-app design, Risks).
+- ~~`web-solver-worker`~~ dropped 2026-10-06: `?selftest` on the user's phone (Samsung Internet)
+  gave warmup 126–141 ms and solve 148–196 ms, far under the 4 s / 2 s limits.
 
 - `solve-to-target`: the user picks the end state to reach (e.g. a pattern or any chosen cube, not
   only solved) and the guide leads to exactly that state (user, 2026-10-05).
