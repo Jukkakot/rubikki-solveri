@@ -422,6 +422,11 @@ export function scanWorkerReady() {
   return !!(scan.worker && scan.ready);
 }
 
+/** Whether the worker is ready and has nothing to read: the next picture goes to it at once. */
+export function scanWorkerIdle() {
+  return scanWorkerReady() && !scan.busy && !scan.pending;
+}
+
 function workerQueue(msg) {
   if (!scan.worker) {
     if (msg.bitmap) msg.bitmap.close();

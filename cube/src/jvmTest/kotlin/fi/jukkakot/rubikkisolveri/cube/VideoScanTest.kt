@@ -11,11 +11,11 @@ import fi.jukkakot.rubikkisolveri.cube.scan.Pose
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.cube.scan.RotationSearch
 import fi.jukkakot.rubikkisolveri.cube.scan.Stall
-import fi.jukkakot.rubikkisolveri.cube.scan.Tilt
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -173,14 +173,46 @@ class VideoScanTest {
         assertEquals(truth[Face.U.ordinal * 9 + 6], s.found.single().names[0])
     }
 
+    /** A corner view of F (U above it) four times from [start]: F and U settle and a projection is built. */
+    private fun settleCorner(scan: VideoScan, start: Long): VideoScanState {
+        var s = VideoScanState.EMPTY
+        repeat(4) { s = scan.onFrame(listOf(reading(Face.F, centre = Point(100.0, 200.0)), reading(Face.U, centre = Point(100.0, 110.0))), start + it * 100L) }
+        return s
+    }
+
     @Test
-    fun onlyTheBottomMissingAsksToTiltItIntoView() {
-        val stickers = truth.toList().mapIndexed { i, c -> if (i / 9 == Face.D.ordinal) null else c }
-        assertEquals(Tilt.UP, VideoScan.hint(Pose(Face.F, Face.U), stickers, emptySet()))
-        // Held upside down (D on top), the bottom of the cube is on top of the picture.
-        assertEquals(Tilt.DOWN, VideoScan.hint(Pose(Face.F, Face.D), stickers, emptySet()))
-        assertNull(VideoScan.hint(Pose(Face.D, Face.F), stickers, emptySet()), "already in view")
-        assertNull(VideoScan.hint(Pose(Face.F, Face.U), truth.toList(), emptySet()), "nothing missing")
+    fun theProjectionIsHeldOverAFramelessGapAndAges() {
+        val scan = VideoScan()
+        val built = settleCorner(scan, 0)
+        val projection = assertNotNull(built.projection)
+        assertEquals(0, built.projectionAge)
+        val gap = scan.onFrame(emptyList(), 500)
+        assertEquals(projection, gap.projection, "held unchanged without faces")
+        assertEquals(200, gap.projectionAge)
+        assertNull(scan.onFrame(emptyList(), 300 + VideoScan.HOLD_MILLIS + 1).projection, "dropped after a while")
+    }
+
+    @Test
+    fun aHeldProjectionMovesOntoTheFaceFound() {
+        val scan = VideoScan()
+        val projection = assertNotNull(settleCorner(scan, 0).projection)
+        // L seen alone, its rotation not settled: no orientation, the held projection follows L.
+        val l = reading(Face.L, centre = Point(40.0, 300.0))
+        val s = scan.onFrame(listOf(l), 400)
+        assertNull(s.orientation)
+        val moved = assertNotNull(s.projection)
+        val lCentre = moved.points[Face.L.ordinal * 9 + 4]
+        assertTrue((lCentre - l.centre).length < 1e-6, "L's centre lies on the face found: $lCentre")
+        assertEquals(projection.facing, moved.facing)
+        assertEquals(0, s.projectionAge)
+    }
+
+    @Test
+    fun resetClearsTheHeldProjection() {
+        val scan = VideoScan()
+        settleCorner(scan, 0)
+        scan.reset()
+        assertNull(scan.onFrame(emptyList(), 500).projection)
     }
 
     /** Places of [face] known in [state], the centre left out (it is known as soon as the face is seen). */

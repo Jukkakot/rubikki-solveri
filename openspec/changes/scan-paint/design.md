@@ -104,3 +104,18 @@ reports it (`finder` ms) together with `fps`.
 ## Open Questions
 
 - The tile size (62 %) and the smoothing constant (60 ms) need tuning on the phone.
+
+## Implementation notes (2026-10-06)
+
+- **Snapping by distance:** a tile snaps when it would move more than 1.5 sticker steps, rather
+  than when the front face changes. This covers a pose change and a found face's reading order
+  turning, both of which move a tile by at least a step.
+- **Glide only while moving:** the glide runs for a few frames after each picture and then rests.
+  A loop running at every display frame would keep Compose busy forever, and the screen tests could
+  never go idle.
+- **Tests on functions, not pixels:** the paint geometry (`ScanPaint.of`), the glide and the fade
+  are tested as plain functions, because the canvas cannot be inspected. The ring is checked through
+  its description (stickers known) and the "Valmis!" line at the end.
+- **The browser's worker** gets a picture whenever it is idle (`scanWorkerIdle` in `platform.mjs`),
+  not only when it is ready. A busy worker no longer makes the page draw ImageBitmaps that would
+  only replace each other.

@@ -30,6 +30,8 @@ import org.robolectric.RobolectricTestRunner
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import androidx.compose.ui.test.assertIsDisplayed
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /** The video scan screen fed with faces as the finder would report them (no camera). */
@@ -68,6 +70,34 @@ class VideoScanScreenTest {
         }
     }
 
+    /** Whether the menu's colour check can be used now (the menu is closed again through "by hand", a no-op here). */
+    private fun checkEnabled(): Boolean {
+        compose.onNodeWithContentDescription("Valikko").performClick()
+        val enabled = compose.onNodeWithText("Korjaa värit").fetchSemanticsNode().config.contains(androidx.compose.ui.semantics.SemanticsProperties.Disabled).not()
+        compose.onNodeWithText("Syötä käsin").performClick()
+        compose.waitForIdle()
+        return enabled
+    }
+
+    @Test
+    fun nothingBelowThePictureAndOneStatusLine() {
+        scan()
+        compose.onNodeWithText("Syötä käsin").assertDoesNotExist()
+        compose.onNodeWithText("Korjaa värit").assertDoesNotExist()
+        compose.onNodeWithText("Näytä kuutio kameralle").assertIsDisplayed()
+        show(face(Face.U), times = 9)
+        compose.onNodeWithText("Näytä harmaat kohdat").assertIsDisplayed()
+    }
+
+    @Test
+    fun theRingIsFullWhenTheScanFinishes() {
+        scan()
+        for (f in Face.entries) show(face(f), times = 10)
+        show(times = 6)
+        assertNotNull(outcome)
+        compose.onNodeWithText("Valmis!").assertIsDisplayed()
+    }
+
     @Test
     fun switchesToOneFaceAtATime() {
         var switched = false
@@ -76,6 +106,7 @@ class VideoScanScreenTest {
                 VideoScanContent(found, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {}, onSwitch = { switched = true }, preview = {})
             }
         }
+        compose.onNodeWithContentDescription("Valikko").performClick()
         compose.onNodeWithText("Kuva kerrallaan").performClick()
         assertTrue(switched)
     }
@@ -83,16 +114,16 @@ class VideoScanScreenTest {
     @Test
     fun stickersFillInAndTheCameraMetersOnTheFaceThenLocks() {
         scan()
-        compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()
-        compose.onNodeWithText("Korjaa värit").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("0/54 tarraa tunnistettu").assertExists()
+        assertFalse(checkEnabled())
         // The first face: the camera meters and focuses at it, and its frames are not read while it adjusts.
         show(face(Face.U), times = 6)
         assertEquals(listOf(CameraSettings(meter = Point(0.5, 0.5), focus = Point(0.5, 0.5))), settings)
-        compose.onNodeWithText("Korjaa värit").assertIsNotEnabled()
+        assertFalse(checkEnabled())
         show(face(Face.U), times = 3)
-        // The face in view, read three times: its stickers are known, but no tick until the rest of the cube confirms it.
-        compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()
-        compose.onNodeWithText("Korjaa värit").assertIsEnabled()
+        // The face in view, read three times: its stickers are known.
+        compose.onNodeWithContentDescription("9/54 tarraa tunnistettu").assertExists()
+        assertTrue(checkEnabled())
         assertEquals(CameraSettings(meter = Point(0.5, 0.5), focus = Point(0.5, 0.5), lock = true), settings.last())
     }
 
@@ -102,8 +133,9 @@ class VideoScanScreenTest {
         // A face with a sticker hidden, then the face in full: the full one starts it, both are drawn.
         val partial = face(Face.U).let { it.copy(colors = it.colors.toMutableList().also { c -> c[1] = null }) }
         show(face(Face.U), partial, face(Face.U).copy(centre = Point(180.0, 120.0)), times = 7)
-        compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()
-        compose.onNodeWithText("Korjaa värit").assertIsEnabled()
+        compose.onNodeWithContentDescription("0/54 tarraa tunnistettu").assertDoesNotExist()
+        compose.onNodeWithContentDescription("/54 tarraa tunnistettu", substring = true).assertExists()
+        assertTrue(checkEnabled())
     }
 
     @Test
@@ -120,6 +152,7 @@ class VideoScanScreenTest {
     fun stopEarlyOpensTheCheckWithTheMissingMarked() {
         scan()
         show(face(Face.U), times = 9)
+        compose.onNodeWithContentDescription("Valikko").performClick()
         compose.onNodeWithText("Korjaa värit").performClick()
         val result = assertNotNull(outcome)
         val missing = (0 until Stickers.COUNT).filter { it / 9 != Face.U.ordinal && it % 9 != 4 }
@@ -139,8 +172,8 @@ class VideoScanScreenTest {
         compose.onNodeWithText("Aloita alusta").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Aloita alusta").assertDoesNotExist()
-        compose.onNodeWithContentDescription("Valmiit sivut: 0/6").assertExists()
-        compose.onNodeWithText("Korjaa värit").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("0/54 tarraa tunnistettu").assertExists()
+        assertFalse(checkEnabled())
         assertNull(outcome)
     }
 

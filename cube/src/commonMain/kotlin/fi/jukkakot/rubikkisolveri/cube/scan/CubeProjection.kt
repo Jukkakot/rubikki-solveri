@@ -12,6 +12,9 @@ import fi.jukkakot.rubikkisolveri.cube.Vec3
  */
 data class CubeProjection(val points: List<Point>, val step: Double, val facing: Set<Face>) {
 
+    /** The same projection shifted by [d] pixels. */
+    fun movedBy(d: Point): CubeProjection = copy(points = points.map { it + d })
+
     companion object {
         /** A side faces the camera when its normal's share towards the viewer is at least this (about 70° off). */
         const val FACING = 0.3

@@ -56,7 +56,7 @@ const val PREVIEW_LONG_SIDE = 360
 /** The grid square's size for reading colours (the grid's cells ≈ 63 px, like the phone's analysis). */
 const val ANALYSIS_SIZE = 264
 
-/** Frames are read at most this often (about 15 a second). */
+/** Grid readings, and the video scan's pictures on the page when there is no worker, at most this often (about 15 a second). */
 private const val FRAME_MILLIS = 66L
 
 /** The video scan's pictures at most this often (about fifteen a second). */
@@ -223,10 +223,16 @@ private fun WebCameraPreview(args: CameraArgs) {
         var logged = false
         while (true) {
             val now = withFrameMillis { elapsedMillis() }
-            if (now - lastRead < FRAME_MILLIS) continue
             val vw = cameraVideoWidth()
             val vh = cameraVideoHeight()
             if (vw == 0 || vh == 0) continue
+            // The video scan's worker gets the newest picture whenever it is free (at most every
+            // animation frame); the grid readings and the page's own fallback stay at FRAME_MILLIS.
+            if (current.onImage != null && worker != false && scanWorkerIdle()) {
+                val c = coverCrop(vw, vh, box.width, box.height)
+                scanWorkerSend(c.x, c.y, c.width, c.height, PREVIEW_LONG_SIDE)
+            }
+            if (now - lastRead < FRAME_MILLIS) continue
             if (!logged) {
                 logged = true
                 AppLog.info(Evt.SCAN_CAMERA, null, "camera" to cameraInfo().ifEmpty { null }, "size" to "${vw}x$vh", "abilities" to cameraAbilities())
@@ -243,13 +249,9 @@ private fun WebCameraPreview(args: CameraArgs) {
                 // The picture first, so it belongs to the same frame as the readings.
                 current.onPicture?.invoke(FrameSampler.picture(frame))
                 current.onSamples(FrameSampler.sample(frame))
-                // The video scan looks for faces in the scaled copy of the visible part, upright: in
-                // the worker once it runs, else on the page.
+                // Without the worker the video scan looks for faces on the page (the worker takes its pictures above).
                 current.onImage?.let { onImage ->
-                    if (now - lastImage >= IMAGE_MILLIS && worker != false && scanWorkerReady()) {
-                        lastImage = now
-                        scanWorkerSend(crop.x, crop.y, crop.width, crop.height, PREVIEW_LONG_SIDE)
-                    } else if (now - lastImage >= IMAGE_MILLIS) {
+                    if (!(worker != false && scanWorkerReady()) && now - lastImage >= IMAGE_MILLIS) {
                         lastImage = now
                         val preview = cameraPreviewData().toByteArray()
                         val pw = cameraPreviewWidth()

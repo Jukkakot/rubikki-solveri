@@ -15,23 +15,6 @@ data class Pose(val front: Face, val up: Face) {
     val right: Face get() = faceWithNormal(up.normal cross front.normal)
 }
 
-/** A quarter tilt of the whole cube, named by the way its front face moves (UP brings the bottom into view). */
-enum class Tilt {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
-    ;
-
-    /** The face that comes to the front when the cube held as [pose] is tilted this way. */
-    fun newFront(pose: Pose): Face = when (this) {
-        UP -> pose.up.opposite
-        DOWN -> pose.up
-        LEFT -> pose.right
-        RIGHT -> pose.right.opposite
-    }
-}
-
 /**
  * A face found in a frame as the scan took it: per sticker (reading order) the colour [names] it was
  * read as in this frame (null where none was found, or for a face the scan could not use) and
@@ -46,13 +29,14 @@ data class FoundFace(val reading: FaceReading, val names: List<CubeColor?>, val 
  * sticker not yet known (null for the known ones and those without readings), [contradictions] the
  * unknown stickers whose readings disagree, [found] the faces in this frame, [pose] how the cube was
  * last seen held, [orientation] how it is turned in this frame (null when no face with a settled
- * rotation is in view), [hint] the tilt that brings most missing stickers into view (only while a
- * face is in view and its pose is known), [newStickers] how many stickers became known with this
+ * rotation is in view),
+ * [newStickers] how many stickers became known with this
  * frame. [complete]: the best cube is clear; [finished]: complete for [VideoScan.FINISH_MILLIS].
  * [clearness] is the best cube's smallest supported margin, [brightness] the median sticker
  * brightness of the faces in this frame (null without one), [dim] whether that is too dark, [stall]
- * why the scan cannot get on, if it cannot. [projection] is where every sticker lies in this frame
- * (null without [orientation]). [confirmed] are the sides whose nine stickers the best cube makes
+ * why the scan cannot get on, if it cannot. [projection] is where every sticker lies: built in a
+ * frame with [orientation], held over frames without one (moved onto the largest face found, if any)
+ * for at most [VideoScan.HOLD_MILLIS]; [projectionAge] is how long ago it was built or moved. [confirmed] are the sides whose nine stickers the best cube makes
  * clear (not their own votes alone): the sides that get a tick.
  */
 data class VideoScanState(
@@ -60,7 +44,6 @@ data class VideoScanState(
     val contradictions: Set<Int>,
     val found: List<FoundFace>,
     val pose: Pose?,
-    val hint: Tilt?,
     val newStickers: Int,
     val complete: Boolean,
     val finished: Boolean,
@@ -72,11 +55,12 @@ data class VideoScanState(
     val stall: Stall? = null,
     val projection: CubeProjection? = null,
     val confirmed: Set<Face> = emptySet(),
+    val projectionAge: Long = 0,
 ) {
     val recognised: Int get() = stickers.count { it != null }
 
     companion object {
-        val EMPTY = VideoScanState(List(Stickers.COUNT) { null }, emptySet(), emptyList(), null, null, 0, false, false)
+        val EMPTY = VideoScanState(List(Stickers.COUNT) { null }, emptySet(), emptyList(), null, 0, false, false)
     }
 }
 
@@ -146,6 +130,9 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     private var best: BestCube? = null
     private var lastPose: Pose? = null
     private var lastOrientation: Orientation? = null
+    private var held: CubeProjection? = null
+    private var heldBuiltAt = 0L
+    private var heldMovedAt = 0L
     private var lastRecognised = 0
     private var completeSince: Long? = null
     private var startedAt: Long? = null
@@ -216,8 +203,9 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val pose = main?.let { poseOf(it) }
         if (pose != null) lastPose = pose
         val orientation = main?.let { orientationOf(it, usable) }
-        val projection = if (main != null && orientation != null) projectionOf(main, orientation) else null
+        val built = if (main != null && orientation != null) projectionOf(main, orientation) else null
         if (orientation != null) lastOrientation = orientation
+        val projection = holdProjection(built, usable, nowMillis)
         val recognised = net.count { it != null }
         val leading = netOf { it.leading }.mapIndexed { i, c -> if (net[i] == null) c else null }
         val brightness = brightness(faces)
@@ -231,7 +219,6 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             contradictions = contradictions,
             found = faces.mapIndexed { i, face -> foundFace(face, fresh[i], net) },
             pose = lastPose,
-            hint = pose?.let { hint(it, net, contradictions) },
             newStickers = (recognised - lastRecognised).coerceAtLeast(0),
             complete = complete,
             finished = complete && nowMillis - completeSince!! >= FINISH_MILLIS,
@@ -239,9 +226,35 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             brightness = brightness,
             dim = dim,
             stall = stall(nowMillis, faces.isNotEmpty(), brightness, dim, recognised, complete),
+            projectionAge = if (projection == null) 0 else nowMillis - heldMovedAt,
         )
         lastRecognised = recognised
         return state
+    }
+
+    /**
+     * The projection to draw at [now]: a freshly [built] one, else the last one held. In a frame with
+     * faces but no settled orientation the held one is moved (not turned) so that the side of the
+     * largest face found lies on that face; it is dropped [HOLD_MILLIS] after it was built.
+     */
+    private fun holdProjection(built: CubeProjection?, usable: List<Reading>, now: Long): CubeProjection? {
+        if (built != null) {
+            held = built
+            heldBuiltAt = now
+            heldMovedAt = now
+            return built
+        }
+        val last = held ?: return null
+        if (now - heldBuiltAt > HOLD_MILLIS) {
+            held = null
+            return null
+        }
+        val anchor = usable.filter { !it.removed }.maxByOrNull { it.area } ?: return last
+        val side = scheme.faceOf(anchor.group.color)
+        val moved = last.movedBy(anchor.face.centre - last.points[side.ordinal * 9 + CENTRE])
+        held = moved
+        heldMovedAt = now
+        return moved
     }
 
     /**
@@ -280,6 +293,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         best = null
         lastPose = null
         lastOrientation = null
+        held = null
         lastRecognised = 0
         completeSince = null
         startedAt = null
@@ -573,6 +587,9 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         /** Most readings kept per face. */
         const val MAX_READINGS = 40
 
+        /** A projection is held at most this long after it was built from a settled face. */
+        const val HOLD_MILLIS = 1_500L
+
         /** How long the whole cube must stay recognised before the scan finishes. */
         const val FINISH_MILLIS = 500L
 
@@ -639,20 +656,6 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** The face across side [side] of [face] in the net. */
         fun neighbourAt(face: Face, side: Int): Face = faceWithNormal(sideVector(face, side))
-
-        /**
-         * The tilt that brings the most missing stickers into view from [pose]: the new front face's
-         * missing stickers, a quarter for each missing sticker on the faces around it (seen at an
-         * angle). Null when nothing is missing or staying put shows as many.
-         */
-        fun hint(pose: Pose, stickers: List<CubeColor?>, contradictions: Set<Int>): Tilt? {
-            fun missing(face: Face) = (0 until 9).count { n -> (face.ordinal * 9 + n).let { stickers[it] == null || it in contradictions } }
-            fun score(front: Face) = missing(front) + 0.25 * (0 until 4).sumOf { missing(neighbourAt(front, it)) }
-            if (Face.entries.none { missing(it) > 0 }) return null
-            val stay = score(pose.front)
-            val best = Tilt.entries.maxBy { score(it.newFront(pose)) }
-            return best.takeIf { score(it.newFront(pose)) > stay }
-        }
     }
 }
 

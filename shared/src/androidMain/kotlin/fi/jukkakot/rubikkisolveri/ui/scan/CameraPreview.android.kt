@@ -42,9 +42,6 @@ import fi.jukkakot.rubikkisolveri.log.Evt
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
 
-/** The video scan's pictures at most this often (about fifteen a second). */
-private const val IMAGE_MILLIS = 66L
-
 /** Camera frames this far apart are a stall worth logging. */
 private const val CAMERA_STALL_MILLIS = 300L
 
@@ -189,7 +186,6 @@ actual fun CameraPreview(
     DisposableEffect(controller) {
         var buffer = ByteArray(0)
         var lastFrame = 0L
-        var lastImage = 0L
         controller.setImageAnalysisAnalyzer(executor) { image: ImageProxy ->
             try {
                 val now = System.nanoTime() / 1_000_000
@@ -216,8 +212,8 @@ actual fun CameraPreview(
                 // The picture first, so it belongs to the same frame as the readings.
                 onPicture?.invoke(FrameSampler.picture(frame))
                 onSamples(FrameSampler.sample(frame))
-                if (onImage != null && now - lastImage >= IMAGE_MILLIS) {
-                    lastImage = now
+                // Every camera picture goes to the video scan; its finder keeps only the newest it can take.
+                if (onImage != null) {
                     onImage(FrameSampler.upright(frame))
                 }
             } catch (e: Exception) {

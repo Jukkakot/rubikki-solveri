@@ -1,6 +1,15 @@
 package fi.jukkakot.rubikkisolveri.ui.scan
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import fi.jukkakot.rubikkisolveri.cube.Stickers
+import fi.jukkakot.rubikkisolveri.ui.common.RoundIconButton
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -63,7 +72,6 @@ import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.cube.scan.Stall
-import fi.jukkakot.rubikkisolveri.cube.scan.Tilt
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
 import fi.jukkakot.rubikkisolveri.log.AppLog
@@ -146,17 +154,18 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
 
 /**
  * The video scan without the camera: [found] are the faces of each picture, [preview] draws the
- * camera. The progress is drawn on the real cube in the picture ([CubeMarks]): a solid dot per known
- * sticker, an empty ring per sticker still needed, a tick on each side done; a large arrow beside the
- * cube shows which way to turn it, and a row of the six side colours under the picture tells which
- * sides are done. When the scan cannot get on, a notice at the bottom of the picture describes why
- * and offers to start again (the camera keeps running), to fix the colours by hand and the torch;
- * scanning goes on underneath, and a tap on the picture outside it closes it for that reason (until
- * a restart). The camera is set through [onExposure] by [ExposureControl]: metered and focused on the
- * cube once a face is found, made darker (up to [maxDarker] steps) while the stickers wash out, then
- * locked; the torch turned on or off meters again. Frames are not read while the camera adjusts.
- * Clear for half a second → [onResult]; "fix colours" hands over what is known. [clock] is the time in
- * milliseconds (tests pass their own).
+ * camera, which fills the screen. The progress is painted on the real cube in the picture
+ * ([PaintLayer]): a tile per sticker, solid in its colour when known, grey while still needed, a
+ * white outline around a side the rest of the cube confirms; the grey parts tell what to show next.
+ * On the picture: back, a ring filling with the stickers known, the torch and a menu (one picture at
+ * a time, by hand, the colour check with what is known), and one status line at the bottom. When the
+ * scan cannot get on, a notice there describes why and offers to start again (the camera keeps
+ * running), to fix the colours by hand and the torch; scanning goes on underneath, and a tap on the
+ * picture outside it closes it for that reason (until a restart). The camera is set through
+ * [onExposure] by [ExposureControl]: metered and focused on the cube once a face is found, made
+ * darker (up to [maxDarker] steps) while the stickers wash out, then locked; the torch turned on or
+ * off meters again. Frames are not read while the camera adjusts. Clear for half a second →
+ * [onResult]. [clock] is the time in milliseconds (tests pass their own).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -242,78 +251,64 @@ fun VideoScanContent(
         dismissed = emptySet()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(Res.string.video_title)) },
-                navigationIcon = { Box(Modifier.padding(horizontal = 8.dp)) { BackButton(onBack) } },
-                actions = {
-                    if (onSwitch != null) {
-                        TextButton(onClick = onSwitch) { Text(stringResource(Res.string.scan_switch_photo), maxLines = 1) }
-                    }
-                    if (torchAvailable) {
-                        RoundIconToggle(checked = torch, onCheckedChange = onTorch, modifier = Modifier.padding(horizontal = 8.dp)) {
-                            Icon(painterResource(Res.drawable.ic_torch), contentDescription = stringResource(Res.string.scan_torch))
-                        }
-                    }
-                },
+    val share by animateFloatAsState(if (done || state.complete) 1f else state.recognised / Stickers.COUNT.toFloat(), tween(250))
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
+        if (cameraFailed) {
+            Text(stringResource(Res.string.scan_camera_error), color = Color.White, modifier = Modifier.align(Alignment.Center))
+        } else {
+            preview(Modifier.fillMaxSize())
+        }
+        picture?.let { p -> PaintLayer(state, p.width, p.height, Modifier.fillMaxSize()) }
+        val stall = state.stall?.takeIf { it !in dismissed }
+        if (stall != null) {
+            // A tap on the picture outside the notice closes it; that reason does not come back.
+            val close = stringResource(Res.string.video_notice_close)
+            Box(
+                Modifier.fillMaxSize()
+                    .semantics { contentDescription = close }
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                        log.dismiss(stall)
+                        dismissed = dismissed + stall
+                    },
             )
-        },
-        bottomBar = {
-            Row(
-                Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OutlinedButton(onClick = onManual, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) { Text(stringResource(Res.string.scan_manual_short)) }
-                Button(
-                    onClick = { finish(scan.outcome()) },
-                    enabled = state.recognised > 0,
-                    modifier = Modifier.weight(1f).heightIn(min = 56.dp),
-                ) { Text(stringResource(Res.string.video_check)) }
-            }
-        },
-    ) { padding ->
-        FitColumn(
-            Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+        }
+        // Back, torch and menu on the picture; the progress ring between them.
+        Row(
+            Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Box(Modifier.fitSlot().fillMaxWidth().clip(MaterialTheme.shapes.extraLarge).background(Color.Black)) {
-                if (cameraFailed) {
-                    Text(stringResource(Res.string.scan_camera_error), color = Color.White, modifier = Modifier.align(Alignment.Center))
-                } else {
-                    preview(Modifier.fillMaxSize())
-                }
-                picture?.let { p ->
-                    CubeMarks(state, p.width, p.height, Modifier.fillMaxSize())
-                    TurnArrow(state, p.width, p.height, Modifier.fillMaxSize())
-                }
-                val stall = state.stall?.takeIf { it !in dismissed }
-                if (state.dim && stall == null) DimNotice(Modifier.align(Alignment.TopStart).padding(10.dp))
-                if (stall != null) {
-                    // A tap on the picture outside the notice closes it; that reason does not come back.
-                    val close = stringResource(Res.string.video_notice_close)
-                    Box(
-                        Modifier.fillMaxSize()
-                            .semantics { contentDescription = close }
-                            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
-                                log.dismiss(stall)
-                                dismissed = dismissed + stall
-                            },
-                    )
-                    StallNotice(
-                        stall,
-                        torch = torch.takeIf { torchAvailable && stall != Stall.NO_CUBE },
-                        onTorch = onTorch,
-                        onRestart = ::restart,
-                        onFix = { finish(scan.outcome()) },
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                    )
+            BackButton(onBack)
+            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { ProgressRing(share, state.recognised) }
+            if (torchAvailable) {
+                RoundIconToggle(checked = torch, onCheckedChange = onTorch) {
+                    Icon(painterResource(Res.drawable.ic_torch), contentDescription = stringResource(Res.string.scan_torch))
                 }
             }
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(statusText(state), style = MaterialTheme.typography.titleSmall)
-                DoneSides(VideoScanLog.doneSides(state))
-            }
+            ScanMenu(
+                onSwitch = onSwitch,
+                onManual = onManual,
+                onCheck = { finish(scan.outcome()) }.takeIf { state.recognised > 0 },
+            )
+        }
+        if (state.dim && stall == null) DimNotice(Modifier.align(Alignment.TopStart).statusBarsPadding().padding(start = 12.dp, top = 72.dp))
+        val bottom = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
+        if (stall != null) {
+            StallNotice(
+                stall,
+                torch = torch.takeIf { torchAvailable && stall != Stall.NO_CUBE },
+                onTorch = onTorch,
+                onRestart = ::restart,
+                onFix = { finish(scan.outcome()) },
+                modifier = bottom,
+            )
+        } else {
+            Text(
+                statusText(state),
+                color = Color.White,
+                style = MaterialTheme.typography.titleSmall,
+                modifier = bottom.padding(16.dp).background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(50)).padding(horizontal = 16.dp, vertical = 8.dp),
+            )
         }
     }
 }
@@ -372,167 +367,113 @@ private class ScanLogger {
     private fun event(kind: String, vararg fields: Pair<String, Any?>) = AppLog.info(Evt.SCAN_VIDEO, null, "kind" to kind, *fields)
 }
 
+/** The one status line: show the cube, show the grey parts, or ready. */
 @Composable
-private fun statusText(state: VideoScanState): String {
-    val hint = state.hint
-    return stringResource(
-        when {
-            state.complete -> Res.string.video_status_done
-            hint != null -> when (hint) {
-                Tilt.UP -> Res.string.video_hint_up
-                Tilt.DOWN -> Res.string.video_hint_down
-                Tilt.LEFT -> Res.string.video_hint_left
-                Tilt.RIGHT -> Res.string.video_hint_right
-            }
-            state.found.isEmpty() -> Res.string.video_status_find
-            else -> Res.string.video_status_keep
-        },
-    )
-}
+private fun statusText(state: VideoScanState): String = stringResource(
+    when {
+        state.complete -> Res.string.video_status_done
+        state.found.isEmpty() -> Res.string.video_status_find
+        else -> Res.string.video_status_grey
+    },
+)
 
 /**
- * The progress on the real cube in the latest picture of [width]×[height] pixels (the picture fills
- * the box). With the cube's pose known, every sticker of the sides facing the camera is marked where
- * it lies: a solid dot in its colour when known, an empty ring when still needed. The faces found in
- * the picture win over the projection there: each sticker is marked in the colour it was read as,
- * solid once known. A side done gets a tick at its centre.
+ * The paint on the real cube in the latest picture of [width]×[height] pixels (the picture fills the
+ * box): a tile per sticker, solid in its colour when known, grey and dashed while needed, a white
+ * outline around a confirmed side ([ScanPaint]). The tiles glide towards their places at the
+ * display's rate ([Glide]); the projection's paint fades when it grows old ([paintAlpha]).
  */
 @Composable
-private fun CubeMarks(state: VideoScanState, width: Int, height: Int, modifier: Modifier) {
-    val done = VideoScanLog.doneSides(state)
+private fun PaintLayer(state: VideoScanState, width: Int, height: Int, modifier: Modifier) {
+    val paint = remember(state) { ScanPaint.of(state) }
+    val glide = remember { Glide() }
+    var drawn by remember { mutableStateOf<Map<Int, Point>>(emptyMap()) }
+    // Glides for a few frames after each new picture, then rests until the next one.
+    LaunchedEffect(paint) {
+        val targets = paint.tiles.associate { it.key to it.centre }
+        val snaps = paint.tiles.associate { it.key to SNAP_STEPS * maxOf(it.u.length, it.v.length) }
+        var last: Long? = null
+        while (true) {
+            val t = withFrameNanos { it }
+            val dt = last?.let { (t - it) / 1_000_000f } ?: FRAME_MILLIS
+            last = t
+            drawn = glide.step(targets, dt) { snaps[it] ?: 0.0 }
+            if (drawn.all { (key, at) -> (targets.getValue(key) - at).length < REST_PIXELS }) break
+        }
+    }
+    val alpha = paintAlpha(state.projectionAge)
     Canvas(modifier) {
         val sx = size.width / width
         val sy = size.height / height
         fun at(p: Point) = Offset((p.x * sx).toFloat(), (p.y * sy).toFloat())
-        val foundSides = HashSet<Int>()
-        val ticks = ArrayList<Pair<Offset, Float>>()
-        for (face in state.found) {
-            val reading = face.reading
-            val step = minOf(reading.u.length * sx, reading.v.length * sy).toFloat()
-            for (n in 0 until 9) {
-                val name = face.names[n] ?: continue
-                mark(at(reading.centre + reading.u * (n % 3 - 1.0) + reading.v * (n / 3 - 1.0)), step, StickerColors.of(name), face.recognised[n])
-            }
-            // The side this face is, once its centre is named: the centre's colour tells it.
-            val side = face.names[4]?.let { c -> Face.entries.firstOrNull { ColorScheme.STANDARD[it] == c } }
-            if (side != null) {
-                foundSides += side.ordinal
-                if (side in done) ticks += at(reading.centre) to step
-            }
-        }
-        state.projection?.let { projection ->
-            for (side in projection.facing) {
-                if (side.ordinal in foundSides) continue
-                // A side seen at an angle is narrower: its marks follow its own sticker spacing.
-                val p = { n: Int -> at(projection.points[side.ordinal * 9 + n]) }
-                val step = minOf((p(1) - p(0)).getDistance(), (p(3) - p(0)).getDistance())
-                for (n in 0 until 9) {
-                    val i = side.ordinal * 9 + n
-                    val color = state.stickers[i]
-                    mark(at(projection.points[i]), step, color?.let(StickerColors::of) ?: NEEDED, color != null)
+        val dash = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))
+        for (tile in paint.tiles) {
+            val centre = drawn[tile.key] ?: tile.centre
+            // Projection tiles fade with the projection's age; a face found in this frame is current.
+            val a = if (tile.key < Stickers.COUNT) alpha else 1f
+            if (a <= 0f) continue
+            val h = TILE_SHARE / 2
+            val path = Path().apply {
+                listOf(-h to -h, h to -h, h to h, -h to h).forEachIndexed { i, (du, dv) ->
+                    val c = at(centre + tile.u * du.toDouble() + tile.v * dv.toDouble())
+                    if (i == 0) moveTo(c.x, c.y) else lineTo(c.x, c.y)
                 }
-                if (side in done) ticks += at(projection.points[side.ordinal * 9 + 4]) to step
+                close()
+            }
+            val color = tile.color
+            if (color != null) {
+                drawPath(path, StickerColors.of(color).copy(alpha = a))
+                drawPath(path, StickerColors.PLASTIC.copy(alpha = a), style = Stroke(1.5.dp.toPx(), join = StrokeJoin.Round))
+            } else {
+                drawPath(path, NEEDED.copy(alpha = 0.35f * a))
+                drawPath(path, Color.White.copy(alpha = 0.85f * a), style = Stroke(1.5.dp.toPx(), pathEffect = dash, join = StrokeJoin.Round))
             }
         }
-        for ((centre, step) in ticks) tick(centre, step * TICK_SHARE)
+        for (outline in paint.outlines) {
+            val path = Path().apply {
+                outline.forEachIndexed { i, p -> at(p).let { if (i == 0) moveTo(it.x, it.y) else lineTo(it.x, it.y) } }
+                close()
+            }
+            drawPath(path, StickerColors.PLASTIC.copy(alpha = 0.6f * alpha), style = Stroke(6.dp.toPx(), join = StrokeJoin.Round))
+            drawPath(path, Color.White.copy(alpha = alpha), style = Stroke(3.dp.toPx(), join = StrokeJoin.Round))
+        }
     }
 }
 
-/** A sticker's mark: a solid dot in [color] when [solid], else an empty ring; smaller than the sticker. */
-private fun DrawScope.mark(centre: Offset, step: Float, color: Color, solid: Boolean) {
-    val radius = step * DOT_SHARE / 2
-    if (solid) {
-        drawCircle(color, radius, centre)
-        drawCircle(StickerColors.PLASTIC, radius, centre, style = Stroke(maxOf(1f, radius * 0.18f)))
-    } else {
-        drawCircle(StickerColors.PLASTIC.copy(alpha = 0.6f), radius, centre, style = Stroke(maxOf(2f, radius * 0.5f)))
-        drawCircle(color, radius, centre, style = Stroke(maxOf(1.5f, radius * 0.28f)))
-    }
-}
-
-/** A white tick with a dark outline, [size] wide, centred on [centre]. */
-private fun DrawScope.tick(centre: Offset, size: Float) {
-    val path = Path().apply {
-        moveTo(centre.x - size * 0.45f, centre.y)
-        lineTo(centre.x - size * 0.12f, centre.y + size * 0.32f)
-        lineTo(centre.x + size * 0.45f, centre.y - size * 0.35f)
-    }
-    drawPath(path, StickerColors.PLASTIC, style = Stroke(size * 0.3f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-    drawPath(path, Color.White, style = Stroke(size * 0.16f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-}
-
-/**
- * The turning hint as a large arrow beside the real cube, on the side the cube should move towards
- * and pointing that way; it fades out while no face is found.
- */
+/** A small ring that fills with the share of stickers known (no number on screen). */
 @Composable
-private fun TurnArrow(state: VideoScanState, width: Int, height: Int, modifier: Modifier) {
-    var last by remember { mutableStateOf<Pair<Tilt, List<Point>>?>(null) }
-    val hint = state.hint
-    val outline = cubeOutline(state)
-    if (hint != null && outline.isNotEmpty()) last = hint to outline
-    val alpha by animateFloatAsState(if (hint != null && outline.isNotEmpty()) 1f else 0f)
-    val (tilt, points) = last ?: return
-    if (alpha == 0f) return
-    Canvas(modifier) {
-        val sx = size.width / width
-        val sy = size.height / height
-        val (dx, dy) = when (tilt) {
-            Tilt.UP -> 0f to -1f
-            Tilt.DOWN -> 0f to 1f
-            Tilt.LEFT -> -1f to 0f
-            Tilt.RIGHT -> 1f to 0f
-        }
-        val shown = points.map { Offset((it.x * sx).toFloat(), (it.y * sy).toFloat()) }
-        // The cube's middle across the arrow, and its edge in the arrow's direction.
-        val across = if (dx != 0f) shown.map { it.y } else shown.map { it.x }
-        val middle = (across.min() + across.max()) / 2
-        val edge = shown.maxOf { it.x * dx + it.y * dy }
-        val length = size.minDimension * 0.22f
-        val margin = 8.dp.toPx()
-        val along = edge + 12.dp.toPx() + length / 2
-        val mid = if (dx != 0f) {
-            Offset(
-                (along * dx).coerceIn(margin + length / 2, size.width - margin - length / 2),
-                middle.coerceIn(margin + length * 0.3f, size.height - margin - length * 0.3f),
-            )
-        } else {
-            Offset(
-                middle.coerceIn(margin + length * 0.3f, size.width - margin - length * 0.3f),
-                (along * dy).coerceIn(margin + length / 2, size.height - margin - length / 2),
-            )
-        }
-        arrow(mid, dx, dy, length, alpha)
+private fun ProgressRing(share: Float, known: Int) {
+    val description = stringResource(Res.string.video_progress, known)
+    Canvas(Modifier.size(40.dp).semantics { contentDescription = description }) {
+        val stroke = 4.dp.toPx()
+        drawCircle(Color.Black.copy(alpha = 0.55f))
+        val inset = stroke / 2 + 4.dp.toPx()
+        val box = Size(size.width - 2 * inset, size.height - 2 * inset)
+        drawArc(Color.White.copy(alpha = 0.25f), 0f, 360f, false, Offset(inset, inset), box, style = Stroke(stroke))
+        drawArc(Color.White, -90f, 360f * share, false, Offset(inset, inset), box, style = Stroke(stroke, cap = StrokeCap.Round))
     }
 }
 
-/** The points the real cube covers in the picture: its projected sides facing the camera and the faces found. */
-private fun cubeOutline(state: VideoScanState): List<Point> {
-    val points = ArrayList<Point>()
-    state.projection?.let { p -> p.facing.forEach { f -> (0 until 9).mapTo(points) { p.points[f.ordinal * 9 + it] } } }
-    state.found.forEach { points += it.reading.outline }
-    return points
-}
-
-/** A straight arrow of [length] centred on [mid], pointing along ([dx], [dy]). */
-private fun DrawScope.arrow(mid: Offset, dx: Float, dy: Float, length: Float, alpha: Float) {
-    val start = Offset(mid.x - dx * length / 2, mid.y - dy * length / 2)
-    val end = Offset(mid.x + dx * length / 2, mid.y + dy * length / 2)
-    val head = length * 0.38f
-    val width = length * 0.14f
-    val shaftEnd = Offset(end.x - dx * head * 0.8f, end.y - dy * head * 0.8f)
-    val outline = StickerColors.ARROW_OUTLINE.copy(alpha = alpha)
-    val fill = StickerColors.ARROW.copy(alpha = alpha)
-    drawLine(outline, start, shaftEnd, width * 1.6f, cap = StrokeCap.Round)
-    drawLine(fill, start, shaftEnd, width, cap = StrokeCap.Round)
-    val tip = Path().apply {
-        moveTo(end.x + dx * head * 0.15f, end.y + dy * head * 0.15f)
-        lineTo(end.x - dx * head - dy * head * 0.6f, end.y - dy * head + dx * head * 0.6f)
-        lineTo(end.x - dx * head + dy * head * 0.6f, end.y - dy * head - dx * head * 0.6f)
-        close()
+/** The ⋮ menu: one picture at a time, by hand, and the colour check with what is known ([onCheck] null until a sticker is). */
+@Composable
+private fun ScanMenu(onSwitch: (() -> Unit)?, onManual: () -> Unit, onCheck: (() -> Unit)?) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        RoundIconButton(onClick = { open = true }) {
+            Icon(painterResource(Res.drawable.ic_more), contentDescription = stringResource(Res.string.solve_menu))
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            if (onSwitch != null) {
+                DropdownMenuItem(text = { Text(stringResource(Res.string.scan_switch_photo)) }, onClick = { open = false; onSwitch() })
+            }
+            DropdownMenuItem(text = { Text(stringResource(Res.string.scan_manual_short)) }, onClick = { open = false; onManual() })
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.video_check)) },
+                enabled = onCheck != null,
+                onClick = { open = false; onCheck?.invoke() },
+            )
+        }
     }
-    drawPath(tip, outline, style = Stroke(width * 0.5f, join = StrokeJoin.Round))
-    drawPath(tip, fill)
 }
 
 /** A small notice on the picture that the light is dim, before the scan stalls. */
@@ -589,31 +530,20 @@ private fun StallNotice(stall: Stall, torch: Boolean?, onTorch: (Boolean) -> Uni
     }
 }
 
-/** The six side colours in a row, a tick on each side the rest of the cube confirms. */
-@Composable
-private fun DoneSides(done: Set<Face>) {
-    val description = stringResource(Res.string.video_sides_done, done.size)
-    Row(Modifier.semantics { contentDescription = description }, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        for (side in Face.entries) {
-            val isDone = side in done
-            Canvas(Modifier.size(28.dp)) {
-                val radius = size.minDimension / 2
-                drawCircle(StickerColors.of(ColorScheme.STANDARD[side]).copy(alpha = if (isDone) 1f else 0.35f), radius)
-                drawCircle(StickerColors.PLASTIC, radius, style = Stroke(2.dp.toPx()))
-                if (isDone) tick(center, radius * 1.3f)
-            }
-        }
-    }
-}
+/** Fill of a sticker still needed (fixed, drawn on the camera picture in both themes). */
+private val NEEDED = Color(0xFF8A8A8A)
 
-/** Ring colour of a sticker still needed (fixed, drawn on the camera picture in both themes). */
-private val NEEDED = Color.White
+/** A tile's side as a share of its sticker step: smaller than the sticker, so the real one shows around it. */
+private const val TILE_SHARE = 0.62f
 
-/** A sticker's mark on the camera picture, as a share of its step. */
-private const val DOT_SHARE = 0.5f
+/** A tile further than this many sticker steps from where it should be jumps instead of gliding. */
+private const val SNAP_STEPS = 1.5
 
-/** A done side's tick, as a share of a sticker step. */
-private const val TICK_SHARE = 0.9f
+/** Tiles this close (picture pixels) to their places have arrived: the glide rests. */
+private const val REST_PIXELS = 0.5
+
+/** The first glide step's length when there is no previous frame yet. */
+private const val FRAME_MILLIS = 16f
 
 /** Shortest gap between two vibrations for new stickers. */
 private const val BUZZ_MILLIS = 300L
