@@ -8,16 +8,15 @@ home screen has hardly any space left for the cube.
 
 ## What Changes
 
-- Home: the big "Skannaa kuutio" button opens the video scan. The video tile goes away, so the
+- Home: the big "Skannaa kuutio" button opens the video scan and shows the video camera icon. The video tile goes away, so the
   home screen is back to a 2×2 grid (manual input, learn, timer, free cube). "(kokeilu)" disappears.
-- Video scan screen: a "Kuva kerrallaan" button opens the guided scan (one face at a time) in its
+- Video scan screen: a small "Kuva kerrallaan" text button in the top bar beside the torch opens the guided scan (one face at a time) in its
   place, so going back from it returns home, not to the video scan.
 - Guided scan screen: a "Videolla" button switches back to the video scan the same way.
 - Every "scan" entry that starts a whole new scan (home, the manual input screen's scan link) opens
   the video scan. Rescanning one face from the colour check stays in the guided scan (it scans just
   that face).
-- No remembered choice: scanning always starts as video (decision in this proposal; can be changed
-  if the user often switches).
+- No remembered choice: scanning always starts as video (user, 2026-10-06).
 - Modules: shared (home, both scan screens, navigation, texts). No change to cube or app.
 
 ## Capabilities
