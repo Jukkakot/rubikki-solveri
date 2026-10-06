@@ -11,6 +11,11 @@
 - [ ] 2.3 Browser: `pointsOfInterest`, `focusMode`, `exposureCompensation` where supported (design 4), video scan copy every 66 ms. Verify: web build runs in desktop Chromium with a fake camera without errors; phone check listed for the user.
 - [ ] 2.4 Log: `scan.camera` line on both platforms, snapshot `fps`, `torch`, `darker`, `kind=lock` line (design 6). Verify: `VideoScanLogTest` covers the new fields.
 
-## 3. Docs
+## 3. Browser worker (webworker, web)
 
-- [ ] 3.1 `docs/architecture.md` video scan camera control; roadmap row `camera-exposure` done and `web-scan-worker` planned.
+- [ ] 3.1 `webworker` module: Kotlin/Wasm worker running `FaceFinder` on transferred pictures, faces back as numbers (design 8); copied into the web distribution and precache. Verify: unit test of the faces' encoding round trip (JVM, shared code in `cube`); web build contains the worker.
+- [ ] 3.2 Page side: pictures as `ImageBitmap` to the worker, newest only, faces back into the video scan; fallback to the page's thread; `scan.worker` line, `worker` in the snapshot (design 8–9). Verify: desktop Chromium with a fake camera: the video scan runs with `worker=true`, no page errors; with the worker blocked it falls back; phone check listed for the user.
+
+## 4. Docs
+
+- [ ] 4.1 `docs/architecture.md` video scan camera control and the browser worker (and `development.md` if the build changes); roadmap row `camera-exposure` done.

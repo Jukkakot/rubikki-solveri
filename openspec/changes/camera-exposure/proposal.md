@@ -20,11 +20,14 @@ both platforms read about ten a second.
   step by step (exposure compensation) before the lock; the lock is taken once the stickers read
   well, and the torch's re-metering goes through the same steps.
 - **More frames a second:** the phone reads up to 15 pictures a second instead of 10; the browser
-  reads the next picture as soon as the last is done, up to 15 a second.
+  reads up to 15 a second too (newest picture only, so a slow phone reads fewer, never piles up).
 - **Log:** the video scan's snapshots carry frames a second and the torch state; the camera's
   controls (focus modes, exposure compensation range, metering point support, resolution) are
   logged once when the camera opens, on the phone too.
-- The browser's work off the page's thread (Web Worker) is the next change, `web-scan-worker`.
+- **Browser work off the page's thread (Web Worker):** in the browser the video scan's picture is
+  copied and its faces found in a Web Worker, so the page's one thread only draws; the browser then
+  keeps up about 15 pictures a second as the phone app does (today 25–64 ms per picture on the
+  page's thread on the S24). If the worker cannot start, the scan works on the page as today.
 
 ## Capabilities
 
@@ -34,7 +37,8 @@ both platforms read about ten a second.
 - `video-scan`: a new requirement on the camera's settings during the video scan (metering and
   focus on the cube, exposure lowered when washed out, then locked; frames a second).
 - `web-app`: the camera in the browser meters, focuses and lowers exposure as on the phone where the
-  browser supports it, and says in the log what it supports.
+  browser supports it, and says in the log what it supports; the video scan's reading runs off the
+  page's thread and keeps up with the phone app.
 - `diagnostics`: the video scan's log adds frames a second, the torch and the camera's controls.
 
 ## Impact
@@ -43,4 +47,5 @@ Modules: `cube` (the exposure steps as pure logic, tested), `shared` (video scan
 camera through `CameraPreview`; Android camera in `androidMain`: CameraX `FocusMeteringAction`,
 exposure compensation, analysis rate), `web` (`platform.mjs`: `pointsOfInterest`,
 `exposureCompensation`, `focusMode` constraints and the capabilities line; frame pacing in
-`WebCamera.kt`), `app` (tests). The guided scan keeps its own lock as today.
+`WebCamera.kt`), a new `webworker` module (Kotlin/Wasm worker with `cube`'s face finder, its
+output copied into the web distribution), `app` (tests). The guided scan keeps its own lock as today.

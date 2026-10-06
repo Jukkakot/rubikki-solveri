@@ -51,8 +51,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 41 | `video-scan-live` | done | Video scan feels live: faces with a finger over a sticker count, a dot in the read colour on every sticker on the camera picture, the progress cube follows the real cube smoothly and shows unconfirmed stickers faintly |
 | 42 | `video-scan-progress` | done | Video scan finishes on the most likely possible cube (unseen stickers follow from the rest, a misread one is corrected), progress marked on the real cube in the picture with a turn arrow beside it, a restart panel with the reason when it cannot get on, log snapshots; progress cube removed (phone testing 2026-10-05) |
 | 43 | `video-scan-light` | done | Video scan reads colours in dim, warm light: readings between two colours stay uncertain (soft votes) so the cube decides, glare left out, washed-out readings count little; both dim test videos now finish; the stall panel became a notice at the bottom of the picture that never blocks scanning, with a torch button; torch re-meters the camera; ticks only when confirmed; the browser shows the camera's own sharp video (phone testing 2026-10-05) |
-| 44 | `camera-exposure` | planned | Video scan camera measures light and focuses on the cube and goes darker while stickers wash out (torch in a dark room), then locks; about 15 pictures a second; log tells fps and what the camera can do (user's log 2026-10-05, Galaxy S24) |
-| 45 | `web-scan-worker` | planned | The browser's face finding off the page's thread (Web Worker), so the browser reads as many pictures as the phone app |
+| 44 | `camera-exposure` | planned | Video scan camera measures light and focuses on the cube and goes darker while stickers wash out (torch in a dark room), then locks; about 15 pictures a second, in the browser read in a Web Worker off the page's thread; log tells fps and what the camera can do (user's log 2026-10-05, Galaxy S24) |
 
 ## Backlog
 
