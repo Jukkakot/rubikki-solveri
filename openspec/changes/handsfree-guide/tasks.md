@@ -13,7 +13,7 @@
 ## 3. Solve screen
 
 - [ ] 3.1 Tap on the guide cube = "Tein sen" (vibration + `done()`) in the shortest-solution guide only (`plan.steps == null`, not camera follow); drag keeps turning the view; a hint chip on the cube ("Napauta = tein sen · raahaa = käännä") until the first move is confirmed. Compose test: a tap on the cube advances the step
-- [ ] 3.2 "Handsfree" button in the shortest-solution guide's action row (not in follow, not when finished) opening the ready prompt: text to take the cube in hand, speed choice, big "Valmis". While running: a filling bar instead of the action buttons and a line "Kosketa näyttöä pysäyttääksesi"; a touch anywhere on the screen (including the top bar and the cube) stops it and is consumed. Texts in Finnish and English. Compose tests: "Valmis" starts it and the step advances after the time; a touch stops it on the same step
+- [ ] 3.2 "Handsfree" round icon button beside back in the shortest-solution guide's action row (not in follow, not when finished) opening the ready prompt: text to take the cube in hand, speed choice, big "Valmis". While running: a big filling bar instead of the action buttons and a line "Kosketa näyttöä pysäyttääksesi"; a touch anywhere on the screen (including the top bar and the cube) stops it and is consumed. Texts in Finnish and English. Compose tests: "Valmis" starts it and the step advances after the time; a touch stops it on the same step
 - [ ] 3.3 Run the full checks (`./gradlew` unit tests, build of `app` and `web`) and fix what fails
 
 ## 4. Docs

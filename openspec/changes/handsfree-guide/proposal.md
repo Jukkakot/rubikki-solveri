@@ -29,6 +29,9 @@ Decisions taken in the proposal (light lane, no design.md):
 - Times after the demo ends: slow 5 s / normal 3 s / fast 1.5 s for a quarter turn, ×1.6 for a
   half turn; tuned on the phone if needed. With animations off the time starts at once.
 - No swipe gesture for back: it would collide with dragging the view.
+- The "Handsfree" button is a small round icon button beside back in the action row. While
+  handsfree runs the action buttons are hidden; a big bar and "touch the screen to stop" take their
+  place. A plain touch stops it (the phone is assumed to lie on a table; user, 2026-10-06).
 
 ## Capabilities
 
