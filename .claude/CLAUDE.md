@@ -14,7 +14,9 @@ natural next step).
 Before proposing anything or reading code, read the specs of the parts concerned
 (`openspec/specs/<capability>/spec.md`) and, where the reasons matter, the archived changes'
 `design.md`. Read code only where the specs do not answer. When a suggestion changes specced
-behaviour, say so. Idea talks go through `/opsx:explore`, which loads `openspec/config.yaml`.
+behaviour, say so. Every request goes through the matching OpenSpec skill even when the user does not
+name it (ideas and feedback: explore; new change: propose; implementing: apply; finishing: archive);
+a `UserPromptSubmit` hook (`.claude/hooks/openspec-reminder.sh`) repeats this on every message.
 
 ## Phases
 
@@ -33,7 +35,7 @@ behaviour, say so. Idea talks go through `/opsx:explore`, which loads `openspec/
 
 - The user is new to Android development: when a step needs them (Android Studio, phone settings,
   signing), give exact click-by-click instructions.
-- Commit and push to `main` yourself once the GitHub repo exists.
+- Commit and push to `main` yourself, also in cloud sessions (decided 2026-10-06).
 - Summaries list the changes made (what the user will notice) and every decision taken on the
   user's behalf, so the user can validate and correct them. No "How to check" section.
 - Don't install or launch the app yourself (decided 2026-10-03): the user puts it on the phone
