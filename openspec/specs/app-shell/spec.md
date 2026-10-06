@@ -52,7 +52,7 @@ time cannot be read, the version alone SHALL be shown.
 The app SHALL open on a home screen that shows the app name and the 3D cube, which turns slowly on
 its own and can be turned by dragging. Scanning the cube SHALL be the one primary action, shown
 larger and more prominent than the rest. The other main features (enter colours by hand, learn,
-timer and statistics, free cube) SHALL be shown as equal secondary entries, each with an icon and
+timer and statistics, free cube, patterns) SHALL be shown as equal secondary entries, each with an icon and
 a label; there SHALL be no separate entry for a second way of scanning. The whole screen SHALL fit
 a phone screen in portrait and in landscape without scrolling, also in the phone's browser, where
 the cube shrinks to the space left and never covers the texts.
@@ -92,6 +92,10 @@ the cube shrinks to the space left and never covers the texts.
 #### Scenario: Little room in the browser
 - **WHEN** the home screen is shown in a phone browser whose bars take much of the height
 - **THEN** the cube is drawn smaller in the space between the name and the tagline, and neither text is covered
+
+#### Scenario: Open patterns
+- **WHEN** the user taps "patterns"
+- **THEN** the target picker opens for a cube that is solved now
 
 ### Requirement: Solve summary on the home screen
 When the user has timed solves, the home screen SHALL show one short line with the best time and
