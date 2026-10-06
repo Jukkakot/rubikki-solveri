@@ -130,7 +130,9 @@ Pipeline, all but the first step pure Kotlin in `cube/scan`:
 ### Two ways to scan
 
 The video scan (`VideoScanRoute`) is the default since `video-primary` (2026-10-06): the home
-screen's primary button and the check's "scan again" open it. Its top bar's "Kuva kerrallaan"
+screen's primary button and the check's "scan again" open it. A finished scan opens the solution
+(sure) or the check (unsure) on top of the scan (`afterScan`), so going back always starts a new
+scan; the scan's check stays reachable from the solution's menu (`LastScan.check`). Its top bar's "Kuva kerrallaan"
 replaces it with the guided scan above (`ScanRoute`), whose "Videolla" switches back; a one-face
 rescan from the check stays guided.
 Video scan pipeline (`video-scan`):
@@ -290,9 +292,10 @@ yellow cross, yellow edges, yellow corners into place, yellow corners turned.
 - Haptics: `Confirm` on done, `SegmentTick` at the end of each demo.
 - Hands-free (shortest solution only, `Stepper(shortest = true)` in `SolveScreen`; not learn,
   practice, scramble or camera follow): a tap on `GuideCube` (`onTap`) is done, with a hint chip
-  until the first confirm. The play button opens `HandsfreeDialog` (speed, "Valmis"); then
-  `StepperState.handsfreeStep` demos, waits `HandsfreeSpeed.waitMs` (warning tick before the end)
-  and confirms, without the 3 s demo repeat. A full-screen layer over the `Scaffold` stops it on
+  until the first confirm. ▶ in the player row (or "Handsfree" on the start screen, with its speed
+  chips) starts it at once; `StepperState.handsfreeStep` counts `HandsfreeSpeed.waitMs` from when
+  the move appears while the demo plays (warning tick before the end) and confirms once the time is
+  up and the demo has ended, without the 3 s demo repeat (`ui-polish`, 2026-10-06). A full-screen layer over the `Scaffold` stops it on
   any touch; `KeepScreenOn` (platform seam: view flag / browser wake lock) holds while it runs.
   Speed is a setting (DataStore / `StoredSettings`); handsfree itself is not saved. Why: the user
   wanted to keep both hands on the cube; spoken commands were left out as fragile (2026-10-06).
@@ -319,7 +322,7 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 
 | Route | Screen | Notes |
 |---|---|---|
-| `HomeRoute` | Home | spinning hero cube; scan (video) as the primary button; tiles: manual input, learn, timer, free cube; best-time summary |
+| `HomeRoute` | Home | spinning hero cube that is the scan action (tap = video scan, drag = turn) with a round camera button on its lower edge; a row of five icons with one-word labels (Käsin, Opettele, Ajanotto, Vapaa, Kuviot); the version |
 | `LessonsRoute`, `LessonRoute(index)` | Lessons | basics + 7 stages, algorithm demos |
 | `PracticeRoute(stage, seed)` | Practice | the solution screen limited to one stage |
 | `TimerRoute`, `HistoryRoute`, `ScrambleGuideRoute(moves)` | Timer, history, guided scramble | |
@@ -327,7 +330,7 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 | `VideoScanRoute` | Video scan (the default scan) | camera picture with marks on the real cube (solid = known, ring = needed, tick = side confirmed), turn arrow beside it, short status, done-sides row; a notice at the bottom of the picture when stuck (scanning goes on); "Korjaa värit" hands over what is known; result → solve or check |
 | `ManualInputRoute(cube?, marked?, fromScan, confident)` | Manual input / check a scan | one screen (palette, ‹ › and check in the bottom bar); face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution. From a scan: the face-by-face check (`ScanCheck`): checked faces ticked in the face map, "N faces left", the face's camera picture beside the grid (`LastScan`), "Kuvaa uudelleen" (one-face scan) and "Näyttää oikealta" in place of ‹ › and check, the verdict line, "scan the whole cube again" in the menu |
 | `FreeCubeRoute(cube?)` | Free cube | face-turn buttons, scramble, undo, reset, solve |
-| `SolveRoute(cube, target?)` | Solution | background solve, then the move guide stepper; camera mode follows on the real cube; a target row ("Kohde … Vaihda"); a pattern or painted target hides the method choice (shortest only), a stage target uses the learn method |
+| `SolveRoute(cube, target?, fromScan)` | Solution | background solve, then a start screen (`SolveScreen(startScreen = true)`: moves, target row "Kohde … Vaihda", method Nopein/Opettele, hold picture, "Aloita", "Handsfree" + pace), then the guide as a media player (⏮ previous, ▶/⏸ handsfree, ⏭ done, ↻ show again beside the words) with a ⋮ menu (camera follow, "Tarkista värit", back to the start screen); back in the guide returns to the start screen. A pattern or painted target hides the method choice (shortest only), a stage target uses the learn method. Practice and the guided scramble open the guide directly |
 | `TargetRoute(start, current?, fromSolve)` | Choose a target | surprise, pattern gallery (tap → large preview → "Valitse"), stages, "Maalaa oma" (`ManualInputRoute(targetStart = …)`); a choice replaces the solution screen it came from, or from home (tile "Kuviot") opens on top of the picker |
 | `SettingsRoute`, `LogRoute` | Settings, log | the log viewer splits each line (`LogLine.parse`), shows its time in the phone's zone and the app language's format (`LogTime.format`, only the time for today) and colours it by level (error/warn/debug/info; the level word shown for non-INFO) |
 

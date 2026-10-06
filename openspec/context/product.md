@@ -75,6 +75,16 @@ method stage by stage so you learn to solve it yourself.
 - **Getting the app on the phone:** every green push publishes a signed APK at one fixed download
   address; it is signed with the Android Studio debug key so it updates the Run ▶ install in place.
 
+## Decided (2026-10-06)
+
+- **A symbol beats a word, less is more:** where an icon or a picture can say it, use it instead of
+  a text or a button label; text stays where it tells what is not obvious at that moment. New and
+  changed screens are checked against this.
+- **Back after a scan is a new scan:** the goal is a scan so quick that colours are never fixed by
+  hand; the colour check stays reachable from the solution's menu.
+- **Choices once, before the guide:** target, method and handsfree pace are chosen on a start
+  screen; the guide itself is a media player (previous, play/pause handsfree, next).
+
 ## Later ideas
 
 - **Five faces are enough (2026-10-03):** once five faces are scanned, the sixth can largely be

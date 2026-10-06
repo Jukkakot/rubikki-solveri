@@ -24,6 +24,8 @@ import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.ui.manual.ManualInputScreen
 import fi.jukkakot.rubikkisolveri.ui.nav.SolveRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.afterScan
+import fi.jukkakot.rubikkisolveri.ui.nav.afterScanCheck
+import fi.jukkakot.rubikkisolveri.ui.nav.ManualInputRoute
 import fi.jukkakot.rubikkisolveri.ui.scan.ScanContent
 import fi.jukkakot.rubikkisolveri.ui.scan.ScanScreen
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
@@ -343,13 +345,13 @@ class ScanScreenTest {
     }
 
     @Test
-    fun aSureScanGoesStraightToTheSolutionWithTheCheckBehindIt() {
+    fun aSureScanGoesStraightToTheSolutionAnUnsureOneToTheCheck() {
         val sure = ScanOutcome(CubeEditor.of(cube), emptySet(), CubeCheck.validity(cube))
-        val (check, solve) = afterScan(sure)
-        assertEquals(SolveRoute(cube.toColorString()), solve)
-        assertTrue(check.fromScan && check.confident)
+        assertEquals(SolveRoute(cube.toColorString(), fromScan = true), afterScan(sure))
+        val check = afterScanCheck(sure)
+        assertTrue(check.fromScan && !check.confident, "the check from the menu waits for the user")
         val unsure = ScanOutcome(CubeEditor.of(cube), setOf(Stickers.index(Face.F, 1)), CubeCheck.validity(cube))
-        assertEquals(null, afterScan(unsure).second)
+        assertTrue(afterScan(unsure) is ManualInputRoute)
     }
 
     @Test

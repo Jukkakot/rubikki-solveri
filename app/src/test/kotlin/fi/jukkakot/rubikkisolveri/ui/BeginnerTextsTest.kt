@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
@@ -66,11 +67,13 @@ class BeginnerTextsTest {
     fun chooseLearning() {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                SolveScreen(Cube.solved().apply("R U F' L2 D B"), onBack = {}, onHome = {}, planner = INLINE_PLANNER)
+                SolveScreen(Cube.solved().apply("R U F' L2 D B"), onBack = {}, onHome = {}, planner = INLINE_PLANNER, startScreen = true)
             }
         }
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("Opettele vaiheittain").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("Opettele vaiheittain").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Opettele").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Opettele").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Aloita").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Aloita").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Vaihe 1/7: Valkoinen risti").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Vaihe 1/7: Valkoinen risti").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Jatka").performScrollTo().performClick()

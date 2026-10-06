@@ -8,6 +8,8 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import fi.jukkakot.rubikkisolveri.cube.Cube
@@ -89,8 +91,8 @@ class ProgressScreensTest {
                     onFinished = { m, n, ms -> recorded = Triple(m, n, ms) })
             }
         }
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("Tein sen").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("Tein sen").performScrollTo().performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithContentDescription("Tein sen").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithContentDescription("Tein sen").performScrollTo().performClick()
         compose.waitForIdle()
         assertEquals(SolveMethod.FAST, recorded?.first)
         assertEquals(1, recorded?.second)

@@ -55,7 +55,8 @@ class HandsfreeTest {
     @Test
     fun movesOnAfterTheTimeWithAWarningFirst() {
         stepper("F' U R")
-        compose.mainClock.advanceTimeBy(DEMO + HandsfreeSpeed.NORMAL.quarterMs - 1_000)
+        // The time counts from when the move appears, while its demo plays.
+        compose.mainClock.advanceTimeBy(HandsfreeSpeed.NORMAL.quarterMs - 1_000)
         compose.runOnIdle {
             assertEquals(0, state.index, "still on the first move")
             assertEquals(0, warnings)

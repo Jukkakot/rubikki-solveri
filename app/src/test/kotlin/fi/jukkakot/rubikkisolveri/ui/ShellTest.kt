@@ -9,6 +9,11 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
+import fi.jukkakot.rubikkisolveri.ui.home.HOME_CUBE_TAG
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -119,30 +124,60 @@ class ShellTest {
     @Test
     fun openTheFreeCube() {
         start()
-        compose.onNodeWithText("Vapaa kuutio").performClick()
+        compose.onNodeWithText("Vapaa").performClick()
         assertTrue(isOn(FreeCubeRoute()))
     }
 
     @Test
-    fun homeSummaryOnlyWithTimedSolves() {
+    fun noSolveSummaryOnHome() {
         val progress = InMemoryProgressRepository()
         start(progress = progress)
-        compose.onNodeWithText("ratkaisu", substring = true).assertDoesNotExist()
         runBlocking { progress.addTimed(42_310, "R U") }
-        compose.onNodeWithText("1 ratkaisu", substring = true).assertExists()
+        compose.waitForIdle()
+        compose.onNodeWithText("ratkaisu", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Paras", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun tapTheCubeToScan() {
+        start()
+        compose.onNodeWithTag(HOME_CUBE_TAG).performClick()
+        assertTrue(isOn(VideoScanRoute))
+    }
+
+    @Test
+    fun dragTheCubeDoesNotScan() {
+        start()
+        compose.onNodeWithTag(HOME_CUBE_TAG).performTouchInput { swipeLeft() }
+        assertTrue(isOn(HomeRoute))
     }
 
     @Test
     fun theScanStartsAsVideo() {
         start()
-        compose.onNodeWithText("Skannaa kuutio").performClick()
+        compose.onNodeWithContentDescription("Skannaa kuutio").performClick()
+        assertTrue(isOn(VideoScanRoute))
+    }
+
+    @Test
+    fun backFromAScannedSolutionStartsANewScan() {
+        start()
+        compose.runOnUiThread {
+            nav.navigate(VideoScanRoute)
+            nav.navigate(SolveRoute(fi.jukkakot.rubikkisolveri.cube.Cube.solved().apply("R U").toColorString(), fromScan = true))
+        }
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Aloita").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Aloita").performClick()
+        compose.onNodeWithContentDescription("Takaisin").performClick()
+        compose.onNodeWithText("Aloita").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Takaisin").performClick()
         assertTrue(isOn(VideoScanRoute))
     }
 
     @Test
     fun openManualInput() {
         start()
-        compose.onNodeWithText("Syötä käsin").performClick()
+        compose.onNodeWithText("Käsin").performClick()
         assertTrue(isOn(ManualInputRoute()))
         compose.onNodeWithText("Etupuoli (1/6)").assertIsDisplayed()
     }
@@ -150,7 +185,7 @@ class ShellTest {
     @Test
     fun validCubeOpensItsSolution() {
         start()
-        compose.onNodeWithText("Syötä käsin").performClick()
+        compose.onNodeWithText("Käsin").performClick()
         compose.onNodeWithContentDescription("Lisää").performClick()
         compose.onNodeWithText("Täytä ratkaistuna").performClick()
         compose.onNodeWithText("Tarkista").performClick()
@@ -312,6 +347,6 @@ class EnglishTextsTest {
                 )
             }
         }
-        compose.onNodeWithText("Scan the cube").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Scan the cube").assertIsDisplayed()
     }
 }

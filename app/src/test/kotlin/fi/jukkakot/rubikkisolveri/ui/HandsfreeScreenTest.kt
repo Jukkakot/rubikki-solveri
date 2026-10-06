@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
 class HandsfreeScreenTest {
@@ -48,18 +49,53 @@ class HandsfreeScreenTest {
     }
 
     @Test
-    fun handsfreeAdvancesAndATouchStopsIt() {
+    fun playAdvancesAndATouchStopsIt() {
         solve()
-        compose.onNodeWithContentDescription("Handsfree").performScrollTo().performClick()
-        compose.onNodeWithText("Nopea").performClick()
-        compose.onNodeWithText("Valmis").performClick()
-        assertEquals(HandsfreeSpeed.FAST, saved, "the chosen speed is remembered")
-        compose.mainClock.advanceTimeBy(1_000 + HandsfreeSpeed.FAST.quarterMs + 500)
+        compose.mainClock.autoAdvance = false
+        // ▶ starts at once, with no ready prompt.
+        compose.onNodeWithContentDescription("Handsfree").performClick()
+        compose.onNodeWithText("Valmis").assertDoesNotExist()
+        compose.mainClock.advanceTimeBy(HandsfreeSpeed.NORMAL.quarterMs + 1_500)
         compose.onNodeWithText("Siirto 2/3").assertIsDisplayed()
-        // A touch anywhere stops it on the same move.
+        // A touch anywhere stops it on the same move and brings ▶ back.
         compose.onNodeWithTag(HANDSFREE_STOP_TAG).performTouchInput { down(center); up() }
         compose.mainClock.advanceTimeBy(20_000)
         compose.onNodeWithText("Siirto 2/3").assertIsDisplayed()
         compose.onNodeWithTag(HANDSFREE_STOP_TAG).assertDoesNotExist()
+        compose.onNodeWithContentDescription("Handsfree").assertIsDisplayed()
+    }
+
+    @Test
+    fun theTimeStartsWithTheMove() {
+        solve()
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithContentDescription("Handsfree").performClick()
+        // The time runs during the demo (half a second's pause and a 0.3 s turn): the move is done
+        // after its own time, not after the demo plus its time (2.9 s).
+        var waited = 0L
+        while (waited < 5_000 && compose.onAllNodesWithText("Siirto 2/3").fetchSemanticsNodes().isEmpty()) {
+            compose.mainClock.advanceTimeBy(100)
+            waited += 100
+        }
+        assertTrue(waited in HandsfreeSpeed.NORMAL.quarterMs - 200..HandsfreeSpeed.NORMAL.quarterMs + 300, "moved on after $waited ms")
+    }
+
+    @Test
+    fun startScreenHandsfreeWithItsSpeed() {
+        compose.setContent {
+            RubikkiTheme(dynamicColor = false) {
+                SolveScreen(
+                    Cube.solved().apply("R U L"), onBack = {}, onHome = {}, planner = INLINE_PLANNER,
+                    onHandsfreeSpeed = { saved = it }, startScreen = true,
+                )
+            }
+        }
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Aloita").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Nopea").performClick()
+        assertEquals(HandsfreeSpeed.FAST, saved, "the chosen speed is remembered")
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithText("Handsfree").performClick()
+        compose.mainClock.advanceTimeBy(HandsfreeSpeed.FAST.quarterMs + 1_000)
+        compose.onNodeWithText("Siirto 2/3").assertExists()
     }
 }

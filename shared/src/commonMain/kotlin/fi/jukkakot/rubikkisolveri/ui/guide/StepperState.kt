@@ -16,6 +16,7 @@ import fi.jukkakot.rubikkisolveri.cube.Move
 import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeAnimator
 import fi.jukkakot.rubikkisolveri.ui.cube3d.rememberCubeAnimator
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
@@ -45,7 +46,7 @@ class StepperState(
     var celebrations by mutableIntStateOf(0)
         private set
 
-    /** How much of the current move's handsfree time has passed, 0..1 (0 while its demo plays). */
+    /** How much of the current move's handsfree time has passed, 0..1 (counted from when the move appears). */
     var handsfreeProgress by mutableFloatStateOf(0f)
         private set
 
@@ -113,33 +114,39 @@ class StepperState(
     }
 
     /**
-     * One handsfree step: demos the current move, waits its time at [speed] (a light warning
-     * shortly before the end) and then confirms it as "done" does. No demo repeat meanwhile; with
-     * animations off the time starts at once.
+     * One handsfree step: the move's time at [speed] starts as soon as it is presented, its demo plays
+     * meanwhile (after the usual short pause), and the guide confirms it as "done" does once the time
+     * is up and the demo has ended (a light warning shortly before). No demo repeat meanwhile; with
+     * animations off there is no demo.
      */
     suspend fun handsfreeStep(speed: HandsfreeSpeed) {
         val move = current ?: return
         val at = index
         handsfreeProgress = 0f
-        if (!animator.isInstant) {
-            snapshotFlow { animator.pending }.first { it == 0 }
-            delay(AUTO_DEMO_DELAY_MS)
-            demo()
-            snapshotFlow { animator.pending }.first { it == 0 }
-        }
-        val wait = speed.waitMs(move)
-        var passed = 0L
-        var warned = false
-        while (passed < wait) {
-            val step = minOf(HANDSFREE_FRAME_MS, wait - passed)
-            delay(step)
-            passed += step
-            handsfreeProgress = passed / wait.toFloat()
-            if (!warned && passed >= wait - HandsfreeSpeed.WARN_BEFORE_MS) {
-                warned = true
-                onHandsfreeWarn()
+        coroutineScope {
+            if (!animator.isInstant) {
+                launch {
+                    snapshotFlow { animator.pending }.first { it == 0 }
+                    delay(AUTO_DEMO_DELAY_MS)
+                    if (index == at) demo()
+                }
+            }
+            val wait = speed.waitMs(move)
+            var passed = 0L
+            var warned = false
+            while (passed < wait) {
+                val step = minOf(HANDSFREE_FRAME_MS, wait - passed)
+                delay(step)
+                passed += step
+                handsfreeProgress = passed / wait.toFloat()
+                if (!warned && passed >= wait - HandsfreeSpeed.WARN_BEFORE_MS) {
+                    warned = true
+                    onHandsfreeWarn()
+                }
             }
         }
+        // The demo never gets cut: a short time waits for it to end.
+        if (!animator.isInstant) snapshotFlow { animator.pending }.first { it == 0 }
         if (index != at) return
         onHandsfreeAdvance()
         handsfreeProgress = 0f

@@ -16,7 +16,8 @@ data object LogRoute
  * sticker indices to mark, [fromScan] when a scan hands over its result for checking, [confident]
  * when that scan was valid and sure (the check then goes on to the solution by itself).
  * With [targetStart] (a colour string) it paints a target for that starting cube instead
- * (`solve-to-target`); [targetFromSolve] as in [TargetRoute].
+ * (`solve-to-target`); [targetFromSolve] as in [TargetRoute]. [replaceSolve]: opened from a solution's
+ * menu, whose solution the checked cube replaces.
  */
 @Serializable
 data class ManualInputRoute(
@@ -26,6 +27,7 @@ data class ManualInputRoute(
     val confident: Boolean = false,
     val targetStart: String? = null,
     val targetFromSolve: Boolean = false,
+    val replaceSolve: Boolean = false,
 )
 
 /** The scan; with [face] (a `FaceView` name) only that face, rescanned from the check. */
@@ -36,9 +38,12 @@ data class ScanRoute(val face: String? = null)
 @Serializable
 data class FreeCubeRoute(val cube: String? = null)
 
-/** [cube] is a colour string (see Cube.toColorString); [target] a `SolveTarget.encode()` string (null: solved). */
+/**
+ * [cube] is a colour string (see Cube.toColorString); [target] a `SolveTarget.encode()` string (null:
+ * solved); [fromScan] when a scan found the cube (its check is then the scan's, see `LastScan.check`).
+ */
 @Serializable
-data class SolveRoute(val cube: String, val target: String? = null)
+data class SolveRoute(val cube: String, val target: String? = null, val fromScan: Boolean = false)
 
 /**
  * Choosing a target for [start] (colour string); [current] is the target now. [fromSolve]: opened

@@ -136,6 +136,14 @@ class ScreenshotTest {
         SolveScreen(Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {}, planner = INLINE_PLANNER)
     }
 
+    @Test
+    fun solveStart() = shot("solve-start", waitForText = "Aloita") {
+        SolveScreen(
+            Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {}, planner = INLINE_PLANNER,
+            startScreen = true, onChangeTarget = {}, onCheckColors = {},
+        )
+    }
+
     /** A short browser window: the cube shrinks so "Tein sen" stays on screen. */
     @Test
     @Config(qualifiers = "fi-w411dp-h560dp-xxhdpi")
@@ -312,17 +320,16 @@ class ScreenshotTest {
     @Composable
     private fun Home() {
         fi.jukkakot.rubikkisolveri.ui.home.HomeScreen(
-            primary = fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_scan, Res.drawable.ic_video) {},
+            primary = fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_scan_short, Res.drawable.ic_video, Res.string.home_scan) {},
             entries = listOf(
-                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_manual, Res.drawable.ic_palette) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_manual_short, Res.drawable.ic_palette, Res.string.home_manual) {},
                 fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_learn, Res.drawable.ic_school) {},
                 fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_timer, Res.drawable.ic_timer) {},
-                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_free_cube, Res.drawable.ic_cube) {},
+                fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_free_short, Res.drawable.ic_cube, Res.string.home_free_cube) {},
                 fi.jukkakot.rubikkisolveri.ui.home.HomeEntry(Res.string.home_patterns, Res.drawable.ic_pattern) {},
             ),
             onOpenSettings = {}, crashedLastTime = false, onShowLog = {}, onCrashNoticeShown = {},
             version = "1.0.51-0365b23 · 3.10.2026 11.30",
-            summary = fi.jukkakot.rubikkisolveri.ui.home.HomeSummary(best = 42_310, count = 12),
             spin = false,
         )
     }

@@ -1,6 +1,7 @@
 package fi.jukkakot.rubikkisolveri.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
@@ -150,7 +151,7 @@ class LessonsTest {
         }
         // The goal comes first, the moves after "Continue".
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Jatka").fetchSemanticsNodes().isNotEmpty() }
-        assertTrue(compose.onAllNodesWithText("Tein sen").fetchSemanticsNodes().isEmpty(), "goal card covers the guide")
+        assertTrue(compose.onAllNodesWithContentDescription("Tein sen").fetchSemanticsNodes().isEmpty(), "goal card covers the guide")
         compose.onNodeWithContentDescription("Tavoite: Keltainen risti").assertExists()
         compose.onNodeWithText("Jatka").performScrollTo().performClick()
         assertTrue(compose.onAllNodesWithText("Opettele vaiheittain").fetchSemanticsNodes().isEmpty(), "no method choice in practice")
@@ -161,7 +162,7 @@ class LessonsTest {
             first, { id, args -> fi.jukkakot.rubikkisolveri.Strings.get("fi", id.key, *args) }, exercise.position.apply(first),
         )
         compose.onNodeWithText(words).assertExists()
-        repeat(exercise.steps.sumOf { it.moves.size }) { compose.onNodeWithText("Tein sen").performScrollTo().performClick() }
+        repeat(exercise.steps.sumOf { it.moves.size }) { compose.onNodeWithContentDescription("Tein sen").performScrollTo().performClick() }
         compose.onNodeWithText("Vaihe valmis!").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Uusi harjoitus").performScrollTo().assertIsDisplayed()
     }

@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import fi.jukkakot.rubikkisolveri.cube.Cube
@@ -40,11 +41,11 @@ class FitScreenTest {
     @Test
     fun shortScreenShowsMoveAndDoneWithoutScrolling() {
         solve(Cube.solved().apply("R U"))
-        compose.onNodeWithText("Tein sen").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Tein sen").assertIsDisplayed()
         compose.onNodeWithText("Käännä", substring = true).assertIsDisplayed()
         val before = cubeWidth()
         assertTrue(before < 379.dp, "cube $before should be narrower than the screen")
-        compose.onNodeWithText("Tein sen").performClick()
+        compose.onNodeWithContentDescription("Tein sen").performClick()
         compose.waitForIdle()
         assertEquals(before, cubeWidth())
     }

@@ -14,6 +14,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import androidx.navigation.NavDestination.Companion.hasRoute
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeEditor
 import fi.jukkakot.rubikkisolveri.ui.scan.ScanScreen
@@ -50,7 +51,6 @@ import fi.jukkakot.rubikkisolveri.log.ScanPictureStore
 import fi.jukkakot.rubikkisolveri.ui.home.HomeEntry
 import fi.jukkakot.rubikkisolveri.cube.SolveTarget
 import fi.jukkakot.rubikkisolveri.ui.target.TargetScreen
-import fi.jukkakot.rubikkisolveri.ui.home.HomeSummary
 import fi.jukkakot.rubikkisolveri.ui.home.HomeScreen
 import fi.jukkakot.rubikkisolveri.ui.log.LogScreen
 import fi.jukkakot.rubikkisolveri.ui.settings.SettingsScreen
@@ -85,25 +85,26 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
     // A chosen target opens its solution: in place of the solution screen the picker came from,
     // or (from home) on top of the picker.
     fun chooseTarget(start: String, target: SolveTarget, fromSolve: Boolean) {
-        navController.navigate(SolveRoute(start, target.encode())) {
+        // A scanned cube stays a scanned cube with a new target (its check is still the scan's).
+        val solve = navController.currentBackStack.value.lastOrNull { it.destination.hasRoute<SolveRoute>() }
+        val scanned = fromSolve && solve?.toRoute<SolveRoute>()?.fromScan == true
+        navController.navigate(SolveRoute(start, target.encode(), fromScan = scanned)) {
             if (fromSolve) popUpTo<SolveRoute> { inclusive = true } else popUpTo<TargetRoute> { inclusive = false }
         }
     }
     NavHost(navController = navController, startDestination = HomeRoute) {
         composable<HomeRoute> {
-            val timed by actions.progress.timedSolves.collectAsStateWithLifecycle(emptyList())
             HomeScreen(
-                primary = HomeEntry(Res.string.home_scan, Res.drawable.ic_video) { navController.navigate(VideoScanRoute) },
+                primary = HomeEntry(Res.string.home_scan_short, Res.drawable.ic_video, Res.string.home_scan) { navController.navigate(VideoScanRoute) },
                 entries = listOf(
-                    HomeEntry(Res.string.home_manual, Res.drawable.ic_palette) { navController.navigate(ManualInputRoute()) },
+                    HomeEntry(Res.string.home_manual_short, Res.drawable.ic_palette, Res.string.home_manual) { navController.navigate(ManualInputRoute()) },
                     HomeEntry(Res.string.home_learn, Res.drawable.ic_school) { navController.navigate(LessonsRoute) },
                     HomeEntry(Res.string.home_timer, Res.drawable.ic_timer) { navController.navigate(TimerRoute) },
-                    HomeEntry(Res.string.home_free_cube, Res.drawable.ic_cube) { navController.navigate(FreeCubeRoute()) },
+                    HomeEntry(Res.string.home_free_short, Res.drawable.ic_cube, Res.string.home_free_cube) { navController.navigate(FreeCubeRoute()) },
                     HomeEntry(Res.string.home_patterns, Res.drawable.ic_pattern) { navController.navigate(TargetRoute(Cube.solved().toColorString())) },
                 ),
                 onOpenSettings = { navController.navigate(SettingsRoute) },
                 version = actions.version,
-                summary = HomeSummary.of(timed.map { it.result }),
                 spin = actions.homeSpin,
                 crashedLastTime = actions.crashedLastTime,
                 onShowLog = { navController.navigate(LogRoute) },
@@ -141,7 +142,15 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
             // The colour check after a scan is part of the scan, so it stays dark like it.
             DarkIf(route.fromScan) { ManualInputScreen(
                 onBack = { navController.popBackStack() },
-                onValid = { cube -> navController.navigate(SolveRoute(cube.toColorString())) },
+                // A checked scan replaces the check (and a solution it was opened from), so going
+                // back from the solution starts a new scan.
+                onValid = { cube ->
+                    if (route.fromScan || route.replaceSolve) {
+                        navController.popBackStack()
+                        if (navController.currentBackStackEntry?.destination?.hasRoute<SolveRoute>() == true) navController.popBackStack()
+                    }
+                    navController.navigate(SolveRoute(cube.toColorString(), fromScan = route.fromScan))
+                },
                 initial = initial,
                 initialMarked = marked,
                 title = if (route.fromScan) Res.string.check_title else Res.string.manual_title,
@@ -153,7 +162,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 confident = route.confident,
                 pictures = if (route.fromScan) LastScan.pictures else emptyMap(),
                 onScanAgain = if (route.fromScan) {
-                    { navController.navigate(VideoScanRoute) { popUpTo<ManualInputRoute> { inclusive = true } } }
+                    { scanAgain(navController) }
                 } else {
                     null
                 },
@@ -188,9 +197,8 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                     navController.popBackStack()
                 },
                 onResult = { outcome ->
-                    val (check, solve) = afterScan(outcome)
-                    navController.navigate(check) { popUpTo<ScanRoute> { inclusive = true } }
-                    if (solve != null) navController.navigate(solve)
+                    LastScan.check = afterScanCheck(outcome)
+                    navController.navigate(afterScan(outcome))
                 },
                 pictures = actions.scanPictures,
             ) }
@@ -204,9 +212,8 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                     // No face pictures from a video; the readings let the check re-read a rescanned face.
                     LastScan.pictures = emptyMap()
                     LastScan.readings = outcome.samples.ifEmpty { null }
-                    val (check, solve) = afterScan(outcome)
-                    navController.navigate(check) { popUpTo<VideoScanRoute> { inclusive = true } }
-                    if (solve != null) navController.navigate(solve)
+                    LastScan.check = afterScanCheck(outcome)
+                    navController.navigate(afterScan(outcome))
                 },
             ) }
         }
@@ -230,6 +237,12 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 handsfreeSpeed = actions.handsfreeSpeed,
                 onHandsfreeSpeed = actions.onHandsfreeSpeed,
                 onFinished = { method, moves, millis -> scope.launch { actions.progress.addGuided(method.name, moves, millis) } },
+                startScreen = true,
+                onCheckColors = {
+                    val check = LastScan.check.takeIf { route.fromScan }
+                        ?: ManualInputRoute(CubeEditor.of(Cube.fromColorString(route.cube)).encode(), replaceSolve = true)
+                    navController.navigate(check)
+                },
             )
         }
         composable<TargetRoute> { entry ->
@@ -325,18 +338,29 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
 }
 
 /**
- * Where a finished scan goes: the check next to the pictures, and for a sure scan (valid, nothing
- * uncertain or marked) straight on to the solution, which leaves the check behind it so going back
- * from the solution opens it. Stickers known only from the rest of the cube are marked in the check
- * without stopping a sure scan.
+ * Where a finished scan goes, on top of the scan (so going back starts a new scan): a sure scan
+ * (valid, nothing uncertain or marked) to its solution, any other to the check next to the pictures.
  */
-fun afterScan(outcome: ScanOutcome): Pair<ManualInputRoute, SolveRoute?> {
-    val check = ManualInputRoute(
-        outcome.editor.encode(),
-        (outcome.marked + outcome.inferred).sorted().joinToString(","),
-        fromScan = true,
-        confident = outcome.isConfident,
-    )
+fun afterScan(outcome: ScanOutcome): Any {
     val sure = outcome.editor.toCube()?.takeIf { outcome.isConfident && outcome.marked.isEmpty() }
-    return check to sure?.let { SolveRoute(it.toColorString()) }
+    return sure?.let { SolveRoute(it.toColorString(), fromScan = true) } ?: afterScanCheck(outcome)
+}
+
+/**
+ * The check of a finished scan: its colours, the uncertain stickers and those known only from the
+ * rest of the cube marked. Also opened from the solution's menu.
+ */
+fun afterScanCheck(outcome: ScanOutcome): ManualInputRoute = ManualInputRoute(
+    outcome.editor.encode(),
+    (outcome.marked + outcome.inferred).sorted().joinToString(","),
+    fromScan = true,
+    confident = false,
+)
+
+/** "Scan again" from the check: back to the scan under it, or a new video scan in place of the check. */
+private fun scanAgain(navController: NavHostController) {
+    navController.popBackStack()
+    val under = navController.currentBackStackEntry?.destination
+    if (under?.hasRoute<VideoScanRoute>() == true || under?.hasRoute<ScanRoute>() == true) return
+    navController.navigate(VideoScanRoute)
 }

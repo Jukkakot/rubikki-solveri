@@ -21,6 +21,7 @@ import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
 import kotlinx.coroutines.flow.MutableSharedFlow
 import org.junit.Rule
 import org.junit.Test
+import org.robolectric.annotation.Config
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -43,8 +44,13 @@ class FollowTest {
         }
         compose.waitUntil(10_000) {
             compose.onAllNodesWithText("Siirto 1/2").fetchSemanticsNodes().isNotEmpty() &&
-                compose.onAllNodesWithContentDescription("Seuraa kameralla").fetchSemanticsNodes().isNotEmpty()
+                compose.onAllNodesWithContentDescription("Valikko").fetchSemanticsNodes().isNotEmpty()
         }
+    }
+
+    private fun openFollow() {
+        compose.onNodeWithContentDescription("Valikko").performClick()
+        compose.onNodeWithText("Seuraa kameralla").performClick()
     }
 
     private fun show(state: Cube, times: Int = 4, face: Boolean = true) {
@@ -55,20 +61,23 @@ class FollowTest {
     }
 
     @Test
+    // A phone-sized screen: on the tiny default one the permission gate's buttons are squeezed.
+    @Config(qualifiers = "fi-w411dp-h891dp")
     fun switchToCameraMode() {
         solve()
-        compose.onNodeWithContentDescription("Seuraa kameralla").performClick()
+        openFollow()
         // No camera permission in tests: the gate offers the way back to the 3D cube.
         compose.onNodeWithText("Kamera tarvitaan").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Näytä 3D-kuutio").performScrollTo().performClick()
-        compose.onNodeWithText("Näytä").performScrollTo().assertIsDisplayed()
+        compose.waitForIdle()
+        compose.onNodeWithContentDescription("Näytä").performScrollTo().assertIsDisplayed()
     }
 
     @Test
     fun moveDoneAdvancesAndWrongMoveIsNamed() {
         shadowOf(ApplicationProvider.getApplicationContext<Application>()).grantPermissions(Manifest.permission.CAMERA)
         solve()
-        compose.onNodeWithContentDescription("Seuraa kameralla").performClick()
+        openFollow()
         compose.onNodeWithText("Tee siirto – sovellus huomaa sen itse.").performScrollTo().assertIsDisplayed()
         show(cube)
         show(cube.apply("U'"))
@@ -82,7 +91,7 @@ class FollowTest {
     fun framesWithoutAFaceAreIgnored() {
         shadowOf(ApplicationProvider.getApplicationContext<Application>()).grantPermissions(Manifest.permission.CAMERA)
         solve()
-        compose.onNodeWithContentDescription("Seuraa kameralla").performClick()
+        openFollow()
         show(cube)
         // The move made, but the grid does not show a face: no advance.
         show(cube.apply("U'"), face = false)

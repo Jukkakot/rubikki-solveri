@@ -17,6 +17,8 @@ import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.ui.nav.afterScan
+import fi.jukkakot.rubikkisolveri.ui.nav.ManualInputRoute
+import fi.jukkakot.rubikkisolveri.ui.nav.SolveRoute
 import fi.jukkakot.rubikkisolveri.ui.scan.FoundFaces
 import fi.jukkakot.rubikkisolveri.ui.scan.VideoScanContent
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
@@ -111,7 +113,7 @@ class VideoScanScreenTest {
         show(times = 6)
         val result = assertNotNull(outcome)
         assertEquals(cube.toColorString(), result.editor.encode())
-        assertNotNull(afterScan(result).second, "sure: straight on to the solution")
+        assertTrue(afterScan(result) is SolveRoute, "sure: straight on to the solution")
     }
 
     @Test
@@ -122,7 +124,7 @@ class VideoScanScreenTest {
         val result = assertNotNull(outcome)
         val missing = (0 until Stickers.COUNT).filter { it / 9 != Face.U.ordinal && it % 9 != 4 }
         assertTrue(result.marked.containsAll(missing))
-        assertNull(afterScan(result).second, "unsure: the check")
+        assertTrue(afterScan(result) is ManualInputRoute, "unsure: the check")
     }
 
     @Test

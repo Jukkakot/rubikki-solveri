@@ -21,6 +21,9 @@ object LastScan {
 
     var rescanned: Pair<FaceView, List<Rgb>>? by mutableStateOf(null)
 
+    /** The check of the last finished scan (a `ManualInputRoute`), opened from the solution's menu. */
+    var check: Any? = null
+
     /** Turns [face]'s picture [quarterTurns] clockwise (a rescanned face once the check knows how it was held). */
     fun turnPicture(face: Face, quarterTurns: Int, size: Int = FrameSampler.PICTURE_SIZE) {
         val picture = pictures[face] ?: return

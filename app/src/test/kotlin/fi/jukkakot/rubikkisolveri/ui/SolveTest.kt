@@ -66,7 +66,7 @@ class SolveTest {
     fun nextAndBack() {
         solve(Cube.solved().apply("R U"))
         waitFor("Siirto 1/2")
-        compose.onNodeWithText("Tein sen").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Tein sen").performScrollTo().performClick()
         compose.onNodeWithText("Siirto 2/2").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("Edellinen").performScrollTo().performClick()
         compose.onNodeWithText("Siirto 1/2").performScrollTo().assertIsDisplayed()
@@ -77,9 +77,9 @@ class SolveTest {
     fun finished() {
         solve(Cube.solved().apply("R U"))
         waitFor("Siirto 1/2")
-        compose.onNodeWithText("Näytä").performScrollTo().performClick()
-        compose.onNodeWithText("Tein sen").performScrollTo().performClick()
-        compose.onNodeWithText("Tein sen").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Näytä").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Tein sen").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Tein sen").performScrollTo().performClick()
         compose.onNodeWithText("Valmis! Kuutio on ratkaistu.").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Alkuun").performScrollTo().performClick()
         assertTrue(home)

@@ -55,6 +55,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 45 | `video-primary` | done | Video scan is the default: the home screen's scan button opens it (video icon, no "(kokeilu)" tile), "Kuva kerrallaan" switches to the guided scan and "Videolla" back (user, 2026-10-06) |
 | 46 | `solve-to-target` | done | Choose where the cube ends: pattern gallery (11 patterns), surprise, "up to a stage", or paint one's own; target row on the solution screen, "Kuviot" tile on home; the shortest way straight from the cube to the target (user, 2026-10-06) |
 | 47 | `handsfree-guide` | done | Shortest-solution guide without aiming at a button: tap the cube = done; handsfree mode after "Valmis" advances by itself at a chosen speed (bar, vibration before the next move), any touch stops it (user, 2026-10-06) |
+| 48 | `ui-polish` | done | Home: the turning cube is the scan button, five icons in a row, no tagline or best-time line; a start screen before the guide (moves, target, method, hold picture, start / handsfree with pace); the guide as a media player (⏮ ▶/⏸ ⏭, ↻, ⋮ menu); back after a scan starts a new scan; handsfree time counts from when the move appears (user, 2026-10-06) |
 
 ## Backlog
 

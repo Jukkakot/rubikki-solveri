@@ -2,7 +2,6 @@
 <!-- The default language is Finnish (product.md); English lives in values-en. -->
 <resources>
     <string name="app_name">Rubikki Solveri</string>
-    <string name="home_tagline">Skannaa kuutio ja opettele ratkaisemaan se.</string>
     <string name="home_scan">Skannaa kuutio</string>
     <string name="home_manual">Syötä käsin</string>
     <string name="settings">Asetukset</string>
@@ -96,13 +95,10 @@
     <string name="solve_show">Näytä</string>
     <string name="solve_tap_hint">Napauta kuutiota = tein sen · raahaa = käännä</string>
     <string name="handsfree">Handsfree</string>
-    <string name="handsfree_text">Ota kuutio käteen. Ohje näyttää siirron ja jatkaa itse seuraavaan, kun aika on kulunut. Kosketus näyttöön pysäyttää.</string>
     <string name="handsfree_speed">Tahti</string>
     <string name="handsfree_slow">Hidas</string>
     <string name="handsfree_normal">Normaali</string>
     <string name="handsfree_fast">Nopea</string>
-    <string name="handsfree_go">Valmis</string>
-    <string name="handsfree_cancel">Peruuta</string>
     <string name="handsfree_stop_hint">Kosketa näyttöä pysäyttääksesi</string>
     <string name="solve_previous">Edellinen</string>
     <string name="solve_finished">Valmis! Kuutio on ratkaistu.</string>
@@ -273,11 +269,6 @@
         <item quantity="other">Tarkistamatta vielä %1$d puolta</item>
     </plurals>
     <string name="home_cube_description">Kuutio, jota voi kääntää vetämällä</string>
-    <string name="home_summary">Paras %1$s · %2$s</string>
-    <plurals name="home_solve_count">
-        <item quantity="one">%1$d ratkaisu</item>
-        <item quantity="other">%1$d ratkaisua</item>
-    </plurals>
     <string name="goal_description">Tavoite: %1$s</string>
     <string name="goal_twist_note">Kulmat saavat vielä olla kiertyneinä.</string>
     <string name="goal_next">Seuraavaksi</string>
@@ -362,4 +353,14 @@
     <string name="pattern_twister">Pyörre</string>
     <string name="pattern_cross">Plussat</string>
     <string name="pattern_stripes">Raidat</string>
+    <string name="home_scan_short">Skannaa</string>
+    <string name="home_manual_short">Käsin</string>
+    <string name="home_free_short">Vapaa</string>
+    <string name="start_go">Aloita</string>
+    <string name="start_moves">%1$d siirtoa</string>
+    <string name="start_method_fast">Nopein</string>
+    <string name="start_method_learn">Opettele</string>
+    <string name="solve_pause">Pysäytä</string>
+    <string name="solve_menu">Valikko</string>
+    <string name="solve_to_start">Aloitusruutuun</string>
 </resources>

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Rubikki Solveri</string>
-    <string name="home_tagline">Scan your cube and learn to solve it.</string>
     <string name="home_scan">Scan the cube</string>
     <string name="home_manual">Enter by hand</string>
     <string name="settings">Settings</string>
@@ -95,13 +94,10 @@
     <string name="solve_show">Show</string>
     <string name="solve_tap_hint">Tap the cube = done · drag = turn it</string>
     <string name="handsfree">Hands-free</string>
-    <string name="handsfree_text">Take the cube in your hands. The guide shows each move and goes on by itself when the time is up. A touch on the screen stops it.</string>
     <string name="handsfree_speed">Pace</string>
     <string name="handsfree_slow">Slow</string>
     <string name="handsfree_normal">Normal</string>
     <string name="handsfree_fast">Fast</string>
-    <string name="handsfree_go">Ready</string>
-    <string name="handsfree_cancel">Cancel</string>
     <string name="handsfree_stop_hint">Touch the screen to stop</string>
     <string name="solve_previous">Previous</string>
     <string name="solve_finished">Done! The cube is solved.</string>
@@ -272,11 +268,6 @@
         <item quantity="other">%1$d faces left to check</item>
     </plurals>
     <string name="home_cube_description">A cube you can turn by dragging</string>
-    <string name="home_summary">Best %1$s · %2$s</string>
-    <plurals name="home_solve_count">
-        <item quantity="one">%1$d solve</item>
-        <item quantity="other">%1$d solves</item>
-    </plurals>
     <string name="goal_description">Goal: %1$s</string>
     <string name="goal_twist_note">The corners may still be twisted.</string>
     <string name="goal_next">Next</string>
@@ -361,4 +352,14 @@
     <string name="pattern_twister">Twister</string>
     <string name="pattern_cross">Plus signs</string>
     <string name="pattern_stripes">Stripes</string>
+    <string name="home_scan_short">Scan</string>
+    <string name="home_manual_short">By hand</string>
+    <string name="home_free_short">Free</string>
+    <string name="start_go">Start</string>
+    <string name="start_moves">%1$d moves</string>
+    <string name="start_method_fast">Fastest</string>
+    <string name="start_method_learn">Learn</string>
+    <string name="solve_pause">Pause</string>
+    <string name="solve_menu">Menu</string>
+    <string name="solve_to_start">Back to start</string>
 </resources>

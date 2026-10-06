@@ -2,7 +2,7 @@ package fi.jukkakot.rubikkisolveri.ui.guide
 
 import fi.jukkakot.rubikkisolveri.cube.Move
 
-/** How long handsfree gives for a quarter turn after its demo has ended. */
+/** How long handsfree gives for a quarter turn, counted from when the move appears. */
 enum class HandsfreeSpeed(val quarterMs: Long) {
     SLOW(3_600),
     NORMAL(2_100),
