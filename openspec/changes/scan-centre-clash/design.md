@@ -34,7 +34,14 @@ changes to the finder; UI.
    face's centre is ranked by distance to the six colours (the same references as now). If two
    faces of the picture name the same colour, the one closer to it keeps it; the other takes its
    next-best colour not taken in that picture (greedy, closest first; at most three faces are ever
-   in view). Partial faces take part the same way (they still join only an existing group).
+   in view). ~~Partial faces take part the same way.~~ **Changed while implementing:** only full
+   faces take part; a partial face keeps its closest colour as before. Most clashes in the test
+   videos are partial faces (a wrong lattice, or the same face found twice) named like the full
+   face beside them; moved to their next-best colour they voted for the wrong face, and evening
+   video 213850 never cleared. In their own group the anchor rejects them, as before. And a full
+   face takes its next-best colour only when it fits nearly as well (`CENTRE_SWAP_WITHIN`, 15 in
+   centre distance; real blue-named-white cases were 2–7 apart), else it is left out of that
+   picture: with no limit the angled video (full faces only) never completed.
    Alternative considered: a sanity check on the colours inside the face (a "white" face full of
    yellow); rejected as fragile, while two faces in view are the common corner view.
 

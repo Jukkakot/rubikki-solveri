@@ -149,10 +149,10 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
      * counts only with its centre and only for a face already started by a full one.
      */
     fun onFrame(faces: List<FaceReading>, nowMillis: Long): VideoScanState {
-        val fresh = faces.map { face ->
-            val centre = face.colors[CENTRE] ?: return@map null
-            val color = nameCentre(centre)
-            val group = if (face.isFull) groups.getOrPut(color) { Group(color) } else groups[color] ?: return@map null
+        val centres = nameCentres(faces)
+        val fresh = faces.mapIndexed { i, face ->
+            val color = centres[i] ?: return@mapIndexed null
+            val group = if (face.isFull) groups.getOrPut(color) { Group(color) } else groups[color] ?: return@mapIndexed null
             Reading(face, group).also { group.add(it) }
         }
         for (i in faces.indices) for (j in faces.indices) {
@@ -330,10 +330,37 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         )
     }
 
-    /** The colour a reading's centre names its face by: regardless of brightness, against the six centres once all are seen. */
-    private fun nameCentre(rgb: Rgb): CubeColor {
-        if (groups.size < 6) return ColorClassifier.rankedCentre(rgb).first()
-        return ColorClassifier.rankedCentre(rgb, groups.mapValues { (_, g) -> meanCentre(g) }).first()
+    /**
+     * The colour each face's centre names it by (null without a centre): regardless of brightness,
+     * against the six centres once all are seen. Two full faces of one picture never share a colour:
+     * the closest fits are given first, and a face whose colour is taken gets its next-best one free
+     * if that fits nearly as well ([CENTRE_SWAP_WITHIN]), else it is left out of this picture (a dark
+     * blue centre in shadow named white beside the white face, `scan-centre-clash`). A partial face
+     * keeps its closest colour: a wrong lattice is caught by its group's anchor, while moved to another
+     * colour it would vote there (evening video 213850 never cleared).
+     */
+    private fun nameCentres(faces: List<FaceReading>): List<CubeColor?> {
+        val known = if (groups.size < 6) emptyMap() else groups.mapValues { (_, g) -> meanCentre(g) }
+        val names = arrayOfNulls<CubeColor>(faces.size)
+        val fits = faces.withIndex().filter { it.value.isFull }.flatMap { (i, face) ->
+            ColorClassifier.centreDistances(face.colors[CENTRE]!!, known).entries.map { (c, d) -> Triple(i, c, d) }
+        }.sortedBy { it.third }
+        val taken = HashSet<CubeColor>()
+        val closest = HashMap<Int, Double>()
+        val done = HashSet<Int>()
+        for ((i, color, d) in fits) {
+            if (i in done) continue
+            val first = closest.getOrPut(i) { d }
+            if (color in taken) continue
+            done += i
+            if (d - first > CENTRE_SWAP_WITHIN) continue
+            names[i] = color
+            taken += color
+        }
+        for ((i, face) in faces.withIndex()) if (!face.isFull) {
+            names[i] = face.colors[CENTRE]?.let { ColorClassifier.centreDistances(it, known).minBy { e -> e.value }.key }
+        }
+        return names.toList()
     }
 
     private fun meanCentre(group: Group): Rgb {
@@ -571,6 +598,14 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
     companion object {
         private const val CENTRE = 4
+
+        /**
+         * A full face whose centre colour another face of the picture fits better takes its next-best
+         * colour only when that is at most this much further ([ColorClassifier.centreDistances]): blue
+         * centres in shadow named white were 2–7 further from blue; with no limit wrong faces were
+         * taken in the test videos (`scan-centre-clash`).
+         */
+        const val CENTRE_SWAP_WITHIN = 15.0
 
         /** Readings that must agree before a sticker counts (`video-scan-spike`: wrong readings lasted at most 2 frames, 5 for one sticker). */
         const val MIN_VOTES = 3

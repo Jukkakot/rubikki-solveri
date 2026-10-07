@@ -84,6 +84,65 @@ class VideoScanTest {
         }
     }
 
+    /** Every sticker known in any frame of [states] is the true one ([truth], URFDLB) once its face's rotation is settled by the complete cube or a corner view. */
+    private fun assertKnownTrue(video: String, states: List<VideoScanState>, truth: String) {
+        val last = states.last()
+        for (i in 0 until Stickers.COUNT) last.stickers[i]?.let { assertEquals(truth[i], it.letter, "$video sticker $i") }
+        for ((n, s) in states.withIndex()) if (s.complete) assertEquals(truth, s.stickers.joinToString("") { it!!.letter.toString() }, "$video frame $n")
+    }
+
+    @Test
+    fun videosOf20261007ReadTheTrueCube() {
+        val camera = replay(VideoFixtures.CAMERA_1007)
+        assertKnownTrue(VideoFixtures.CAMERA_1007, camera, VideoFixtures.TRUTH_1007)
+        println("${VideoFixtures.CAMERA_1007}: ${camera.last().recognised} known at the end")
+        val scan = VideoScan()
+        val tour = replay(VideoFixtures.TOUR_1007, scan)
+        assertKnownTrue(VideoFixtures.TOUR_1007, tour, VideoFixtures.TRUTH_1007)
+        val finish = tour.indexOfFirst { it.finished }
+        println("${VideoFixtures.TOUR_1007} frames to finish: $finish (before scan-centre-clash: 354)")
+        assertTrue(finish >= 0, "finishes")
+        assertEquals(VideoFixtures.TRUTH_1007, scan.outcome().editor.encode())
+    }
+
+    /** The blue centre of the web scan's start mixed towards white until the scan names it white, as the phone's camera saw it. */
+    private fun paleBlue(blue: Rgb): Rgb = (1..100).map { t ->
+        Rgb(blue.r + (255 - blue.r) * t / 100, blue.g + (255 - blue.g) * t / 100, blue.b + (255 - blue.b) * t / 100)
+    }.first { ColorClassifier.rankedCentre(it).first() == CubeColor.WHITE }
+
+    @Test
+    fun aDarkBlueCentreNamedWhiteDoesNotSpoilTheWhiteFace() {
+        // scan-centre-clash, 2026-10-07: the cube still on the table for ~10 s, white on top, blue on the right in shadow.
+        val frames = VideoFixtures.load(VideoFixtures.WEB_1007).filter { it.faces.size == 3 }
+        val pale = frames.map { f ->
+            f.copy(faces = f.faces.map { r -> if (ColorClassifier.rankedCentre(r.colors[4]!!).first() == CubeColor.BLUE) r.copy(colors = r.colors.toMutableList().also { it[4] = paleBlue(it[4]!!) }) else r })
+        }
+        assertTrue(pale.flatMap { it.faces }.count { ColorClassifier.rankedCentre(it.colors[4]!!).first() == CubeColor.WHITE } >= 2 * pale.size, "two faces named white per picture")
+        fun still(list: List<VideoFixtures.Frame>) = replay(List(100) { list[it % list.size] }).last()
+        fun white(s: VideoScanState) = (0 until 9).map { s.stickers[Face.U.ordinal * 9 + it] ?: s.leading[Face.U.ordinal * 9 + it] }
+        val asSeen = still(frames)
+        val s = still(pale)
+        // The white face reads as it does with the blue centre named blue (one corner in shadow reads blue in this fixture either way).
+        assertEquals(white(asSeen), white(s))
+        val trueWhite = VideoFixtures.TRUTH_1007.substring(Face.U.ordinal * 9, Face.U.ordinal * 9 + 9)
+        assertTrue((0 until 4).maxOf { k -> RotationSearch.turned(white(s), k).withIndex().count { (n, c) -> c?.letter == trueWhite[n] } } >= 8)
+        assertTrue(recognisedOn(s, Face.B).isNotEmpty(), "the blue face gets its readings")
+    }
+
+    @Test
+    fun twoFacesOfOnePictureNamingTheSameCentreAreToldApart() {
+        // B's centre read paler than U's own white: U keeps white, B takes its next-best colour (blue).
+        val u = reading(Face.U, centre = Point(100.0, 110.0))
+        val b = reading(Face.B, centre = Point(190.0, 200.0)).let { r -> r.copy(colors = r.colors.toMutableList().also { it[4] = paleBlue(it[4]!!) }) }
+        assertEquals(CubeColor.WHITE, ColorClassifier.rankedCentre(b.colors[4]!!).first())
+        val scan = VideoScan()
+        var s = VideoScanState.EMPTY
+        repeat(4) { s = scan.onFrame(listOf(u, b), it * 100L) }
+        for (n in 0 until 9) s.stickers[Face.U.ordinal * 9 + n]?.let { assertEquals(truth[Face.U.ordinal * 9 + n], it, "U $n") }
+        assertEquals(CubeColor.BLUE, s.stickers[Face.B.ordinal * 9 + 4])
+        assertEquals(8, recognisedOn(s, Face.U).size)
+    }
+
     /** Frames until the cube is first complete (null: never) and stickers recognised at the halfway frame, replaying only the faces [keep] lets through. */
     private fun speed(video: String, keep: (FaceReading) -> Boolean): Pair<Int?, Int> {
         val states = replay(VideoFixtures.load(video).map { f -> f.copy(faces = f.faces.filter(keep)) })
