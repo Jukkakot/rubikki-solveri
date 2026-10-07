@@ -2,8 +2,8 @@
 
 ## 1. Acceptance harness
 
-- [ ] 1.1 Grow `CornerScanHarness` into the acceptance harness: every fixture as recorded and in the robustness variant, per mode (old, rules) frames to finish, right / WRONG, ms per frame; a JVM test (gated, as now) that fails when the rules path breaks the bar of design 6; verify it runs and prints today's numbers for the old mode.
-- [ ] 1.2 Move the synthetic corner/edge view builder from `CornerReaderTest` into a shared test helper (any cube, any corner or edge view, roll, reading turns, centre overrides); verify `CornerReaderTest` still passes using it.
+- [x] 1.1 Grow `CornerScanHarness` into the acceptance harness: every fixture as recorded and in the robustness variant, per mode (old, rules) frames to finish, right / WRONG, ms per frame; a JVM test (gated, as now) that fails when the rules path breaks the bar of design 6; verify it runs and prints today's numbers for the old mode.
+- [x] 1.2 Move the synthetic corner/edge view builder from `CornerReaderTest` into a shared test helper (any cube, any corner or edge view, roll, reading turns, centre overrides); verify `CornerReaderTest` still passes using it.
 
 ## 2. Tracks
 

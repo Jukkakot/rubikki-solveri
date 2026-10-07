@@ -74,6 +74,12 @@ data class VideoScanState(
 enum class Stall { DARK, NO_CUBE, STUCK }
 
 /**
+ * Which way the video scan tells the faces apart (`scan-rules`): [RULES] by the rules of a real cube
+ * ([FaceTracks]), [LOOK] by how the centres look (the earlier scanner). The log name is [logName].
+ */
+enum class ScanEngine(val logName: String) { RULES("rules"), LOOK("look") }
+
+/**
  * The scan from continuous video (`video-scan`): every full face found in a frame ([FaceReading])
  * votes for its stickers. Faces are told apart by how they look on this cube in this light (their
  * stickers and centre colour), kept in piles named together, each colour once; a pile that could as
@@ -93,6 +99,7 @@ class VideoScan(
      * seen together (neighbours, never opposite colours). Off by default until the spike decides.
      */
     private val rules: Boolean = false,
+    val engine: ScanEngine = ScanEngine.LOOK,
 ) {
     private class Reading(val face: FaceReading, var group: Group, val seq: Long) {
         val rgb: List<Rgb?> get() = face.colors
