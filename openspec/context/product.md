@@ -82,6 +82,9 @@ method stage by stage so you learn to solve it yourself.
   changed screens are checked against this.
 - **Back after a scan is a new scan:** the goal is a scan so quick that colours are never fixed by
   hand; the colour check stays reachable from the solution's menu.
+- **Scanning as easy as possible (user, 2026-10-07):** the user just turns the cube freely; no
+  guided steps ("show this corner") and no asking the user to tell colours apart (e.g. red or
+  orange). Hard cases are the scanner's job.
 - **Choices once, before the guide:** target, method and handsfree pace are chosen on a start
   screen; the guide itself is a media player (previous, play/pause handsfree, next).
 

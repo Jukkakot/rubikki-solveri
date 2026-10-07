@@ -65,7 +65,11 @@ reading a face's stickers differently (voting and the best-cube fit stay).
 - [A screen recording is not a camera video] → if the striped fixture is too poor, a camera video of
   the striped cube is asked from the user.
 
-## Open Questions
+## Answers from the user (2026-10-07)
 
-- The go / no-go bar is agreed with the user from the numbers (`findings.md`), as for the first
-  spike.
+- **Shape:** hidden inside free scanning only. No guided "show this corner" mode and no asking the
+  user to tell colours apart (`product.md`, "Scanning as easy as possible"). The harness still
+  reports how often both corners are seen, as a measure of how far free scanning gets.
+- **Striped fixture:** try the screen recording first (design 5).
+- **Go bar:** never a wrong cube on any fixture (normal and robustness runs), and clearly fewer
+  frames to finish than today's scan in the robustness run.
