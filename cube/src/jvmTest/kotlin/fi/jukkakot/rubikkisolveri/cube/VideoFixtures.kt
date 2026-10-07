@@ -42,6 +42,10 @@ object VideoFixtures {
     /** Camera video, 9 s, brighter light, blue on top first: the orange centre is named red until the red face is seen at frame 78 (`scan-centre-naming`). */
     const val BLUE_FIRST_1007 = "20261007_152753"
 
+    /** Screen recording of the web test of 2026-10-07 18:19, the camera part (360×600, 10 fps): the striped pattern cube, slow first scan then a quick one (`corner-scan-spike`). */
+    const val STRIPED = "web_181940"
+    const val STRIPED_TRUTH = "WWWWWWWWWBRGBRGBRGOGROGROGRYYYYYYYYYGOBGOBGOBRBORBORBO"
+
     data class Frame(val name: String, val faces: List<FaceReading>)
 
     /** [blue] mixed towards white until the default palette names it white, as the phone's camera saw a blue centre in shadow. */

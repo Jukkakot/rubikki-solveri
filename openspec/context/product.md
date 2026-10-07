@@ -85,6 +85,12 @@ method stage by stage so you learn to solve it yourself.
 - **Scanning as easy as possible (user, 2026-10-07):** the user just turns the cube freely; no
   guided steps ("show this corner") and no asking the user to tell colours apart (e.g. red or
   orange). Hard cases are the scanner's job.
+- **Every safe inference, all the time (user, 2026-10-07):** the scanner keeps narrowing the set of
+  cubes this one can still be, using every rule a real cube always obeys: each colour on nine
+  stickers, opposite centres (white–yellow, green–blue, red–orange), only real corner and edge
+  pieces, each piece once, the corners' colour order (handedness), faces seen together are
+  neighbours, the cube does not change while it is scanned. A reading that breaks a rule counts
+  for less; what is left decides the rest.
 - **Choices once, before the guide:** target, method and handsfree pace are chosen on a start
   screen; the guide itself is a media player (previous, play/pause handsfree, next).
 

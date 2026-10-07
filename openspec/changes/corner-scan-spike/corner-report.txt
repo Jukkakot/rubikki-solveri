@@ -1,0 +1,26 @@
+== as recorded
+video | frames | corner frames | corners right | corners wrong | faces in corners | opposite corners at | today: finished at / right | with rules: finished at / right | corners only: finished at / right
+20261005_151828 | 250 | 1 | 0 | 1 | 0 | never | 209 / right | 209 / right | never
+20261005_151903 | 186 | 0 | 0 | 0 | 0 | never | 114 / right | 114 / right | never
+20261005_213729 | 133 | 0 | 0 | 0 | 0 | never | 117 / right | 117 / right | never
+20261005_213817 | 143 | 10 | 10 | 0 | 3 | never | 118 / right | 118 / right | never
+20261005_213850 | 203 | 0 | 0 | 0 | 0 | never | 168 / right | 168 / right | never
+20261005_213929 | 213 | 16 | 16 | 0 | 3 | never | 193 / right | 193 / right | never
+20261007_132049 | 134 | 1 | 1 | 0 | 3 | never | never | never | never
+20261007_132721 | 425 | 19 | 3 | 16 | 3 | never | 154 / right | 154 / right | never
+20261007_152753 | 91 | 50 | 33 | 17 | 3 | never | 66 / right | 66 / right | never
+20261007_web | 14 | 13 | 13 | 0 | 3 | never | never | never | never
+web_181940 | 780 | 35 | 35 | 0 | 5 | never | never | 322 / right | never
+== robustness: red centres towards orange, blue towards white
+video | frames | corner frames | corners right | corners wrong | faces in corners | opposite corners at | today: finished at / right | with rules: finished at / right | corners only: finished at / right
+20261005_151828 | 250 | 1 | 0 | 1 | 0 | never | 123 / WRONG | 122 / WRONG | never
+20261005_151903 | 186 | 0 | 0 | 0 | 0 | never | never | never | never
+20261005_213729 | 133 | 0 | 0 | 0 | 0 | never | never | never | never
+20261005_213817 | 143 | 10 | 10 | 0 | 3 | never | never | never | never
+20261005_213850 | 203 | 0 | 0 | 0 | 0 | never | never | never | never
+20261005_213929 | 213 | 16 | 16 | 0 | 3 | never | 193 / right | 193 / right | never
+20261007_132049 | 134 | 1 | 1 | 0 | 3 | never | never | never | never
+20261007_132721 | 425 | 19 | 3 | 16 | 3 | never | never | 368 / right | never
+20261007_152753 | 91 | 50 | 34 | 16 | 3 | never | never | never | never
+20261007_web | 14 | 13 | 13 | 0 | 3 | never | never | never | never
+web_181940 | 780 | 27 | 27 | 0 | 5 | never | never | 326 / right | never

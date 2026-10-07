@@ -73,3 +73,15 @@ reading a face's stickers differently (voting and the best-cube fit stay).
 - **Striped fixture:** try the screen recording first (design 5).
 - **Go bar:** never a wrong cube on any fixture (normal and robustness runs), and clearly fewer
   frames to finish than today's scan in the robustness run.
+
+## Decisions while implementing (2026-10-07)
+
+- **Corner test by the common point, not `sideTowards`:** in a corner view the top face's
+  neighbours lie diagonally in its lattice, so `sideTowards` rejects them. The three centres' mean is
+  where the cube's corner shows; each face's corner sticker points to it (1.0–3.0 steps out on both
+  axes on the fixtures).
+- **The check of a corner reading** is whether its side and turn fit the face's stickers best (named
+  by the picture's own centres): single misread stickers and dim yellow reading green made a fixed
+  "7 of 8" check call right corners wrong.
+- **The experiment had to reach the piling** (`rules` in `pileFaces` and `nameJointly`): rules in the
+  naming alone changed nothing (findings 3).

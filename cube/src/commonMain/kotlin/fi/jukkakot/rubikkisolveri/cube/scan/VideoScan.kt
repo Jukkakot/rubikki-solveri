@@ -85,7 +85,15 @@ enum class Stall { DARK, NO_CUBE, STUCK }
  * possible cube ([CLEAR_MARGIN]), so a single wrong frame changes nothing and a misread sticker that
  * fits no real piece is corrected by the rest. Pure Kotlin, one code base for the phone and the browser.
  */
-class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
+class VideoScan(
+    private val scheme: ColorScheme = ColorScheme.STANDARD,
+    /**
+     * `corner-scan-spike` experiment: the faces are named only in ways a real cube allows, judged by
+     * corner views ([CornerReader]: which colours meet at a corner and which way round) and by faces
+     * seen together (neighbours, never opposite colours). Off by default until the spike decides.
+     */
+    private val rules: Boolean = false,
+) {
     private class Reading(val face: FaceReading, var group: Group, val seq: Long) {
         val rgb: List<Rgb?> get() = face.colors
         val area: Double get() = face.area
@@ -126,6 +134,9 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** Piles seen in one picture with this one: never the same face. */
         val apart = HashSet<Group>()
+
+        /** Corner views' votes for this pile's colour (by ordinal), with [rules]. */
+        val cornerVotes = IntArray(6)
         val readings = ArrayList<Reading>()
         var anchor: Reading? = null
 
@@ -178,7 +189,9 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
      * counts only with its centre and only for a face already started by a full one.
      */
     fun onFrame(faces: List<FaceReading>, nowMillis: Long): VideoScanState {
-        val pileOf = pileFaces(faces)
+        val corner = if (rules) CornerReader.read(faces) else null
+        val cornerName = corner?.let { r -> r.faces.indices.associate { k -> r.faces[k] to r.names[k] } }.orEmpty()
+        val pileOf = pileFaces(faces, cornerName)
         val fresh = faces.mapIndexed { i, face ->
             val group = pileOf[i] ?: return@mapIndexed null
             Reading(face, group, seq++).also { group.add(it) }
@@ -188,6 +201,9 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             val b = fresh[j] ?: continue
             if (i != j) faces[i].sideTowards(faces[j])?.let { a.neighbours += it to b }
             if (i != j && faces[i].isFull && faces[j].isFull) a.group.apart += b.group
+        }
+        corner?.let { r ->
+            for (k in r.faces.indices) pileOf[r.faces[k]]?.cornerVotes?.let { it[r.names[k].ordinal]++ }
         }
         mergeClosePiles()
         nameJointly()
@@ -375,7 +391,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
      * replaces a stray named by what was left over; else the face is left out of this picture. A partial
      * face only joins its closest pile within [JOIN_WITHIN]: a wrong lattice is caught by the anchor.
      */
-    private fun pileFaces(faces: List<FaceReading>): List<Group?> {
+    private fun pileFaces(faces: List<FaceReading>, cornerName: Map<Int, CubeColor> = emptyMap()): List<Group?> {
         val means = piles.associateWith { pileLab(it) }
         val centres = faces.map { f -> f.colors[CENTRE]?.let { ColorClassifier.scaled(it).toLab() } }
         val out = arrayOfNulls<Group>(faces.size)
@@ -405,7 +421,14 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             left.remove(i)
             // A second lattice on a face this picture already has (the same stickers): left out.
             if (taken.any { agrees(i, it) }) continue
-            val clashing = piles.filter { clashes(i, it) }.toSet()
+            // With rules: a face a corner names never joins a pile its corner views name otherwise.
+            fun cornerClash(g: Group): Boolean {
+                val name = cornerName[i] ?: return false
+                val votes = g.cornerVotes
+                val top = votes.indices.maxBy { votes[it] }
+                return votes[top] >= 2 && top != name.ordinal
+            }
+            val clashing = piles.filter { clashes(i, it) || cornerClash(it) }.toSet()
             val near = near(i).filter { it.first !in clashing }
             val close = near.filter { it.second <= JOIN_WITHIN }.map { it.first }
             val ranked = ColorClassifier.centreDistances(faces[i].colors[CENTRE]!!).entries.sortedBy { it.value }
@@ -525,7 +548,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             used += color
         }
         if (seen.isNotEmpty()) {
-            val namings = ColorClassifier.centreNamingCosts(seen.map { meanCentre(it) }, seen.map { if (it.named) it.color else null })
+            val namings = ruled(seen, ColorClassifier.centreNamingCosts(seen.map { meanCentre(it) }, seen.map { if (it.named) it.color else null }))
             val (cost, naming) = namings.first()
             seen.forEachIndexed { i, g ->
                 val other = namings.first { it.second[i] != naming[i] }
@@ -544,6 +567,26 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             rename(g, left.firstOrNull()?.key ?: g.color)
         }
         groups = piles.filter { !it.doubtful }.associateBy { it.color }
+    }
+
+    /**
+     * With [rules], [namings] re-scored by what a real cube allows: a pile named against its corner
+     * views' votes costs up to [CORNER_COST], two piles seen in one picture named opposite colours
+     * (white and yellow side by side) [APART_COST]; otherwise as given.
+     */
+    private fun ruled(seen: List<Group>, namings: List<Pair<Double, List<CubeColor>>>): List<Pair<Double, List<CubeColor>>> {
+        if (!rules) return namings
+        val opposite = CubeColor.entries.associateWith { c -> scheme[scheme.faceOf(c).opposite] }
+        val pairs = seen.indices.flatMap { i -> seen.indices.filter { j -> j > i && seen[j] in seen[i].apart }.map { i to it } }
+        return namings.map { (cost, naming) ->
+            var extra = 0.0
+            seen.forEachIndexed { i, g ->
+                val total = g.cornerVotes.sum()
+                if (total > 0) extra += CORNER_COST * (1.0 - g.cornerVotes[naming[i].ordinal].toDouble() / total)
+            }
+            for ((i, j) in pairs) if (opposite.getValue(naming[i]) == naming[j]) extra += APART_COST
+            cost + extra to naming
+        }.sortedBy { it.first }
     }
 
     /**
@@ -787,6 +830,10 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** Piles whose centres come this close are one face. */
         const val MERGE_WITHIN = 8.0
+
+        /** With rules: the cost of naming a pile against all its corner votes, and of two neighbours named opposite colours. */
+        const val CORNER_COST = 30.0
+        const val APART_COST = 50.0
 
         /** A pile is doubtful while naming it otherwise costs less than this much more. */
         const val DOUBT_MARGIN = 5.0
