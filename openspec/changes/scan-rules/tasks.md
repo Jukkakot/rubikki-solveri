@@ -7,7 +7,7 @@
 
 ## 2. Tracks
 
-- [ ] 2.1 Add tracks (design 2): continuation by position, step vectors, in-plane turn and sticker agreement; partial readings continue only; JVM tests with synthetic sequences (a face moving and turning slowly stays one track; a jump to another face starts a new one; a partial reading continues); verify `./gradlew :cube:jvmTest --tests "*Track*"` passes.
+- [x] 2.1 Add tracks (design 2): continuation by position, step vectors, in-plane turn and sticker agreement; partial readings continue only; JVM tests with synthetic sequences (a face moving and turning slowly stays one track; a jump to another face starts a new one; a partial reading continues); verify `./gradlew :cube:jvmTest --tests "*Track*"` passes.
 
 ## 3. Pair rules
 

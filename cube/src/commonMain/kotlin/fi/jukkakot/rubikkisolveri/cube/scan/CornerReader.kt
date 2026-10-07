@@ -23,6 +23,13 @@ data class CornerReading(
 )
 
 /**
+ * Three full faces of one picture meeting at a corner, by geometry alone: [faces] are indices into
+ * the picture's faces, clockwise as seen from outside the cube; [stickers] each face's corner sticker
+ * (reading index) at the common corner.
+ */
+data class CornerView(val faces: List<Int>, val stickers: List<Int>)
+
+/**
  * Reads a corner from the faces found in one picture: three full faces whose common corner (the mean
  * of their centres, where the corner of the cube shows) lies, for each face, about one and a half
  * steps out along both of its lattice axes, i.e. just beyond one of its corner stickers. The three
@@ -58,13 +65,28 @@ object CornerReader {
         return best?.takeIf { it.margin >= minMargin }
     }
 
-    private fun readTriple(faces: List<FaceReading>, triple: List<Int>, scheme: ColorScheme): CornerReading? {
+    /** Every three full faces of [faces] that meet at a corner. */
+    fun views(faces: List<FaceReading>): List<CornerView> {
+        val full = faces.indices.filter { faces[it].isFull }
+        val out = ArrayList<CornerView>()
+        for (a in full) for (b in full) for (c in full) if (a < b && b < c) view(faces, listOf(a, b, c))?.let { out += it }
+        return out
+    }
+
+    /** The corner [triple] of [faces] meets at, or null when they do not sit round one corner. */
+    fun view(faces: List<FaceReading>, triple: List<Int>): CornerView? {
         // The cube's corner shows where the three centres' mean is; each face's corner sticker points to it.
         val mx = triple.sumOf { faces[it].centre.x } / 3
         val my = triple.sumOf { faces[it].centre.y } / 3
         val corner = triple.associateWith { i -> cornerSticker(faces[i], Point(mx, my)) ?: return null }
         // Clockwise on screen (y down): by angle about that point.
         val order = triple.sortedBy { atan2(faces[it].centre.y - my, faces[it].centre.x - mx) }
+        return CornerView(order, order.map { corner.getValue(it) })
+    }
+
+    private fun readTriple(faces: List<FaceReading>, triple: List<Int>, scheme: ColorScheme): CornerReading? {
+        val view = view(faces, triple) ?: return null
+        val order = view.faces
         val distances = order.map { ColorClassifier.centreDistances(faces[it].colors[CENTRE]!!) }
         val hypotheses = Corner.entries.flatMap { piece ->
             (0 until 3).map { s ->
@@ -75,10 +97,10 @@ object CornerReader {
         }.sortedBy { it.first }
         val (cost, piece, sides) = hypotheses[0]
         val margin = hypotheses[1].first - cost
-        val turns = order.mapIndexed { k, i ->
+        val turns = order.mapIndexed { k, _ ->
             // The net index of this face's sticker at the corner, and the turn that puts it where the reading has it.
             val net = piece.stickers[piece.faces.indexOf(sides[k])] % 9
-            (0 until 4).first { t -> RotationSearch.turnIndex(net, t) == corner.getValue(i) }
+            (0 until 4).first { t -> RotationSearch.turnIndex(net, t) == view.stickers[k] }
         }
         return CornerReading(order, sides.map { scheme[it] }, sides, turns, margin)
     }
