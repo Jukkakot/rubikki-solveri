@@ -89,13 +89,16 @@ another option costs at least `ASSIGN_MARGIN` more; both hold for about half a s
 stickers: from the best cube where its margin is clear and the stickers' faces come from settled or
 clearly assigned tracks; otherwise the leading vote, as today.
 
-### 6. Built beside, then switched
+### 6. Built beside, both kept
 
 The track solver lives in its own file (`cube/scan/FaceTracks.kt` or similar) and `VideoScan` gets a
 mode (old path / rules path) keeping one state assembly (projection, pose, stall, exposure hooks).
 The acceptance harness (grown from `CornerScanHarness`) replays all fixtures in both modes and in the
-robustness variant. Switch when the rules path meets the bar below; then the old path, the
-`rules` flag and its tests go.
+robustness variant, and keeps doing so. **Both paths stay** (user, 2026-10-07): Settings offers the
+scanner choice (stored with the other settings), the rules path becomes the default when it meets
+the bar below, and every scan log line carries `engine=rules|look`. The spike's `rules` flag (corner
+votes added to the old path) goes, since the rules path supersedes it; the old path otherwise stays
+as it is.
 
 **Acceptance bar** (my proposal, see questions): on every fixture, as recorded and robustness, the
 rules path never finishes wrong; as recorded it finishes on at least the 8 fixtures today finishes,
@@ -125,8 +128,8 @@ the scan in the Web Worker as today.
 
 ## Migration Plan
 
-Mode flag, default old → harness → default rules (the phone and the web get it in the same push) →
-remove the old path in a later task of this change. Rollback: flip the default back.
+Mode flag, default old → harness → default rules (the phone and the web get it in the same push);
+the old path stays choosable in Settings. Rollback: flip the default back.
 
 ## Open Questions
 

@@ -28,9 +28,10 @@ turning the cube in the hand: no guidance, no asking the user about colours.
   - its centre's look, as soft evidence only.
 - **The scan finishes when one cube is left clearly** (as now, about half a second), and never
   shows a sticker as known that a possible cube could still have otherwise.
-- **Built beside today's scan**, measured on all recordings (also with look-alike centres) and
-  switched over only when it is never wrong and finishes at least as often; then today's piling by
-  look goes.
+- **Built beside today's scan, and both stay** (user, 2026-10-07): measured against each other on
+  all recordings (also with look-alike centres); Settings offers the choice of scanner (new / old) so
+  both can be compared on the phone too; the new one becomes the default when it is never wrong and
+  finishes at least as often; every scan log says which scanner ran.
 - What the user sees stays the same: progress ring, grey veils and dots, stall notice, finish.
 
 ## Capabilities
@@ -42,13 +43,14 @@ None.
 ### Modified Capabilities
 
 - `video-scan`: "Recognised by agreement" (faces known by rules and possible cubes, not by centre
-  look first; never a cube that breaks a rule) and "Finish the video scan" (one possible cube left).
+  look first; never a cube that breaks a rule) and "Finish the video scan" (one possible cube left);
+  added "Two scanners to compare" (the choice in Settings, the log).
 
 ## Impact
 
 - `cube`: a new scan core (possible pieces per place, face hypotheses per reading, the joint
   narrowing), `CornerReader` reused, `BestCube` reused or folded in; `VideoScan` keeps its public
-  state so `shared` (screen, paint) does not change. `CornerScanHarness` grows into the acceptance
+  state so the screen and paint in `shared` do not change; Settings gets the scanner choice. `CornerScanHarness` grows into the acceptance
   harness.
 - Performance: one frame's narrowing must fit the phone and the browser (Web Worker) next to the
   finder (~40 ms a frame today).

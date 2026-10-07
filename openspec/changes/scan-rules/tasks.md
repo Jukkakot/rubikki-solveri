@@ -23,7 +23,8 @@
 - [ ] 5.1 Give `VideoScan` the mode (design 6), building the same `VideoScanState` from the solver (stickers, leading, found faces with names and known colours, confirmed sides, projection and pose from settled tracks, stall); run the existing `VideoScanTest` and `ScanPaintTest` against both modes; verify both pass (scenarios that only described the old piling are rewritten to the new spec).
 - [ ] 5.2 Run the acceptance harness; study every wrong or unfinished fixture, starting with the robustness wrong cube of `20261005_151828`; add any further safe rule it shows (recorded in design.md); verify the rules path meets the bar.
 
-## 6. Switch and clean up
+## 6. Both scanners, switch and wrap-up
 
-- [ ] 6.1 Make the rules path the default; remove the old piling path (`pileFaces`, `mergeClosePiles`, `nameJointly`, `consensus` piles, sticky, waiting, clash and stray rules, the `rules` flag) and its now-dead tests; verify `./gradlew test lint assembleDebug :web:wasmJsBrowserDistribution` passes.
-- [ ] 6.2 Update `docs/architecture.md` (the scan pipeline map) and the roadmap entry; list for the user what to try on the phone (look-alike light, the striped cube, a normal scramble); verify no doc still describes piling by centre look.
+- [ ] 6.1 Add the scanner choice to Settings (new / earlier, remembered, default new) and `engine=rules|look` on the scan log lines; remove the spike's `rules` flag from the old path; a light test that the choice changes the scanner the scan uses and survives a restart; verify the test passes.
+- [ ] 6.2 Make the rules path the default once 5.2 meets the bar; verify `./gradlew test lint assembleDebug :web:wasmJsBrowserDistribution` passes.
+- [ ] 6.3 Update `docs/architecture.md` (the scan pipeline map: both scanners, where the choice lives) and the roadmap entry; list for the user what to try on the phone (both scanners in look-alike light, the striped cube, a normal scramble); verify the docs describe both scanners.

@@ -1,3 +1,19 @@
+## ADDED Requirements
+
+### Requirement: Two scanners to compare
+The app SHALL keep two video scanners: the new one that knows faces by the rules of a real cube and
+the earlier one that tells faces by their centres' look. Settings SHALL offer the choice between
+them, remembered across starts; the new one SHALL be the default. Every scan's log SHALL record which
+scanner ran, so the two can be compared from real use.
+
+#### Scenario: Choosing the earlier scanner
+- **WHEN** the user picks the earlier scanner in Settings and starts a scan
+- **THEN** the video scan runs with the earlier scanner, and the choice is still there after the app is restarted
+
+#### Scenario: Which scanner in the log
+- **WHEN** a video scan runs
+- **THEN** its log lines say which scanner it used
+
 ## MODIFIED Requirements
 
 ### Requirement: Recognised by agreement
