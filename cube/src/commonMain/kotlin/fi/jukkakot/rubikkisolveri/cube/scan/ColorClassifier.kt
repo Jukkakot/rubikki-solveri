@@ -48,8 +48,12 @@ object ColorClassifier {
      * distance to each reference in [refs] with width [width]. A reading halfway between two colours
      * gives each about half (`video-scan-light`).
      */
-    fun shares(lab: Lab, refs: Map<CubeColor, Lab>, width: Double = SHARE_WIDTH): DoubleArray {
-        val d2 = DoubleArray(6) { c -> refs.getValue(CubeColor.entries[c]).distance(lab).let { it * it } }
+    fun shares(lab: Lab, refs: Map<CubeColor, Lab>, width: Double = SHARE_WIDTH): DoubleArray =
+        sharesOf(DoubleArray(6) { c -> refs.getValue(CubeColor.entries[c]).distance(lab) }, width)
+
+    /** [shares] from the distances [d] to each colour's reference (by ordinal). */
+    fun sharesOf(d: DoubleArray, width: Double = SHARE_WIDTH): DoubleArray {
+        val d2 = DoubleArray(6) { c -> d[c] * d[c] }
         val least = d2.min()
         val w = DoubleArray(6) { c -> exp(-(d2[c] - least) / (2 * width * width)) }
         val sum = w.sum()
@@ -103,25 +107,36 @@ object ColorClassifier {
      */
     fun centreNamings(centres: List<Rgb>, preferred: List<CubeColor>? = null, limit: Int = 12): List<List<CubeColor>> {
         require(centres.size == 6)
+        return centreNamingCosts(centres, preferred).take(limit).map { it.second }
+    }
+
+    /**
+     * Every way to name up to six centre readings [centres] with distinct colours and its cost (the
+     * [centreDistances] to the default palette, summed), cheapest first. [preferred] (a centre's current
+     * name, null for none) wins a tie. With five centres the sixth colour is the one left.
+     */
+    fun centreNamingCosts(centres: List<Rgb>, preferred: List<CubeColor?>? = null): List<Pair<Double, List<CubeColor>>> {
+        val k = centres.size
+        require(k <= 6)
         val colors = CubeColor.entries
         val cost = centres.mapIndexed { i, rgb ->
             val d = centreDistances(rgb)
-            DoubleArray(6) { c -> d.getValue(colors[c]) + if (preferred != null && preferred[i] != colors[c]) TIE else 0.0 }
+            DoubleArray(6) { c -> d.getValue(colors[c]) + if (preferred?.get(i) != null && preferred[i] != colors[c]) TIE else 0.0 }
         }
-        val all = ArrayList<Pair<Double, IntArray>>(720)
-        fun permute(perm: IntArray, k: Int) {
-            if (k == 6) {
-                all += perm.indices.sumOf { cost[it][perm[it]] } to perm.copyOf()
+        val all = ArrayList<Pair<Double, List<CubeColor>>>(720)
+        fun permute(perm: IntArray, n: Int) {
+            if (n == k) {
+                all += (0 until k).sumOf { cost[it][perm[it]] } to (0 until k).map { colors[perm[it]] }
                 return
             }
-            for (i in k until 6) {
-                perm[k] = perm[i].also { perm[i] = perm[k] }
-                permute(perm, k + 1)
-                perm[k] = perm[i].also { perm[i] = perm[k] }
+            for (i in n until 6) {
+                perm[n] = perm[i].also { perm[i] = perm[n] }
+                permute(perm, n + 1)
+                perm[n] = perm[i].also { perm[i] = perm[n] }
             }
         }
         permute(IntArray(6) { it }, 0)
-        return all.sortedBy { it.first }.take(limit).map { (_, perm) -> perm.map { colors[it] } }
+        return all.sortedBy { it.first }
     }
 
     private const val TIE = 1e-6

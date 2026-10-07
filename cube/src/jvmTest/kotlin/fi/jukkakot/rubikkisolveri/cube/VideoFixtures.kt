@@ -1,8 +1,10 @@
 package fi.jukkakot.rubikkisolveri.cube
 
+import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
+import fi.jukkakot.rubikkisolveri.cube.scan.RotationSearch
 
 /**
  * The face readings of the test videos of 2026-10-05 and 2026-10-07, one line per frame (written by
@@ -37,7 +39,36 @@ object VideoFixtures {
     /** Camera video, 42 s: white on top with blue beside it, then every face; a blue centre named white in a few frames. */
     const val TOUR_1007 = "20261007_132721"
 
+    /** Camera video, 9 s, brighter light, blue on top first: the orange centre is named red until the red face is seen at frame 78 (`scan-centre-naming`). */
+    const val BLUE_FIRST_1007 = "20261007_152753"
+
     data class Frame(val name: String, val faces: List<FaceReading>)
+
+    /** [blue] mixed towards white until the default palette names it white, as the phone's camera saw a blue centre in shadow. */
+    fun paleBlue(blue: Rgb): Rgb = (1..100).map { t ->
+        Rgb(blue.r + (255 - blue.r) * t / 100, blue.g + (255 - blue.g) * t / 100, blue.b + (255 - blue.b) * t / 100)
+    }.first { ColorClassifier.rankedCentre(it).first() == CubeColor.WHITE }
+
+    /**
+     * `scan-centre-naming`: [TOUR_1007] with the blue face's centre made pale throughout (named white
+     * by the palette, as in the web test of 14:55), its frames whose only full face is the blue face
+     * replayed for [frames] frames first: the scan starts with the blue face alone, the white face seen
+     * only later.
+     */
+    fun blueFirst(frames: Int = 30): List<Frame> {
+        val blueFace = TRUTH_1007.substring(45, 54).map { CubeColor.fromLetter(it) }
+        fun isBlue(r: FaceReading): Boolean {
+            if (!r.isFull) return false
+            val names = r.colors.map { ColorClassifier.live(it!!) }
+            return (0 until 4).any { k -> RotationSearch.turned(names, k).withIndex().count { (n, c) -> n != 4 && c == blueFace[n] } >= 6 }
+        }
+        val tour = load(TOUR_1007).map { f -> f.copy(faces = f.faces.map { r -> if (isBlue(r)) r.copy(colors = r.colors.toMutableList().also { it[4] = paleBlue(it[4]!!) }) else r }) }
+        val blue = tour.filter { f -> f.faces.count { it.isFull } == 1 && f.faces.any { isBlueCentre(it) } }.map { f -> f.copy(faces = f.faces.filter { it.isFull }) }
+        return List(frames) { blue[it % blue.size] } + tour
+    }
+
+    /** A full face whose centre [paleBlue] made pale (it now sits just on the white side of blue). */
+    private fun isBlueCentre(r: FaceReading): Boolean = r.isFull && ColorClassifier.centreDistances(r.colors[4]!!).let { d -> d.getValue(CubeColor.BLUE) - d.getValue(CubeColor.WHITE) in 0.0..3.0 }
 
     fun line(name: String, faces: List<FaceReading>): String = buildString {
         append(name)

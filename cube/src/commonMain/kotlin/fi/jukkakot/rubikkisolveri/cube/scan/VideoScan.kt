@@ -69,8 +69,9 @@ enum class Stall { DARK, NO_CUBE, STUCK }
 
 /**
  * The scan from continuous video (`video-scan`): every full face found in a frame ([FaceReading])
- * votes for its stickers. Faces are told apart by their centre colour (named regardless of
- * brightness, then together once all six are seen). Each face keeps its readings in its own "frame"
+ * votes for its stickers. Faces are told apart by how they look on this cube in this light (their
+ * stickers and centre colour), kept in piles named together, each colour once; a pile that could as
+ * well be another colour waits (`scan-centre-naming`). Each face keeps its readings in its own "frame"
  * coordinates (one reading's way round) and counts the votes per sticker. How each face sits in the
  * net comes from corner views (two faces in one frame share an edge), else from the turns that make
  * the best possible cube cheapest. The votes, turned into the net, are the evidence for [BestCube]:
@@ -79,10 +80,12 @@ enum class Stall { DARK, NO_CUBE, STUCK }
  * fits no real piece is corrected by the rest. Pure Kotlin, one code base for the phone and the browser.
  */
 class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
-    private class Reading(val face: FaceReading, var group: Group) {
+    private class Reading(val face: FaceReading, var group: Group, val seq: Long) {
         val rgb: List<Rgb?> get() = face.colors
         val area: Double get() = face.area
-        val labs: List<Lab?> = face.colors.map { it?.toLab() }
+        /** Each sticker's colour for naming it, with and without its brightness. */
+        val labs: List<Tone?> = face.colors.map { it?.let(::Tone) }
+
         var names: List<CubeColor?> = emptyList()
 
         /** Per sticker, how well it fits each colour (by ordinal; [ColorClassifier.shares]), times its [weight]. */
@@ -100,7 +103,20 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val neighbours = ArrayList<Pair<Int, Reading>>()
     }
 
+    /**
+     * A pile: the readings of one face of the cube, told apart from the other piles by its own centre
+     * colour. [color] is its name from the joint naming ([named] once it has one); a [doubtful] pile
+     * could as well be another colour and counts for nothing yet.
+     */
     private class Group(var color: CubeColor) {
+        var named = false
+        var doubtful = false
+
+        /** A doubtful pile's next-best colour. */
+        var otherColor: CubeColor? = null
+
+        /** Piles seen in one picture with this one: never the same face. */
+        val apart = HashSet<Group>()
         val readings = ArrayList<Reading>()
         var anchor: Reading? = null
 
@@ -119,7 +135,11 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val inliers: List<Reading> get() = readings.filter { it.inlier }
     }
 
-    private val groups = LinkedHashMap<CubeColor, Group>()
+    private val piles = ArrayList<Group>()
+
+    /** The piles that count, by name: every pile but the doubtful ones. */
+    private var groups: Map<CubeColor, Group> = emptyMap()
+    private var seq = 0L
     private var rotations: Map<Face, Int> = emptyMap()
 
     /** Faces whose rotation is settled (corner views, or every other turn makes a clearly costlier cube). */
@@ -149,20 +169,21 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
      * counts only with its centre and only for a face already started by a full one.
      */
     fun onFrame(faces: List<FaceReading>, nowMillis: Long): VideoScanState {
-        val centres = nameCentres(faces)
+        val pileOf = pileFaces(faces)
         val fresh = faces.mapIndexed { i, face ->
-            val color = centres[i] ?: return@mapIndexed null
-            val group = if (face.isFull) groups.getOrPut(color) { Group(color) } else groups[color] ?: return@mapIndexed null
-            Reading(face, group).also { group.add(it) }
+            val group = pileOf[i] ?: return@mapIndexed null
+            Reading(face, group, seq++).also { group.add(it) }
         }
         for (i in faces.indices) for (j in faces.indices) {
             val a = fresh[i] ?: continue
             val b = fresh[j] ?: continue
             if (i != j) faces[i].sideTowards(faces[j])?.let { a.neighbours += it to b }
+            if (i != j && faces[i].isFull && faces[j].isFull) a.group.apart += b.group
         }
+        mergeClosePiles()
         nameJointly()
         renameStickers()
-        groups.values.forEach { consensus(it) }
+        piles.forEach { consensus(it) }
         updateRotations()
 
         evidence = evidenceFor(rotations)
@@ -170,9 +191,11 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         this.best = best
         val seen = Face.entries.filter { groups[scheme[it]] != null }
         val clearness = best?.clearness(evidence) ?: 0.0
-        val complete = best != null && seen.all { it in settled } && clearness >= CLEAR_MARGIN
+        val complete = best != null && seen.all { it in settled } && clearness >= CLEAR_MARGIN && piles.none { it.doubtful && it.inliers.size >= MIN_VOTES }
         // Known: from the best cube where it is clear, else from the votes alone.
         val voted = netOf { it.stickers }
+        // While a pile seen several times could be either of two colours, no sticker of those colours is known.
+        val unsure = piles.filter { it.doubtful && it.inliers.size >= MIN_VOTES }.flatMap { listOfNotNull(it.color, it.otherColor) }.toSet()
         val clearAt = BooleanArray(Stickers.COUNT)
         val net = List(Stickers.COUNT) { i ->
             val face = Face.entries[i / 9]
@@ -181,11 +204,12 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
                 complete -> true
                 i % 9 == CENTRE -> face in seen
                 face in seen && face !in settled -> false
+                face !in seen && unsure.isNotEmpty() -> false
                 else -> best.supportedMargin(i, evidence) >= CLEAR_MARGIN
             }
             clearAt[i] = clear
             if (clear) best!!.cube[i] else voted[i]
-        }
+        }.map { c -> c?.takeIf { it !in unsure } }
         val confirmed = Face.entries.filter { f -> (0 until 9).all { clearAt[f.ordinal * 9 + it] } }.toSet()
         val contradictions = HashSet<Int>()
         for (face in Face.entries) {
@@ -249,7 +273,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             held = null
             return null
         }
-        val anchor = usable.filter { !it.removed }.maxByOrNull { it.area } ?: return last
+        val anchor = usable.filter { !it.removed && trusted(it.group) }.maxByOrNull { it.area } ?: return last
         val side = scheme.faceOf(anchor.group.color)
         val moved = last.movedBy(anchor.face.centre - last.points[side.ordinal * 9 + CENTRE])
         held = moved
@@ -284,7 +308,8 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
     /** Starts the scan again from nothing (the camera keeps running). */
     fun reset() {
-        groups.clear()
+        piles.clear()
+        groups = emptyMap()
         rotations = emptyMap()
         settled = emptySet()
         rotationKey = null
@@ -331,55 +356,148 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     }
 
     /**
-     * The colour each face's centre names it by (null without a centre): regardless of brightness,
-     * against the six centres once all are seen. Two full faces of one picture never share a colour:
-     * the closest fits are given first, and a face whose colour is taken gets its next-best one free
-     * if that fits nearly as well ([CENTRE_SWAP_WITHIN]), else it is left out of this picture (a dark
-     * blue centre in shadow named white beside the white face, `scan-centre-clash`). A partial face
-     * keeps its closest colour: a wrong lattice is caught by its group's anchor, while moved to another
-     * colour it would vote there (evening video 213850 never cleared).
+     * The pile each face found goes to (null: none), by the face itself as this cube shows it in this
+     * light (`scan-centre-naming`). A full face joins a pile whose anchor its stickers agree with
+     * ([MIN_AGREE]; one face in two lights), else the closest pile whose centre is within
+     * [JOIN_WITHIN] of its own, unless no pile that close goes by the colour the default palette clearly
+     * names it ([NAME_CLEAR]: red next to an orange pile, which the distance alone cannot tell apart);
+     * otherwise it starts a pile. Faces of one picture take the closest piles first, each pile once (a
+     * dark blue centre beside the white face, `scan-centre-clash`). With six piles a new one only
+     * replaces a stray named by what was left over; else the face is left out of this picture. A partial
+     * face only joins its closest pile within [JOIN_WITHIN]: a wrong lattice is caught by the anchor.
      */
-    private fun nameCentres(faces: List<FaceReading>): List<CubeColor?> {
-        val known = if (groups.size < 6) emptyMap() else groups.mapValues { (_, g) -> meanCentre(g) }
-        val names = arrayOfNulls<CubeColor>(faces.size)
-        val fits = faces.withIndex().filter { it.value.isFull }.flatMap { (i, face) ->
-            ColorClassifier.centreDistances(face.colors[CENTRE]!!, known).entries.map { (c, d) -> Triple(i, c, d) }
-        }.sortedBy { it.third }
-        val taken = HashSet<CubeColor>()
-        val closest = HashMap<Int, Double>()
-        val done = HashSet<Int>()
-        for ((i, color, d) in fits) {
-            if (i in done) continue
-            val first = closest.getOrPut(i) { d }
-            if (color in taken) continue
-            done += i
-            if (d - first > CENTRE_SWAP_WITHIN) continue
-            names[i] = color
-            taken += color
+    private fun pileFaces(faces: List<FaceReading>): List<Group?> {
+        val means = piles.associateWith { pileLab(it) }
+        val centres = faces.map { f -> f.colors[CENTRE]?.let { ColorClassifier.scaled(it).toLab() } }
+        val out = arrayOfNulls<Group>(faces.size)
+        val taken = HashSet<Group>()
+        fun near(i: Int) = piles.filter { it !in taken }.map { it to centres[i]!!.distance(means[it] ?: pileLab(it)) }.sortedBy { it.second }
+        // The stickers as the piles' own centres name them: a face agreeing with a pile's anchor is that face.
+        val refs = centreRefs()
+        val names = faces.map { f -> f.colors.mapIndexed { n, c -> if (n == CENTRE) null else c?.let { nameSticker(it, refs) } } }
+        fun agrees(i: Int, g: Group) = g.anchor?.let { bestTurn(names[i], it.names).second >= MIN_AGREE } == true
+        val left = faces.indices.filter { faces[it].isFull }.toMutableList()
+        while (left.isNotEmpty()) {
+            val i = left.minBy { near(it).firstOrNull()?.second ?: Double.MAX_VALUE }
+            left.remove(i)
+            val near = near(i)
+            val close = near.filter { it.second <= JOIN_WITHIN }.map { it.first }
+            val ranked = ColorClassifier.centreDistances(faces[i].colors[CENTRE]!!).entries.sortedBy { it.value }
+            val clearName = ranked[0].key.takeIf { ranked[1].value - ranked[0].value >= NAME_CLEAR }
+            val agreeing = near.map { it.first }.filter { agrees(i, it) }
+            val own = agreeing.isEmpty() && (close.isEmpty() || (clearName != null && close.none { ColorClassifier.rankedCentre(meanCentre(it)).first() == clearName }))
+            val stray = if (own && piles.size >= 6) piles.firstOrNull { it !in taken && it.readings.size < MIN_VOTES && !trusted(it) } else null
+            val pile = when {
+                !own -> agreeing.firstOrNull() ?: close.first()
+                piles.size < 6 -> Group(ColorClassifier.rankedCentre(faces[i].colors[CENTRE]!!).first()).also { piles += it }
+                stray != null -> {
+                    drop(stray)
+                    Group(stray.color).also { piles += it }
+                }
+                else -> null
+            }
+            if (pile != null) {
+                out[i] = pile
+                taken += pile
+            }
         }
-        for ((i, face) in faces.withIndex()) if (!face.isFull) {
-            names[i] = face.colors[CENTRE]?.let { ColorClassifier.centreDistances(it, known).minBy { e -> e.value }.key }
+        for ((i, face) in faces.withIndex()) if (!face.isFull && centres[i] != null) {
+            out[i] = piles.filter { it.readings.isNotEmpty() }.map { it to centres[i]!!.distance(means[it] ?: pileLab(it)) }
+                .filter { it.second <= JOIN_WITHIN }.minByOrNull { it.second }?.first
         }
-        return names.toList()
+        return out.toList()
+    }
+
+    private fun drop(pile: Group) {
+        piles.remove(pile)
+        pile.readings.forEach { it.removed = true }
+        piles.forEach { it.apart.remove(pile) }
+    }
+
+    /**
+     * Two piles whose centres have come within [MERGE_WITHIN], or whose anchors agree (one face seen in
+     * two lights), become one, unless they were ever seen in one picture.
+     */
+    private fun mergeClosePiles() {
+        while (true) {
+            val pair = piles.flatMap { a -> piles.filter { b -> b !== a && b !in a.apart }.map { b -> a to b } }
+                .firstOrNull { (a, b) -> pileLab(a).distance(pileLab(b)) <= MERGE_WITHIN || sameStickers(a, b) } ?: return
+            val (keep, gone) = pair.let { (a, b) -> if (a.readings.size >= b.readings.size) a to b else b to a }
+            piles.remove(gone)
+            piles.forEach { it.apart.remove(gone) }
+            keep.apart += gone.apart
+            for (r in gone.readings) r.group = keep
+            keep.readings += gone.readings
+            keep.readings.sortBy { it.seq }
+            while (keep.readings.size > MAX_READINGS) {
+                val old = keep.readings.first { it !== keep.anchor }
+                old.removed = true
+                keep.readings.remove(old)
+            }
+        }
+    }
+
+    /** Two piles whose anchors agree on [MIN_AGREE] stickers in some turn: one face seen in two lights. */
+    private fun sameStickers(a: Group, b: Group): Boolean {
+        val x = a.anchor ?: return false
+        val y = b.anchor ?: return false
+        return bestTurn(x.names.mapIndexed { n, c -> if (n == CENTRE) null else c }, y.names).second >= MIN_AGREE
     }
 
     private fun meanCentre(group: Group): Rgb {
-        val list = group.inliers.ifEmpty { group.readings }
+        val list = group.inliers.ifEmpty { group.readings }.filter { it.rgb[CENTRE] != null }
         return Rgb(list.sumOf { it.rgb[CENTRE]!!.r } / list.size, list.sumOf { it.rgb[CENTRE]!!.g } / list.size, list.sumOf { it.rgb[CENTRE]!!.b } / list.size)
     }
 
-    /** Once all six faces are seen well, their centres are named together (each colour once, the best fit). */
+    /** A pile whose name can be used: not doubtful, or seen only once or twice under the colour its centre is closest to. */
+    private fun trusted(g: Group): Boolean = !g.doubtful || (g.inliers.size < MIN_VOTES && ColorClassifier.rankedCentre(meanCentre(g)).first() == g.color)
+
+    /**
+     * The cube's own centres as references for naming stickers: every trusted pile whose centre the
+     * default palette names as the pile is named (a face seen rarely still tells its colour; a yellow
+     * centre washed out to near white in bright light does not stand for yellow, `scan-centre-naming`),
+     * the default palette for the other colours.
+     */
+    private fun centreRefs(): Map<CubeColor, Tone> {
+        val known = piles.filter { trusted(it) && ColorClassifier.rankedCentre(meanCentre(it)).first() == it.color }
+            .associate { g -> g.color to g.inliers.ifEmpty { g.readings }.mapNotNull { it.labs[CENTRE] } }
+        return CubeColor.entries.associateWith { c -> known[c]?.takeIf { it.isNotEmpty() }?.let(Tone::mean) ?: Tone(ColorClassifier.DEFAULT_PALETTE.getValue(c)) }
+    }
+
+    /** A pile's centre without its brightness, to tell piles apart. */
+    private fun pileLab(group: Group): Lab = ColorClassifier.scaled(meanCentre(group)).toLab()
+
+    /**
+     * The piles named together, each colour once, the best fit overall (current names win a tie). A
+     * pile is doubtful while naming it otherwise costs less than [DOUBT_MARGIN] more. A pile renamed
+     * keeps its readings; only its known stickers are worked out again.
+     */
     private fun nameJointly() {
-        if (groups.size != 6 || groups.values.any { it.inliers.size < MIN_VOTES }) return
-        val list = groups.values.toList()
-        val naming = ColorClassifier.centreNamings(list.map { meanCentre(it) }, list.map { it.color }, 1).first()
-        if (naming == list.map { it.color }) return
-        groups.clear()
-        list.forEachIndexed { i, g ->
-            g.color = naming[i]
-            g.sticky.fill(null)
-            groups[g.color] = g
+        // A pile seen fewer than MIN_VOTES times may be a stray (a lattice across an edge): it takes a colour left over and waits.
+        val seen = piles.filter { it.inliers.size >= MIN_VOTES }.ifEmpty { piles.toList() }
+        val used = HashSet<CubeColor>()
+        fun rename(g: Group, color: CubeColor) {
+            if (g.color != color) g.sticky.fill(null)
+            g.color = color
+            g.named = true
+            used += color
         }
+        if (seen.isNotEmpty()) {
+            val namings = ColorClassifier.centreNamingCosts(seen.map { meanCentre(it) }, seen.map { if (it.named) it.color else null })
+            val (cost, naming) = namings.first()
+            seen.forEachIndexed { i, g ->
+                val other = namings.first { it.second[i] != naming[i] }
+                g.doubtful = other.first - cost < DOUBT_MARGIN
+                g.otherColor = other.second[i]
+                rename(g, naming[i])
+            }
+        }
+        for (g in piles) if (g !in seen) {
+            val left = ColorClassifier.centreDistances(meanCentre(g)).entries.filter { it.key !in used }.sortedBy { it.value }
+            g.doubtful = true
+            rename(g, left.firstOrNull()?.key ?: g.color)
+        }
+        groups = piles.filter { !it.doubtful }.associateBy { it.color }
     }
 
     /**
@@ -387,14 +505,16 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
      * and its share of each colour against the same references for the votes.
      */
     private fun renameStickers() {
-        val refs = ColorClassifier.references(groups.mapValues { (_, g) -> g.inliers.ifEmpty { g.readings }.map { it.labs[CENTRE]!! } })
-        for (g in groups.values) for (r in g.readings) {
-            r.names = r.rgb.mapIndexed { n, rgb -> if (n == CENTRE) g.color else rgb?.let { ColorClassifier.live(it, refs) } }
+        val refs = centreRefs()
+        for (g in piles) for (r in g.readings) {
+            r.names = r.rgb.mapIndexed { n, rgb -> if (n == CENTRE) g.color else rgb?.let { nameSticker(it, refs) } }
             r.shares = r.labs.mapIndexed { n, lab ->
-                lab?.let { ColorClassifier.shares(it, refs).also { s -> weight(r.rgb[n]!!).let { w -> for (c in s.indices) s[c] *= w } } }
+                lab?.let { t -> ColorClassifier.sharesOf(DoubleArray(6) { c -> refs.getValue(CubeColor.entries[c]).distance(t) }).also { s -> weight(r.rgb[n]!!).let { w -> for (c in s.indices) s[c] *= w } } }
             }
         }
     }
+
+    private fun nameSticker(rgb: Rgb, refs: Map<CubeColor, Tone>): CubeColor = Tone(rgb).let { t -> refs.minBy { it.value.distance(t) }.key }
 
     private fun Group.add(reading: Reading) {
         readings += reading
@@ -499,7 +619,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             for (r in g.readings) {
                 if (!r.inlier) continue
                 for ((side, other) in r.neighbours) {
-                    if (other.removed || !other.inlier || other.group === g) continue
+                    if (other.removed || !other.inlier || other.group === g || other.group.doubtful) continue
                     val netSide = netSide(face, scheme.faceOf(other.group.color)) ?: continue
                     views.getOrPut(face) { IntArray(4) }[(netSide - (side + r.turn)).mod(4)]++
                 }
@@ -557,7 +677,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
     /** The largest face in view whose rotation is settled: the pose and the orientation come from it. */
     private fun mainReading(fresh: List<Reading>): Reading? =
-        fresh.filter { !it.removed && it.inlier && scheme.faceOf(it.group.color) in settled }.maxByOrNull { it.area }
+        fresh.filter { !it.removed && it.inlier && !it.group.doubtful && scheme.faceOf(it.group.color) in settled }.maxByOrNull { it.area }
 
     /** Quarter turns from [r]'s reading order to its face in the net: its side s is the net's side s + this. */
     private fun netTurn(r: Reading): Int = (r.turn + (rotations[scheme.faceOf(r.group.color)] ?: 0)) % 4
@@ -576,7 +696,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val front = scheme.faceOf(main.group.color)
         val k = netTurn(main)
         val candidates = Orientation.candidates(main.face.u, main.face.v, sideVector(front, k + 1), sideVector(front, k + 2))
-        val others = fresh.filter { it !== main && it.group !== main.group }.map { scheme.faceOf(it.group.color).normal to it.face.centre }
+        val others = fresh.filter { it !== main && it.group !== main.group && !it.group.doubtful }.map { scheme.faceOf(it.group.color).normal to it.face.centre }
         return Orientation.choose(candidates, front.normal, main.face.centre, others, lastOrientation)
     }
 
@@ -590,6 +710,8 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     /** [face] as the scan took it in this frame: names in reading order, and which of its places are known in [net]. */
     private fun foundFace(face: FaceReading, r: Reading?, net: List<CubeColor?>): FoundFace {
         if (r == null || r.removed) return FoundFace(face, List(9) { null }, List(9) { false })
+        // A doubtful face: read, but which side it is stays open and nothing on it is known.
+        if (r.group.doubtful) return FoundFace(face, r.names.mapIndexed { n, c -> if (n == CENTRE) null else c }, List(9) { false })
         val recognised = MutableList(9) { false }
         if (r.inlier) {
             val netFace = scheme.faceOf(r.group.color)
@@ -603,12 +725,27 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         private const val CENTRE = 4
 
         /**
-         * A full face whose centre colour another face of the picture fits better takes its next-best
-         * colour only when that is at most this much further ([ColorClassifier.centreDistances]): blue
-         * centres in shadow named white were 2–7 further from blue; with no limit wrong faces were
-         * taken in the test videos (`scan-centre-clash`).
+         * A face joins a pile whose centre is at most this far from its own ([ColorClassifier.scaled]
+         * Lab): one face's centres spread up to ~22 across a video, white and blue lie 37 or more apart
+         * (`scan-centre-naming` findings; results the same from 25 to 35).
          */
-        const val CENTRE_SWAP_WITHIN = 15.0
+        const val JOIN_WITHIN = 30.0
+
+        /** A centre's palette name is clear when the next colour is at least this much further. */
+        const val NAME_CLEAR = 4.0
+
+        /** Piles whose centres come this close are one face. */
+        const val MERGE_WITHIN = 8.0
+
+        /** A pile is doubtful while naming it otherwise costs less than this much more. */
+        const val DOUBT_MARGIN = 5.0
+
+        /**
+         * How much of a sticker's distance to a colour is measured without brightness ([Tone]): a
+         * colour seen in dimmer light than its centre (olive yellow beside a washed-out yellow centre)
+         * reads right; all of it would read red in glare as white (`scan-centre-naming` findings).
+         */
+        const val BARE_WEIGHT = 0.7
 
         /** Readings that must agree before a sticker counts (`video-scan-spike`: wrong readings lasted at most 2 frames, 5 for one sticker). */
         const val MIN_VOTES = 3
@@ -694,6 +831,20 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** The face across side [side] of [face] in the net. */
         fun neighbourAt(face: Face, side: Int): Face = faceWithNormal(sideVector(face, side))
+    }
+}
+
+/**
+ * A sticker's colour for naming it: as read ([plain]) and without its brightness ([bare],
+ * [ColorClassifier.scaled]). Their distances are blended by [VideoScan.BARE_WEIGHT].
+ */
+internal class Tone(val plain: Lab, val bare: Lab) {
+    constructor(rgb: Rgb) : this(rgb.toLab(), ColorClassifier.scaled(rgb).toLab())
+
+    fun distance(o: Tone): Double = plain.distance(o.plain) * (1 - VideoScan.BARE_WEIGHT) + bare.distance(o.bare) * VideoScan.BARE_WEIGHT
+
+    companion object {
+        fun mean(list: List<Tone>): Tone = Tone(Lab.mean(list.map { it.plain }), Lab.mean(list.map { it.bare }))
     }
 }
 

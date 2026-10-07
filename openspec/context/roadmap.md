@@ -61,6 +61,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 51 | `pattern-scan-first` | done | A pattern from home asks "Skannaa kuutio" or "Kuutio on jo ratkaistu"; the scan carries the target to the solution; a painted target fits the cube however it is held (user, 2026-10-07) |
 | 52 | `scan-start` | done | Video scan reads from the first picture with a face (no wait for the camera); metering on the middle of the cube, locked within about a second; a small spinner until the first sticker (user, 2026-10-07) |
 | 53 | `scan-centre-clash` | done | Video scan: two faces in one picture never take the same centre colour (a dark blue centre in shadow no longer spoils the white face), a face's oldest readings age out so a face read wrong at first is put right (web scan, 2026-10-07) |
+| 54 | `scan-centre-naming` | done | Video scan: faces piled by how they look on this cube in this light and named together (a blue face first is no longer taken for white, an orange face for red); a face that could be either of two colours waits; stickers read mostly regardless of brightness (yellow in dim light no longer green) (web test, 2026-10-07) |
 
 ## Backlog
 

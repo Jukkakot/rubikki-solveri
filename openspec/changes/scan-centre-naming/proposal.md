@@ -30,6 +30,11 @@ it stays there until all six are named together.
   are seen). With five piles the sixth colour follows. A pile whose name changes keeps its readings.
 - **A doubtful centre waits.** While a centre fits two colours about equally and the piles cannot
   decide it yet, its stickers are not shown as known; they become known once the naming is clear.
+- **Stickers read in another light (added with the user, 2026-10-07).** A sticker is named mostly
+  by its colour, less by its brightness, and a face's centre that looks like another colour in its
+  light (a yellow centre washed out to near white) is not used as that colour's reference. While
+  implementing, the 42-s camera video `20261007_132721` stopped finishing: the yellow stickers on the
+  blue face, seen in dimmer light, read green against the washed-out yellow centre.
 - Keeps: two faces of one picture never share a pile (`scan-centre-clash`), the readings window,
   one bad frame changes nothing.
 
@@ -50,10 +55,13 @@ None.
 ### Modified Capabilities
 
 - `video-scan`: "Recognised by agreement" (faces told apart by the cube's own centres; a doubtful
-  centre's stickers not shown as known until the naming is clear).
+  centre's stickers not shown as known until the naming is clear); "Reading in different light"
+  (stickers named mostly regardless of brightness; a centre that looks like another colour is no
+  reference).
 
 ## Impact
 
 - Modules: `cube` only (`VideoScan`: centre piles and their naming; `ColorClassifier`: joint naming
-  for fewer than six centres). No change in `shared`, `app` or `web`.
+  for fewer than six centres, shares from distances; sticker naming partly regardless of
+  brightness). No change in `shared`, `app` or `web`.
 - Tests: `VideoScanTest` (new scenario test, all video fixtures as regression).

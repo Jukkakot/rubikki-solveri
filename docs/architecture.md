@@ -169,14 +169,16 @@ Video scan pipeline (`video-scan`):
    projection is held over frames without a settled face for up to `HOLD_MILLIS`, moved (not
    turned) onto the largest face found, with its age in `projectionAge` (`scan-paint`). The votes are evidence for `BestCube` (`video-scan-progress`): the possible cube that
    fits them best, piece by piece, with a margin per piece place. Each reading gives every colour a
-   share by its Lab distance to the cube's own centres (`ColorClassifier.shares`, soft votes;
+   share by its distance to the cube's own centres, 70 % of it brightness-free (`Tone`; soft votes;
    washed-out readings count little; `video-scan-light`, whose findings explain why no light-colour
    correction is used); a sticker's colour leaves out a lamp's glare (`FaceFinder`). A sticker is known when its
    place's margin clears `CLEAR_MARGIN` (chosen by `ScanSimulation`, findings in the `video-scan-light` archive) or by
    its votes alone, and the scan finishes when the whole cube is clear, unseen stickers included.
    Face rotations come from the same cost. `CubeProjection` puts every sticker into the picture.
-   Two full faces of one picture never share a centre colour (`nameCentres`); a face keeps its
-   latest `MAX_READINGS`, the oldest dropped, so wrong readings age out (`scan-centre-clash`).
+   Faces are piled by their own stickers and centres, not the palette, and the piles named together;
+   a pile that could be either of two colours waits (`pileFaces`, `nameJointly`, `scan-centre-naming`,
+   whose design has the measured thresholds). Two full faces of one picture never share a pile; a face
+   keeps its latest `MAX_READINGS`, the oldest dropped, so wrong readings age out (`scan-centre-clash`).
    Earlier decisions in the `video-scan` and `video-scan-live` archives. Regression data: the test
    videos' finder output in `cube/src/jvmTest/resources/video/` (`VideoScanTest`, the true cubes in
    `VideoFixtures`; regenerate with `VideoScanHarness.writeFixtures` from the committed JPEG stills
