@@ -164,7 +164,18 @@ Video scan pipeline (`video-scan`):
    throws, the page reads on its own thread as before (`scan.worker` line with the reason;
    snapshots carry `worker=true/false`). `web/smoke/video.mjs` runs the video scan in Chromium
    with a fake camera (`--no-worker` blocks the worker).
-3. `cube/scan/VideoScan`: votes per sticker (partial faces vote, never anchor), pose, orientation
+3. **Two scanners** (`scan-rules`, 2026-10-07): `VideoScan(engine)` with `ScanEngine.RULES` (the
+   default) or `ScanEngine.LOOK` (the earlier one, below). The choice is in Settings ("Videoskanneri";
+   Android `SettingsRepository.scanEngine`, browser `StoredSettings.scanEngine`), passed through
+   `AppActions.scanEngine` to `VideoScanScreen`; every scan log line carries `engine=rules|look`.
+   The rules scanner: `Tracks.kt` follows each face from picture to picture, `PairRules.kt` turns one
+   picture into hard rules (neighbours, sides, corner handedness), `FaceTracks.kt` assigns the tracks'
+   faces and turns together (costs, branch and bound, settling, the evidence for `BestCube`),
+   `VideoScan.rulesFrame` builds the same `VideoScanState` (plus `undecided` → "Käännä kuutiota").
+   Why each rule exists and the known limits: `scan-rules` design (decision 8). Acceptance:
+   `ScanAcceptanceHarness` (ACCEPTANCE=1) replays every fixture through both; `RulesTimeline`
+   (TIMELINE=<video>) prints the tracks frame by frame for tuning.
+   The earlier scanner, `cube/scan/VideoScan` (LOOK): votes per sticker (partial faces vote, never anchor), pose, orientation
    (`Orientation`, weak perspective from one face's steps), stall reasons and `reset()`. The
    projection is held over frames without a settled face for up to `HOLD_MILLIS`, moved (not
    turned) onto the largest face found, with its age in `projectionAge` (`scan-paint`). The votes are evidence for `BestCube` (`video-scan-progress`): the possible cube that
@@ -182,7 +193,9 @@ Video scan pipeline (`video-scan`):
    Earlier decisions in the `video-scan` and `video-scan-live` archives. Regression data: the test
    videos' finder output in `cube/src/jvmTest/resources/video/` (`VideoScanTest`, the true cubes in
    `VideoFixtures`; regenerate with `VideoScanHarness.writeFixtures` from the committed JPEG stills
-   in `testdata/video/<date>/stills/`; the videos themselves stay local only).
+   in `testdata/video/<date>/stills/`; the videos themselves stay local only, and so do the stills of
+   the four 2026-10-07 20:20 recordings, 33 MB, made again from the videos with ffmpeg at 10 fps,
+   360 px wide). Phone recordings come in by Quick Share links: the global `quickshare` skill.
 4. `ui/scan/VideoScanScreen`: the camera fills the screen with the progress painted on the real
    cube (`ScanPaint`, `scan-paint-calm`, `scan-steady-progress`: a grey veil over each sticker
    still needed on the found faces and the projection's sides facing the camera, a small dot in the

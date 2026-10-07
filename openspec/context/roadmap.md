@@ -65,7 +65,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 55 | `scan-paint-calm` | done | Video scan paint: only the stickers still needed are veiled in grey, known ones left bare (no read colours), a finished side gets an outline and a tick, the marks hide while the cube moves quickly (user, 2026-10-07) |
 | 56 | `scan-steady-progress` | done | Video scan: a face is kept out of a pile whose neighbours it puts on the wrong side (the red face of a striped cube no longer joins the orange face's pile), progress no longer goes back on a rename; known stickers get a small dot in their colour again and the marks stay while the cube is held (web test, 2026-10-07) |
 | 57 | `corner-scan-spike` | done | Spike: faces named and turned from corner views (handedness decides red against orange); right on clean video, never enough alone (no opposite corners in free scanning); as rules inside the scan they finish two runs today's scan never finishes, no wrong cube added. Go for `scan-rules` (findings in the archived change) |
-| 58 | `scan-rules` | next | Video scan uses every safe rule of a real cube: corner views and neighbours name the faces and keep look-alike faces apart, impossible sticker colours ruled out, faces piled by rules instead of centre look first (needs its own design; user, 2026-10-07) |
+| 58 | `scan-rules` | done | Rules scanner beside the earlier one: faces followed from picture to picture and known by the rules of a real cube (neighbours, sides, corner handedness, pieces), never finishes wrong on the fixtures, 9/11 with look-alike centres (earlier 1/11); Settings offers both, the new one by default; "Käännä kuutiota" while two faces could be either way. Phone test pending |
 
 ## Backlog
 
