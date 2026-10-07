@@ -217,7 +217,10 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
      */
     private fun balancedRefs(known: Map<CubeColor, Rgb>): Map<CubeColor, Tone> {
         val defaults = CubeColor.entries.associateWith { Tone(ColorClassifier.DEFAULT_PALETTE.getValue(it)) }
-        val own = known.mapValues { Tone(it.value) }
+        // Red and orange only as a pair: one alone (red known, orange not) would draw the other's
+        // stickers to it in a light where they lie close (the striped cube in the evening, 2026-10-07).
+        val warm = setOf(CubeColor.RED, CubeColor.ORANGE)
+        val own = known.filterKeys { it !in warm || known.keys.containsAll(warm) }.mapValues { Tone(it.value) }
         if (own.isEmpty()) return defaults
         fun shift(get: (Tone) -> Lab): Lab = Lab(
             own.entries.sumOf { get(it.value).l - get(defaults.getValue(it.key)).l } / own.size,
@@ -227,7 +230,9 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val plain = shift { it.plain }
         val bare = shift { it.bare }
         fun moved(x: Lab, by: Lab) = Lab(x.l + by.l, x.a + by.a, x.b + by.b)
-        return CubeColor.entries.associateWith { c -> own[c] ?: defaults.getValue(c).let { d -> Tone(moved(d.plain, plain), moved(d.bare, bare)) } }
+        return CubeColor.entries.associateWith { c ->
+            own[c] ?: defaults.getValue(c).let { d -> if (c in warm) d else Tone(moved(d.plain, plain), moved(d.bare, bare)) }
+        }
     }
 
     private fun shareReading(r: TrackReading) {
