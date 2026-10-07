@@ -460,12 +460,8 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val tables = tables(skip = t)
         val others = tracker.tracks.filter { it !== t && counts(it) && it.state().option.let { o -> o != null && o != FaceOption.NONE } }
         val cost = unary(t, likelihoods(tables), others, IntArray(FaceOption.COUNT) { it })
-        val bound = tracker.tracks.filter { it !== t && rules.fixesTurns(t, it) }.joinToString(",") { o ->
-            val al = rules.allowed(t, o)!!
-            val oo = o.state().option ?: o.state().assigned
-            "#${o.id}(" + (0 until 4).filter { k -> oo != FaceOption.NONE && al[FaceOption.of(Face.R, k) * FaceOption.COUNT + oo] }.joinToString("") + ")"
-        }
-        return Face.entries.joinToString(" ") { f -> "$f=%.1f".format((0 until 4).minOf { cost[FaceOption.of(f, it)] }) } + " none=%.1f voting=${t in voting} turns R allowed by $bound".format(cost[FaceOption.NONE])
+        fun one(x: Double) = (kotlin.math.round(x * 10) / 10).toString()
+        return Face.entries.joinToString(" ") { f -> "$f=" + one((0 until 4).minOf { cost[FaceOption.of(f, it)] }) } + " none=" + one(cost[FaceOption.NONE]) + " voting=${t in voting}"
     }
 
     /** Settled tracks whose way is no longer the cheapest (against the others) re-open. */

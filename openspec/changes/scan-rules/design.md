@@ -119,6 +119,56 @@ already runs every frame. Settled tracks are merged into per-face vote tables so
 grow with the scan's length. Measured per frame in the harness (decision 6 bar); the browser runs
 the scan in the Web Worker as today.
 
+### 8. Decisions taken while implementing (task 5.2, measured on the fixtures)
+
+Code: `Tracks.kt` (tracks), `PairRules.kt` (rules of one picture), `FaceTracks.kt` (costs, joint
+assignment, settling), `VideoScan.rulesFrame`. Tuning tool: `RulesTimeline` (gated JVM test).
+
+- **Turns of faces seen alone come from the best cube**, as in the earlier scanner: a face's turn
+  settles by the joint assignment only when a picture binds it (a side or corner rule) or a track of
+  the same face already has a picture-settled turn; otherwise all its tracks turn together the way
+  that makes the best cube cheapest, and these cube turns are worked out again as the readings change
+  (an early turn read in bad light is undone). One-colour faces (white, yellow on the striped cube)
+  settle in any turn: turns that read alike are no alternative, and their rules allow every such turn.
+- **The finish also checks cube turns in pairs**: two faces whose turns came from the cube, turned
+  together, must make the best cube at least `TURN_MARGIN` costlier (the striped cube with front and
+  back both half round is another possible cube; it finished wrong once in the robustness run before).
+- **Evidence per face comes from the tracks agreeing with its most supported track** (at most two
+  stickers otherwise, red for orange not counted; a track in view counts double): a face read wrong at
+  first or a stray lattice taken for a face does not spoil it (the earlier scanner's anchor).
+  Two tracks taken for one face that disagree on more stickers pay `CLASH_COST` each in the
+  assignment; two face-only tracks of one face that disagree in every turn re-open.
+- **Red and orange**: content costs lend each other half; references for them come in pairs (with
+  one known, the other lies from it as far as in the default palette; an orange centre looking red
+  made orange stickers read red otherwise). Moving all unknown colours by the known centres' cast was
+  tried and dropped (a washed-out yellow centre pulled the rest astray). References are worked out
+  again in the frame a face settles, before stickers are shown.
+- **What is shown**: a sticker's own votes are shown on a settled face only where the best cube is
+  not clearly of another mind; a short track (under ten readings) that ended unsettled neither votes
+  (unless it is a face's only view) nor holds the finish; a short track whose face is settled and that
+  reads like the clear cube does not hold the finish either. The drawing follows the largest face found
+  by its look when its track is not settled yet (drawing only, no knowledge).
+- Constants as tuned: `ASSIGN_MARGIN` 2.5, `LOOK_WEIGHT` 0.3 (cap 40 Lab), `NONE_COST` 6,
+  `FACE_KEEP` 2, `CLASH_COST` 4, `MIN_READINGS` 3; a face shown alone shows its stickers after about
+  five readings (the earlier scanner: three).
+
+**Bar (design 6), measured 2026-10-07 evening:** on the eleven confirmed fixtures the rules scanner
+never finishes wrong, finishes as recorded on all eight the earlier one does within +20 % frames, in
+the robustness run on 9 of 11 (earlier: 1), 2–9 ms a frame. Four evening recordings added the same day
+(striped cube, dim light): never wrong; it finishes two the earlier scanner never finished
+(`202156`, and the web recording of the striped cube) and two it did not: `202058` (dim, the striped
+cube's red and orange alike and the orange face never shown, so the right face turns cannot be told)
+and `202403` (front and back half round fit nearly as well: the earlier scanner finished on what was
+in effect a guess). The harness checks the bar on the confirmed eleven and reports the others.
+
+### Known limits
+
+- A washed-out yellow centre that looks whiter than the white face, shown alone before the white face,
+  is taken for the white face until views of neighbours tell them apart (it never finishes so); its
+  stickers are shown on the white side meanwhile, as the earlier scanner shows a look-named face.
+- Sides of a cube with one-colour top and bottom (the striped cube) seen only one at a time, with red
+  and orange alike in the light, do not finish: the scanner waits and asks to turn the cube.
+
 ## Risks / Trade-offs
 
 - [The alternation locks into a wrong cube early (wrong settling feeds the content costs)] → settle
