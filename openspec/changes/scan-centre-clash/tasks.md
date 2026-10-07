@@ -8,7 +8,7 @@
 
 ## 2. One centre colour per face per picture (cube)
 
-- [ ] 2.1 When two faces of one picture name the same centre colour, the closer keeps it and the other takes its next-best colour not taken in that picture (design 1); verify: the 1.2 test reads the white face right and the blue face gets its readings; a unit test with two synthetic faces naming the same colour
+- [ ] 2.1 When two faces of one picture name the same centre colour, the closer keeps it and the other takes its next-best colour not taken in that picture (design 1); verify: the 1.3 test reads the white face right and the blue face gets its readings; a unit test with two synthetic faces naming the same colour
 
 ## 3. Later clear readings win (cube)
 
