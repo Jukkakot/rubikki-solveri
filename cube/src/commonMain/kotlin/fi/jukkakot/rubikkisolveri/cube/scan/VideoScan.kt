@@ -879,7 +879,8 @@ class VideoScan(
             when {
                 clear && i % 9 == CENTRE -> scheme[face]
                 clear -> best!!.cube[i]
-                shown -> ownVotes(evidence, i)
+                // Its own votes, unless the best cube is clearly of another mind (a red sticker named orange when the references changed).
+                shown -> ownVotes(evidence, i)?.takeIf { c -> best == null || best.margin(i) < CLEAR_MARGIN || c == best.cube[i] }
                 else -> null
             }
         }
@@ -896,7 +897,10 @@ class VideoScan(
             Held(r.face, FaceOption.face(o), (r.turn + FaceOption.turn(o)) % 4)
         }
         val others = picture.filterNotNull().filter { it !== placed }.mapNotNull { (t, r) -> ft.faceOf(t)?.let { it.normal to r.face.centre } }
-        val anchor = picture.filterNotNull().mapNotNull { (t, r) -> ft.faceOf(t)?.let { r.face to it } }.maxByOrNull { it.first.area }
+        // The drawing follows the largest face found: its settled face, else (only to move the drawing) the face its centre looks like.
+        val anchor = faces.indices.filter { faces[it].colors[CENTRE] != null }.maxByOrNull { faces[it].area }?.let { i ->
+            faces[i] to (picture.getOrNull(i)?.let { ft.faceOf(it.first) } ?: scheme.faceOf(ColorClassifier.rankedCentre(faces[i].colors[CENTRE]!!).first()))
+        }
         return finish(faces, nowMillis, net, leading, confirmed, emptySet(), found, complete, clearness, main, others, anchor, ft.undecided(nowMillis))
     }
 

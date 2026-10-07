@@ -160,10 +160,15 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         .mapValues { (_, l) -> FaceOption.turn(l.maxBy { it.size }.state().option!!) }
 
     private fun assignment(t: Track): Int? {
-        if (!counts(t) || stale(t)) return null
+        if (!counts(t)) return null
         val s = t.state()
-        val o = s.option ?: s.assigned
-        return o.takeIf { it != FaceOption.NONE }
+        val o = (s.option ?: s.assigned).takeIf { it != FaceOption.NONE } ?: return null
+        if (!stale(t)) return o
+        // A short track that ended unsettled counts only as the one view of a face it is known to be.
+        val face = s.face ?: return null
+        return o.takeIf {
+            counting().none { u -> u !== t && !stale(u) && (u.state().option ?: u.state().assigned).let { it != FaceOption.NONE && FaceOption.face(it) == face } }
+        }
     }
 
     fun onFrame(faces: List<FaceReading>, now: Long) {
@@ -490,6 +495,21 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
                 s.option = null
             }
         }
+        // Two tracks taken for one face that read it otherwise in every turn, one of them with its turn
+        // still open (taken by its look alone, e.g. a washed-out yellow centre looking white): both
+        // re-open and are assigned together again.
+        val faceOnly = counting().filter { it.state().face != null }
+        for (a in faceOnly) for (b in faceOnly) {
+            if (a.id >= b.id || a.state().face != b.state().face || (a.state().option != null && b.state().option != null)) continue
+            val f = a.state().face!!
+            val oa = a.state().option ?: a.state().assigned.takeIf { it != FaceOption.NONE } ?: FaceOption.of(f, 0)
+            if ((0 until 4).all { k -> disagreeing(a, oa, b, FaceOption.of(f, k)) > MAX_DISAGREE }) {
+                for (t in listOf(a, b)) t.state().let {
+                    it.face = null
+                    it.option = null
+                }
+            }
+        }
     }
 
     /**
@@ -504,8 +524,20 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         if (open.isEmpty()) return
         val tables = tables()
         val like = likelihoods(tables)
-        val domains = open.map { t -> t.state().face?.let { f -> IntArray(4) { FaceOption.of(f, it) } } ?: IntArray(FaceOption.COUNT) { it } }
-        val unary = open.mapIndexed { i, t -> unary(t, like, settled, domains[i]) }
+        val domains = open.map { IntArray(FaceOption.COUNT) { it } }
+        // Ties (a face seen alone, any turn) go to the last frame's choice, then to the track's own frame, so what is shown does not turn.
+        val unary = open.mapIndexed { i, t ->
+            val last = t.state().assigned
+            unary(t, like, settled, domains[i]).also { c ->
+                for (k in c.indices) {
+                    val o = domains[i][k]
+                    if (o != FaceOption.NONE && o != last) c[k] += STICKY
+                    if (o != FaceOption.NONE && FaceOption.turn(o) != 0) c[k] += STICKY / 2
+                    // A settled face is left only for a clearly better assignment of all (a face taken by its look alone).
+                    t.state().face?.let { f -> if (o == FaceOption.NONE || FaceOption.face(o) != f) c[k] += FACE_KEEP }
+                }
+            }
+        }
         val pairs = Array(open.size) { i ->
             Array(open.size) { j ->
                 if (j <= i) null else {
@@ -520,6 +552,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             val s = t.state()
             val o = domains[i][pick[i]]
             s.assigned = o
+            if (s.face != null && (o == FaceOption.NONE || FaceOption.face(o) != s.face)) s.face = null
             // Turns that read the track the same (a one-colour face) are no other way.
             val optionMargin = search.best(cap = cost + ASSIGN_MARGIN, ban = i to { k -> k == pick[i] || sameReading(t, o, domains[i][k]) })?.first?.minus(cost) ?: Double.POSITIVE_INFINITY
             if (optionMargin >= ASSIGN_MARGIN && turnBacked(t, o)) {
@@ -770,6 +803,12 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** A face's turn settles by the best cube when every other turn makes it this much costlier ([VideoScan.CLEAR_MARGIN], as the earlier scanner). */
         const val TURN_MARGIN = 2.0
+
+        /** What leaving a settled face costs a track in the joint assignment. */
+        const val FACE_KEEP = 2.0
+
+        /** A tie-breaker: a way other than last frame's costs this much more (half of it for a turn other than the track's own). */
+        const val STICKY = 0.02
 
         /** Cost per sticker beyond [MAX_DISAGREE] that two tracks taken for one face read otherwise. */
         const val CLASH_COST = 4.0
