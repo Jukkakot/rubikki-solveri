@@ -11,7 +11,7 @@
 
 ## 3. Pair rules
 
-- [ ] 3.1 Derive the hard pair rules from one picture (design 3): distinct faces for any two tracks; for touching faces (edge view by `sideTowards`, three-face view by the common corner) the allowed (face, turn) pairs; JVM tests with the synthetic views for every edge and corner (the true pair allowed, the opposite colours and the mirrored turns not); verify the tests pass.
+- [x] 3.1 Derive the hard pair rules from one picture (design 3): distinct faces for any two tracks; for touching faces (edge view by `sideTowards`, three-face view by the common corner) the allowed (face, turn) pairs; JVM tests with the synthetic views for every edge and corner (the true pair allowed, the opposite colours and the mirrored turns not); verify the tests pass.
 
 ## 4. Face solver
 
