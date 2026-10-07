@@ -935,7 +935,7 @@ class VideoScan(
         val readings = tracks.assignedReadings()
         val samples = List(Stickers.COUNT) { i ->
             val face = Face.entries[i / 9]
-            val list = readings[face].orEmpty().mapNotNull { (r, turn) ->
+            val list = readings[face].orEmpty().mapNotNull { (r, turn, _) ->
                 val at = r.at(RotationSearch.turnIndex(i % 9, turn))
                 r.face.colors[at]?.let { rgb -> rgb to r.names[at] }
             }
