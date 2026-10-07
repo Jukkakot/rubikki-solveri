@@ -14,14 +14,17 @@ detours for the main case (user, 2026-10-07).
   works too) with the target carried along. After the scan the solution screen opens from the
   scanned cube with the chosen target; the colour check and hand input in between keep it as well.
 - "Kuutio on jo ratkaistu" works as today: the solution screen from the solved cube.
-- The scan screens themselves do not change; at most they show the target's name.
+- The scan screens themselves do not change; the target shows on the start screen only.
+- A painted target fits the scanned cube however the cube is held: it is turned as a whole so its
+  centres match the scanned cube's (the start screen's holding picture already shows how to hold it).
 
 Decisions (light lane, no design.md):
 - Pattern first, then the start question: picking the pattern is the fun part and the reason the
   user came; the question comes once, right before leaving the picker.
 - The question is a small dialog on the target picker, not a new screen.
+- No memory of the last choice: "Skannaa kuutio" is always the primary button.
 - The target travels as a route argument through the scan, check and hand-input routes (the same
-  encoded form the solution route already uses); nothing new in the cube module.
+  encoded form the solution route already uses).
 
 ## Capabilities
 
@@ -36,6 +39,6 @@ None.
 
 ## Impact
 
-- Modules: `shared` only (navigation, target picker dialog, scan/check routes carry the target,
-  texts fi/en). No change in `cube` or `app`.
+- Modules: `cube` (a painted target turned to the start cube's centres) and `shared` (navigation,
+  target picker dialog, scan/check routes carry the target, texts fi/en). No change in `app`.
 - Docs: the solve-target part of `docs/` pages that describe the home → patterns flow; roadmap row.
