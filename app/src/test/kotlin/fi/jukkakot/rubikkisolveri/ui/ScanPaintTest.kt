@@ -8,12 +8,14 @@ import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
 import fi.jukkakot.rubikkisolveri.ui.scan.Glide
+import fi.jukkakot.rubikkisolveri.ui.scan.MotionFade
 import fi.jukkakot.rubikkisolveri.ui.scan.PAINT_FADE_MILLIS
 import fi.jukkakot.rubikkisolveri.ui.scan.PAINT_GONE_MILLIS
 import fi.jukkakot.rubikkisolveri.ui.scan.ScanPaint
 import fi.jukkakot.rubikkisolveri.ui.scan.paintAlpha
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ScanPaintTest {
@@ -33,12 +35,19 @@ class ScanPaintTest {
     }
 
     @Test
-    fun foundFacesInTheirColoursAndNeededStickersGrey() {
-        val paint = ScanPaint.of(cornerView())
-        val solid = paint.tiles.filter { it.color != null }
-        assertEquals(18, solid.size, "the two faces found, every sticker known")
-        // A found face's tile lies on its sticker: the top-left of the face at (100,200) is one step up and left.
-        assertTrue(solid.any { (it.centre - Point(70.0, 170.0)).length < 1e-6 })
+    fun knownStickersAreLeftBareAndNeededOnesVeiled() {
+        val state = cornerView()
+        assertTrue(ScanPaint.of(state).tiles.isEmpty(), "the two faces found, every sticker known: nothing over them")
+        // F's first sticker no longer known: a veil on it, the top-left of the face at (100,200) one step up and left.
+        val f = state.found.first()
+        val needed = state.copy(found = listOf(f.copy(recognised = listOf(false) + f.recognised.drop(1))) + state.found.drop(1))
+        val tile = ScanPaint.of(needed).tiles.single()
+        assertTrue((tile.centre - Point(70.0, 170.0)).length < 1e-6, "$tile")
+    }
+
+    @Test
+    fun aFaceFoundGetsADimOutline() {
+        assertEquals(2, ScanPaint.of(cornerView()).found.size)
     }
 
     @Test
@@ -47,16 +56,31 @@ class ScanPaintTest {
         // The cube's pose known from before, no face in this picture and nothing known yet.
         val paint = ScanPaint.of(state.copy(found = emptyList(), stickers = List(54) { null }))
         assertEquals(9, paint.tiles.size, "the side facing the camera")
-        assertTrue(paint.tiles.all { it.color == null && it.key < 54 })
+        assertTrue(paint.tiles.all { it.key < 54 })
     }
 
     @Test
-    fun aConfirmedSideGetsAnOutline() {
+    fun aConfirmedSideGetsAnOutlineAndATick() {
         val state = cornerView()
-        val outlines = ScanPaint.of(state.copy(confirmed = setOf(Face.F))).outlines
-        assertEquals(1, outlines.size)
-        assertEquals(listOf(Point(55.0, 155.0), Point(145.0, 155.0), Point(145.0, 245.0), Point(55.0, 245.0)), outlines.single())
-        assertTrue(ScanPaint.of(state.copy(confirmed = emptySet())).outlines.isEmpty())
+        val paint = ScanPaint.of(state.copy(confirmed = setOf(Face.F)))
+        assertEquals(listOf(Point(55.0, 155.0), Point(145.0, 155.0), Point(145.0, 245.0), Point(55.0, 245.0)), paint.outlines.single())
+        assertEquals(Point(100.0, 200.0), paint.ticks.single().centre)
+        assertEquals(1, paint.found.size, "the other face found keeps its dim outline")
+        val none = ScanPaint.of(state.copy(confirmed = emptySet()))
+        assertTrue(none.outlines.isEmpty() && none.ticks.isEmpty())
+    }
+
+    @Test
+    fun marksHideWhileTheCubeMovesAndComeBackAfterARest() {
+        val fade = MotionFade()
+        // One side 90 px wide; pictures every 100 ms.
+        assertTrue(fade.step(Point(100.0, 100.0), 90.0, 0), "shown from the first picture")
+        assertTrue(fade.step(Point(101.0, 100.0), 90.0, 100), "still: a pixel in a tenth of a second")
+        assertFalse(fade.step(Point(160.0, 100.0), 90.0, 200), "moving: two thirds of a side in a tenth of a second")
+        assertFalse(fade.step(Point(160.0, 100.0), 90.0, 300), "rested only just")
+        assertFalse(fade.step(Point(160.0, 100.0), 90.0, 500))
+        assertTrue(fade.step(Point(160.0, 100.0), 90.0, 600), "back after the rest time")
+        assertTrue(fade.step(null, 0.0, 700), "no centre known: as it was")
     }
 
     @Test

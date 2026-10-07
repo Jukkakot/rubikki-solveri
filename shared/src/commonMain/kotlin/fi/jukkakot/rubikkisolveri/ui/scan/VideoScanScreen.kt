@@ -5,7 +5,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import fi.jukkakot.rubikkisolveri.cube.Stickers
@@ -384,14 +383,24 @@ private fun statusText(state: VideoScanState): String = stringResource(
 
 /**
  * The paint on the real cube in the latest picture of [width]×[height] pixels (the picture fills the
- * box): a tile per sticker, solid in its colour when known, grey and dashed while needed, a white
- * outline around a confirmed side ([ScanPaint]). The tiles glide towards their places at the
- * display's rate ([Glide]); the projection's paint fades when it grows old ([paintAlpha]).
+ * box, `scan-paint-calm`): a grey veil over every sticker still needed, known ones left bare, a white
+ * outline and a tick on a confirmed side, a dim outline round each other face found ([ScanPaint]).
+ * The veils glide towards their places at the display's rate ([Glide]); everything fades while the
+ * cube moves quickly ([MotionFade]) and the projection's part when it grows old ([paintAlpha]).
  */
 @Composable
 private fun PaintLayer(state: VideoScanState, width: Int, height: Int, modifier: Modifier) {
     val paint = remember(state) { ScanPaint.of(state) }
     val glide = remember { Glide() }
+    val motion = remember { MotionFade() }
+    val still = remember(state) {
+        val projection = state.projection
+        val largest = state.found.maxByOrNull { it.reading.area }?.reading
+        val centre = projection?.let { pr -> Point(pr.points.sumOf { it.x } / pr.points.size, pr.points.sumOf { it.y } / pr.points.size) } ?: largest?.centre
+        val side = projection?.let { 3 * it.step } ?: largest?.let { 3 * it.u.length } ?: 0.0
+        motion.step(centre, side, elapsedMillis())
+    }
+    val shown by animateFloatAsState(if (still) 1f else 0f, tween(MOTION_FADE_MILLIS), label = "motion")
     var drawn by remember { mutableStateOf<Map<Int, Point>>(emptyMap()) }
     // Glides for a few frames after each new picture, then rests until the next one.
     LaunchedEffect(paint) {
@@ -406,44 +415,51 @@ private fun PaintLayer(state: VideoScanState, width: Int, height: Int, modifier:
             if (drawn.all { (key, at) -> (targets.getValue(key) - at).length < REST_PIXELS }) break
         }
     }
-    val alpha = paintAlpha(state.projectionAge)
+    val alpha = paintAlpha(state.projectionAge) * shown
     Canvas(modifier) {
         val sx = size.width / width
         val sy = size.height / height
         fun at(p: Point) = Offset((p.x * sx).toFloat(), (p.y * sy).toFloat())
-        val dash = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))
+        fun outline(corners: List<Point>) = Path().apply {
+            corners.forEachIndexed { i, p -> at(p).let { if (i == 0) moveTo(it.x, it.y) else lineTo(it.x, it.y) } }
+            close()
+        }
         for (tile in paint.tiles) {
             val centre = drawn[tile.key] ?: tile.centre
-            // Projection tiles fade with the projection's age; a face found in this frame is current.
-            val a = if (tile.key < Stickers.COUNT) alpha else 1f
+            // Projection veils fade with the projection's age; a face found in this frame is current.
+            val a = (if (tile.key < Stickers.COUNT) alpha else shown)
             if (a <= 0f) continue
             val h = TILE_SHARE / 2
-            val path = Path().apply {
-                listOf(-h to -h, h to -h, h to h, -h to h).forEachIndexed { i, (du, dv) ->
-                    val c = at(centre + tile.u * du.toDouble() + tile.v * dv.toDouble())
-                    if (i == 0) moveTo(c.x, c.y) else lineTo(c.x, c.y)
-                }
-                close()
-            }
-            val color = tile.color
-            if (color != null) {
-                drawPath(path, StickerColors.of(color).copy(alpha = a))
-                drawPath(path, StickerColors.PLASTIC.copy(alpha = a), style = Stroke(1.5.dp.toPx(), join = StrokeJoin.Round))
-            } else {
-                drawPath(path, NEEDED.copy(alpha = 0.35f * a))
-                drawPath(path, Color.White.copy(alpha = 0.85f * a), style = Stroke(1.5.dp.toPx(), pathEffect = dash, join = StrokeJoin.Round))
-            }
+            val corners = listOf(-h to -h, h to -h, h to h, -h to h).map { (du, dv) -> centre + tile.u * du.toDouble() + tile.v * dv.toDouble() }
+            drawPath(outline(corners), NEEDED.copy(alpha = VEIL_ALPHA * a))
         }
-        for (outline in paint.outlines) {
-            val path = Path().apply {
-                outline.forEachIndexed { i, p -> at(p).let { if (i == 0) moveTo(it.x, it.y) else lineTo(it.x, it.y) } }
-                close()
-            }
+        for (corners in paint.found) {
+            drawPath(outline(corners), Color.White.copy(alpha = 0.35f * shown), style = Stroke(1.dp.toPx(), join = StrokeJoin.Round))
+        }
+        for (corners in paint.outlines) {
+            val path = outline(corners)
             drawPath(path, StickerColors.PLASTIC.copy(alpha = 0.6f * alpha), style = Stroke(6.dp.toPx(), join = StrokeJoin.Round))
             drawPath(path, Color.White.copy(alpha = alpha), style = Stroke(3.dp.toPx(), join = StrokeJoin.Round))
         }
+        for (tick in paint.ticks) {
+            // A check mark on the side's centre sticker.
+            val path = Path().apply {
+                listOf(-0.3 to 0.0, -0.08 to 0.24, 0.32 to -0.22).forEachIndexed { i, (du, dv) ->
+                    val c = at(tick.centre + tick.u * du + tick.v * dv)
+                    if (i == 0) moveTo(c.x, c.y) else lineTo(c.x, c.y)
+                }
+            }
+            drawPath(path, StickerColors.PLASTIC.copy(alpha = 0.6f * alpha), style = Stroke(6.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+            drawPath(path, Color.White.copy(alpha = alpha), style = Stroke(3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+        }
     }
 }
+
+/** How long the marks take to fade out or in as the cube starts or stops moving. */
+private const val MOTION_FADE_MILLIS = 150
+
+/** How strongly a needed sticker's grey veil covers it. */
+private const val VEIL_ALPHA = 0.55f
 
 /** A small ring that fills with the share of stickers known (no number on screen). */
 @Composable

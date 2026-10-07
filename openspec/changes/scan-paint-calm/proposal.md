@@ -31,6 +31,18 @@ Decisions taken here (small change, no `design.md`):
   face) but fades with the marks while moving.
 - The vibration when stickers become known stays.
 
+Decisions while implementing (2026-10-07):
+- The dim outline of a found face did not exist yet; it is added (a thin white line round each face
+  found that is not a confirmed side), since with known stickers left bare a fully known face would
+  otherwise show nothing.
+- The speed is measured on the projection's centre (the whole cube), else on the largest face found:
+  in a corner view the largest face alternates between two faces and its centre would jump.
+- The screen smoke test is the existing `VideoScanScreenTest` (a partly known cube, the whole cube
+  confirmed), which draws veils, outlines and ticks; no extra test.
+- Two follow-ups of `scan-centre-naming` found by those tests, fixed here: a second lattice on a face
+  the picture already has (same stickers) is left out instead of starting a pile, and a new pile whose
+  own clear colour is free counts at once (its centre is known from the first picture, as before).
+
 ## Capabilities
 
 ### New Capabilities

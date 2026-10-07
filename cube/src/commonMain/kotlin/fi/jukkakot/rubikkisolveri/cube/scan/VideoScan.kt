@@ -380,6 +380,8 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         while (left.isNotEmpty()) {
             val i = left.minBy { near(it).firstOrNull()?.second ?: Double.MAX_VALUE }
             left.remove(i)
+            // A second lattice on a face this picture already has (the same stickers): left out.
+            if (taken.any { agrees(i, it) }) continue
             val near = near(i)
             val close = near.filter { it.second <= JOIN_WITHIN }.map { it.first }
             val ranked = ColorClassifier.centreDistances(faces[i].colors[CENTRE]!!).entries.sortedBy { it.value }
@@ -494,7 +496,9 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         }
         for (g in piles) if (g !in seen) {
             val left = ColorClassifier.centreDistances(meanCentre(g)).entries.filter { it.key !in used }.sortedBy { it.value }
-            g.doubtful = true
+            // Only a face its own clear colour is left for counts at once: a stray named by what was left over waits.
+            val own = ColorClassifier.rankedCentre(meanCentre(g)).first()
+            g.doubtful = left.isEmpty() || left[0].key != own || (left.size > 1 && left[1].value - left[0].value < DOUBT_MARGIN)
             rename(g, left.firstOrNull()?.key ?: g.color)
         }
         groups = piles.filter { !it.doubtful }.associateBy { it.color }
