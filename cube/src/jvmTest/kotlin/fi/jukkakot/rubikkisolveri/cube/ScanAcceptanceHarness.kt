@@ -30,11 +30,16 @@ class ScanAcceptanceHarness {
         VideoFixtures.BLUE_FIRST_1007 to VideoFixtures.TRUTH_1007,
         VideoFixtures.WEB_1007 to VideoFixtures.TRUTH_1007,
         VideoFixtures.STRIPED to VideoFixtures.STRIPED_TRUTH,
+        VideoFixtures.STRIPED_DIM to VideoFixtures.STRIPED_TRUTH,
+        VideoFixtures.STRIPED_TABLE to VideoFixtures.STRIPED_TRUTH,
+        VideoFixtures.STRIPED_U2_TABLE to VideoFixtures.STRIPED_U2_TRUTH,
+        VideoFixtures.STRIPED_U2_DIM to VideoFixtures.STRIPED_U2_TRUTH,
     )
 
     /** One replay: the frame the scan finished at (null: never), whether its cube was the true one, ms per frame. */
-    data class Run(val finishedAt: Int?, val right: Boolean, val msPerFrame: Double) {
-        override fun toString() = (finishedAt?.let { "$it ${if (right) "right" else "WRONG"}" } ?: "never") + " (%.1f ms)".format(java.util.Locale.ROOT, msPerFrame)
+    data class Run(val finishedAt: Int?, val right: Boolean, val msPerFrame: Double, val cube: String = "") {
+        override fun toString() = (finishedAt?.let { "$it ${if (right) "right" else "WRONG"}" } ?: "never") + " (%.1f ms)".format(java.util.Locale.ROOT, msPerFrame) +
+            if (System.getenv("ACCEPTANCE_CUBES") == "1") " $cube" else ""
     }
 
     private val out = StringBuilder()
@@ -80,7 +85,9 @@ class ScanAcceptanceHarness {
             if (rules.finishedAt == null || rules.finishedAt > limit) problems += "$video: finished at ${rules.finishedAt} (earlier scanner ${look.finishedAt}, limit $limit)"
         }
         val robust = fixtures.count { (video, _) -> run(video, true, ScanEngine.RULES).let { it.finishedAt != null && it.right } }
-        if (robust < 6) problems += "robustness: finished right on $robust of ${fixtures.size} (need 6)"
+        // The confirmed bar: 6 of the 11 fixtures of 2026-10-07 noon, kept as that share as fixtures are added.
+        val need = (fixtures.size * 6 + 10) / 11
+        if (robust < need) problems += "robustness: finished right on $robust of ${fixtures.size} (need $need)"
         val ms = fixtures.flatMap { (video, _) -> listOf(false, true).map { run(video, it, ScanEngine.RULES).msPerFrame } }.average()
         if (ms >= 10.0) problems += "%.1f ms per frame on average (need under 10)".format(java.util.Locale.ROOT, ms)
         return problems
@@ -94,21 +101,24 @@ class ScanAcceptanceHarness {
             val s = scan.onFrame(f.faces, i * 100L)
             if (s.finished) {
                 val ms = (System.nanoTime() - start) / 1e6 / (i + 1)
-                return Run(i, s.stickers.joinToString("") { it?.letter?.toString() ?: "?" } == truth, ms)
+                val cube = s.stickers.joinToString("") { it?.letter?.toString() ?: "?" }
+                return Run(i, cube == truth, ms, cube)
             }
         }
         return Run(null, false, (System.nanoTime() - start) / 1e6 / frames.size.coerceAtLeast(1))
     }
 
-    /** A red centre faded towards orange until the palette names it orange; a blue one towards white until it names it white. */
-    private fun hardened(face: FaceReading): FaceReading {
-        val centre = face.colors[4] ?: return face
-        val p = ColorClassifier.DEFAULT_PALETTE
-        val changed = when (ColorClassifier.rankedCentre(centre).first()) {
-            CubeColor.RED -> SyntheticViews.fadedCentre(centre, p.getValue(CubeColor.ORANGE), CubeColor.ORANGE)
-            CubeColor.BLUE -> SyntheticViews.fadedCentre(centre, Rgb(255, 255, 255), CubeColor.WHITE)
-            else -> null
-        } ?: return face
-        return face.copy(colors = face.colors.toMutableList().also { it[4] = changed })
+    companion object {
+        /** A red centre faded towards orange until the palette names it orange; a blue one towards white until it names it white. */
+        fun hardened(face: FaceReading): FaceReading {
+            val centre = face.colors[4] ?: return face
+            val p = ColorClassifier.DEFAULT_PALETTE
+            val changed = when (ColorClassifier.rankedCentre(centre).first()) {
+                CubeColor.RED -> SyntheticViews.fadedCentre(centre, p.getValue(CubeColor.ORANGE), CubeColor.ORANGE)
+                CubeColor.BLUE -> SyntheticViews.fadedCentre(centre, Rgb(255, 255, 255), CubeColor.WHITE)
+                else -> null
+            } ?: return face
+            return face.copy(colors = face.colors.toMutableList().also { it[4] = changed })
+        }
     }
 }

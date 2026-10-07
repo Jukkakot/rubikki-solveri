@@ -35,7 +35,7 @@ class VideoScanHarness {
 
     /** Camera videos of 2026-10-07 whose stills are committed (360×640, 10 fps); fixtures only. */
     private val stills1007 = File("../testdata/video/2026-10-07/stills")
-    private val later = listOf("20261007_152753", "web_181940")
+    private val later = listOf("20261007_152753", "web_181940", "20261007_202058", "20261007_202156", "20261007_202318", "20261007_202403")
 
     /** The scan right after the videos (scan-log.txt, 12:19:57Z), URFDLB. */
     private val truth = "YWRBWWGYRWGYWRGBOWWRBGGBWBYGROOYYRGBOYROORGBOBRGYBWOOY"

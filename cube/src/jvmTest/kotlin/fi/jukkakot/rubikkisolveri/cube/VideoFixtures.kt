@@ -46,6 +46,15 @@ object VideoFixtures {
     const val STRIPED = "web_181940"
     const val STRIPED_TRUTH = "WWWWWWWWWBRGBRGBRGOGROGROGRYYYYYYYYYGOBGOBGOBRBORBORBO"
 
+    /** Camera videos of 2026-10-07 20:20 (720×1280 at 30 fps, frames at 10 fps, 360 wide): the striped cube in dim evening light, then on a kitchen table. */
+    const val STRIPED_DIM = "20261007_202058"
+    const val STRIPED_TABLE = "20261007_202156"
+
+    /** The same evening, the striped cube with its top layer turned half round (U2; both videos read it so with the earlier scanner): on the table, then in dim light. */
+    const val STRIPED_U2_TABLE = "20261007_202318"
+    const val STRIPED_U2_DIM = "20261007_202403"
+    const val STRIPED_U2_TRUTH = "WWWWWWWWWGOBBRGBRGRBOOGROGRYYYYYYYYYBRGGOBGOBOGRRBORBO"
+
     data class Frame(val name: String, val faces: List<FaceReading>)
 
     /** [blue] mixed towards white until the default palette names it white, as the phone's camera saw a blue centre in shadow. */

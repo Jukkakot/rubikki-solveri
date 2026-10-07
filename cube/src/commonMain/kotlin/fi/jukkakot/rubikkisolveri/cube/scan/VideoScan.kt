@@ -62,6 +62,8 @@ data class VideoScanState(
     val projection: CubeProjection? = null,
     val confirmed: Set<Face> = emptySet(),
     val projectionAge: Long = 0,
+    /** Two faces could still be told apart either way for a while: the status line asks to turn the cube (`scan-rules`). */
+    val undecided: Boolean = false,
 ) {
     val recognised: Int get() = stickers.count { it != null }
 
@@ -191,11 +193,15 @@ class VideoScan(
     var state: VideoScanState = VideoScanState.EMPTY
         private set
 
+    /** The rules scanner's tracks ([ScanEngine.RULES]). */
+    private var tracks = FaceTracks(scheme)
+
     /**
      * Handles the faces found in one frame taken at [nowMillis]. A partial face (stickers missing)
      * counts only with its centre and only for a face already started by a full one.
      */
     fun onFrame(faces: List<FaceReading>, nowMillis: Long): VideoScanState {
+        if (engine == ScanEngine.RULES) return rulesFrame(faces, nowMillis)
         val corner = if (rules) CornerReader.read(faces) else null
         val cornerName = corner?.let { r -> r.faces.indices.associate { k -> r.faces[k] to r.names[k] } }.orEmpty()
         val pileOf = pileFaces(faces, cornerName)
@@ -252,18 +258,46 @@ class VideoScan(
                 if (RotationSearch.turnIndex(n, k) in group.disputed && net[i] == null) contradictions += i
             }
         }
-        if (!complete) completeSince = null else if (completeSince == null) completeSince = nowMillis
-
         val usable = fresh.filterNotNull()
         val main = mainReading(usable)
-        val pose = main?.let { poseOf(it) }
-        if (pose != null) lastPose = pose
-        val orientation = main?.let { orientationOf(it, usable) }
+        val others = main?.let { m -> usable.filter { it !== m && it.group !== m.group && !it.group.doubtful }.map { scheme.faceOf(it.group.color).normal to it.face.centre } }.orEmpty()
+        val anchor = usable.filter { !it.removed && trusted(it.group) }.maxByOrNull { it.area }?.let { it.face to scheme.faceOf(it.group.color) }
+        val leading = netOf { it.leading }.mapIndexed { i, c -> if (net[i] == null) c else null }
+        return finish(
+            faces, nowMillis, net, leading, confirmed, contradictions, faces.mapIndexed { i, face -> foundFace(face, fresh[i], net) }, complete, clearness,
+            main?.let { Held(it.face, scheme.faceOf(it.group.color), netTurn(it)) }, others, anchor,
+        )
+    }
+
+    /** The face a frame's pose and projection come from: its reading, which face it is and its turn into the net ([netTurn]). */
+    private class Held(val face: FaceReading, val front: Face, val turn: Int)
+
+    /**
+     * The state after a frame, either scanner: the pose, orientation and projection from [main] (held
+     * over frames without one, moved onto [anchor]), the finish timing, the light and the stall.
+     */
+    private fun finish(
+        faces: List<FaceReading>,
+        nowMillis: Long,
+        net: List<CubeColor?>,
+        leading: List<CubeColor?>,
+        confirmed: Set<Face>,
+        contradictions: Set<Int>,
+        found: List<FoundFace>,
+        complete: Boolean,
+        clearness: Double,
+        main: Held?,
+        others: List<Pair<Vec3, Point>>,
+        anchor: Pair<FaceReading, Face>?,
+        undecided: Boolean = false,
+    ): VideoScanState {
+        if (!complete) completeSince = null else if (completeSince == null) completeSince = nowMillis
+        if (main != null) lastPose = Pose(main.front, neighbourAt(main.front, main.turn))
+        val orientation = main?.let { orientationOf(it, others) }
         val built = if (main != null && orientation != null) projectionOf(main, orientation) else null
         if (orientation != null) lastOrientation = orientation
-        val projection = holdProjection(built, usable, nowMillis)
+        val projection = holdProjection(built, anchor, nowMillis)
         val recognised = net.count { it != null }
-        val leading = netOf { it.leading }.mapIndexed { i, c -> if (net[i] == null) c else null }
         val brightness = brightness(faces)
         val dim = brightness != null && brightness < DIM_BELOW
         state = VideoScanState(
@@ -273,7 +307,7 @@ class VideoScan(
             projection = projection,
             confirmed = confirmed,
             contradictions = contradictions,
-            found = faces.mapIndexed { i, face -> foundFace(face, fresh[i], net) },
+            found = found,
             pose = lastPose,
             newStickers = (recognised - lastRecognised).coerceAtLeast(0),
             complete = complete,
@@ -283,6 +317,7 @@ class VideoScan(
             dim = dim,
             stall = stall(nowMillis, faces.isNotEmpty(), brightness, dim, recognised, complete),
             projectionAge = if (projection == null) 0 else nowMillis - heldMovedAt,
+            undecided = undecided && !complete,
         )
         lastRecognised = recognised
         return state
@@ -293,7 +328,7 @@ class VideoScan(
      * faces but no settled orientation the held one is moved (not turned) so that the side of the
      * largest face found lies on that face; it is dropped [HOLD_MILLIS] after it was built.
      */
-    private fun holdProjection(built: CubeProjection?, usable: List<Reading>, now: Long): CubeProjection? {
+    private fun holdProjection(built: CubeProjection?, anchor: Pair<FaceReading, Face>?, now: Long): CubeProjection? {
         if (built != null) {
             held = built
             heldBuiltAt = now
@@ -305,9 +340,8 @@ class VideoScan(
             held = null
             return null
         }
-        val anchor = usable.filter { !it.removed && trusted(it.group) }.maxByOrNull { it.area } ?: return last
-        val side = scheme.faceOf(anchor.group.color)
-        val moved = last.movedBy(anchor.face.centre - last.points[side.ordinal * 9 + CENTRE])
+        val (face, side) = anchor ?: return last
+        val moved = last.movedBy(face.centre - last.points[side.ordinal * 9 + CENTRE])
         held = moved
         heldMovedAt = now
         return moved
@@ -340,6 +374,7 @@ class VideoScan(
 
     /** Starts the scan again from nothing (the camera keeps running). */
     fun reset() {
+        tracks = FaceTracks(scheme)
         piles.clear()
         groups = emptyMap()
         rotations = emptyMap()
@@ -368,6 +403,7 @@ class VideoScan(
      * or their readings not sure or not agreeing) are [ScanOutcome.inferred].
      */
     fun outcome(): ScanOutcome {
+        if (engine == ScanEngine.RULES) return rulesOutcome()
         val known = state.stickers
         val net = known.mapIndexed { i, c -> c ?: if (i % 9 == CENTRE) scheme[Face.entries[i / 9]] else state.leading[i] }
         val editor = CubeEditor(net, scheme)
@@ -778,30 +814,19 @@ class VideoScan(
     /** Quarter turns from [r]'s reading order to its face in the net: its side s is the net's side s + this. */
     private fun netTurn(r: Reading): Int = (r.turn + (rotations[scheme.faceOf(r.group.color)] ?: 0)) % 4
 
-    private fun poseOf(main: Reading): Pose {
-        val front = scheme.faceOf(main.group.color)
-        // The reading's top side (0), turned to the group's frame and then into the net.
-        return Pose(front, neighbourAt(front, netTurn(main)))
-    }
-
     /**
      * The cube's orientation from [main]'s steps (its right and bottom sides in the net give the
-     * cube vectors they show), the tilt's sign from the other faces in view or the last orientation.
+     * cube vectors they show), the tilt's sign from the [others] faces in view (normal, centre) or the
+     * last orientation.
      */
-    private fun orientationOf(main: Reading, fresh: List<Reading>): Orientation? {
-        val front = scheme.faceOf(main.group.color)
-        val k = netTurn(main)
-        val candidates = Orientation.candidates(main.face.u, main.face.v, sideVector(front, k + 1), sideVector(front, k + 2))
-        val others = fresh.filter { it !== main && it.group !== main.group && !it.group.doubtful }.map { scheme.faceOf(it.group.color).normal to it.face.centre }
-        return Orientation.choose(candidates, front.normal, main.face.centre, others, lastOrientation)
+    private fun orientationOf(main: Held, others: List<Pair<Vec3, Point>>): Orientation? {
+        val candidates = Orientation.candidates(main.face.u, main.face.v, sideVector(main.front, main.turn + 1), sideVector(main.front, main.turn + 2))
+        return Orientation.choose(candidates, main.front.normal, main.face.centre, others, lastOrientation)
     }
 
     /** Every sticker projected into this frame from [main] and the cube's [orientation]. */
-    private fun projectionOf(main: Reading, orientation: Orientation): CubeProjection? {
-        val front = scheme.faceOf(main.group.color)
-        val k = netTurn(main)
-        return CubeProjection.of(orientation, front, main.face.centre, main.face.u, main.face.v, sideVector(front, k + 1), sideVector(front, k + 2))
-    }
+    private fun projectionOf(main: Held, orientation: Orientation): CubeProjection? =
+        CubeProjection.of(orientation, main.front, main.face.centre, main.face.u, main.face.v, sideVector(main.front, main.turn + 1), sideVector(main.front, main.turn + 2))
 
     /** [face] as the scan took it in this frame: names in reading order, and which of its places are known in [net]. */
     private fun foundFace(face: FaceReading, r: Reading?, net: List<CubeColor?>): FoundFace {
@@ -820,6 +845,112 @@ class VideoScan(
             }
         }
         return FoundFace(face, r.names.toList(), recognised, known)
+    }
+
+    /**
+     * A frame through the rules scanner ([FaceTracks]): known stickers from the best possible cube
+     * where it is clear and its faces are settled, else from their own agreeing votes; nothing on a
+     * face an open track could be; complete when every counting track is settled and the cube is clear.
+     */
+    private fun rulesFrame(faces: List<FaceReading>, nowMillis: Long): VideoScanState {
+        val ft = tracks
+        ft.onFrame(faces, nowMillis)
+        val best = ft.best
+        val evidence = ft.evidence
+        val seen = ft.seenFaces
+        val settledFaces = ft.settledFaces
+        val unsure = ft.unsureFaces
+        val clearness = best?.clearness(evidence) ?: 0.0
+        val complete = best != null && seen.isNotEmpty() && ft.allSettled && unsure.isEmpty() && clearness >= CLEAR_MARGIN
+        val clearAt = BooleanArray(Stickers.COUNT)
+        val net = List(Stickers.COUNT) { i ->
+            val face = Face.entries[i / 9]
+            val shown = face in seen && face !in unsure
+            val clear = when {
+                best == null -> false
+                complete -> true
+                i % 9 == CENTRE -> shown
+                face in unsure -> false
+                face in seen && face !in settledFaces -> false
+                face !in seen && unsure.isNotEmpty() -> false
+                else -> best.supportedMargin(i, evidence) >= CLEAR_MARGIN
+            }
+            clearAt[i] = clear
+            when {
+                clear && i % 9 == CENTRE -> scheme[face]
+                clear -> best!!.cube[i]
+                shown -> ownVotes(evidence, i)
+                else -> null
+            }
+        }
+        val confirmed = Face.entries.filter { f -> (0 until 9).all { clearAt[f.ordinal * 9 + it] } }.toSet()
+        val leading = List(Stickers.COUNT) { i ->
+            val v = evidence.votes[i]
+            if (net[i] != null || v.sum() <= 0.0) null else CubeColor.entries[v.indices.maxBy { v[it] }]
+        }
+        val picture = ft.picture
+        val found = faces.mapIndexed { i, face -> rulesFound(face, picture.getOrNull(i), net) }
+        val placed = picture.filterNotNull().filter { (t, _) -> ft.settled(t) }.maxByOrNull { it.second.face.area }
+        val main = placed?.let { (t, r) ->
+            val o = ft.optionOf(t)!!
+            Held(r.face, FaceOption.face(o), (r.turn + FaceOption.turn(o)) % 4)
+        }
+        val others = picture.filterNotNull().filter { it !== placed }.mapNotNull { (t, r) -> ft.faceOf(t)?.let { it.normal to r.face.centre } }
+        val anchor = picture.filterNotNull().mapNotNull { (t, r) -> ft.faceOf(t)?.let { r.face to it } }.maxByOrNull { it.first.area }
+        return finish(faces, nowMillis, net, leading, confirmed, emptySet(), found, complete, clearness, main, others, anchor, ft.undecided(nowMillis))
+    }
+
+    /** The colour [sticker]'s own votes make sure ([MIN_VOTES], [MARGIN] over the next), or null. */
+    private fun ownVotes(evidence: StickerEvidence, sticker: Int): CubeColor? {
+        val v = evidence.votes[sticker]
+        val lead = v.indices.maxBy { v[it] }
+        val second = v.indices.filter { it != lead }.maxOf { v[it] }
+        return CubeColor.entries[lead].takeIf { v[lead] >= MIN_VOTES && v[lead] >= MARGIN * second }
+    }
+
+    /** [face] as the rules scanner took it: names in reading order, its places known in [net] once its face and turn are known. */
+    private fun rulesFound(face: FaceReading, entry: Pair<Track, TrackReading>?, net: List<CubeColor?>): FoundFace {
+        val (track, r) = entry ?: return FoundFace(face, List(9) { null }, List(9) { false })
+        val side = tracks.faceOf(track) ?: return FoundFace(face, r.names.mapIndexed { n, c -> if (n == CENTRE) null else c }, List(9) { false })
+        val names = r.names.mapIndexed { n, c -> if (n == CENTRE) scheme[side] else c }
+        val option = tracks.optionOf(track) ?: return FoundFace(face, names, List(9) { false })
+        val recognised = MutableList(9) { false }
+        val known = MutableList<CubeColor?>(9) { null }
+        for (n in 0 until 9) {
+            val at = r.at(RotationSearch.turnIndex(n, FaceOption.turn(option)))
+            known[at] = net[side.ordinal * 9 + n]
+            recognised[at] = known[at] != null
+        }
+        return FoundFace(face, names, recognised, known)
+    }
+
+    /** [outcome] of the rules scanner. */
+    private fun rulesOutcome(): ScanOutcome {
+        val known = state.stickers
+        val net = known.mapIndexed { i, c -> c ?: if (i % 9 == CENTRE) scheme[Face.entries[i / 9]] else state.leading[i] }
+        val editor = CubeEditor(net, scheme)
+        val turnedUnsure = if (state.complete) emptySet() else tracks.seenFaces - tracks.settledFaces
+        val uncertain = known.indices.filter { (known[it] == null || Face.entries[it / 9] in turnedUnsure) && it % 9 != CENTRE }.toSet()
+        val inferred = known.indices.filter { known[it] != null && it % 9 != CENTRE && tracks.evidence.sure(it) != known[it] }.toSet()
+        val readings = tracks.assignedReadings()
+        val samples = List(Stickers.COUNT) { i ->
+            val face = Face.entries[i / 9]
+            val list = readings[face].orEmpty().mapNotNull { (r, turn) ->
+                val at = r.at(RotationSearch.turnIndex(i % 9, turn))
+                r.face.colors[at]?.let { rgb -> rgb to r.names[at] }
+            }
+            val agreeing = list.filter { it.second == net[i] }.ifEmpty { list }.map { it.first }
+            if (agreeing.isEmpty()) null else Rgb(FrameSampler.median(agreeing.map { it.r }), FrameSampler.median(agreeing.map { it.g }), FrameSampler.median(agreeing.map { it.b }))
+        }
+        val cube = editor.toCube()
+        return ScanOutcome(
+            editor = editor,
+            uncertain = uncertain,
+            validity = cube?.let { CubeCheck.validity(it, scheme) } ?: Validity.WrongColorCount(editor.counts().filterValues { it != 9 }),
+            samples = if (samples.all { it != null }) samples.map { it!! } else emptyList(),
+            rotations = tracks.rotations(),
+            inferred = inferred,
+        )
     }
 
     companion object {
