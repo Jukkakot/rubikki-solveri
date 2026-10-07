@@ -8,10 +8,10 @@
 
 ## 2. Paint (shared)
 
-- [ ] 2.1 Add dots for known stickers to `ScanPaint` (found faces and projection sides) and draw them in the paint layer with the veils' glide and alpha (design 3); extend `ScanPaintTest` to assert a known sticker gets a dot in its colour and a needed one a veil; verify `./gradlew :app:testDebugUnitTest --tests "*ScanPaintTest*"` passes.
-- [ ] 2.2 Raise `MOVING_SIDES_PER_SECOND` to 1.0 (design 4) and update the `MotionFade` test values so a slow drift (0.5 side/s) keeps the marks and a fast move (2 side/s) hides them; verify the same test run passes.
+- [x] 2.1 Add dots for known stickers to `ScanPaint` (found faces and projection sides) and draw them in the paint layer with the veils' glide and alpha (design 3); extend `ScanPaintTest` to assert a known sticker gets a dot in its colour and a needed one a veil; verify `./gradlew :app:testDebugUnitTest --tests "*ScanPaintTest*"` passes.
+- [x] 2.2 Raise `MOVING_SIDES_PER_SECOND` to 1.0 (design 4) and update the `MotionFade` test values so a slow drift (0.5 side/s) keeps the marks and a fast move (2 side/s) hides them; verify the same test run passes.
 
 ## 3. Wrap-up
 
-- [ ] 3.1 Run the project's check chain (`./gradlew :cube:jvmTest :app:testDebugUnitTest` and the web build used by CI) and fix what fails.
-- [ ] 3.2 Update `docs/` where the scan paint is described (dots back on known stickers) and the roadmap entry; verify no doc still says known stickers are left bare.
+- [x] 3.1 Run the project's check chain (`./gradlew :cube:jvmTest :app:testDebugUnitTest` and the web build used by CI) and fix what fails.
+- [x] 3.2 Update `docs/` where the scan paint is described (dots back on known stickers) and the roadmap entry; verify no doc still says known stickers are left bare.

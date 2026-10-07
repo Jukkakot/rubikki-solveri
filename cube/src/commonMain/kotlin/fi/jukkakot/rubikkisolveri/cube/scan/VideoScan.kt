@@ -20,7 +20,13 @@ data class Pose(val front: Face, val up: Face) {
  * read as in this frame (null where none was found, or for a face the scan could not use) and
  * whether that sticker is already [recognised].
  */
-data class FoundFace(val reading: FaceReading, val names: List<CubeColor?>, val recognised: List<Boolean>)
+data class FoundFace(
+    val reading: FaceReading,
+    val names: List<CubeColor?>,
+    val recognised: List<Boolean>,
+    /** The known colour of each recognised sticker in reading order (null where not recognised). */
+    val known: List<CubeColor?> = List(9) { null },
+)
 
 /**
  * What the video scan knows after a frame. [stickers] are the known colours (URFDLB, net order;
@@ -753,12 +759,17 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         // A doubtful face: read, but which side it is stays open and nothing on it is known.
         if (r.group.doubtful) return FoundFace(face, r.names.mapIndexed { n, c -> if (n == CENTRE) null else c }, List(9) { false })
         val recognised = MutableList(9) { false }
+        val known = MutableList<CubeColor?>(9) { null }
         if (r.inlier) {
             val netFace = scheme.faceOf(r.group.color)
             val k = rotations[netFace] ?: 0
-            for (j in 0 until 9) recognised[RotationSearch.turnIndex(RotationSearch.turnIndex(j, k), r.turn)] = net[netFace.ordinal * 9 + j] != null
+            for (j in 0 until 9) {
+                val at = RotationSearch.turnIndex(RotationSearch.turnIndex(j, k), r.turn)
+                known[at] = net[netFace.ordinal * 9 + j]
+                recognised[at] = known[at] != null
+            }
         }
-        return FoundFace(face, r.names.toList(), recognised)
+        return FoundFace(face, r.names.toList(), recognised, known)
     }
 
     companion object {

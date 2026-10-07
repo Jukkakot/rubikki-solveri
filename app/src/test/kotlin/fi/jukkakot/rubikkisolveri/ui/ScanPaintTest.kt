@@ -35,14 +35,20 @@ class ScanPaintTest {
     }
 
     @Test
-    fun knownStickersAreLeftBareAndNeededOnesVeiled() {
+    fun knownStickersGetADotAndNeededOnesAVeil() {
         val state = cornerView()
-        assertTrue(ScanPaint.of(state).tiles.isEmpty(), "the two faces found, every sticker known: nothing over them")
+        val all = ScanPaint.of(state)
+        assertTrue(all.tiles.isEmpty(), "the two faces found, every sticker known: no veil")
+        assertEquals(18, all.dots.size, "a dot on every sticker of both faces")
+        val topLeft = all.dots.single { (it.centre - Point(70.0, 170.0)).length < 1e-6 }
+        assertEquals(cube[Face.F.ordinal * 9], topLeft.color, "F's first sticker in its colour")
         // F's first sticker no longer known: a veil on it, the top-left of the face at (100,200) one step up and left.
         val f = state.found.first()
         val needed = state.copy(found = listOf(f.copy(recognised = listOf(false) + f.recognised.drop(1))) + state.found.drop(1))
-        val tile = ScanPaint.of(needed).tiles.single()
+        val paint = ScanPaint.of(needed)
+        val tile = paint.tiles.single()
         assertTrue((tile.centre - Point(70.0, 170.0)).length < 1e-6, "$tile")
+        assertEquals(17, paint.dots.size, "the needed sticker has no dot")
     }
 
     @Test
@@ -76,11 +82,12 @@ class ScanPaintTest {
         // One side 90 px wide; pictures every 100 ms.
         assertTrue(fade.step(Point(100.0, 100.0), 90.0, 0), "shown from the first picture")
         assertTrue(fade.step(Point(101.0, 100.0), 90.0, 100), "still: a pixel in a tenth of a second")
-        assertFalse(fade.step(Point(160.0, 100.0), 90.0, 200), "moving: two thirds of a side in a tenth of a second")
-        assertFalse(fade.step(Point(160.0, 100.0), 90.0, 300), "rested only just")
-        assertFalse(fade.step(Point(160.0, 100.0), 90.0, 500))
-        assertTrue(fade.step(Point(160.0, 100.0), 90.0, 600), "back after the rest time")
-        assertTrue(fade.step(null, 0.0, 700), "no centre known: as it was")
+        assertTrue(fade.step(Point(105.0, 100.0), 90.0, 200), "a hand holding it: half a side a second")
+        assertFalse(fade.step(Point(160.0, 100.0), 90.0, 300), "moving: two thirds of a side in a tenth of a second")
+        assertFalse(fade.step(Point(160.0, 100.0), 90.0, 400), "rested only just")
+        assertFalse(fade.step(Point(160.0, 100.0), 90.0, 600))
+        assertTrue(fade.step(Point(160.0, 100.0), 90.0, 700), "back after the rest time")
+        assertTrue(fade.step(null, 0.0, 800), "no centre known: as it was")
     }
 
     @Test

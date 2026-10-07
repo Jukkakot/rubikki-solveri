@@ -63,6 +63,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 53 | `scan-centre-clash` | done | Video scan: two faces in one picture never take the same centre colour (a dark blue centre in shadow no longer spoils the white face), a face's oldest readings age out so a face read wrong at first is put right (web scan, 2026-10-07) |
 | 54 | `scan-centre-naming` | done | Video scan: faces piled by how they look on this cube in this light and named together (a blue face first is no longer taken for white, an orange face for red); a face that could be either of two colours waits; stickers read mostly regardless of brightness (yellow in dim light no longer green) (web test, 2026-10-07) |
 | 55 | `scan-paint-calm` | done | Video scan paint: only the stickers still needed are veiled in grey, known ones left bare (no read colours), a finished side gets an outline and a tick, the marks hide while the cube moves quickly (user, 2026-10-07) |
+| 56 | `scan-steady-progress` | done | Video scan: a face is kept out of a pile whose neighbours it puts on the wrong side (the red face of a striped cube no longer joins the orange face's pile), progress no longer goes back on a rename; known stickers get a small dot in their colour again and the marks stay while the cube is held (web test, 2026-10-07) |
 
 ## Backlog
 

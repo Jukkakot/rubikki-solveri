@@ -1,6 +1,7 @@
 package fi.jukkakot.rubikkisolveri.ui.scan
 
 import fi.jukkakot.rubikkisolveri.cube.ColorScheme
+import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
@@ -13,15 +14,29 @@ import kotlin.math.exp
  */
 data class PaintTile(val key: Int, val centre: Point, val u: Point, val v: Point)
 
+/**
+ * The small dot over one known sticker in its read colour (`scan-steady-progress`): centred at
+ * [centre], [u] and [v] its sticker steps. [key] is the key its veil had, so a sticker becoming
+ * known glides on.
+ */
+data class PaintDot(val key: Int, val centre: Point, val u: Point, val v: Point, val color: CubeColor)
+
 /** A side's centre and its sticker steps: where a finished side's tick goes. */
 data class PaintTick(val centre: Point, val u: Point, val v: Point)
 
 /**
- * What to paint over one camera picture (`scan-paint-calm`): a veil over every sticker still needed
- * ([tiles]; known ones are left bare), the [outlines] and [ticks] of confirmed sides, and a dim
- * outline round each other face found ([found]; four corners each).
+ * What to paint over one camera picture (`scan-paint-calm`, `scan-steady-progress`): a veil over
+ * every sticker still needed ([tiles]), a small dot in its read colour on every known one ([dots]),
+ * the [outlines] and [ticks] of confirmed sides, and a dim outline round each other face found
+ * ([found]; four corners each).
  */
-data class ScanPaint(val tiles: List<PaintTile>, val outlines: List<List<Point>>, val ticks: List<PaintTick> = emptyList(), val found: List<List<Point>> = emptyList()) {
+data class ScanPaint(
+    val tiles: List<PaintTile>,
+    val outlines: List<List<Point>>,
+    val ticks: List<PaintTick> = emptyList(),
+    val found: List<List<Point>> = emptyList(),
+    val dots: List<PaintDot> = emptyList(),
+) {
     companion object {
         val EMPTY = ScanPaint(emptyList(), emptyList())
 
@@ -32,6 +47,7 @@ data class ScanPaint(val tiles: List<PaintTile>, val outlines: List<List<Point>>
          */
         fun of(state: VideoScanState): ScanPaint {
             val tiles = ArrayList<PaintTile>()
+            val dots = ArrayList<PaintDot>()
             val outlines = ArrayList<List<Point>>()
             val ticks = ArrayList<PaintTick>()
             val found = ArrayList<List<Point>>()
@@ -42,10 +58,10 @@ data class ScanPaint(val tiles: List<PaintTile>, val outlines: List<List<Point>>
                 val side = face.names[4]?.let { c -> Face.entries.firstOrNull { ColorScheme.STANDARD[it] == c } }
                 if (side != null) foundSides += side
                 for (n in 0 until 9) {
-                    if (face.recognised[n]) continue
                     val centre = r.centre + r.u * (n % 3 - 1.0) + r.v * (n / 3 - 1.0)
                     val key = if (side != null) FOUND_KEY + side.ordinal * 9 + n else LOOSE_KEY + f * 9 + n
-                    tiles += PaintTile(key, centre, r.u, r.v)
+                    val known = face.known[n]?.takeIf { face.recognised[n] }
+                    if (known != null) dots += PaintDot(key, centre, r.u, r.v, known) else if (!face.recognised[n]) tiles += PaintTile(key, centre, r.u, r.v)
                 }
                 val corners = listOf(-1.5 to -1.5, 1.5 to -1.5, 1.5 to 1.5, -1.5 to 1.5).map { (a, b) -> r.centre + r.u * a + r.v * b }
                 if (side != null && side in state.confirmed) {
@@ -55,7 +71,7 @@ data class ScanPaint(val tiles: List<PaintTile>, val outlines: List<List<Point>>
                     found += corners
                 }
             }
-            val projection = state.projection ?: return ScanPaint(tiles, outlines, ticks, found)
+            val projection = state.projection ?: return ScanPaint(tiles, outlines, ticks, found, dots)
             for (side in projection.facing) {
                 if (side in foundSides) continue
                 val p = { n: Int -> projection.points[side.ordinal * 9 + n] }
@@ -64,14 +80,15 @@ data class ScanPaint(val tiles: List<PaintTile>, val outlines: List<List<Point>>
                 val v = (p(7) - p(1)) * 0.5
                 for (n in 0 until 9) {
                     val i = side.ordinal * 9 + n
-                    if (state.stickers[i] == null) tiles += PaintTile(i, p(n), u, v)
+                    val known = state.stickers[i]
+                    if (known == null) tiles += PaintTile(i, p(n), u, v) else dots += PaintDot(i, p(n), u, v, known)
                 }
                 if (side in state.confirmed) {
                     outlines += listOf(0, 2, 8, 6).map { n -> p(4) + (p(n) - p(4)) * 1.5 }
                     ticks += PaintTick(p(4), u, v)
                 }
             }
-            return ScanPaint(tiles, outlines, ticks, found)
+            return ScanPaint(tiles, outlines, ticks, found, dots)
         }
 
         /** Keys of a found face's stickers (by side and reading order) and of a face whose side is not named. */
@@ -106,8 +123,8 @@ class MotionFade {
     }
 }
 
-/** Faster than this many side widths a second, the cube counts as moving (tuned on the phone). */
-const val MOVING_SIDES_PER_SECOND = 0.33
+/** Faster than this many side widths a second, the cube counts as moving: a hand holding it stays under it (`scan-steady-progress`). */
+const val MOVING_SIDES_PER_SECOND = 1.0
 
 /** The marks come back after the cube has rested this long. */
 const val REST_MILLIS = 300L

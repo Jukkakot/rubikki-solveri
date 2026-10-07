@@ -383,9 +383,10 @@ private fun statusText(state: VideoScanState): String = stringResource(
 
 /**
  * The paint on the real cube in the latest picture of [width]×[height] pixels (the picture fills the
- * box, `scan-paint-calm`): a grey veil over every sticker still needed, known ones left bare, a white
- * outline and a tick on a confirmed side, a dim outline round each other face found ([ScanPaint]).
- * The veils glide towards their places at the display's rate ([Glide]); everything fades while the
+ * box, `scan-paint-calm`): a grey veil over every sticker still needed, a small dot in its read
+ * colour on every known one (`scan-steady-progress`), a white outline and a tick on a confirmed side,
+ * a dim outline round each other face found ([ScanPaint]). Veils and dots glide towards their places
+ * at the display's rate ([Glide]); everything fades while the
  * cube moves quickly ([MotionFade]) and the projection's part when it grows old ([paintAlpha]).
  */
 @Composable
@@ -404,8 +405,9 @@ private fun PaintLayer(state: VideoScanState, width: Int, height: Int, modifier:
     var drawn by remember { mutableStateOf<Map<Int, Point>>(emptyMap()) }
     // Glides for a few frames after each new picture, then rests until the next one.
     LaunchedEffect(paint) {
-        val targets = paint.tiles.associate { it.key to it.centre }
-        val snaps = paint.tiles.associate { it.key to SNAP_STEPS * maxOf(it.u.length, it.v.length) }
+        val targets = paint.tiles.associate { it.key to it.centre } + paint.dots.associate { it.key to it.centre }
+        val snaps = paint.tiles.associate { it.key to SNAP_STEPS * maxOf(it.u.length, it.v.length) } +
+            paint.dots.associate { it.key to SNAP_STEPS * maxOf(it.u.length, it.v.length) }
         var last: Long? = null
         while (true) {
             val t = withFrameNanos { it }
@@ -433,6 +435,15 @@ private fun PaintLayer(state: VideoScanState, width: Int, height: Int, modifier:
             val corners = listOf(-h to -h, h to -h, h to h, -h to h).map { (du, dv) -> centre + tile.u * du.toDouble() + tile.v * dv.toDouble() }
             drawPath(outline(corners), NEEDED.copy(alpha = VEIL_ALPHA * a))
         }
+        for (dot in paint.dots) {
+            val a = (if (dot.key < Stickers.COUNT) alpha else shown)
+            if (a <= 0f) continue
+            val c = at(drawn[dot.key] ?: dot.centre)
+            val r = (DOT_SHARE / 2 * minOf(dot.u.length * sx, dot.v.length * sy)).toFloat()
+            // A dark rim so a white or yellow dot shows on a bright sticker.
+            drawCircle(StickerColors.PLASTIC.copy(alpha = 0.7f * a), r + 1.5.dp.toPx(), c)
+            drawCircle(StickerColors.of(dot.color).copy(alpha = a), r, c)
+        }
         for (corners in paint.found) {
             drawPath(outline(corners), Color.White.copy(alpha = 0.35f * shown), style = Stroke(1.dp.toPx(), join = StrokeJoin.Round))
         }
@@ -457,6 +468,9 @@ private fun PaintLayer(state: VideoScanState, width: Int, height: Int, modifier:
 
 /** How long the marks take to fade out or in as the cube starts or stops moving. */
 private const val MOTION_FADE_MILLIS = 150
+
+/** A known sticker's dot across, as a share of its sticker step: small, so the real sticker shows round it. */
+private const val DOT_SHARE = 0.35
 
 /** How strongly a needed sticker's grey veil covers it. */
 private const val VEIL_ALPHA = 0.55f
