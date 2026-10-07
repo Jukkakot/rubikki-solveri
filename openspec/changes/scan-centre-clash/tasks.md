@@ -12,10 +12,10 @@
 
 ## 3. Later clear readings win (cube)
 
-- [ ] 3.1 Reading weight by squareness (design 2) on the vote shares and the anchor support; verify: a unit test that a straight-on reading outweighs a steep one
-- [ ] 3.2 Anchor by weighted support and the readings window dropping the oldest (design 3–4); verify: a test that a face known wrong from 60 bad readings is put right by ~40 straight-on right readings, and "one bad frame" still holds
-- [ ] 3.3 Regression: all video fixtures (2026-10-05 day and evening, 2026-10-07) still finish with the true cube, and not later than now (print frames-to-finish before/after; a few frames' slack is fine)
+- [x] ~~3.1 Reading weight by squareness (design 2) on the vote shares and the anchor support; verify: a unit test that a straight-on reading outweighs a steep one~~ dropped (user, 2026-10-07; design "Findings")
+- [x] 3.2 ~~Anchor by weighted support and~~ the readings window dropping the oldest (design 3–4); verify: a test that a face known wrong from 60 bad readings is put right by ~40 straight-on right readings, and "one bad frame" still holds
+- [x] 3.3 Regression: all video fixtures (2026-10-05 day and evening, 2026-10-07) still finish with the true cube, and not later than now (print frames-to-finish before/after; a few frames' slack is fine)
 
 ## 4. Docs
 
-- [ ] 4.1 `docs/architecture.md`: the video-scan paragraph gets the per-picture centre rule and the readings window in a line each (details stay in the code); roadmap row for `scan-centre-clash` marked done
+- [x] 4.1 `docs/architecture.md`: the video-scan paragraph gets the per-picture centre rule and the readings window in a line each (details stay in the code); roadmap row for `scan-centre-clash` marked done

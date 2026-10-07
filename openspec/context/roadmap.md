@@ -60,10 +60,15 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 50 | `quiet-screens` | done | The symbols-over-words rule on the remaining screens: guided scan with the video scan's overlay (no title, no "n/6", hint only until the first face), colour check's instruction only until the first action, ‹ › ✓ icons in manual input, free cube layer buttons as small cube pictures with ↻/↺, timer instruction only before the first solve |
 | 51 | `pattern-scan-first` | done | A pattern from home asks "Skannaa kuutio" or "Kuutio on jo ratkaistu"; the scan carries the target to the solution; a painted target fits the cube however it is held (user, 2026-10-07) |
 | 52 | `scan-start` | done | Video scan reads from the first picture with a face (no wait for the camera); metering on the middle of the cube, locked within about a second; a small spinner until the first sticker (user, 2026-10-07) |
+| 53 | `scan-centre-clash` | done | Video scan: two faces in one picture never take the same centre colour (a dark blue centre in shadow no longer spoils the white face), a face's oldest readings age out so a face read wrong at first is put right (web scan, 2026-10-07) |
 
 ## Backlog
 
 Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
+
+- video scan: straight-on readings weigh more (user, 2026-10-07). Tried in `scan-centre-clash`
+  and dropped: no gain on the test videos, and a face misread straight on beat earlier right angled
+  readings (design "Findings" in that archive). Worth another look only with a case it would fix.
 
 - `cloud-setup` (all projects, 2026-10-05): global instructions, hooks and skills also in cloud
   sessions: a public repo `jukkakot/claude-config` with them, a cloud environment setup script that

@@ -45,25 +45,43 @@ changes to the finder; UI.
    Alternative considered: a sanity check on the colours inside the face (a "white" face full of
    yellow); rejected as fragile, while two faces in view are the common corner view.
 
-2. **Straight-on weight.** A reading's squareness `s = |u×v| / (|u|·|v|) · min(|u|,|v|) / max(|u|,|v|)`
+2. ~~**Straight-on weight.**~~ **Dropped while implementing (user, 2026-10-07)**, see below. A reading's squareness `s = |u×v| / (|u|·|v|) · min(|u|,|v|) / max(|u|,|v|)`
    (1 for a face seen straight on, smaller when sheared or foreshortened). Weight
    `w = clamp(s / 0.85, 0.3, 1)²`: moderate angles keep full weight, so recognition does not slow
    down (the survey: straight-on readings have median s ≈ 0.97, angled ones ≈ 0.82, steep ones
    0.4–0.6). `w` multiplies the reading's vote shares (on top of the washed-out weight) and its
    support for the anchor. Constants in `VideoScan`, tuned on the fixtures.
 
-3. **Anchor by weighted support.** A full reading's support is the summed weight of the readings
-   agreeing with it (itself included); the anchor is the one with the most, the current anchor
-   winning a tie (as now). This lets a newer, clearer group take over once it outweighs the old one.
+3. **Anchor by support, unchanged.** Without the weight (2) the anchor stays the full reading most
+   others agree with; the window (4) is what lets a newer group take over, as the old one ages out.
 
 4. **Readings window: oldest out.** Over `MAX_READINGS` the oldest reading goes (never the one just
-   added), whether it agrees with the anchor or not. At the phone's 15–30 readings a second this
+   added, nor the anchor: a group left with only partial readings has none to choose), whether it
+   agrees with the anchor or not. At the phone's 15–30 readings a second this
    remembers the last 1.5–3 s of a face in view, enough votes for every sticker; old wrong readings
    age out. Dropping disagreeing ones first (today) is what threw the right readings away.
 
 5. **Known stickers follow the votes.** No change needed beyond 3–4: a sticker keeps its colour
    (`sticky`) only while that colour still has at least the leading votes, so once the new group
    leads, the stickers change. A single wrong frame still cannot: it never outweighs the window.
+
+## Findings while implementing
+
+Measured on all video fixtures (frames to complete; tour = `20261007_132721`, frames to finish):
+
+| | tour | angled | 213850 | others |
+|---|---|---|---|---|
+| before | 354 | 209 | 171 | same |
+| centre rule (1) | 279 | 209 | 171 | same |
+| + window (4) | 280 | 209 | 168 | same |
+| + window + weight (2–3) | never | 220 | 168 | +1–2 |
+| + both, new anchor only at 2× support | 279 | 220 | 176 | +1–2 |
+
+In the tour the yellow face is read green, straight on, for about 1.5 s; the green face had been
+read right but at an angle. With the weight those readings outweigh the right ones and the green
+face turns wrong. With the window alone the same happens only after the finish (the app has moved
+on), so the regression test judges the state at the finish. `20261007_132049` (never finishes)
+ends with 31 stickers known instead of 39: the window forgets; all known ones are right.
 
 ## Risks / Trade-offs
 

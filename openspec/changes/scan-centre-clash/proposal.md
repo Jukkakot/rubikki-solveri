@@ -24,12 +24,13 @@ the other faces were read exactly right, but with the white face wrong no possib
   picture name the same centre colour, the one that fits the colour better keeps it and the other
   takes its next-best colour not used in that picture. This catches a centre misnamed by light or
   shadow whenever the face it is mistaken for is also in view, as here.
-- **B. Later clear readings win over earlier wrong ones.** A face's readings are kept as a window
-  of the most recent ones (oldest dropped first), so wrong readings age out. The anchor is chosen by
-  weighted support, so a group of readings that agree with each other wins once it outweighs the
-  rest, even after the face was already known.
-- **Readings from a face seen straight on weigh more than from a steep angle** (user,
-  2026-10-07): each reading's votes and its support for the anchor count by how square its grid is.
+- **B. Later readings win over earlier wrong ones.** A face's readings are kept as a window of the
+  most recent ones (oldest dropped first), so wrong readings age out and a group of readings that
+  agree with each other takes over as the anchor once it outnumbers the rest.
+- ~~Readings from a face seen straight on weigh more than from a steep angle~~ (user, 2026-10-07):
+  **dropped while implementing** (user, 2026-10-07). On the test videos it gave no gain, slowed the
+  angled video by a second, and let a face misread straight on (yellow read green for 1.5 s) beat
+  the earlier right but angled readings, so that video never finished. Kept in the backlog.
 - The 2026-10-07 frames become a test fixture: the finder's readings of 14 clean frames from the
   recording's start (before the paint appears), with the blue centre made pale as the camera saw it.
 

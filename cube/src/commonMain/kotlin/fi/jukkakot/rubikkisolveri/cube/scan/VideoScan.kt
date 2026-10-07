@@ -399,17 +399,20 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     private fun Group.add(reading: Reading) {
         readings += reading
         if (readings.size > MAX_READINGS) {
-            // Never the reading just added: it has not been judged yet, and this frame's marks come from it.
-            val drop = readings.firstOrNull { !it.inlier && it !== anchor && it !== reading } ?: readings.first { it !== anchor && it !== reading }
+            // The oldest goes, agreeing or not, so wrong readings age out (`scan-centre-clash`); never the
+            // reading just added (not judged yet, this frame's marks come from it) nor the anchor (the
+            // group keeps a full reading; a newer one takes over once more readings agree with it).
+            val drop = readings.first { it !== reading && it !== anchor }
             drop.removed = true
             readings.remove(drop)
         }
     }
 
     /**
-     * The group's anchor is the full reading most others agree with (in some rotation); full readings
-     * agreeing with it on [MIN_AGREE] stickers vote, each turned to the group's frame. A partial
-     * reading votes when all but one of its stickers agree with the anchor in a single best turn.
+     * The group's anchor is the full reading most others agree with (in some rotation); as old
+     * readings age out, a newer group of agreeing readings takes over. Full readings agreeing with it on
+     * [MIN_AGREE] stickers vote, each turned to the group's frame. A partial reading votes when all
+     * but one of its stickers agree with the anchor in a single best turn.
      */
     private fun consensus(g: Group) {
         val rs = g.readings

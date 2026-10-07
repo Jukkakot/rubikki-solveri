@@ -84,8 +84,13 @@ class VideoScanTest {
         }
     }
 
-    /** Every sticker known in any frame of [states] is the true one ([truth], URFDLB) once its face's rotation is settled by the complete cube or a corner view. */
-    private fun assertKnownTrue(video: String, states: List<VideoScanState>, truth: String) {
+    /**
+     * Every sticker known when the scan stops (the first finished frame, else the last) is the true
+     * one ([truth], URFDLB), and every complete frame up to then is the true cube. After the finish
+     * the app has moved on: what later frames read does not count.
+     */
+    private fun assertKnownTrue(video: String, all: List<VideoScanState>, truth: String) {
+        val states = all.indexOfFirst { it.finished }.let { if (it >= 0) all.take(it + 1) else all }
         val last = states.last()
         for (i in 0 until Stickers.COUNT) last.stickers[i]?.let { assertEquals(truth[i], it.letter, "$video sticker $i") }
         for ((n, s) in states.withIndex()) if (s.complete) assertEquals(truth, s.stickers.joinToString("") { it!!.letter.toString() }, "$video frame $n")
@@ -96,13 +101,12 @@ class VideoScanTest {
         val camera = replay(VideoFixtures.CAMERA_1007)
         assertKnownTrue(VideoFixtures.CAMERA_1007, camera, VideoFixtures.TRUTH_1007)
         println("${VideoFixtures.CAMERA_1007}: ${camera.last().recognised} known at the end")
-        val scan = VideoScan()
-        val tour = replay(VideoFixtures.TOUR_1007, scan)
+        val tour = replay(VideoFixtures.TOUR_1007)
         assertKnownTrue(VideoFixtures.TOUR_1007, tour, VideoFixtures.TRUTH_1007)
         val finish = tour.indexOfFirst { it.finished }
         println("${VideoFixtures.TOUR_1007} frames to finish: $finish (before scan-centre-clash: 354)")
         assertTrue(finish >= 0, "finishes")
-        assertEquals(VideoFixtures.TRUTH_1007, scan.outcome().editor.encode())
+        assertEquals(VideoFixtures.TRUTH_1007, tour[finish].stickers.joinToString("") { it!!.letter.toString() })
     }
 
     /** The blue centre of the web scan's start mixed towards white until the scan names it white, as the phone's camera saw it. */
@@ -141,6 +145,19 @@ class VideoScanTest {
         for (n in 0 until 9) s.stickers[Face.U.ordinal * 9 + n]?.let { assertEquals(truth[Face.U.ordinal * 9 + n], it, "U $n") }
         assertEquals(CubeColor.BLUE, s.stickers[Face.B.ordinal * 9 + 4])
         assertEquals(8, recognisedOn(s, Face.U).size)
+    }
+
+    @Test
+    fun aFaceKnownWrongIsPutRightByLaterClearViews() {
+        val scan = VideoScan()
+        // Sixty readings with three stickers wrong (too many to agree with the right ones), then forty right ones.
+        val right = reading(Face.U)
+        val names = (0 until 9).map { truth[Face.U.ordinal * 9 + it] }
+        val bad = right.copy(colors = right.colors.mapIndexed { n, c -> if (n in setOf(0, 1, 2)) ColorClassifier.DEFAULT_PALETTE.getValue(CubeColor.entries.first { it != names[n] && it != names[4] && it != CubeColor.WHITE }) else c })
+        repeat(60) { scan.onFrame(listOf(bad), it * 100L) }
+        assertTrue((0..2).all { scan.state.stickers[Face.U.ordinal * 9 + it] != null && scan.state.stickers[Face.U.ordinal * 9 + it] != names[it] }, "known wrong first")
+        repeat(40) { scan.onFrame(listOf(right), 6_000 + it * 100L) }
+        for (n in 0 until 9) assertEquals(names[n], scan.state.stickers[Face.U.ordinal * 9 + n], "sticker $n")
     }
 
     /** Frames until the cube is first complete (null: never) and stickers recognised at the halfway frame, replaying only the faces [keep] lets through. */

@@ -175,6 +175,8 @@ Video scan pipeline (`video-scan`):
    place's margin clears `CLEAR_MARGIN` (chosen by `ScanSimulation`, findings in the `video-scan-light` archive) or by
    its votes alone, and the scan finishes when the whole cube is clear, unseen stickers included.
    Face rotations come from the same cost. `CubeProjection` puts every sticker into the picture.
+   Two full faces of one picture never share a centre colour (`nameCentres`); a face keeps its
+   latest `MAX_READINGS`, the oldest dropped, so wrong readings age out (`scan-centre-clash`).
    Earlier decisions in the `video-scan` and `video-scan-live` archives. Regression data: the test
    videos' finder output in `cube/src/jvmTest/resources/video/` (`VideoScanTest`, the true cubes in
    `VideoFixtures`; regenerate with `VideoScanHarness.writeFixtures` from the committed JPEG stills
