@@ -2,7 +2,7 @@
 
 ## 1. Target through the scan
 
-- [ ] 1.1 Video scan, guided scan and hand-input/check routes take an optional encoded target and pass it on (the switch between scans, the colour check, "scan again", and `afterScan`'s solution route); verify: a unit test that `afterScan` with a target puts it on the solution route, and the existing nav tests stay green
+- [ ] 1.1 Video scan, guided scan and hand-input/check routes take an optional encoded target and pass it on (the switch between scans, the colour check, "scan again", and `afterScan`'s solution route, which keeps `fromScan` so back still leads to the scan); verify: a unit test that `afterScan` with a target puts it on the solution route, and the existing nav tests stay green
 - [ ] 1.2 Ordinary scans from home (no target) behave exactly as before; verify: existing scan/nav tests green
 
 ## 2. Start question on the picker
