@@ -11,6 +11,7 @@ import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.Pose
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.cube.scan.RotationSearch
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.Stall
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
@@ -20,18 +21,21 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class VideoScanTest {
+/** The video scan's behaviour, run for both scanners ([RulesVideoScanTest] runs it with [ScanEngine.RULES]). */
+open class VideoScanTest {
+    protected open val engine: ScanEngine = ScanEngine.LOOK
+
     private val truth = Cube.fromColorString(VideoFixtures.TRUTH)
 
     /** Replays a test video's face readings at 10 fps; returns every frame's state. */
-    private fun replay(video: String, scan: VideoScan = VideoScan()): List<VideoScanState> = replay(VideoFixtures.load(video), scan)
+    private fun replay(video: String, scan: VideoScan = VideoScan(engine = engine)): List<VideoScanState> = replay(VideoFixtures.load(video), scan)
 
-    private fun replay(frames: List<VideoFixtures.Frame>, scan: VideoScan = VideoScan()): List<VideoScanState> =
+    private fun replay(frames: List<VideoFixtures.Frame>, scan: VideoScan = VideoScan(engine = engine)): List<VideoScanState> =
         frames.mapIndexed { i, frame -> scan.onFrame(frame.faces, i * 100L) }
 
     @Test
     fun angledVideoGivesTheTrueCube() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         val states = replay(VideoFixtures.ANGLED, scan)
         assertTrue(states.any { it.finished }, "finished at some point")
         assertEquals(VideoFixtures.TRUTH, scan.outcome().editor.encode())
@@ -40,7 +44,7 @@ class VideoScanTest {
 
     @Test
     fun straightVideoGivesTheTrueCube() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         val states = replay(VideoFixtures.STRAIGHT, scan)
         assertTrue(states.any { it.finished }, "finished at some point")
         assertEquals(VideoFixtures.TRUTH, scan.outcome().editor.encode())
@@ -163,7 +167,7 @@ class VideoScanTest {
 
     @Test
     fun aPaleBlueFaceAloneShowsNothingUntilTheWhiteFaceIsSeen() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         var s = VideoScanState.EMPTY
         repeat(6) { s = scan.onFrame(listOf(paleCentre(Face.B)), it * 100L) }
         assertEquals(0, s.recognised, "doubtful between white and blue: nothing known, not even the centre")
@@ -181,7 +185,7 @@ class VideoScanTest {
         val olive = Rgb.fromHex("7c8933")
         val u = reading(Face.U).let { r -> r.copy(colors = r.colors.map { c -> if (c == ColorClassifier.DEFAULT_PALETTE.getValue(CubeColor.YELLOW)) olive else c }) }
         val green = reading(Face.F).let { r -> r.copy(colors = r.colors.map { c -> if (c == ColorClassifier.DEFAULT_PALETTE.getValue(CubeColor.GREEN)) Rgb.fromHex("1e6a35") else c }) }
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         var t = 0L
         for (face in listOf(washed, green, u)) repeat(4) { scan.onFrame(listOf(face), t); t += 100 }
         val yellowOnU = (0 until 9).filter { truth[Face.U.ordinal * 9 + it] == CubeColor.YELLOW }
@@ -214,7 +218,7 @@ class VideoScanTest {
         val u = reading(Face.U, centre = Point(100.0, 110.0))
         val b = reading(Face.B, centre = Point(190.0, 200.0)).let { r -> r.copy(colors = r.colors.toMutableList().also { it[4] = VideoFixtures.paleBlue(it[4]!!) }) }
         assertEquals(CubeColor.WHITE, ColorClassifier.rankedCentre(b.colors[4]!!).first())
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         var s = VideoScanState.EMPTY
         repeat(4) { s = scan.onFrame(listOf(u, b), it * 100L) }
         for (n in 0 until 9) s.stickers[Face.U.ordinal * 9 + n]?.let { assertEquals(truth[Face.U.ordinal * 9 + n], it, "U $n") }
@@ -224,7 +228,7 @@ class VideoScanTest {
 
     @Test
     fun aFaceKnownWrongIsPutRightByLaterClearViews() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         // Sixty readings with three stickers wrong (too many to agree with the right ones), then forty right ones.
         val right = reading(Face.U)
         val names = (0 until 9).map { truth[Face.U.ordinal * 9 + it] }
@@ -264,7 +268,7 @@ class VideoScanTest {
 
     @Test
     fun oneWrongReadingDoesNotChangeARecognisedSticker() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         var t = 0L
         repeat(4) { scan.onFrame(listOf(reading(Face.U)), t++ * 100) }
         val before = scan.state.stickers.toList()
@@ -276,7 +280,7 @@ class VideoScanTest {
 
     @Test
     fun aFaceTurnedOnScreenVotesForTheSameStickers() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         repeat(3) { scan.onFrame(listOf(reading(Face.U)), it * 100L) }
         val before = scan.state.stickers.toList()
         repeat(6) { scan.onFrame(listOf(reading(Face.U, turn = 1)), 300L + it * 100) }
@@ -285,7 +289,7 @@ class VideoScanTest {
 
     @Test
     fun cornerViewSettlesTheRotationAndThePose() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         // F in front, U above it on screen: U's bottom side touches F, F's top side touches U.
         val f = reading(Face.F, centre = Point(100.0, 200.0))
         val u = reading(Face.U, centre = Point(100.0, 110.0))
@@ -297,7 +301,7 @@ class VideoScanTest {
 
     @Test
     fun orientationFollowsTheSettledFrontFaceAndIsNullWithoutOne() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         assertNull(scan.onFrame(listOf(reading(Face.F)), 0).orientation, "rotation not settled yet")
         val f = reading(Face.F, centre = Point(100.0, 200.0))
         val u = reading(Face.U, centre = Point(100.0, 110.0))
@@ -311,7 +315,7 @@ class VideoScanTest {
 
     @Test
     fun oneReadingGivesLeadingColoursAndThreeRecogniseThem() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         val first = scan.onFrame(listOf(reading(Face.U)), 0)
         assertEquals(1, first.recognised, "only the centre of the face in view")
         for (n in 0 until 9) if (n != 4) assertEquals(truth[Face.U.ordinal * 9 + n], first.leading[Face.U.ordinal * 9 + n])
@@ -334,7 +338,7 @@ class VideoScanTest {
 
     @Test
     fun theProjectionIsHeldOverAFramelessGapAndAges() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         val built = settleCorner(scan, 0)
         val projection = assertNotNull(built.projection)
         assertEquals(0, built.projectionAge)
@@ -346,7 +350,7 @@ class VideoScanTest {
 
     @Test
     fun aHeldProjectionMovesOntoTheFaceFound() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         val projection = assertNotNull(settleCorner(scan, 0).projection)
         // L seen alone, its rotation not settled: no orientation, the held projection follows L.
         val l = reading(Face.L, centre = Point(40.0, 300.0))
@@ -361,7 +365,7 @@ class VideoScanTest {
 
     @Test
     fun resetClearsTheHeldProjection() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         settleCorner(scan, 0)
         scan.reset()
         assertNull(scan.onFrame(emptyList(), 500).projection)
@@ -372,7 +376,7 @@ class VideoScanTest {
 
     @Test
     fun aPartialFaceVotesForTheStickersItShows() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         repeat(2) { scan.onFrame(listOf(reading(Face.U)), it * 100L) }
         val s = scan.onFrame(listOf(reading(Face.U, turn = 1, missing = setOf(1))), 200)
         // Missing place 1 of the turned reading is a different place of the face; the other seven around the centre reach three votes.
@@ -382,7 +386,7 @@ class VideoScanTest {
 
     @Test
     fun aPartialFaceWithAWrongLatticeDoesNotVote() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         repeat(2) { scan.onFrame(listOf(reading(Face.U)), it * 100L) }
         // The stickers of another face around the right centre: a lattice across the cube's edge.
         val r = reading(Face.R, missing = setOf(0))
@@ -393,7 +397,7 @@ class VideoScanTest {
 
     @Test
     fun aPartialFaceWithoutItsCentreOrBeforeAnyFullFaceIsIgnored() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         repeat(3) { scan.onFrame(listOf(reading(Face.U, missing = setOf(0))), it * 100L) }
         assertEquals(0, scan.state.recognised, "no full face yet")
         repeat(2) { scan.onFrame(listOf(reading(Face.U)), 300 + it * 100L) }
@@ -415,7 +419,7 @@ class VideoScanTest {
 
     @Test
     fun finishesOnlyAfterHalfASecond() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         val faces = Face.entries.map { reading(it, centre = Point(100.0, 100.0 + 300 * it.ordinal)) }
         var t = 0L
         // Each face shown until the cube is first clear (the last one needs not be read in full).
@@ -436,7 +440,7 @@ class VideoScanTest {
 
     @Test
     fun darkPictureIsToldAtOnceAndStallsAfterAWhile() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         val first = scan.onFrame(listOf(dark(Face.U, 0.2)), 0)
         assertTrue(first.dim)
         assertNull(first.stall)
@@ -450,7 +454,7 @@ class VideoScanTest {
 
     @Test
     fun noCubeForAWhileStalls() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         scan.onFrame(listOf(reading(Face.U)), 0)
         assertNull(scan.onFrame(emptyList(), 12_000).stall)
         assertEquals(Stall.NO_CUBE, scan.onFrame(emptyList(), 13_000).stall)
@@ -459,7 +463,7 @@ class VideoScanTest {
 
     @Test
     fun theSameFaceForTwentySecondsStallsAndRestartClearsIt() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         var s = VideoScanState.EMPTY
         for (t in 0L..19_000L step 200) s = scan.onFrame(listOf(reading(Face.U)), t)
         assertNull(s.stall)
@@ -491,14 +495,14 @@ class VideoScanTest {
         // Too much light: every sticker's brightest channel at the top of the range.
         fun washed(face: Face) = reading(face).let { r -> r.copy(colors = r.colors.map { c -> c?.let { Rgb(minOf(255, it.r * 2), minOf(255, it.g * 2), minOf(255, it.b * 2)) } }) }
         assertTrue(washed(Face.U).colors.all { VideoScan.weight(it!!) == VideoScan.WASHED_WEIGHT })
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         repeat(3) { scan.onFrame(listOf(washed(Face.U)), it * 100L) }
         assertEquals(listOf(4), (0 until 9).filter { scan.state.stickers[Face.U.ordinal * 9 + it] != null }, "three washed-out readings make only the centre known")
     }
 
     @Test
     fun aSideReadManyTimesButNotConfirmedHasNoTick() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         repeat(20) { scan.onFrame(listOf(reading(Face.U)), it * 100L) }
         assertEquals(9, recognisedOn(scan.state, Face.U).size + 1, "all nine known from their own votes")
         assertTrue(scan.state.confirmed.isEmpty(), "${scan.state.confirmed}")
@@ -510,7 +514,7 @@ class VideoScanTest {
 
     @Test
     fun aFaceHeldLongStillShowsItsReading() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         var s = VideoScanState.EMPTY
         // More frames than a face keeps readings: the newest is never the one dropped.
         repeat(VideoScan.MAX_READINGS + 20) { s = scan.onFrame(listOf(reading(Face.U)), it * 100L) }
@@ -533,7 +537,7 @@ class VideoScanTest {
         val nearYellow = split(CubeColor.YELLOW)
         assertEquals(CubeColor.RED, ColorClassifier.live(nearRed))
         assertEquals(CubeColor.YELLOW, ColorClassifier.live(nearYellow))
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         val u = reading(Face.U)
         fun show(t: Long, vararg set: Pair<Int, Rgb>) = scan.onFrame(listOf(u.copy(colors = u.colors.toMutableList().also { c -> for ((n, rgb) in set) c[n] = rgb })), t)
         val orange = ColorClassifier.DEFAULT_PALETTE.getValue(CubeColor.ORANGE)
@@ -551,7 +555,7 @@ class VideoScanTest {
     @Test
     fun stickersAreKnownBeforeTheCameraLocksWhenTheCubeTurnsFromTheStart() {
         // 2026-10-07: two faces in view, the cube turned in the hand so the larger face swaps, darker=0.
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         val exposure = ExposureControl()
         var knownBeforeLock = 0
         var lockedAt: Long? = null
@@ -569,7 +573,7 @@ class VideoScanTest {
 
     @Test
     fun readingGoesOnWhileTheCameraMetersAgainAfterATorchChange() {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         val exposure = ExposureControl()
         var t = 0L
         while (exposure.phase != ExposureControl.Phase.LOCKED) {
@@ -609,7 +613,7 @@ class VideoScanTest {
     @Test
     fun aRedCentreLookingOrangeIsNamedRedOnceTheOtherFiveAreSure() {
         // scan-steady-progress, web test 2026-10-07 18:19: the red face stayed unnamed for 40 s.
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         var t = 0L
         fun corner(top: Face, bottom: Face, times: Int = 4) = repeat(times) {
             scan.onFrame(listOf(stripedReading(striped, bottom, Point(100.0, 200.0)), stripedReading(striped, top, Point(100.0, 110.0))), t)
