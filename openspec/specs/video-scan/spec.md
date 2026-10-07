@@ -63,9 +63,9 @@ stay with everything read and nothing happening.
 ### Requirement: Guided scan stays
 The guided scan SHALL stay available. The video scan SHALL be the default: every new scan SHALL
 start as the video scan. The video scan screen's menu SHALL offer an entry that switches to the
-guided scan, and the guided scan screen a button that switches back to the video scan; switching
-SHALL replace the screen, so going back leads to where the scan was started from. Rescanning a
-single face from the colour check SHALL use the guided scan.
+guided scan, and the guided scan screen's menu an entry that switches back to the video scan;
+switching SHALL replace the screen, so going back leads to where the scan was started from.
+Rescanning a single face from the colour check SHALL use the guided scan.
 
 #### Scenario: Choosing the way
 - **WHEN** the user starts scanning from the home screen
@@ -76,7 +76,7 @@ single face from the colour check SHALL use the guided scan.
 - **THEN** the guided scan opens in its place, and going back returns to the home screen
 
 #### Scenario: Switch back to video
-- **WHEN** the user taps "video" on the guided scan
+- **WHEN** the user picks "video" from the guided scan's menu
 - **THEN** the video scan opens in its place
 
 #### Scenario: Rescan one face
