@@ -10,6 +10,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performScrollTo
 import fi.jukkakot.rubikkisolveri.cube.Corner
 import fi.jukkakot.rubikkisolveri.cube.Cube
@@ -68,7 +70,8 @@ class CubeScreensTest {
     @Test
     fun nextFace() {
         manual()
-        compose.onNodeWithText("Seuraava").performClick()
+        compose.onNodeWithContentDescription("Edellinen").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Seuraava").performClick()
         compose.onNodeWithText("Pidä kuutiota näin: punainen keskiö sinua kohti, valkoinen ylhäällä.").assertIsDisplayed()
         compose.onNodeWithText("Oikea puoli (2/6)").assertIsDisplayed()
     }
@@ -76,7 +79,7 @@ class CubeScreensTest {
     @Test
     fun unfinishedCube() {
         manual()
-        compose.onNodeWithText("Tarkista").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Tarkista").assertIsNotEnabled()
     }
 
     @Test
@@ -85,7 +88,7 @@ class CubeScreensTest {
         val urf = Corner.URF.stickers
         val twisted = solved.with(urf[0], solved[urf[2]]).with(urf[1], solved[urf[0]]).with(urf[2], solved[urf[1]])
         manual(CubeEditor.of(twisted))
-        compose.onNodeWithText("Tarkista").assertIsEnabled().performClick()
+        compose.onNodeWithContentDescription("Tarkista").assertIsEnabled().performClick()
         compose.onNodeWithText("Yksi kulma on kiertynyt", substring = true).assertIsDisplayed()
         assertNull(accepted)
     }
@@ -94,17 +97,51 @@ class CubeScreensTest {
     fun validCube() {
         val cube = Cube.solved().apply("R U R' F2")
         manual(CubeEditor.of(cube))
-        compose.onNodeWithText("Tarkista").performClick()
+        compose.onNodeWithContentDescription("Tarkista").performClick()
         assertEquals(cube, accepted)
+    }
+
+    private var freeSolved: Cube? = null
+
+    private fun freeCube() {
+        compose.setContent { RubikkiTheme(dynamicColor = false) { FreeCubeScreen(start = Cube.solved(), onBack = {}, onSolve = { freeSolved = it }) } }
+    }
+
+    @Test
+    fun freeCubeTurnsTheRightLayer() {
+        freeCube()
+        compose.onNodeWithContentDescription("Oikea puoli").performScrollTo().performClick()
+        compose.onNodeWithText("Ratkaise").performScrollTo().performClick()
+        assertEquals(Cube.solved().apply("R"), freeSolved)
+    }
+
+    @Test
+    fun freeCubeToggleTurnsTheOtherWay() {
+        freeCube()
+        compose.onNodeWithContentDescription("Vastapäivään").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Oikea puoli").performScrollTo().performClick()
+        compose.onNodeWithText("Ratkaise").performScrollTo().performClick()
+        assertEquals(Cube.solved().apply("R'"), freeSolved)
     }
 
     @Test
     fun freeCubeTurnAndUndo() {
-        compose.setContent { RubikkiTheme(dynamicColor = false) { FreeCubeScreen(start = Cube.solved(), onBack = {}) } }
-        compose.onNodeWithText("Kumoa").performScrollTo().assertIsNotEnabled()
-        compose.onNodeWithText("Oikea R").performScrollTo().performClick()
-        compose.onNodeWithText("Kumoa").performScrollTo().assertIsEnabled().performClick()
-        compose.onNodeWithText("Kumoa").assertIsNotEnabled()
+        freeCube()
+        compose.onNodeWithContentDescription("Kumoa").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Oikea puoli").performScrollTo().performClick()
+        compose.onNodeWithText("Ratkaise").assertIsEnabled()
+        compose.onNodeWithContentDescription("Kumoa").performScrollTo().assertIsEnabled().performClick()
+        compose.onNodeWithContentDescription("Kumoa").assertIsNotEnabled()
+        compose.onNodeWithText("Ratkaise").assertIsNotEnabled()
+    }
+
+    @Test
+    fun freeCubeDragHintGoesAfterTheFirstDrag() {
+        freeCube()
+        compose.onNodeWithText("Vedä kuutiota", substring = true).assertExists()
+        compose.onNodeWithContentDescription("Kolmiulotteinen kuutio").performTouchInput { swipeLeft() }
+        compose.waitForIdle()
+        compose.onNodeWithText("Vedä kuutiota", substring = true).assertDoesNotExist()
     }
 }
 

@@ -38,14 +38,15 @@ import kotlin.math.PI
 
 /**
  * The curved direction arrow of [move], with a dark outline, a head at its end and in the middle
- * of the arc a badge with the number of quarter turns ("×1", "×2").
+ * of the arc a badge with the number of quarter turns ("×1", "×2"). A [compact] arrow (a cube the
+ * size of an icon) is thicker and has no badge.
  */
-private fun DrawScope.drawArrow(move: Move, view: Quat, path: Path, mirror: Boolean, text: TextMeasurer) {
+private fun DrawScope.drawArrow(move: Move, view: Quat, path: Path, mirror: Boolean, text: TextMeasurer, compact: Boolean = false) {
     val points = CubeScene.arrow(move, view).map { CubeScene.projectPoint(it, view, size.width, size.height, mirror) }
     // Sized by the cube on screen.
     val cubeSize = CubeScene.fit(size.width, size.height, mirror).scale
-    val width = cubeSize * 0.025f
-    val headLength = cubeSize * 0.057f
+    val width = cubeSize * if (compact) 0.07f else 0.025f
+    val headLength = cubeSize * if (compact) 0.13f else 0.057f
     val (ex, ey) = points.last()
     val (px, py) = points[points.size - 3]
     val dx = ex - px
@@ -69,6 +70,7 @@ private fun DrawScope.drawArrow(move: Move, view: Quat, path: Path, mirror: Bool
     }
     drawPath(head, StickerColors.ARROW_OUTLINE, style = Stroke(width * 0.6f, join = androidx.compose.ui.graphics.StrokeJoin.Round))
     drawPath(head, StickerColors.ARROW)
+    if (compact) return
     // The count badge: a pill in the arrow's colours on the middle of the arc.
     val (mx, my) = points[points.size / 2]
     val label = text.measure(
@@ -142,6 +144,7 @@ class CubeViewState(initial: Quat = CubeScene.DEFAULT_VIEW) {
  * [progress] 0..1 turns the move's layers. [marked] stickers get a strong outline. [onTap] gets the
  * tapped sticker's index. A cube that is not [draggable] leaves drags to its parent (e.g. a pager).
  * [mirror] adds a framed mirror behind the cube, fixed on screen, showing the cube's reflection.
+ * A [compact] cube (the size of an icon) draws its [arrow] thicker and without the count badge.
  */
 @Composable
 fun Cube3D(
@@ -157,6 +160,7 @@ fun Cube3D(
     arrow: Move? = null,
     draggable: Boolean = true,
     mirror: Boolean = false,
+    compact: Boolean = false,
 ) {
     var size by remember { mutableStateOf(Size.Zero) }
     val path = remember { Path() }
@@ -208,7 +212,7 @@ fun Cube3D(
             }
         }
         drawQuads(CubeScene.project(quads, view, size.width, size.height, highlight, mirror), colors, marked, path)
-        if (showArrow) drawArrow(arrow!!, view, path, mirror, textMeasurer)
+        if (showArrow) drawArrow(arrow!!, view, path, mirror, textMeasurer, compact)
     }
 }
 

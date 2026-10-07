@@ -44,7 +44,10 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.rememberCoroutineScope
-import org.jetbrains.compose.resources.pluralStringResource
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import fi.jukkakot.rubikkisolveri.ui.common.BigButton
+import fi.jukkakot.rubikkisolveri.ui.common.RoundIconButton
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanCheck
 import fi.jukkakot.rubikkisolveri.cube.scan.Verdict
@@ -142,6 +145,8 @@ fun ManualInputScreen(
     val selectedColor = CubeColor.entries[colorIndex]
     var validity by remember { mutableStateOf<Validity?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
+    // The first paint, "looks right" or "scan again" on the check: its instruction has done its job.
+    var acted by rememberSaveable { mutableStateOf(false) }
     val viewState = remember { CubeViewState(viewFor(view)) }
     LaunchedEffect(view) { viewState.animateTo(viewFor(view)) }
 
@@ -157,6 +162,7 @@ fun ManualInputScreen(
     }
 
     fun paint(index: Int) {
+        acted = true
         if (scanCheck != null) setCheck(scanCheck.paint(index, selectedColor)) else update(editor.paint(index, selectedColor))
     }
 
@@ -193,6 +199,7 @@ fun ManualInputScreen(
     // "Looks right": the next unchecked face, or, after the last one, the verdict.
     fun lookRight() {
         val current = scanCheck ?: return
+        acted = true
         val next = current.lookRight(view)
         if (next.unchecked.isNotEmpty()) {
             setCheck(next)
@@ -305,7 +312,7 @@ fun ManualInputScreen(
                     } else if (scanCheck != null) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (onScanFace != null && scanCheck.readings != null) {
-                                OutlinedButton(onClick = { onScanFace(view) }, modifier = Modifier.weight(1f)) {
+                                OutlinedButton(onClick = { acted = true; onScanFace(view) }, modifier = Modifier.weight(1f)) {
                                     Text(stringResource(Res.string.check_rescan_face), maxLines = 1)
                                 }
                             }
@@ -313,16 +320,17 @@ fun ManualInputScreen(
                                 Text(stringResource(Res.string.check_looks_right), maxLines = 1)
                             }
                         }
-                    } else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { view.previous?.let { faceIndex = it.ordinal } }, enabled = view.previous != null, modifier = Modifier.weight(1f)) {
-                            Text(stringResource(Res.string.manual_previous), maxLines = 1)
+                    } else Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        // ‹ › through the faces and ✓ as the main action; their names stay for screen readers.
+                        RoundIconButton(onClick = { view.previous?.let { faceIndex = it.ordinal } }, enabled = view.previous != null, size = 56.dp) {
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(Res.string.manual_previous))
                         }
-                        OutlinedButton(onClick = { view.next?.let { faceIndex = it.ordinal } }, enabled = view.next != null, modifier = Modifier.weight(1f)) {
-                            Text(stringResource(Res.string.manual_next), maxLines = 1)
+                        RoundIconButton(onClick = { view.next?.let { faceIndex = it.ordinal } }, enabled = view.next != null, size = 56.dp) {
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(Res.string.manual_next))
                         }
-                        Button(
+                        BigButton(
                             onClick = {
-                                val cube = editor.toCube() ?: return@Button
+                                val cube = editor.toCube() ?: return@BigButton
                                 val result = CubeCheck.validity(cube)
                                 validity = result
                                 if (result.isValid) onValid(cube)
@@ -330,7 +338,7 @@ fun ManualInputScreen(
                             enabled = editor.isComplete,
                             modifier = Modifier.weight(1f),
                         ) {
-                            Text(stringResource(Res.string.manual_check), maxLines = 1)
+                            Icon(Icons.Filled.Check, contentDescription = stringResource(Res.string.manual_check), modifier = Modifier.size(32.dp))
                         }
                     }
                 }
@@ -341,14 +349,9 @@ fun ManualInputScreen(
             Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (note != null) {
-                Text(stringResource(note), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.tertiary)
-            }
-            scanCheck?.unchecked?.size?.takeIf { it > 0 }?.let { left ->
-                Text(
-                    pluralStringResource(Res.plurals.check_faces_left, left, left),
-                    style = MaterialTheme.typography.labelLarge,
-                )
+            // One line until the first action on the check; the map's ticks show the faces left.
+            if (note != null && !acted) {
+                Text(stringResource(note), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.tertiary, maxLines = 1)
             }
             Row(
                 Modifier.fillMaxWidth().height(110.dp),

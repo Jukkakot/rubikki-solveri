@@ -23,6 +23,10 @@ import fi.jukkakot.rubikkisolveri.ui.solve.SolveScreen
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.key
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,6 +60,22 @@ class ProgressScreensTest {
         compose.onNodeWithText("Ka5").performScrollTo()
         compose.onNodeWithText("11.00").assertExists()
         compose.onNodeWithText("9.00").assertExists()
+    }
+
+    @Test
+    fun theInstructionShowsOnlyBeforeTheFirstTimedSolve() {
+        var solves by mutableStateOf(0)
+        compose.setContent {
+            RubikkiTheme(dynamicColor = false) {
+                key(solves) { TimerScreen(repo, onBack = {}, onHistory = {}, onGuidedScramble = {}, scrambles = { Notation.parse("R U") }) }
+            }
+        }
+        compose.onNodeWithText("Pidä sormea ajastimella", substring = true).assertIsDisplayed()
+        runBlocking { repo.addTimed(12_340L, "R U") }
+        compose.runOnIdle { solves = 1 }
+        compose.waitForIdle()
+        compose.onNodeWithText("Pidä sormea ajastimella", substring = true).assertDoesNotExist()
+        compose.onNodeWithContentDescription("Ajastin").assertIsDisplayed()
     }
 
     @Test

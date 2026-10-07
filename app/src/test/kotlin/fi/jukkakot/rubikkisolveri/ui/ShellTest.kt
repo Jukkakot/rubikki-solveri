@@ -188,7 +188,7 @@ class ShellTest {
         compose.onNodeWithText("Käsin").performClick()
         compose.onNodeWithContentDescription("Lisää").performClick()
         compose.onNodeWithText("Täytä ratkaistuna").performClick()
-        compose.onNodeWithText("Tarkista").performClick()
+        compose.onNodeWithContentDescription("Tarkista").performClick()
         assertTrue(isOn(SolveRoute("x")))
     }
 

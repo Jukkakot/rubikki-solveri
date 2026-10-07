@@ -273,24 +273,20 @@ fun VideoScanContent(
             )
         }
         // Back, torch and menu on the picture; the progress ring between them.
-        Row(
-            Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            BackButton(onBack)
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { ProgressRing(share, state.recognised) }
-            if (torchAvailable) {
-                RoundIconToggle(checked = torch, onCheckedChange = onTorch) {
-                    Icon(painterResource(Res.drawable.ic_torch), contentDescription = stringResource(Res.string.scan_torch))
-                }
-            }
-            ScanMenu(
-                onSwitch = onSwitch,
-                onManual = onManual,
-                onCheck = { finish(scan.outcome()) }.takeIf { state.recognised > 0 },
-            )
-        }
+        ScanOverlayBar(
+            onBack = onBack,
+            torch = torch,
+            onTorch = onTorch,
+            torchAvailable = torchAvailable,
+            menu = { close ->
+                ScanMenuItems(
+                    close = close,
+                    onSwitch = onSwitch,
+                    onManual = onManual,
+                    onCheck = { finish(scan.outcome()) }.takeIf { state.recognised > 0 },
+                )
+            },
+        ) { ProgressRing(share, state.recognised) }
         if (state.dim && stall == null) DimNotice(Modifier.align(Alignment.TopStart).statusBarsPadding().padding(start = 12.dp, top = 72.dp))
         val bottom = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
         if (stall != null) {
@@ -454,26 +450,18 @@ private fun ProgressRing(share: Float, known: Int) {
     }
 }
 
-/** The ⋮ menu: one picture at a time, by hand, and the colour check with what is known ([onCheck] null until a sticker is). */
+/** The ⋮ menu's items: one picture at a time, by hand, and the colour check with what is known ([onCheck] null until a sticker is). */
 @Composable
-private fun ScanMenu(onSwitch: (() -> Unit)?, onManual: () -> Unit, onCheck: (() -> Unit)?) {
-    var open by remember { mutableStateOf(false) }
-    Box {
-        RoundIconButton(onClick = { open = true }) {
-            Icon(painterResource(Res.drawable.ic_more), contentDescription = stringResource(Res.string.solve_menu))
-        }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            if (onSwitch != null) {
-                DropdownMenuItem(text = { Text(stringResource(Res.string.scan_switch_photo)) }, onClick = { open = false; onSwitch() })
-            }
-            DropdownMenuItem(text = { Text(stringResource(Res.string.scan_manual_short)) }, onClick = { open = false; onManual() })
-            DropdownMenuItem(
-                text = { Text(stringResource(Res.string.video_check)) },
-                enabled = onCheck != null,
-                onClick = { open = false; onCheck?.invoke() },
-            )
-        }
+private fun ScanMenuItems(close: () -> Unit, onSwitch: (() -> Unit)?, onManual: () -> Unit, onCheck: (() -> Unit)?) {
+    if (onSwitch != null) {
+        DropdownMenuItem(text = { Text(stringResource(Res.string.scan_switch_photo)) }, onClick = { close(); onSwitch() })
     }
+    DropdownMenuItem(text = { Text(stringResource(Res.string.scan_manual_short)) }, onClick = { close(); onManual() })
+    DropdownMenuItem(
+        text = { Text(stringResource(Res.string.video_check)) },
+        enabled = onCheck != null,
+        onClick = { close(); onCheck?.invoke() },
+    )
 }
 
 /** A small notice on the picture that the light is dim, before the scan stalls. */

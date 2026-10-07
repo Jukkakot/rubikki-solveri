@@ -11,14 +11,13 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.text.style.TextAlign
+import fi.jukkakot.rubikkisolveri.ui.common.RoundIconButton
 import fi.jukkakot.rubikkisolveri.ui.common.BackButton
-import fi.jukkakot.rubikkisolveri.ui.common.FitColumn
-import fi.jukkakot.rubikkisolveri.ui.common.RoundIconToggle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.ui.semantics.Role
@@ -29,7 +28,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -45,7 +43,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -214,7 +211,8 @@ fun ScanContent(
     var index by remember { mutableIntStateOf(0) }
     var review by remember { mutableStateOf<List<Rgb>?>(null) }
     var recognised by remember { mutableStateOf<FaceView?>(null) }
-    var lastCaptured by remember { mutableStateOf<FaceView?>(null) }
+    // "Face read" stands in the status line from accepting a face until the next one is in the grid.
+    var justAccepted by remember { mutableStateOf(false) }
     // A captured face is accepted by itself unless the user touches the review first.
     var autoAccept by remember { mutableStateOf(false) }
     val acceptFill = remember { Animatable(0f) }
@@ -222,6 +220,7 @@ fun ScanContent(
 
     fun handle(e: ScanEvent) {
         event = e
+        if (e !is ScanEvent.Waiting) justAccepted = false
         live = session.latest
         index = session.index
         if (e is ScanEvent.Captured) {
@@ -246,7 +245,7 @@ fun ScanContent(
         session.accept()
         keepPicture(face)
         review = null
-        lastCaptured = face
+        justAccepted = true
         index = session.index
         event = ScanEvent.Waiting
         AppLog.info(
@@ -313,142 +312,113 @@ fun ScanContent(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(Res.string.scan_title)) },
-                navigationIcon = { Box(Modifier.padding(horizontal = 8.dp)) { BackButton(onBack) } },
-                actions = {
-                    if (onSwitch != null) {
-                        TextButton(onClick = onSwitch) { Text(stringResource(Res.string.scan_switch_video), maxLines = 1) }
-                    }
-                    if (torchAvailable) {
-                        RoundIconToggle(checked = torch, onCheckedChange = onTorch, modifier = Modifier.padding(horizontal = 8.dp)) {
-                            Icon(painterResource(Res.drawable.ic_torch), contentDescription = stringResource(Res.string.scan_torch))
-                        }
+    // The camera fills the screen; everything else is on the picture.
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
+        if (cameraFailed) {
+            Text(stringResource(Res.string.scan_camera_error), color = Color.White, modifier = Modifier.align(Alignment.Center))
+        } else {
+            preview(Modifier.fillMaxSize())
+        }
+        val read = review
+        val holding = event as? ScanEvent.Holding
+        if (read == null) {
+            // The full scan names no face while scanning; a one-face rescan knows its face.
+            GridOverlay(live, stickers, holding?.recognised?.takeIf { only != null }?.centreColor(), Modifier.fillMaxSize())
+        } else {
+            ReviewOverlay(
+                read,
+                Modifier.fillMaxSize().pointerInput(read) {
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
+                        autoAccept = false
                     }
                 },
             )
-        },
-        bottomBar = {
-            Column(
-                Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                if (review != null) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = ::retake, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) { Text(stringResource(Res.string.scan_retake)) }
-                        // "Good, next" fills up until the face is accepted by itself.
-                        val fill = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f)
-                        val shown = if (autoAccept) acceptFill.value else 0f
-                        Button(
-                            onClick = ::accept,
-                            modifier = Modifier.weight(1f).heightIn(min = 56.dp).clip(CircleShape)
-                                .drawWithContent {
-                                    drawContent()
-                                    drawRect(fill, size = Size(size.width * shown, size.height))
-                                },
-                        ) { Text(stringResource(Res.string.scan_accept)) }
-                    }
-                    TextButton(onClick = onManual) { Text(stringResource(Res.string.scan_manual)) }
-                } else {
-                    // Manual entry, the shutter in the middle, and redo of the previous face.
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                            OutlinedButton(onClick = onManual, contentPadding = PaddingValues(horizontal = 14.dp)) { Text(stringResource(Res.string.scan_manual_short)) }
-                        }
-                        Shutter(enabled = live != null, onClick = { handle(session.captureNow()) })
-                        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                            // A one-face rescan has no previous face to go back to.
-                            if (only == null) {
-                                FilledTonalButton(
-                                    onClick = {
-                                        session.redo()
-                                        index = session.index
-                                        event = ScanEvent.Waiting
-                                        lastCaptured = null
-                                    },
-                                    enabled = index > 0,
-                                ) { Text(stringResource(Res.string.scan_redo)) }
-                            }
-                        }
-                    }
+        }
+        // Back, the face marks, torch and menu (a one-face rescan has no menu).
+        ScanOverlayBar(
+            onBack = onBack,
+            torch = torch,
+            onTorch = onTorch,
+            torchAvailable = torchAvailable,
+            menu = if (only != null) null else { close ->
+                if (onSwitch != null) {
+                    DropdownMenuItem(text = { Text(stringResource(Res.string.scan_switch_video)) }, onClick = { close(); onSwitch() })
                 }
-            }
-        },
-    ) { padding ->
-        // One screen, no scrolling: the camera takes what the marks above and the texts and actions below leave.
-        FitColumn(
-            Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                DropdownMenuItem(text = { Text(stringResource(Res.string.scan_manual_short)) }, onClick = { close(); onManual() })
+            },
+        ) { Progress(session::isAccepted, { session.capturedSamples(it)?.get(4) }, index, only) }
+        Column(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                .background(Color.Black.copy(alpha = 0.6f))
+                .navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Progress(session::isAccepted, { session.capturedSamples(it)?.get(4) }, index, only)
-            Box(
-                Modifier.fitSlot().aspectRatio(3f / 4f, matchHeightConstraintsFirst = true)
-                    .clip(MaterialTheme.shapes.extraLarge).background(Color.Black),
-            ) {
-                if (cameraFailed) {
-                    Text(stringResource(Res.string.scan_camera_error), color = Color.White, modifier = Modifier.align(Alignment.Center))
-                } else {
-                    preview(Modifier.fillMaxSize())
+            if (read == null) {
+                // The request only until the first face is done; a one-face rescan names its face's centre.
+                val request = when {
+                    only != null -> stringResource(Res.string.scan_one_hint, stringResource(colorName(only.centreColor())))
+                    index == 0 -> stringResource(Res.string.scan_any_hint)
+                    else -> null
                 }
-                val read = review
-                if (read == null) {
-                    val holding = event as? ScanEvent.Holding
-                    // The full scan names no face while scanning; a one-face rescan knows its face.
-                    GridOverlay(live, stickers, holding?.recognised?.takeIf { only != null }?.centreColor(), Modifier.fillMaxSize())
-                    OnCamera(Modifier.align(Alignment.BottomCenter)) {
-                        Text(statusText(event, only), color = Color.White, style = MaterialTheme.typography.titleSmall)
-                        LinearProgressIndicator(
-                            progress = { holding?.progress ?: 0f },
-                            modifier = Modifier.fillMaxWidth().height(6.dp),
-                            gapSize = 0.dp,
-                            drawStopIndicator = {},
-                        )
-                    }
-                    if (lastCaptured != null) {
-                        Text(
-                            stringResource(Res.string.scan_captured),
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.align(Alignment.TopStart).padding(12.dp)
-                                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                        )
-                    }
-                } else {
-                    ReviewOverlay(
-                        read,
-                        Modifier.fillMaxSize().pointerInput(read) {
-                            awaitEachGesture {
-                                awaitFirstDown(requireUnconsumed = false)
-                                autoAccept = false
-                            }
-                        },
-                    )
-                    OnCamera(Modifier.align(Alignment.BottomCenter), scrim = false) {
-                        // The full scan names the faces only at the end; a one-face rescan knows its face.
-                        if (only != null) {
-                            Text(
-                                stringResource(Res.string.scan_review_face, stringResource(faceName(only))),
-                                color = Color.White,
-                                style = MaterialTheme.typography.titleSmall,
-                            )
+                if (request != null) Text(request, color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+                Text(
+                    if (justAccepted) stringResource(Res.string.scan_captured) else statusText(event),
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleSmall,
+                    textAlign = TextAlign.Center,
+                )
+                LinearProgressIndicator(
+                    progress = { holding?.progress ?: 0f },
+                    modifier = Modifier.fillMaxWidth().height(6.dp),
+                    gapSize = 0.dp,
+                    drawStopIndicator = {},
+                )
+                // The shutter in the middle, redo of the previous face beside it.
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(Modifier.weight(1f))
+                    Shutter(enabled = live != null, onClick = { handle(session.captureNow()) })
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        // A one-face rescan has no previous face to go back to.
+                        if (only == null) {
+                            RoundIconButton(
+                                onClick = {
+                                    session.redo()
+                                    index = session.index
+                                    event = ScanEvent.Waiting
+                                    justAccepted = false
+                                },
+                                enabled = index > 0,
+                            ) { Icon(painterResource(Res.drawable.ic_undo), contentDescription = stringResource(Res.string.scan_redo)) }
                         }
-                        Text(stringResource(Res.string.scan_review_note), color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
                     }
+                }
+            } else {
+                // The full scan names the faces only at the end; a one-face rescan knows its face.
+                if (only != null) {
+                    Text(
+                        stringResource(Res.string.scan_review_face, stringResource(faceName(only))),
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                }
+                Text(stringResource(Res.string.scan_review_note), color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = ::retake, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) { Text(stringResource(Res.string.scan_retake)) }
+                    // "Good, next" fills up until the face is accepted by itself.
+                    val fill = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f)
+                    val shown = if (autoAccept) acceptFill.value else 0f
+                    Button(
+                        onClick = ::accept,
+                        modifier = Modifier.weight(1f).heightIn(min = 56.dp).clip(CircleShape)
+                            .drawWithContent {
+                                drawContent()
+                                drawRect(fill, size = Size(size.width * shown, size.height))
+                            },
+                    ) { Text(stringResource(Res.string.scan_accept)) }
                 }
             }
-            Text(
-                if (only != null) {
-                    stringResource(Res.string.scan_one_hint, stringResource(colorName(only.centreColor())))
-                } else {
-                    stringResource(Res.string.scan_any_hint)
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
@@ -467,19 +437,8 @@ private fun Shutter(enabled: Boolean, onClick: () -> Unit) {
     )
 }
 
-/** Text on the camera view: white on a dark band, readable whatever the camera shows. */
 @Composable
-private fun OnCamera(modifier: Modifier, scrim: Boolean = true, content: @Composable () -> Unit) {
-    Column(
-        modifier.fillMaxWidth()
-            .then(if (scrim) Modifier.background(Color.Black.copy(alpha = 0.6f)) else Modifier)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) { content() }
-}
-
-@Composable
-private fun statusText(event: ScanEvent, only: FaceView?): String = when (event) {
+private fun statusText(event: ScanEvent): String = when (event) {
     is ScanEvent.AlreadyScanned -> stringResource(Res.string.scan_status_turn)
     is ScanEvent.NoCube -> stringResource(Res.string.scan_status_no_cube)
     is ScanEvent.Holding -> stringResource(Res.string.scan_status_hold)
@@ -547,15 +506,18 @@ private fun ReviewOverlay(samples: List<Rgb>, modifier: Modifier) {
 
 
 /**
- * Which faces are done, as six marks: a done face filled with its centre as the camera saw it
- * ([centre]), the face being scanned ringed, the rest empty; the count beside. A one-face rescan
- * ([only]) shows just that face. [done] is read again whenever [count] changes.
+ * Which faces are done, as six marks on a dark pill: a done face filled with its centre as the camera
+ * saw it ([centre]), the face being scanned ringed, the rest empty; no count beside, the marks are
+ * it. A one-face rescan ([only]) shows just that face and its name. [done] is read again whenever
+ * [count] changes.
  */
 @Composable
 private fun Progress(done: (FaceView) -> Boolean, centre: (FaceView) -> Rgb?, count: Int, only: FaceView?) {
-    val scheme = MaterialTheme.colorScheme
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (only != null) Text(stringResource(Res.string.scan_one_face), style = MaterialTheme.typography.labelLarge)
+    Row(
+        Modifier.background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         val views = only?.let(::listOf) ?: FaceView.entries
         val doneViews = views.filter { count >= 0 && done(it) }
         views.indices.forEach { i ->
@@ -567,20 +529,15 @@ private fun Progress(done: (FaceView) -> Boolean, centre: (FaceView) -> Rgb?, co
                 else -> stringResource(Res.string.scan_pip_empty)
             }
             val seen = view?.let { centre(it)?.toColor() ?: StickerColors.of(it.centreColor()) }
-            val shape = MaterialTheme.shapes.small
+            val shape = MaterialTheme.shapes.extraSmall
             Box(
-                Modifier.size(34.dp).clip(shape)
+                Modifier.size(22.dp).clip(shape)
                     .then(if (seen != null) Modifier.background(seen) else Modifier)
-                    .border(3.dp, seen ?: if (current) scheme.onSurface else scheme.outlineVariant, shape)
+                    .border(2.5.dp, seen ?: if (current) Color.White else Color.White.copy(alpha = 0.4f), shape)
                     .semantics { contentDescription = mark },
             )
         }
-        Spacer(Modifier.weight(1f))
-        Text(
-            if (only != null) stringResource(faceName(only)) else stringResource(Res.string.scan_done_title, count.coerceAtMost(6)),
-            style = if (only != null) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelLarge,
-            color = if (only != null) scheme.onSurface else scheme.onSurfaceVariant,
-        )
+        if (only != null) Text(stringResource(faceName(only)), color = Color.White, style = MaterialTheme.typography.titleSmall)
     }
 }
 

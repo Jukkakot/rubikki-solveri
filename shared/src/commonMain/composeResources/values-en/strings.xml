@@ -60,12 +60,6 @@
     <string name="free_reset">Reset</string>
     <string name="free_hint">Drag the cube to turn the view.</string>
     <string name="free_cube_description">Three-dimensional cube</string>
-    <string name="turn_top">Top</string>
-    <string name="turn_bottom">Bottom</string>
-    <string name="turn_right">Right</string>
-    <string name="turn_left">Left</string>
-    <string name="turn_front">Front</string>
-    <string name="turn_back">Back</string>
     <string name="color_none">no colour</string>
     <string name="side_r">the right side</string>
     <string name="side_l">the left side</string>
@@ -107,7 +101,6 @@
     <string name="solve_home">Home</string>
     <string name="free_solve">Solve</string>
     <string name="scan_title">Scan the cube</string>
-    <string name="scan_done_title">Scanned %1$d/6</string>
     <string name="scan_any_hint">Show any side not scanned yet, held any way round.</string>
     <string name="scan_one_hint">Its centre is %1$s. Show this side held any way round.</string>
     <string name="scan_review_face">Recognised: %1$s</string>
@@ -129,8 +122,8 @@
     <string name="scan_permission_settings">Open app settings</string>
     <string name="scan_camera_error">The camera could not be started.</string>
     <string name="check_title">Check the colours</string>
-    <string name="check_note">Compare with the camera picture. Fix a wrong sticker by picking a colour and tapping it, or scan the face again. Red-edged ones are doubtful.</string>
-    <string name="check_note_ok">Compare with the pictures. Going on to the solution…</string>
+    <string name="check_note">Compare with the picture – tap a wrong sticker.</string>
+    <string name="check_note_ok">Compare with the pictures.</string>
     <string name="check_picture">Camera saw</string>
     <string name="check_colors">Colours</string>
     <string name="check_looks_right">Looks right</string>
@@ -142,7 +135,6 @@
     <string name="scan_manual_short">By hand</string>
     <string name="scan_pip_current">Face being scanned</string>
     <string name="scan_pip_empty">Not scanned yet</string>
-    <string name="scan_one_face">This face only</string>
     <string name="settings_moves">Moves</string>
     <string name="settings_notation">Show move notation</string>
     <string name="settings_notation_summary">For example R, U' and F2 under the words</string>
@@ -263,10 +255,6 @@
     <string name="about_kotlin">Kotlin and the kotlinx libraries – Apache License 2.0, JetBrains.</string>
     <string name="about_min2phase">min2phase (two-phase solver) – MIT licence, Chen Shuang:</string>
     <string name="about_fonts">Fonts Fredoka and Nunito – SIL Open Font License 1.1:</string>
-    <plurals name="check_faces_left">
-        <item quantity="one">%1$d face left to check</item>
-        <item quantity="other">%1$d faces left to check</item>
-    </plurals>
     <string name="home_cube_description">A cube you can turn by dragging</string>
     <string name="goal_description">Goal: %1$s</string>
     <string name="goal_twist_note">The corners may still be twisted.</string>

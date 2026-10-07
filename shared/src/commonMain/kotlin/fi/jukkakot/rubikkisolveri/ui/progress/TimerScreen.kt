@@ -63,6 +63,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.map
 import fi.jukkakot.rubikkisolveri.res.*
 import fi.jukkakot.rubikkisolveri.ui.common.FitColumn
 import fi.jukkakot.rubikkisolveri.cube.Move
@@ -95,6 +96,9 @@ fun TimerScreen(
     var scramble by remember { mutableStateOf<List<Move>?>(null) }
     var scrambleNo by remember { mutableIntStateOf(0) }
     val solves by progress.timedSolves.collectAsStateWithLifecycle(emptyList())
+    // Null until known: the instructions show only before the first timed solve, and do not flash
+    // on opening for someone who has timed solves.
+    val timedBefore by remember(progress) { progress.timedSolves.map { it.isNotEmpty() } }.collectAsStateWithLifecycle(null)
     val scope = rememberCoroutineScope()
 
     // A finger on the area or the space bar (a keyboard on a computer or a phone): same timer.
@@ -216,7 +220,7 @@ fun TimerScreen(
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace,
                     )
-                    Text(
+                    if (timedBefore == false) Text(
                         stringResource(
                             when (phase) {
                                 TimerState.Phase.HOLDING -> Res.string.timer_hint_holding

@@ -49,10 +49,30 @@ The video scan's overlay controls (`scan-paint`: `BackButton`, `RoundIconToggle`
    - The existing content descriptions keep the old words, so tests and screen readers find them by
      name.
 
+## Decisions made while implementing
+
+5. **Guided scan.** The face marks are 22 dp on a dark pill so six fit between back, torch and menu
+   on a 360 dp phone; a one-face rescan shows its one mark and the face name there. "Puoli luettu."
+   stands in the status line after a face is accepted until the next face is in the grid (it was a
+   separate badge). "Syötä käsin" moved from the bottom row and the review into the ⋮ menu; the
+   permission screen keeps its title.
+6. **Check.** The instruction is shortened to "Vertaa kuvaan – napauta väärää tarraa." The sure
+   scan's line loses its stale "Jatketaan ratkaisuun…" (the check of a sure scan waits for the user).
+7. **Free cube.** The layer pictures are 48 dp, not 28 dp: at 28 dp the arrow was too thin to see.
+   `Cube3D` got a `compact` mode (thicker arrow, no "×1" badge). The ↻/↺ toggle is the replay arrow,
+   mirrored for counter-clockwise. Reset now returns to the cube the screen was opened with, as the
+   spec says (it went to a solved cube); its icon is ⏮ ("to the start"), scramble a shuffle icon.
+8. **Timer.** Once a timed solve is saved, all the timer area's texts go (also "hold…", "release",
+   "tap to stop"): the area's colour already shows those phases. The hint waits for the history to
+   load, so it does not flash for someone with timed solves.
+
 ## Risks / Trade-offs
 
 - [Six 3D cubes in buttons draw slowly on a weak phone.] → They are static, so each composes once
   and only redraws when the direction toggle changes.
+- [On a short screen the bottom texts and shutter of the guided scan overlap the grid's bottom
+  row.] → The grid must stay at the camera picture's centre, where it is read. Phones in portrait
+  are tall enough; the request line goes after the first face.
 - [A hint that disappears may be missed by someone who needs it again.] → The guided scan and the
   check are rarely used now (the video scan is the default). The timer's instruction comes back if
   the history is cleared.

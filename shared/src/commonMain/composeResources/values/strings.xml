@@ -61,12 +61,6 @@
     <string name="free_reset">Alkuun</string>
     <string name="free_hint">Vedä kuutiota kääntääksesi näkymää.</string>
     <string name="free_cube_description">Kolmiulotteinen kuutio</string>
-    <string name="turn_top">Ylä</string>
-    <string name="turn_bottom">Ala</string>
-    <string name="turn_right">Oikea</string>
-    <string name="turn_left">Vasen</string>
-    <string name="turn_front">Etu</string>
-    <string name="turn_back">Taka</string>
     <string name="color_none">ei väriä</string>
     <string name="side_r">oikeaa puolta</string>
     <string name="side_l">vasenta puolta</string>
@@ -108,7 +102,6 @@
     <string name="solve_home">Alkuun</string>
     <string name="free_solve">Ratkaise</string>
     <string name="scan_title">Skannaa kuutio</string>
-    <string name="scan_done_title">Kuvattu %1$d/6</string>
     <string name="scan_any_hint">Näytä mikä tahansa kuvaamaton puoli, missä asennossa tahansa.</string>
     <string name="scan_one_hint">Keskiö on %1$s. Näytä tämä puoli missä asennossa tahansa.</string>
     <string name="scan_review_face">Tunnistettu: %1$s</string>
@@ -130,8 +123,8 @@
     <string name="scan_permission_settings">Avaa sovelluksen asetukset</string>
     <string name="scan_camera_error">Kameraa ei saatu käyttöön.</string>
     <string name="check_title">Tarkista värit</string>
-    <string name="check_note">Vertaa kameran kuvaan. Korjaa väärä tarra valitsemalla väri ja napauttamalla tarraa, tai kuvaa puoli uudelleen. Punareunaiset ovat epävarmoja.</string>
-    <string name="check_note_ok">Vertaa kuviin. Jatketaan ratkaisuun…</string>
+    <string name="check_note">Vertaa kuvaan – napauta väärää tarraa.</string>
+    <string name="check_note_ok">Vertaa kuviin.</string>
     <string name="check_picture">Kamera näki</string>
     <string name="check_colors">Värit</string>
     <string name="check_looks_right">Näyttää oikealta</string>
@@ -143,7 +136,6 @@
     <string name="scan_manual_short">Syötä käsin</string>
     <string name="scan_pip_current">Kuvattava puoli</string>
     <string name="scan_pip_empty">Kuvaamatta</string>
-    <string name="scan_one_face">Vain tämä puoli</string>
     <string name="settings_moves">Siirrot</string>
     <string name="settings_notation">Näytä siirtomerkinnät</string>
     <string name="settings_notation_summary">Esim. R, U' ja F2 sanallisen ohjeen alla</string>
@@ -264,10 +256,6 @@
     <string name="about_kotlin">Kotlin ja kotlinx-kirjastot – Apache License 2.0, JetBrains.</string>
     <string name="about_min2phase">min2phase (kaksivaiheinen ratkaisija) – MIT-lisenssi, Chen Shuang:</string>
     <string name="about_fonts">Fontit Fredoka ja Nunito – SIL Open Font License 1.1:</string>
-    <plurals name="check_faces_left">
-        <item quantity="one">Tarkistamatta vielä %1$d puoli</item>
-        <item quantity="other">Tarkistamatta vielä %1$d puolta</item>
-    </plurals>
     <string name="home_cube_description">Kuutio, jota voi kääntää vetämällä</string>
     <string name="goal_description">Tavoite: %1$s</string>
     <string name="goal_twist_note">Kulmat saavat vielä olla kiertyneinä.</string>

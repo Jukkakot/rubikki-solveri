@@ -67,6 +67,9 @@ class ScanScreenTest {
                 ScanContent(frames, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {}, onSwitch = { switched = true }, preview = {})
             }
         }
+        compose.onNodeWithText("Skannaa kuutio").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Valikko").performClick()
+        compose.onNodeWithText("Syötä käsin").assertIsDisplayed()
         compose.onNodeWithText("Videolla").performClick()
         assertTrue(switched)
     }
@@ -103,7 +106,6 @@ class ScanScreenTest {
             compose.waitForIdle()
         }
         compose.onNodeWithText("Tuo kuutio ruudukkoon", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
         assertTrue(saved.isEmpty())
         // The capture button still takes it, and its picture is saved.
         compose.onNodeWithContentDescription("Ota kuva").performClick()
@@ -112,10 +114,13 @@ class ScanScreenTest {
     }
 
     @Test
-    fun firstFaceAsksForAnyFace() {
+    fun firstFaceAsksForAnyFaceUntilOneIsDone() {
         scan()
-        compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
+        compose.onNodeWithText("Kuvattu", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Näytä mikä tahansa kuvaamaton puoli, missä asennossa tahansa.").assertIsDisplayed()
+        confirm(FaceView.FRONT)
+        compose.onNodeWithText("Näytä mikä tahansa kuvaamaton puoli", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Kuvattu", substring = true).assertDoesNotExist()
     }
 
     @Test
@@ -129,8 +134,7 @@ class ScanScreenTest {
         compose.onNodeWithText("Tunnistettu", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Oikea puoli", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Hyvä, seuraava").performClick()
-        compose.onNodeWithText("Kuvattu 1/6").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Puoli luettu.").assertIsDisplayed()
+        compose.onAllNodesWithContentDescription("Puoli luettu.").assertCountEquals(1)
     }
 
     @Test
@@ -139,7 +143,13 @@ class ScanScreenTest {
         confirm(FaceView.FRONT)
         show(FaceView.FRONT, 3, turn = 2)
         compose.onNodeWithText("Tämä puoli on jo kuvattu – käännä kuutiota toiseen puoleen.").assertIsDisplayed()
-        compose.onNodeWithText("Kuvattu 1/6").assertIsDisplayed()
+        compose.onAllNodesWithContentDescription("Puoli luettu.").assertCountEquals(1)
+    }
+
+    /** [count] face marks are filled, none with a count beside them. */
+    private fun assertDone(count: Int) {
+        compose.onAllNodesWithContentDescription("Puoli luettu.").assertCountEquals(count)
+        compose.onNodeWithText("Kuvattu", substring = true).assertDoesNotExist()
     }
 
     /** Holds [view] until it is captured and accepts it. */
@@ -154,9 +164,9 @@ class ScanScreenTest {
         scan()
         show(FaceView.FRONT, 3)
         compose.onNodeWithText("Tunnistettu", substring = true).assertDoesNotExist()
-        compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
+        assertDone(0)
         compose.onNodeWithText("Hyvä, seuraava").performClick()
-        compose.onNodeWithText("Kuvattu 1/6").assertIsDisplayed()
+        assertDone(1)
         compose.onNodeWithText("Puoli luettu.").assertIsDisplayed()
     }
 
@@ -166,9 +176,9 @@ class ScanScreenTest {
         scan(autoAccept = 2_000)
         show(FaceView.FRONT, 3)
         compose.mainClock.advanceTimeBy(1_000)
-        compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
+        assertDone(0)
         compose.mainClock.advanceTimeBy(1_500)
-        compose.onNodeWithText("Kuvattu 1/6").assertIsDisplayed()
+        assertDone(1)
     }
 
     @Test
@@ -179,10 +189,10 @@ class ScanScreenTest {
         compose.mainClock.advanceTimeBy(500)
         compose.onNodeWithText("Värit tulkitaan lopuksi", substring = true).performClick()
         compose.mainClock.advanceTimeBy(3_000)
-        compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
+        assertDone(0)
         compose.mainClock.autoAdvance = true
         compose.onNodeWithText("Hyvä, seuraava").performClick()
-        compose.onNodeWithText("Kuvattu 1/6").assertIsDisplayed()
+        assertDone(1)
     }
 
     @Test
@@ -190,9 +200,9 @@ class ScanScreenTest {
         scan()
         show(FaceView.FRONT, 3)
         compose.onNodeWithText("Kuvaa uudelleen").performClick()
-        compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
+        assertDone(0)
         confirm(FaceView.FRONT)
-        compose.onNodeWithText("Kuvattu 1/6").assertIsDisplayed()
+        assertDone(1)
     }
 
     @Test
@@ -209,8 +219,8 @@ class ScanScreenTest {
     fun redo() {
         scan()
         confirm(FaceView.FRONT)
-        compose.onNodeWithText("Uudelleen").performClick()
-        compose.onNodeWithText("Kuvattu 0/6").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Uudelleen").performClick()
+        assertDone(0)
     }
 
     @Test
@@ -248,8 +258,8 @@ class ScanScreenTest {
         }
         compose.onNodeWithText("Yläpuoli").assertIsDisplayed()
         compose.onNodeWithText("Keskiö on valkoinen. Näytä tämä puoli missä asennossa tahansa.").assertIsDisplayed()
-        compose.onNodeWithText("Vain tämä puoli").assertIsDisplayed()
-        compose.onNodeWithText("Uudelleen").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Uudelleen").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Valikko").assertDoesNotExist()
         confirm(FaceView.TOP)
         show(FaceView.TOP, 3)
         assertEquals(listOf(FaceView.TOP), faces.map { it.first })
@@ -291,8 +301,8 @@ class ScanScreenTest {
         var rescan: FaceView? = null
         check(cube, setOf(f1), onScanFace = { rescan = it }, onScanAgain = { scanAgain = true })
         compose.onNodeWithText("Tarkista värit").assertIsDisplayed()
-        compose.onNodeWithText("Vertaa kameran kuvaan.", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("Tarkistamatta vielä 1 puoli").assertIsDisplayed()
+        compose.onNodeWithText("Vertaa kuvaan – napauta väärää tarraa.").assertIsDisplayed()
+        compose.onNodeWithText("Tarkistamatta", substring = true).assertDoesNotExist()
         // The camera's picture of the front face is beside the editable face, and the palette and
         // the check's actions are in view without scrolling.
         compose.onNodeWithContentDescription("Kamera näki").assertIsDisplayed()
@@ -304,6 +314,16 @@ class ScanScreenTest {
         compose.onNodeWithContentDescription("Lisää").performClick()
         compose.onNodeWithText("Skannaa koko kuutio uudelleen").performClick()
         assertTrue(scanAgain)
+    }
+
+    @Test
+    @Config(qualifiers = "fi-w411dp-h891dp")
+    fun theInstructionGoesAfterTheFirstFix() {
+        check(cube, setOf(Stickers.index(Face.F, 1)))
+        compose.onNodeWithText("Vertaa kuvaan – napauta väärää tarraa.").assertIsDisplayed()
+        compose.onNodeWithContentDescription("punainen").performClick()
+        compose.onNodeWithContentDescription("Etupuoli, tarra 1").performClick()
+        compose.onNodeWithText("Vertaa kuvaan", substring = true).assertDoesNotExist()
     }
 
     @Test
