@@ -349,5 +349,6 @@
     <string name="solve_menu">Valikko</string>
     <string name="solve_to_start">Aloitusruutuun</string>
     <string name="video_status_grey">Näytä harmaat kohdat</string>
+    <string name="video_status_turn">Käännä kuutiota</string>
     <string name="video_progress">%1$d/54 tarraa tunnistettu</string>
 </resources>

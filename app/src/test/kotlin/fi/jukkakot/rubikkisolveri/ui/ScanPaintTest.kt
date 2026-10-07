@@ -5,6 +5,7 @@ import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
 import fi.jukkakot.rubikkisolveri.ui.scan.Glide
@@ -18,7 +19,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ScanPaintTest {
+/** The scan paint, run for both scanners ([RulesScanPaintTest] runs it with [ScanEngine.RULES]). */
+open class ScanPaintTest {
+    protected open val engine: ScanEngine = ScanEngine.LOOK
+
     private val cube = Cube.solved().apply("R U F' D2 L B")
 
     private fun reading(face: Face, centre: Point) = FaceReading(
@@ -28,7 +32,7 @@ class ScanPaintTest {
 
     /** F with U above it, four times: both settle, a projection is built. */
     private fun cornerView(): VideoScanState {
-        val scan = VideoScan()
+        val scan = VideoScan(engine = engine)
         var s = VideoScanState.EMPTY
         repeat(4) { s = scan.onFrame(listOf(reading(Face.F, Point(100.0, 200.0)), reading(Face.U, Point(100.0, 110.0))), it * 100L) }
         return s

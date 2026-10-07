@@ -22,7 +22,7 @@
 
 - [x] 5.1 Give `VideoScan` the mode (design 6), building the same `VideoScanState` from the solver (stickers, leading, found faces with names and known colours, confirmed sides, projection and pose from settled tracks, stall); run the existing `VideoScanTest` and `ScanPaintTest` against both modes; verify both pass (scenarios that only described the old piling are rewritten to the new spec).
 - [x] 5.2 Run the acceptance harness; study every wrong or unfinished fixture, starting with the robustness wrong cube of `20261005_151828`; add any further safe rule it shows (recorded in design.md); verify the rules path meets the bar.
-- [ ] 5.3 Show the turn-the-cube flag on the status line ("Käännä kuutiota" / "Turn the cube", fi + en strings in `shared`; a stall notice still takes its place); one light test that the line shows it when the state says so; verify it passes.
+- [x] 5.3 Show the turn-the-cube flag on the status line ("Käännä kuutiota" / "Turn the cube", fi + en strings in `shared`; a stall notice still takes its place); one light test that the line shows it when the state says so; verify it passes.
 
 ## 6. Both scanners, switch and wrap-up
 

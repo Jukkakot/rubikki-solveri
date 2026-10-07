@@ -89,6 +89,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
@@ -371,15 +372,17 @@ private class ScanLogger {
     private fun event(kind: String, vararg fields: Pair<String, Any?>) = AppLog.info(Evt.SCAN_VIDEO, null, "kind" to kind, *fields)
 }
 
-/** The one status line: show the cube, show the grey parts, or ready. */
+/** The one status line: show the cube, turn the cube (two faces could still be told apart either way), show the grey parts, or ready. */
 @Composable
-private fun statusText(state: VideoScanState): String = stringResource(
-    when {
-        state.complete -> Res.string.video_status_done
-        state.found.isEmpty() -> Res.string.video_status_find
-        else -> Res.string.video_status_grey
-    },
-)
+private fun statusText(state: VideoScanState): String = stringResource(videoStatus(state))
+
+/** The status line's text for [state]. */
+fun videoStatus(state: VideoScanState): StringResource = when {
+    state.complete -> Res.string.video_status_done
+    state.found.isEmpty() -> Res.string.video_status_find
+    state.undecided -> Res.string.video_status_turn
+    else -> Res.string.video_status_grey
+}
 
 /**
  * The paint on the real cube in the latest picture of [width]×[height] pixels (the picture fills the
