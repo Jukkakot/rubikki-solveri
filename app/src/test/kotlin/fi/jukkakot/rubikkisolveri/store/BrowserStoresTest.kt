@@ -1,5 +1,6 @@
 package fi.jukkakot.rubikkisolveri.store
 
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.progress.Penalty
 import fi.jukkakot.rubikkisolveri.settings.AppLanguage
 import fi.jukkakot.rubikkisolveri.settings.ThemeMode
@@ -53,6 +54,14 @@ class BrowserStoresTest {
         assertEquals(true, again.showNotation.value)
         assertEquals(AppLanguage.ENGLISH, again.language)
         assertEquals("en", map.get(StoreKeys.LANGUAGE), "index.html reads this key before the app starts")
+    }
+
+    @Test
+    fun theScannerChoiceSurvivesARestartAndIsTheNewOneByDefault() {
+        val settings = StoredSettings(map)
+        assertEquals(ScanEngine.RULES, settings.scanEngine.value)
+        settings.setScanEngine(ScanEngine.LOOK)
+        assertEquals(ScanEngine.LOOK, StoredSettings(map).scanEngine.value)
     }
 
     @Test

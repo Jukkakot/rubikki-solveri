@@ -349,5 +349,8 @@
     <string name="solve_to_start">Back to start</string>
     <string name="video_status_grey">Show the grey parts</string>
     <string name="video_status_turn">Turn the cube</string>
+    <string name="settings_scanner">Video scanner</string>
+    <string name="scanner_rules">New: the cube's rules</string>
+    <string name="scanner_look">Earlier: the centres' colours</string>
     <string name="video_progress">%1$d/54 stickers known</string>
 </resources>

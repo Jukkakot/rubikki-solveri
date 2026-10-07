@@ -4,6 +4,7 @@ import kotlin.time.Clock
 import fi.jukkakot.rubikkisolveri.ui.scan.LastScan
 import fi.jukkakot.rubikkisolveri.cube.FaceView
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanCheck
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -72,6 +73,9 @@ class AppActions(
     val onShowNotation: (Boolean) -> Unit = {},
     val handsfreeSpeed: HandsfreeSpeed = HandsfreeSpeed.NORMAL,
     val onHandsfreeSpeed: (HandsfreeSpeed) -> Unit = {},
+    /** Which video scanner runs (`scan-rules`: the new one by the cube's rules, or the earlier one). */
+    val scanEngine: ScanEngine = ScanEngine.RULES,
+    val onScanEngine: (ScanEngine) -> Unit = {},
     val progress: ProgressRepository = InMemoryProgressRepository(),
     /** The idle spin of the home cube; off in tests, whose clock would never go idle. */
     val homeSpin: Boolean = true,
@@ -120,6 +124,8 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 onThemeMode = actions.onThemeMode,
                 showNotation = actions.showNotation,
                 onShowNotation = actions.onShowNotation,
+                scanEngine = actions.scanEngine,
+                onScanEngine = actions.onScanEngine,
                 onOpenAbout = { navController.navigate(AboutRoute) },
                 onOpenLog = { navController.navigate(LogRoute) },
                 onBack = { navController.popBackStack() },
@@ -225,6 +231,7 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                     LastScan.check = afterScanCheck(outcome, route.target)
                     navController.navigate(afterScan(outcome, route.target))
                 },
+                engine = actions.scanEngine,
             ) }
         }
         composable<FreeCubeRoute> { entry ->

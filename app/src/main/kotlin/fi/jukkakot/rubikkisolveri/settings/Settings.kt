@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.ui.guide.HandsfreeSpeed
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -42,7 +43,15 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         store.edit { it[HANDSFREE_SPEED] = speed.name }
     }
 
+    /** The video scanner (`scan-rules`), the new one by default. */
+    val scanEngine: Flow<ScanEngine> = store.data.map { prefs -> ScanEngine.entries.firstOrNull { it.logName == prefs[SCAN_ENGINE] } ?: ScanEngine.RULES }
+
+    suspend fun setScanEngine(engine: ScanEngine) {
+        store.edit { it[SCAN_ENGINE] = engine.logName }
+    }
+
     private companion object {
+        val SCAN_ENGINE = stringPreferencesKey("scan_engine")
         val THEME = stringPreferencesKey("theme_mode")
         val NOTATION = booleanPreferencesKey("show_notation")
         val HANDSFREE_SPEED = stringPreferencesKey("handsfree_speed")

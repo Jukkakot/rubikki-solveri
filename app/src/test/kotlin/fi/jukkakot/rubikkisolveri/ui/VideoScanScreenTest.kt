@@ -17,7 +17,11 @@ import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
+import fi.jukkakot.rubikkisolveri.log.AppLog
+import fi.jukkakot.rubikkisolveri.log.LogStore
+import fi.jukkakot.rubikkisolveri.log.Logger
 import fi.jukkakot.rubikkisolveri.ui.nav.afterScan
 import fi.jukkakot.rubikkisolveri.ui.nav.ManualInputRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.SolveRoute
@@ -57,6 +61,25 @@ class VideoScanScreenTest {
                 )
             }
         }
+    }
+
+    @Test
+    fun theScanLogSaysWhichScannerRan() {
+        val lines = ArrayList<String>()
+        AppLog.install(Logger(object : LogStore {
+            override fun append(line: String) {}
+            override fun readLines() = emptyList<String>()
+            override fun clear() {}
+        }, sink = { _, line -> lines += line }, post = { it() }))
+        compose.setContent {
+            RubikkiTheme(dynamicColor = false) {
+                VideoScanContent(found, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {}, clock = { now }, engine = ScanEngine.LOOK, preview = {})
+            }
+        }
+        show(face(Face.U), times = 30)
+        val scanLines = lines.filter { "scan" in it.lowercase() && "engine=" in it }
+        assertTrue(scanLines.isNotEmpty(), "$lines")
+        assertTrue(scanLines.all { "engine=look" in it }, "$scanLines")
     }
 
     private fun face(face: Face) = FaceReading(
@@ -131,9 +154,10 @@ class VideoScanScreenTest {
     @Test
     fun partialFacesCountAndAPartlyKnownCubeRenders() {
         scan()
-        // A face with a sticker hidden, then the face in full: the full one starts it, both are drawn.
+        // The face in full, then with a sticker hidden: the full one starts it, the partial one goes on with it.
         val partial = face(Face.U).let { it.copy(colors = it.colors.toMutableList().also { c -> c[1] = null }) }
-        show(face(Face.U), partial, face(Face.U).copy(centre = Point(180.0, 120.0)), times = 7)
+        show(face(Face.U), times = 4)
+        show(partial, times = 4)
         compose.onNodeWithContentDescription("0/54 tarraa tunnistettu").assertDoesNotExist()
         compose.onNodeWithContentDescription("/54 tarraa tunnistettu", substring = true).assertExists()
         assertTrue(checkEnabled())
@@ -209,7 +233,8 @@ class VideoScanScreenTest {
         // A face found whose stickers cannot be placed yet (its centre hidden): nothing read.
         show(face(Face.U).let { it.copy(colors = it.colors.toMutableList().also { c -> c[4] = null }) })
         compose.onNodeWithTag(VIDEO_SPINNER_TAG).assertExists()
-        show(face(Face.U))
+        // The rules scanner reads a face once it has followed it for a few pictures.
+        show(face(Face.U), times = 6)
         compose.onNodeWithTag(VIDEO_SPINNER_TAG).assertDoesNotExist()
     }
 }

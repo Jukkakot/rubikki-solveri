@@ -26,6 +26,6 @@
 
 ## 6. Both scanners, switch and wrap-up
 
-- [ ] 6.1 Add the scanner choice to Settings (new / earlier, remembered, default new) and `engine=rules|look` on the scan log lines; remove the spike's `rules` flag from the old path; a light test that the choice changes the scanner the scan uses and survives a restart; verify the test passes.
+- [x] 6.1 Add the scanner choice to Settings (new / earlier, remembered, default new) and `engine=rules|look` on the scan log lines; remove the spike's `rules` flag from the old path; a light test that the choice changes the scanner the scan uses and survives a restart; verify the test passes.
 - [ ] 6.2 Make the rules path the default once 5.2 meets the bar; verify `./gradlew test lint assembleDebug :web:wasmJsBrowserDistribution` passes.
 - [ ] 6.3 Update `docs/architecture.md` (the scan pipeline map: both scanners, where the choice lives) and the roadmap entry; list for the user what to try on the phone (both scanners in look-alike light, the striped cube, a normal scramble) and the recordings to add as fixtures (striped cube, dim light); verify the docs describe both scanners.

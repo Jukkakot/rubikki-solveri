@@ -73,6 +73,7 @@ import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.cube.scan.Stall
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
 import fi.jukkakot.rubikkisolveri.log.AppLog
@@ -106,7 +107,7 @@ class FoundFaces(val faces: List<FaceReading>, val width: Int, val height: Int, 
  * thread). The finder's time per frame goes into the log's snapshots.
  */
 @Composable
-fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome) -> Unit, onSwitch: (() -> Unit)? = null) {
+fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome) -> Unit, onSwitch: (() -> Unit)? = null, engine: ScanEngine = ScanEngine.RULES) {
     CameraPermissionGate(alternative = stringResource(Res.string.scan_manual) to onManual) {
         val images = remember { MutableSharedFlow<ArgbImage>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST) }
         val found = remember { MutableSharedFlow<FoundFaces>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST) }
@@ -137,6 +138,7 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
             cameraFailed = cameraFailed,
             maxDarker = maxDarker,
             onExposure = { exposure = it },
+            engine = engine,
         ) { modifier ->
             CameraPreview(
                 torch = torch,
@@ -184,9 +186,10 @@ fun VideoScanContent(
     onExposure: (CameraSettings) -> Unit = {},
     clock: () -> Long = ::elapsedMillis,
     onSwitch: (() -> Unit)? = null,
+    engine: ScanEngine = ScanEngine.RULES,
     preview: @Composable (Modifier) -> Unit,
 ) {
-    val scan = remember { VideoScan() }
+    val scan = remember { VideoScan(engine = engine) }
     var state by remember { mutableStateOf(VideoScanState.EMPTY) }
     var picture by remember { mutableStateOf<FoundFaces?>(null) }
     var done by remember { mutableStateOf(false) }
@@ -194,7 +197,7 @@ fun VideoScanContent(
     val exposure = remember { ExposureControl() }
     exposure.maxDarker = maxDarker
     var lastTorch by remember { mutableStateOf(torch) }
-    val log = remember { ScanLogger() }
+    val log = remember { ScanLogger(engine) }
     val haptics = LocalHapticFeedback.current
 
     fun finish(outcome: ScanOutcome) {
@@ -203,6 +206,7 @@ fun VideoScanContent(
         AppLog.info(
             Evt.SCAN_DONE, null,
             "way" to "video",
+            "engine" to engine.logName,
             "valid" to outcome.validity.isValid,
             "uncertain" to outcome.uncertain.size,
             "inferred" to outcome.inferred.size,
@@ -318,8 +322,8 @@ fun VideoScanContent(
 /** Test tag of the spinner shown while a face is found and no sticker is read yet. */
 const val VIDEO_SPINNER_TAG = "video-spinner"
 
-/** The turning points of the scan and a snapshot every two seconds, into the log. */
-private class ScanLogger {
+/** The turning points of the scan and a snapshot every two seconds, into the log; every line says which [engine] ran. */
+private class ScanLogger(private val engine: ScanEngine) {
     private var lastSnapshot: Long? = null
     private var frames = 0
     private var faces = 0
@@ -361,6 +365,7 @@ private class ScanLogger {
         val fps = if (seconds > 0) frames / seconds else 0.0
         AppLog.info(
             Evt.SCAN_VIDEO, null,
+            "engine" to engine.logName,
             *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n, fps, torch, darker, worker),
         )
         lastSnapshot = at
@@ -369,7 +374,7 @@ private class ScanLogger {
         finderMs = 0
     }
 
-    private fun event(kind: String, vararg fields: Pair<String, Any?>) = AppLog.info(Evt.SCAN_VIDEO, null, "kind" to kind, *fields)
+    private fun event(kind: String, vararg fields: Pair<String, Any?>) = AppLog.info(Evt.SCAN_VIDEO, null, "kind" to kind, "engine" to engine.logName, *fields)
 }
 
 /** The one status line: show the cube, turn the cube (two faces could still be told apart either way), show the grey parts, or ready. */

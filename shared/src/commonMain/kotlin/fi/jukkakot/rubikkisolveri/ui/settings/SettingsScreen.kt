@@ -28,6 +28,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.res.*
 import fi.jukkakot.rubikkisolveri.settings.AppLanguage
 import fi.jukkakot.rubikkisolveri.settings.ThemeMode
@@ -44,6 +45,8 @@ fun SettingsScreen(
     onBack: () -> Unit,
     showNotation: Boolean = false,
     onShowNotation: (Boolean) -> Unit = {},
+    scanEngine: ScanEngine = ScanEngine.RULES,
+    onScanEngine: (ScanEngine) -> Unit = {},
     onOpenAbout: () -> Unit = {},
 ) {
     Scaffold(
@@ -80,6 +83,12 @@ fun SettingsScreen(
                 trailingContent = { Switch(checked = showNotation, onCheckedChange = null) },
                 modifier = Modifier.toggleable(value = showNotation, role = Role.Switch, onValueChange = onShowNotation),
             )
+            HorizontalDivider()
+            SectionTitle(Res.string.settings_scanner)
+            Column(Modifier.selectableGroup()) {
+                Choice(stringResource(Res.string.scanner_rules), scanEngine == ScanEngine.RULES) { onScanEngine(ScanEngine.RULES) }
+                Choice(stringResource(Res.string.scanner_look), scanEngine == ScanEngine.LOOK) { onScanEngine(ScanEngine.LOOK) }
+            }
             HorizontalDivider()
             SectionTitle(Res.string.settings_diagnostics)
             ListItem(
