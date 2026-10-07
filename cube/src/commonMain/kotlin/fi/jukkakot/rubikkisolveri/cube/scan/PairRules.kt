@@ -66,6 +66,14 @@ class PairRules {
         }
     }
 
+    /** Whether a side or corner rule binds [a] and [b] (which fixes their turns, not only their faces). */
+    fun fixesTurns(a: Track, b: Track): Boolean {
+        val rule = rules[key(a, b)] ?: return false
+        return dominant(rule.sideA.withIndex().associate { it.index to it.value }) != null ||
+            dominant(rule.sideB.withIndex().associate { it.index to it.value }) != null ||
+            dominant(rule.corners) != null
+    }
+
     /** Whether [a] and [b] were ever seen in one picture. */
     fun together(a: Track, b: Track): Boolean = rules.containsKey(key(a, b))
 

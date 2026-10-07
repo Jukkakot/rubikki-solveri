@@ -41,6 +41,9 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** The next best face while the face is open. */
         var otherFace: Face? = null
+
+        /** The turn was settled by the best cube (worked out again as the readings change), not by a picture. */
+        var byCube = false
     }
 
     private val states = HashMap<Track, State>()
@@ -99,12 +102,21 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     fun assignedReadings(): Map<Face, List<Triple<TrackReading, Int, Boolean>>> {
         val out = HashMap<Face, MutableList<Triple<TrackReading, Int, Boolean>>>()
         for (t in tracker.tracks) {
+            if (t !in voting) continue
             val o = assignment(t) ?: continue
             val list = out.getOrPut(FaceOption.face(o)) { ArrayList() }
-            val open = t.state().face != null && t.state().option == null
+            val open = t.state().face != null && (t.state().option == null || t.state().byCube)
             for (r in t.readings) list += Triple(r, FaceOption.turn(o), open)
         }
         return out.mapValues { (_, l) -> l.sortedBy { it.first.seq }.takeLast(MAX_FACE_READINGS) }
+    }
+
+    /** A counting track as the solver holds it (for tuning and tests). */
+    data class TrackInfo(val id: Int, val size: Int, val leading: List<CubeColor?>, val face: Face?, val option: Int?, val assigned: Int, val live: Boolean)
+
+    fun snapshot(): List<TrackInfo> = counting().sortedBy { it.id }.map { t ->
+        val s = t.state()
+        TrackInfo(t.id, t.size, t.leading, s.face, s.option, s.assigned, lastNow - t.lastAt <= Tracker.GAP_MILLIS)
     }
 
     /** One line per counting track (for tuning): id, readings, settled face/option or assignment. */
@@ -142,6 +154,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         for (t in tracker.tracks) if (now - t.lastAt <= Tracker.GAP_MILLIS) votesOf(t)
         recheck()
         assignOpen(now)
+        updateVoting(now)
         settleTurns()
         evidence = evidenceOf()
         best = BestCube.solve(evidence, scheme)
@@ -167,7 +180,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val changed = newKnown.keys != known.keys || newKnown.any { (c, rgb) -> known[c]?.let { o -> kotlin.math.abs(o.r - rgb.r) + kotlin.math.abs(o.g - rgb.g) + kotlin.math.abs(o.b - rgb.b) > REF_STEP } != false }
         if (!changed) return
         known = newKnown
-        refs = CubeColor.entries.associateWith { c -> known[c]?.let(::Tone) ?: Tone(ColorClassifier.DEFAULT_PALETTE.getValue(c)) }
+        refs = balancedRefs(known)
         for (t in tracker.tracks) {
             for (r in t.readings) {
                 r.names = r.face.colors.map { it?.let(::nameSticker) }
@@ -176,6 +189,26 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             t.updateLeading()
             votesOf(t)
         }
+    }
+
+    /**
+     * The references: the cube's own centres where known; the other colours from the default palette
+     * moved as the known centres are on average (the light's cast), so that red is not read orange
+     * just because orange is known in this light and red is not yet.
+     */
+    private fun balancedRefs(known: Map<CubeColor, Rgb>): Map<CubeColor, Tone> {
+        val defaults = CubeColor.entries.associateWith { Tone(ColorClassifier.DEFAULT_PALETTE.getValue(it)) }
+        val own = known.mapValues { Tone(it.value) }
+        if (own.isEmpty()) return defaults
+        fun shift(get: (Tone) -> Lab): Lab = Lab(
+            own.entries.sumOf { get(it.value).l - get(defaults.getValue(it.key)).l } / own.size,
+            own.entries.sumOf { get(it.value).a - get(defaults.getValue(it.key)).a } / own.size,
+            own.entries.sumOf { get(it.value).b - get(defaults.getValue(it.key)).b } / own.size,
+        )
+        val plain = shift { it.plain }
+        val bare = shift { it.bare }
+        fun moved(x: Lab, by: Lab) = Lab(x.l + by.l, x.a + by.a, x.b + by.b)
+        return CubeColor.entries.associateWith { c -> own[c] ?: defaults.getValue(c).let { d -> Tone(moved(d.plain, plain), moved(d.bare, bare)) } }
     }
 
     private fun shareReading(r: TrackReading) {
@@ -213,7 +246,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     private fun tables(skip: Track? = null): Tables {
         val votes = Array(Stickers.COUNT) { DoubleArray(6) }
         for (t in tracker.tracks) {
-            if (t === skip || t.size < MIN_READINGS) continue
+            if (t === skip || t.size < MIN_READINGS || t !in voting) continue
             val o = t.state().option ?: continue
             if (o == FaceOption.NONE) continue
             add(votes, t, o, 1.0)
@@ -250,8 +283,21 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     private fun likelihoods(tables: Tables): Array<DoubleArray> {
         val q = Array(Stickers.COUNT) { smoothed(tables, it) }
         return Array(Stickers.COUNT) { i ->
-            val same = q[i]
+            val same = q[i]?.let { warmBlur(it) }
             DoubleArray(6) { c -> (same?.let { 6 * it[c] } ?: 1.0) * pieceLikelihood(q, i, c) }
+        }
+    }
+
+    /**
+     * [q] with red and orange each lent [WARM_LEND] of the other (they are the usual confusion, as in
+     * [StickerEvidence]): a red sticker read orange agrees in part with a red one.
+     */
+    private fun warmBlur(q: DoubleArray): DoubleArray {
+        val r = CubeColor.RED.ordinal
+        val o = CubeColor.ORANGE.ordinal
+        return q.copyOf().also {
+            it[r] = (q[r] + WARM_LEND * q[o]) / (1 + WARM_LEND)
+            it[o] = (q[o] + WARM_LEND * q[r]) / (1 + WARM_LEND)
         }
     }
 
@@ -303,10 +349,17 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
     /** Every option's cost for [t] alone against [like], hard rules against the settled tracks applied. */
     private fun unary(t: Track, like: Array<DoubleArray>, settled: List<Track>, domain: IntArray): DoubleArray {
-        val bound = settled.filter { it !== t }.mapNotNull { s -> rules.allowed(t, s)?.let { it to s.state().option!! } }
+        // A settled one-colour face's turn is any that reads it the same: the rules allow it in each.
+        val bound = settled.filter { it !== t }.mapNotNull { s ->
+            val so = s.state().option!!
+            rules.allowed(t, s)?.let { allowed -> allowed to (0 until FaceOption.FACES).filter { it == so || sameReading(s, so, it) } }
+        }
         return DoubleArray(domain.size) { k ->
             val o = domain[k]
-            if (bound.any { (allowed, so) -> !allowed[o * FaceOption.COUNT + so] }) INF else contentCost(t, o, like)
+            when {
+                bound.any { (allowed, ways) -> ways.none { allowed[o * FaceOption.COUNT + it] } } -> INF
+                else -> contentCost(t, o, like)
+            }
         }
     }
 
@@ -356,24 +409,45 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     private fun agreement(a: DoubleArray, ta: Double, b: DoubleArray, tb: Double): Double {
         val scale = if (tb > TABLE_CAP) TABLE_CAP / tb else 1.0
         val all = tb * scale + 6 * SMOOTH
+        val q = warmBlur(DoubleArray(6) { c -> (b[c] * scale + SMOOTH) / all })
         var e = 0.0
-        for (c in 0 until 6) e += a[c] / ta * 6 * (b[c] * scale + SMOOTH) / all
+        for (c in 0 until 6) e += a[c] / ta * 6 * q[c]
         return min(ta, FULL_WEIGHT) / FULL_WEIGHT * -ln(e)
     }
 
     // --- settling --------------------------------------------------------------------------------
 
+    /** For tuning: track [id]'s cost per face (cheapest turn) and for no face, against the other settled tracks. */
+    fun costsOf(id: Int): String {
+        val t = tracker.tracks.firstOrNull { it.id == id } ?: return "no track $id"
+        val tables = tables(skip = t)
+        val others = tracker.tracks.filter { it !== t && counts(it) && it.state().option.let { o -> o != null && o != FaceOption.NONE } }
+        val cost = unary(t, likelihoods(tables), others, IntArray(FaceOption.COUNT) { it })
+        val bound = tracker.tracks.filter { it !== t && rules.fixesTurns(t, it) }.joinToString(",") { o ->
+            val al = rules.allowed(t, o)!!
+            val oo = o.state().option ?: o.state().assigned
+            "#${o.id}(" + (0 until 4).filter { k -> oo != FaceOption.NONE && al[FaceOption.of(Face.R, k) * FaceOption.COUNT + oo] }.joinToString("") + ")"
+        }
+        return Face.entries.joinToString(" ") { f -> "$f=%.1f".format((0 until 4).minOf { cost[FaceOption.of(f, it)] }) } + " none=%.1f voting=${t in voting} turns R allowed by $bound".format(cost[FaceOption.NONE])
+    }
+
     /** Settled tracks whose way is no longer the cheapest (against the others) re-open. */
     private fun recheck() {
-        val settled = tracker.tracks.filter { counts(it) && it.state().face != null }
+        val settled = tracker.tracks.filter { counts(it) && (it.state().face != null || it.state().option == FaceOption.NONE) }
         if (settled.isEmpty()) return
         val all = IntArray(FaceOption.COUNT) { it }
         for (t in settled) {
             val s = t.state()
             val own = s.option?.takeIf { it != FaceOption.NONE }
-            val like = likelihoods(tables(skip = t))
+            val tables = tables(skip = t)
+            val like = likelihoods(tables)
             val others = settled.filter { it !== t && it.state().option != null && it.state().option != FaceOption.NONE }
             val cost = unary(t, like, others, all)
+            if (s.option == FaceOption.NONE) {
+                // Taken for no face: re-opens when some face fits it better.
+                if (all.any { it != FaceOption.NONE && cost[it] < cost[FaceOption.NONE] - REOPEN_SLACK }) s.option = null
+                continue
+            }
             val face = s.face!!
             val ownFace = (0 until 4).minOf { cost[FaceOption.of(face, it)] }
             val otherFace = all.filter { it == FaceOption.NONE || FaceOption.face(it) != face }.minOf { cost[it] }
@@ -396,7 +470,8 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val open = tracker.tracks.filter { counts(it) && it.state().option == null }.sortedByDescending { it.size }.take(MAX_OPEN)
         for (t in tracker.tracks) if (t.size >= MIN_READINGS && t.state().option == null && t !in open) t.state().assigned = FaceOption.NONE
         if (open.isEmpty()) return
-        val like = likelihoods(tables())
+        val tables = tables()
+        val like = likelihoods(tables)
         val domains = open.map { t -> t.state().face?.let { f -> IntArray(4) { FaceOption.of(f, it) } } ?: IntArray(FaceOption.COUNT) { it } }
         val unary = open.mapIndexed { i, t -> unary(t, like, settled, domains[i]) }
         val pairs = Array(open.size) { i ->
@@ -415,9 +490,14 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             s.assigned = o
             // Turns that read the track the same (a one-colour face) are no other way.
             val optionMargin = search.best(cap = cost + ASSIGN_MARGIN, ban = i to { k -> k == pick[i] || sameReading(t, o, domains[i][k]) })?.first?.minus(cost) ?: Double.POSITIVE_INFINITY
-            if (optionMargin >= ASSIGN_MARGIN) {
+            if (optionMargin >= ASSIGN_MARGIN && turnBacked(t, o)) {
                 s.option = o
+                s.byCube = false
                 s.face = if (o == FaceOption.NONE) null else FaceOption.face(o)
+                s.otherFace = null
+            } else if (optionMargin >= ASSIGN_MARGIN) {
+                // The face is clear, the turn only by colours that may sit next to each other: the best cube decides it.
+                s.face = FaceOption.face(o)
                 s.otherFace = null
             } else if (s.face == null && o != FaceOption.NONE) {
                 val face = FaceOption.face(o)
@@ -441,9 +521,11 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
      * whose turn is settled are left to the pictures (their open tracks align by their stickers).
      */
     private fun settleTurns() {
-        val openOn = Face.entries.associateWith { f -> counting().filter { it.state().face == f && it.state().option == null && it.state().assigned != FaceOption.NONE } }
-            .filter { (f, list) -> list.isNotEmpty() && counting().none { t -> t.state().option?.let { it != FaceOption.NONE && FaceOption.face(it) == f } == true } }
+        fun byCube(t: Track) = t.state().let { it.option == null || it.byCube }
+        val openOn = Face.entries.associateWith { f -> counting().filter { it.state().face == f && byCube(it) && (it.state().option ?: it.state().assigned) != FaceOption.NONE } }
+            .filter { (f, list) -> list.isNotEmpty() && counting().none { t -> !byCube(t) && t.state().option?.let { it != FaceOption.NONE && FaceOption.face(it) == f } == true } }
         if (openOn.isEmpty()) return
+        for (list in openOn.values) for (t in list) t.state().let { it.assigned = it.option ?: it.assigned }
         val extra = IntArray(6)
         fun cost(): Double = BestCube.cost(evidenceOf(extra), scheme)
         var base = cost()
@@ -475,7 +557,10 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
                 extra[face.ordinal] = 0
                 c - base >= TURN_MARGIN
             }
-            if (settled) for (t in list) t.state().option = t.state().assigned
+            for (t in list) t.state().let {
+                it.option = if (settled) it.assigned else null
+                it.byCube = settled
+            }
         }
     }
 
@@ -485,6 +570,52 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val votes = evidenceOf(extra).votes
         return List(9) { n -> votes[face.ordinal * 9 + n].let { v -> if (v.sum() <= 0.0) -1 else v.indices.maxBy { v[it] } } }
     }
+
+    /** The tracks whose readings are evidence: per face, those agreeing with its most supported track. */
+    private var voting: Set<Track> = emptySet()
+
+    /**
+     * Per face, the tracks assigned to it that agree with the track most others agree with (at most
+     * [MAX_DISAGREE] stickers read otherwise), counted by readings, a track in view counting double
+     * (recent clear views over old ones): only they are evidence. A face read wrong at first, or a
+     * stray lattice taken for a face, then does not spoil it (as the earlier scanner's anchor).
+     */
+    private fun updateVoting(now: Long) {
+        val out = HashSet<Track>()
+        for ((_, list) in counting().filter { assignment(it) != null }.groupBy { FaceOption.face(assignment(it)!!) }) {
+            fun weight(t: Track) = t.size * if (now - t.lastAt <= LIVE_MILLIS) 2 else 1
+            fun agree(a: Track, b: Track): Boolean {
+                val oa = assignment(a)!!
+                val ob = assignment(b)!!
+                var wrong = 0
+                for (n in 0 until 9) {
+                    if (n == CENTRE) continue
+                    val x = a.leading[RotationSearch.turnIndex(n, FaceOption.turn(oa))] ?: continue
+                    val y = b.leading[RotationSearch.turnIndex(n, FaceOption.turn(ob))] ?: continue
+                    if (x != y && !warm(x, y)) wrong++
+                }
+                return wrong <= MAX_DISAGREE
+            }
+            val anchor = list.maxWith(compareBy<Track> { a -> list.filter { agree(a, it) }.sumOf { weight(it) } }.thenBy { it.lastAt })
+            out += list.filter { agree(anchor, it) }
+        }
+        voting = out
+    }
+
+    /**
+     * Whether [t]'s turn as [o] rests on more than colours that may neighbour each other: a picture
+     * binding it to another track by a side or corner, a track of the same face whose turn is settled
+     * (their stickers align them), or a one-colour face (any turn reads the same).
+     */
+    private fun turnBacked(t: Track, o: Int): Boolean {
+        if (o == FaceOption.NONE) return true
+        val face = FaceOption.face(o)
+        if ((0 until 4).all { sameReading(t, o, FaceOption.of(face, it)) }) return true
+        return counting().any { it !== t && (rules.fixesTurns(t, it) || (settled(it) && !it.state().byCube && FaceOption.face(it.state().option!!) == face)) }
+    }
+
+    /** Red and orange: told apart in part only. */
+    private fun warm(x: CubeColor, y: CubeColor): Boolean = (x == CubeColor.RED && y == CubeColor.ORANGE) || (x == CubeColor.ORANGE && y == CubeColor.RED)
 
     /** Whether [t] as [a] and as [b] reads the same: the same face, the leading colours alike in both turns. */
     private fun sameReading(t: Track, a: Int, b: Int): Boolean {
@@ -573,6 +704,15 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** A face's turn settles by the best cube when every other turn makes it this much costlier ([VideoScan.CLEAR_MARGIN], as the earlier scanner). */
         const val TURN_MARGIN = 2.0
+
+        /** How much of red's agreement orange gets, and the other way round. */
+        const val WARM_LEND = 0.5
+
+        /** Two tracks of one face agree when at most this many stickers read otherwise (red for orange not counted). */
+        const val MAX_DISAGREE = 2
+
+        /** A track seen this recently is in view (its readings count double for its face's anchor). */
+        const val LIVE_MILLIS = 1_000L
 
         /** A track settles when every other way costs this much more. */
         const val ASSIGN_MARGIN = 3.0
