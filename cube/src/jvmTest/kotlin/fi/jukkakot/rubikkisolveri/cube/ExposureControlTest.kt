@@ -25,10 +25,10 @@ class ExposureControlTest {
     @Test
     fun searchingUntilAFaceThenMetersAtIt() {
         val c = ExposureControl()
-        assertTrue(c.frame(0).read)
+        c.frame(0)
         assertEquals(Phase.SEARCHING, c.phase)
         assertNull(c.settings.meter)
-        assertFalse(c.frame(100, face(x = 20.0, y = 30.0)).read, "the camera adjusts first")
+        c.frame(100, face(x = 20.0, y = 30.0))
         assertEquals(Phase.METERING, c.phase)
         assertEquals(Point(0.2, 0.3), c.settings.meter)
         assertEquals(Point(0.2, 0.3), c.settings.focus)
@@ -39,9 +39,9 @@ class ExposureControlTest {
     fun locksWhenTheStickersReadWell() {
         val c = ExposureControl()
         c.frame(0, face())
-        assertFalse(c.frame(500, face()).read)
+        assertNull(c.frame(500, face()).lockedWashed)
+        assertEquals(Phase.METERING, c.phase)
         val f = c.frame(600, face(washedCount = 2))
-        assertTrue(f.read)
         assertEquals(2.0 / 9, f.lockedWashed)
         assertEquals(Phase.LOCKED, c.phase)
         assertTrue(c.settings.lock)
@@ -52,13 +52,13 @@ class ExposureControlTest {
     fun stepsDarkerWhileWashedOut() {
         val c = ExposureControl()
         c.frame(0, face())
-        assertFalse(c.frame(600, face(washedCount = 5)).read)
+        c.frame(600, face(washedCount = 5))
         assertEquals(1, c.settings.darker)
-        assertFalse(c.frame(1_000, face(washedCount = 5)).read, "waits for the new step")
-        assertEquals(1, c.settings.darker)
+        c.frame(1_000, face(washedCount = 5))
+        assertEquals(1, c.settings.darker, "waits for the new step")
         c.frame(1_200, face(washedCount = 5))
-        assertEquals(2, c.settings.darker)
-        assertTrue(c.frame(1_800, face(washedCount = 1)).read)
+        assertEquals(2, c.settings.darker, "a darker step runs past the time limit")
+        c.frame(1_800, face(washedCount = 1))
         assertEquals(Phase.LOCKED, c.phase)
         assertEquals(2, c.settings.darker)
     }
@@ -69,7 +69,7 @@ class ExposureControlTest {
         c.frame(0, face())
         c.frame(600, face(washedCount = 9))
         assertEquals(1, c.settings.darker)
-        assertTrue(c.frame(1_200, face(washedCount = 9)).read)
+        c.frame(1_200, face(washedCount = 9))
         assertEquals(Phase.LOCKED, c.phase)
         assertEquals(1, c.settings.darker)
         // At the darkest step it does not meter again however long it stays washed out.
@@ -82,16 +82,17 @@ class ExposureControlTest {
     fun cameraThatCannotBeMadeDarkerLocksAsBefore() {
         val c = ExposureControl(maxDarker = 0)
         c.frame(0, face())
-        assertTrue(c.frame(600, face(washedCount = 9)).read)
+        c.frame(600, face(washedCount = 9))
         assertEquals(Phase.LOCKED, c.phase)
         assertEquals(0, c.settings.darker)
     }
 
     @Test
-    fun withoutFacesAfterSettlingFramesAreReadAndItWaits() {
+    fun withoutFacesAfterSettlingItWaits() {
         val c = ExposureControl()
         c.frame(0, face())
-        assertTrue(c.frame(700).read)
+        c.frame(700)
+        c.frame(2_000)
         assertEquals(Phase.METERING, c.phase)
     }
 
@@ -101,12 +102,12 @@ class ExposureControlTest {
         c.frame(0, face())
         c.frame(600, face())
         assertEquals(Phase.LOCKED, c.phase)
-        assertTrue(c.frame(1_000, face(washedCount = 6)).read)
+        c.frame(1_000, face(washedCount = 6))
         c.frame(2_000, face(washedCount = 6))
-        assertTrue(c.frame(2_500, face()).read, "a good frame breaks the run")
+        c.frame(2_500, face())
         c.frame(3_000, face(washedCount = 6))
-        assertEquals(Phase.LOCKED, c.phase)
-        assertFalse(c.frame(5_000, face(washedCount = 6)).read)
+        assertEquals(Phase.LOCKED, c.phase, "a good frame broke the run")
+        c.frame(5_000, face(washedCount = 6))
         assertEquals(Phase.METERING, c.phase)
         assertFalse(c.settings.lock)
         c.frame(5_600, face(washedCount = 6))
@@ -125,8 +126,9 @@ class ExposureControlTest {
         assertEquals(Phase.METERING, c.phase)
         assertFalse(c.settings.lock)
         assertEquals(1, c.settings.darker, "the torch on keeps the step")
-        assertFalse(c.frame(2_300, face()).read)
-        assertTrue(c.frame(2_600, face()).read)
+        c.frame(2_300, face())
+        assertEquals(Phase.METERING, c.phase)
+        c.frame(2_600, face())
         assertEquals(Phase.LOCKED, c.phase)
         c.onTorch(false, 3_000)
         assertEquals(0, c.settings.darker, "the torch off goes back to the camera's own exposure")
@@ -138,7 +140,8 @@ class ExposureControlTest {
         val c = ExposureControl()
         c.onTorch(true, 0)
         assertEquals(Phase.SEARCHING, c.phase)
-        assertTrue(c.frame(100).read)
+        c.frame(100)
+        assertEquals(Phase.SEARCHING, c.phase)
     }
 
     @Test
@@ -147,10 +150,12 @@ class ExposureControlTest {
         c.frame(0, face(x = 50.0))
         c.frame(300, face(x = 60.0))
         assertEquals(Point(0.5, 0.5), c.settings.meter, "a small move does not move the point")
-        assertFalse(c.frame(400, face(x = 80.0)).read)
+        c.frame(400, face(x = 80.0))
         assertEquals(Point(0.8, 0.5), c.settings.meter)
-        assertFalse(c.frame(700, face(x = 80.0)).read, "moving the point restarts the wait")
-        assertTrue(c.frame(1_000, face(x = 80.0)).read)
+        c.frame(700, face(x = 80.0))
+        assertEquals(Phase.METERING, c.phase, "moving the point restarts the wait")
+        c.frame(1_000, face(x = 80.0))
+        assertEquals(Phase.LOCKED, c.phase)
     }
 
     @Test
@@ -167,12 +172,57 @@ class ExposureControlTest {
         assertTrue(c.settings.lock)
     }
 
+    /** A face centred at ([x], [y]) with cells [size] across. */
+    private fun sized(x: Double, y: Double, size: Double) = FaceReading(List(9) { good }, Point(x, y), Point(size, 0.0), Point(0.0, size))
+
     @Test
-    fun followsTheLargestFace() {
+    fun metersAtTheMiddleOfAllFaces() {
         val c = ExposureControl()
-        val small = FaceReading(List(9) { good }, Point(10.0, 10.0), Point(2.0, 0.0), Point(0.0, 2.0))
-        c.frame(0, small, face(x = 60.0, y = 40.0))
-        assertEquals(Point(0.6, 0.4), c.settings.meter)
+        c.frame(0, sized(20.0, 40.0, 2.0), face(x = 60.0, y = 40.0))
+        assertEquals(Point(0.4, 0.4), c.settings.meter)
+    }
+
+    @Test
+    fun facesSwappingSizeDoNotMoveThePoint() {
+        // Two faces in view as the cube turns in the hand: now one, now the other is the larger.
+        val c = ExposureControl()
+        c.frame(0, sized(20.0, 50.0, 8.0), sized(70.0, 50.0, 3.0))
+        val point = c.settings.meter
+        c.frame(100, sized(20.0, 50.0, 3.0), sized(70.0, 50.0, 8.0))
+        c.frame(200, sized(20.0, 50.0, 8.0), sized(70.0, 50.0, 3.0))
+        assertEquals(point, c.settings.meter)
+        c.frame(600, sized(20.0, 50.0, 3.0), sized(70.0, 50.0, 8.0))
+        assertEquals(Phase.LOCKED, c.phase, "the settle was not restarted")
+    }
+
+    @Test
+    fun aCubeMovingEveryFrameLocksByTheTimeLimit() {
+        val c = ExposureControl()
+        var t = 0L
+        var x = 20.0
+        while (t < ExposureControl.METER_LIMIT_MILLIS) {
+            c.frame(t, face(x = x))
+            assertEquals(Phase.METERING, c.phase, "at $t")
+            x = if (x == 20.0) 80.0 else 20.0
+            t += 100
+        }
+        c.frame(t, face(x = x))
+        assertEquals(Phase.LOCKED, c.phase)
+    }
+
+    @Test
+    fun washedOutFramesStillStepDarkerAfterTheTimeLimit() {
+        val c = ExposureControl()
+        var x = 20.0
+        for (t in 0L..ExposureControl.METER_LIMIT_MILLIS step 100) {
+            c.frame(t, face(x = x, washedCount = 6))
+            x = if (x == 20.0) 80.0 else 20.0
+        }
+        assertEquals(Phase.METERING, c.phase)
+        assertEquals(1, c.settings.darker)
+        c.frame(ExposureControl.METER_LIMIT_MILLIS + ExposureControl.SETTLE_MILLIS, face(x = x))
+        assertEquals(Phase.LOCKED, c.phase)
+        assertEquals(1, c.settings.darker)
     }
 
     @Test

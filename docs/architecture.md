@@ -146,13 +146,11 @@ Video scan pipeline (`video-scan`):
    (`web/WebCamera.kt`, `cameraShow` in `platform.mjs`), so the marks are drawn on top of the
    full-resolution video.
    Camera control (`camera-exposure`): `cube/scan/ExposureControl` decides per frame what the
-   camera does (`CameraSettings`: metering point, focus point, steps darker, lock). Searching →
-   a face found: meter and focus at the largest face's centre and wait 0.6 s → more than a third of
-   the readings washed out (`VideoScan.WASHED_FROM`): one half-EV step darker and wait again, else
-   (or at the darkest step, at most −2 EV) lock exposure and white balance. Washed out for 2 s after
-   the lock, or the torch turned on or off (off: back to 0 steps), meters again. Frames are not read
-   while it waits. The point follows the cube (> 15 % of the picture) while unlocked; once locked
-   only focus follows, at most once a second. Android: `FocusMeteringAction` (point converted to the
+   camera does (`CameraSettings`: metering point, focus point, steps darker, lock): meter at the
+   middle of all faces found, step darker while washed out, then lock exposure and white balance (at
+   the latest about a second after the first face, `scan-start`); washed out after the lock or a
+   torch change meters again. It only steers the camera: every frame is read meanwhile (`scan-start`:
+   holding frames back cost ~5 s at the start). Thresholds and timings are in the class. Android: `FocusMeteringAction` (point converted to the
    sensor frame by `FrameSampler.toFrameShare`), `setExposureCompensationIndex`, the Camera2 AE/AWB
    lock. Browser: `pointsOfInterest`, `focusMode`, `exposureCompensation` (each only if the browser
    lists it; the point converted through the cover crop), the `exposureMode` lock. Camera steps per

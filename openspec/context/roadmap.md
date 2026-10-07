@@ -59,6 +59,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 49 | `scan-paint` | done | Video scan paints the real cube: a tile per sticker in its colour, grey while needed, white outline around a confirmed side; the paint glides with the cube and stays through short gaps; every camera picture read; no turn arrow or side-ball row, a small ring instead; full-screen camera with back, torch and a ⋮ menu, one status line (user, 2026-10-06) |
 | 50 | `quiet-screens` | done | The symbols-over-words rule on the remaining screens: guided scan with the video scan's overlay (no title, no "n/6", hint only until the first face), colour check's instruction only until the first action, ‹ › ✓ icons in manual input, free cube layer buttons as small cube pictures with ↻/↺, timer instruction only before the first solve |
 | 51 | `pattern-scan-first` | done | A pattern from home asks "Skannaa kuutio" or "Kuutio on jo ratkaistu"; the scan carries the target to the solution; a painted target fits the cube however it is held (user, 2026-10-07) |
+| 52 | `scan-start` | done | Video scan reads from the first picture with a face (no wait for the camera); metering on the middle of the cube, locked within about a second; a small spinner until the first sticker (user, 2026-10-07) |
 
 ## Backlog
 

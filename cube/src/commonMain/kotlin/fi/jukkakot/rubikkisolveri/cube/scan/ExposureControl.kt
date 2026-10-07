@@ -19,15 +19,16 @@ data class CameraSettings(val meter: Point? = null, val focus: Point? = null, va
 /**
  * The video scan's exposure (`camera-exposure` design 1): the camera meters and focuses on the cube,
  * is made darker step by step while the stickers read washed out, then locked; a torch change or
- * stickers washed out for [RELOCK_MILLIS] after the lock meter again. Replaces `LightSettle`: frames
- * are not read while the camera adjusts ([Frame.read]). [maxDarker] is how many steps darker the
- * camera can go (0 = it cannot be set; then it just meters and locks).
+ * stickers washed out for [RELOCK_MILLIS] after the lock meter again. Every frame is read meanwhile
+ * (`scan-start`): this only steers the camera. Metering ends at the latest [METER_LIMIT_MILLIS] after
+ * it began, unless a darker step is still settling. [maxDarker] is how many steps darker the camera
+ * can go (0 = it cannot be set; then it just meters and locks).
  */
 class ExposureControl(var maxDarker: Int = MAX_DARKER) {
     enum class Phase { SEARCHING, METERING, LOCKED }
 
-    /** What became of a frame: whether the scan reads it, and the share of washed-out readings when it locked the camera. */
-    data class Frame(val read: Boolean, val lockedWashed: Double? = null)
+    /** What became of a frame: the share of washed-out readings when it locked the camera. */
+    data class Frame(val lockedWashed: Double? = null)
 
     var phase: Phase = Phase.SEARCHING
         private set
@@ -35,40 +36,48 @@ class ExposureControl(var maxDarker: Int = MAX_DARKER) {
     var settings: CameraSettings = CameraSettings.FREE
         private set
 
-    private var waitUntil = 0L
+    /** Until then the metering point is settling (it moved). */
+    private var pointUntil = 0L
+
+    /** Until then a darker step is settling. */
+    private var stepUntil = 0L
+
+    /** Metering locks by then however the cube moves. */
+    private var deadline = 0L
     private var washedSince: Long? = null
     private var lastFocus = 0L
 
     /** The faces found in a [width]×[height] picture at [now]. */
     fun onFrame(faces: List<FaceReading>, width: Int, height: Int, now: Long): Frame {
-        val largest = faces.maxByOrNull { it.area }
-        val at = largest?.let { Point(it.centre.x / width, it.centre.y / height) }
+        val at = middle(faces, width, height)
         val washed = washedShare(faces)
         when (phase) {
             Phase.SEARCHING -> {
-                if (at == null) return Frame(read = true)
+                if (at == null) return Frame()
                 phase = Phase.METERING
                 settings = settings.copy(meter = at, focus = at, lock = false)
-                waitUntil = now + SETTLE_MILLIS
-                return Frame(read = false)
+                pointUntil = now + SETTLE_MILLIS
+                stepUntil = now
+                deadline = now + METER_LIMIT_MILLIS
+                return Frame()
             }
             Phase.METERING -> {
                 if (at != null && moved(settings.meter, at)) {
                     settings = settings.copy(meter = at, focus = at)
-                    waitUntil = now + SETTLE_MILLIS
+                    pointUntil = now + SETTLE_MILLIS
                 }
-                if (now < waitUntil) return Frame(read = false)
-                if (washed == null) return Frame(read = true)
+                if (now < stepUntil || (now < pointUntil && now < deadline)) return Frame()
+                if (washed == null) return Frame()
                 if (washed > WASHED_SHARE && settings.darker < maxDarker) {
                     settings = settings.copy(darker = settings.darker + 1)
-                    waitUntil = now + SETTLE_MILLIS
-                    return Frame(read = false)
+                    stepUntil = now + SETTLE_MILLIS
+                    return Frame()
                 }
                 phase = Phase.LOCKED
                 settings = settings.copy(lock = true)
                 washedSince = null
                 lastFocus = now
-                return Frame(read = true, lockedWashed = washed)
+                return Frame(lockedWashed = washed)
             }
             Phase.LOCKED -> {
                 if (washed != null) {
@@ -78,7 +87,7 @@ class ExposureControl(var maxDarker: Int = MAX_DARKER) {
                         val since = washedSince ?: now.also { washedSince = it }
                         if (now - since >= RELOCK_MILLIS && settings.darker < maxDarker) {
                             meterAgain(now)
-                            return Frame(read = false)
+                            return Frame()
                         }
                     }
                 }
@@ -87,7 +96,7 @@ class ExposureControl(var maxDarker: Int = MAX_DARKER) {
                     settings = settings.copy(focus = at)
                     lastFocus = now
                 }
-                return Frame(read = true)
+                return Frame()
             }
         }
     }
@@ -101,15 +110,26 @@ class ExposureControl(var maxDarker: Int = MAX_DARKER) {
     private fun meterAgain(now: Long) {
         phase = Phase.METERING
         settings = settings.copy(lock = false, meter = settings.focus ?: settings.meter)
-        waitUntil = now + SETTLE_MILLIS
+        pointUntil = now + SETTLE_MILLIS
+        stepUntil = now
+        deadline = now + METER_LIMIT_MILLIS
         washedSince = null
+    }
+
+    /** The middle of all [faces] (the cube as seen) as shares of the picture, null without any. */
+    private fun middle(faces: List<FaceReading>, width: Int, height: Int): Point? {
+        if (faces.isEmpty()) return null
+        return Point(faces.sumOf { it.centre.x } / faces.size / width, faces.sumOf { it.centre.y } / faces.size / height)
     }
 
     private fun moved(from: Point?, to: Point): Boolean = from == null || (to - from).length > MOVE_SHARE
 
     companion object {
-        /** Time the camera gets to adjust after a change before its frames are read and judged. */
+        /** Time the camera gets to adjust after a change before its frames are judged for the lock. */
         const val SETTLE_MILLIS = 600L
+
+        /** Metering locks at the latest this long after it began (unless a darker step is settling). */
+        const val METER_LIMIT_MILLIS = 1_000L
 
         /** More than this share of the readings washed out: one step darker. */
         const val WASHED_SHARE = 1.0 / 3

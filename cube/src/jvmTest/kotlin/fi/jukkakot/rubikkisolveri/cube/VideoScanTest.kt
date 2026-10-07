@@ -1,6 +1,7 @@
 package fi.jukkakot.rubikkisolveri.cube
 
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
+import fi.jukkakot.rubikkisolveri.cube.scan.ExposureControl
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
 import fi.jukkakot.rubikkisolveri.cube.scan.Lab
@@ -391,5 +392,46 @@ class VideoScanTest {
         repeat(4) { show(it * 100L, 0 to orange, 1 to wrong, 2 to wrong) }
         repeat(VideoScan.MAX_READINGS + 10) { k -> show(400L + k * 100, 0 to if (k % 2 == 0) nearRed else nearYellow) }
         scan.outcome()
+    }
+
+    /** [reading] with cells [size] across. */
+    private fun sized(face: Face, centre: Point, size: Double) = reading(face, centre = centre).copy(u = Point(size, 0.0), v = Point(0.0, size))
+
+    @Test
+    fun stickersAreKnownBeforeTheCameraLocksWhenTheCubeTurnsFromTheStart() {
+        // 2026-10-07: two faces in view, the cube turned in the hand so the larger face swaps, darker=0.
+        val scan = VideoScan()
+        val exposure = ExposureControl()
+        var knownBeforeLock = 0
+        var lockedAt: Long? = null
+        for (t in 0L..2_000L step 33) {
+            val big = (t / 33) % 2 == 0L
+            val faces = listOf(sized(Face.F, Point(100.0, 200.0), if (big) 34.0 else 26.0), sized(Face.U, Point(100.0, 110.0), if (big) 26.0 else 34.0))
+            exposure.onFrame(faces, 200, 300, t)
+            val state = scan.onFrame(faces, t)
+            if (exposure.phase == ExposureControl.Phase.LOCKED) lockedAt = lockedAt ?: t else knownBeforeLock = state.recognised
+        }
+        assertTrue(knownBeforeLock > 0, "stickers known before the lock")
+        assertTrue(lockedAt!! <= ExposureControl.METER_LIMIT_MILLIS + 33, "locked at $lockedAt")
+        assertEquals(0, exposure.settings.darker)
+    }
+
+    @Test
+    fun readingGoesOnWhileTheCameraMetersAgainAfterATorchChange() {
+        val scan = VideoScan()
+        val exposure = ExposureControl()
+        var t = 0L
+        while (exposure.phase != ExposureControl.Phase.LOCKED) {
+            listOf(reading(Face.U)).let { exposure.onFrame(it, 200, 200, t); scan.onFrame(it, t) }
+            t += 100
+        }
+        val before = scan.state.recognised
+        exposure.onTorch(true, t)
+        repeat(4) {
+            t += 100
+            listOf(reading(Face.R)).let { exposure.onFrame(it, 200, 200, t); scan.onFrame(it, t) }
+        }
+        assertEquals(ExposureControl.Phase.METERING, exposure.phase)
+        assertTrue(scan.state.recognised > before, "${scan.state.recognised} after $before")
     }
 }

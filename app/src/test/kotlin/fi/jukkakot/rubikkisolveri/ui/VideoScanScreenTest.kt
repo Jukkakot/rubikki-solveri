@@ -6,6 +6,8 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
+import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_SPINNER_TAG
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import fi.jukkakot.rubikkisolveri.cube.Cube
@@ -116,14 +118,13 @@ class VideoScanScreenTest {
         scan()
         compose.onNodeWithContentDescription("0/54 tarraa tunnistettu").assertExists()
         assertFalse(checkEnabled())
-        // The first face: the camera meters and focuses at it, and its frames are not read while it adjusts.
-        show(face(Face.U), times = 6)
-        assertEquals(listOf(CameraSettings(meter = Point(0.5, 0.5), focus = Point(0.5, 0.5))), settings)
-        assertFalse(checkEnabled())
+        // The first face: the camera meters and focuses at it, and its frames are read meanwhile.
         show(face(Face.U), times = 3)
-        // The face in view, read three times: its stickers are known.
+        assertEquals(listOf(CameraSettings(meter = Point(0.5, 0.5), focus = Point(0.5, 0.5))), settings)
+        // The face in view, read three times: its stickers are known before the camera locks.
         compose.onNodeWithContentDescription("9/54 tarraa tunnistettu").assertExists()
         assertTrue(checkEnabled())
+        show(face(Face.U), times = 4)
         assertEquals(CameraSettings(meter = Point(0.5, 0.5), focus = Point(0.5, 0.5), lock = true), settings.last())
     }
 
@@ -199,5 +200,16 @@ class VideoScanScreenTest {
         show(face(Face.U), times = 30)
         compose.onNodeWithText("Värit eivät täsmää").assertDoesNotExist()
         compose.onNodeWithContentDescription("Sulje ilmoitus").assertDoesNotExist()
+    }
+
+    @Test
+    fun aSpinnerShowsUntilTheFirstStickerIsRead() {
+        scan()
+        compose.onNodeWithTag(VIDEO_SPINNER_TAG).assertDoesNotExist()
+        // A face found whose stickers cannot be placed yet (its centre hidden): nothing read.
+        show(face(Face.U).let { it.copy(colors = it.colors.toMutableList().also { c -> c[4] = null }) })
+        compose.onNodeWithTag(VIDEO_SPINNER_TAG).assertExists()
+        show(face(Face.U))
+        compose.onNodeWithTag(VIDEO_SPINNER_TAG).assertDoesNotExist()
     }
 }

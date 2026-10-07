@@ -33,7 +33,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
@@ -164,7 +166,7 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
  * picture outside it closes it for that reason (until a restart). The camera is set through
  * [onExposure] by [ExposureControl]: metered and focused on the cube once a face is found, made
  * darker (up to [maxDarker] steps) while the stickers wash out, then locked; the torch turned on or
- * off meters again. Frames are not read while the camera adjusts. Clear for half a second →
+ * off meters again. Every frame is read, also while the camera adjusts. Clear for half a second →
  * [onResult]. [clock] is the time in milliseconds (tests pass their own).
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -220,10 +222,6 @@ fun VideoScanContent(
             if (exposure.settings != before) onExposure(exposure.settings)
             frame.lockedWashed?.let { log.lock(exposure.settings.darker, it) }
             log.picture(f, now)
-            if (!frame.read) {
-                picture = f
-                return@collect
-            }
             val stateBefore = state
             state = scan.onFrame(f.faces, now)
             picture = f
@@ -259,6 +257,14 @@ fun VideoScanContent(
             preview(Modifier.fillMaxSize())
         }
         picture?.let { p -> PaintLayer(state, p.width, p.height, Modifier.fillMaxSize()) }
+        // A face is in view but nothing read yet: a small sign that the scan is working.
+        if (!done && picture?.faces?.isNotEmpty() == true && state.recognised == 0) {
+            CircularProgressIndicator(
+                Modifier.align(Alignment.Center).size(32.dp).testTag(VIDEO_SPINNER_TAG),
+                color = Color.White,
+                strokeWidth = 3.dp,
+            )
+        }
         val stall = state.stall?.takeIf { it !in dismissed }
         if (stall != null) {
             // A tap on the picture outside the notice closes it; that reason does not come back.
@@ -309,6 +315,9 @@ fun VideoScanContent(
     }
 }
 
+/** Test tag of the spinner shown while a face is found and no sticker is read yet. */
+const val VIDEO_SPINNER_TAG = "video-spinner"
+
 /** The turning points of the scan and a snapshot every two seconds, into the log. */
 private class ScanLogger {
     private var lastSnapshot: Long? = null
@@ -317,7 +326,7 @@ private class ScanLogger {
     private var finderMs = 0L
     private var worker: Boolean? = null
 
-    /** Every picture the finder read, whether the scan took it or not (the camera was adjusting). */
+    /** Every picture the finder read. */
     fun picture(f: FoundFaces, at: Long) {
         if (lastSnapshot == null) lastSnapshot = at
         frames++
