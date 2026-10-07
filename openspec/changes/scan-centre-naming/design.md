@@ -62,7 +62,7 @@ stickers other than the centres.
    its frames whose only full face is the blue face, centre made pale as in `scan-centre-clash`'s test
    (named white by the palette), replayed first for about three seconds, then the whole video. A camera
    video (the phone's own camera app) starting with the blue face on top in the same light would be a
-   better fixture; asked from the user, not required.
+   better fixture: the user will film one (2026-10-07). If it is in `testdata/video/` when 1.1 starts, its finder readings become a fixture (`VideoScanHarness.writeFixtures`, 360×640 at 10 fps) and the test replays it as well; the built sequence stays either way.
 
 ## Risks / Trade-offs
 
