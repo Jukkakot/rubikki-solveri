@@ -2,6 +2,7 @@ package fi.jukkakot.rubikkisolveri.cube.scan
 
 import fi.jukkakot.rubikkisolveri.cube.ColorScheme
 import fi.jukkakot.rubikkisolveri.cube.Corner
+import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.Edge
 import fi.jukkakot.rubikkisolveri.cube.Face
@@ -81,6 +82,24 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
     /** Every counting track is settled (face and turn, or no face). */
     val allSettled: Boolean get() = counting().all { it.state().option != null }
+
+    /**
+     * Every counting track is settled, or is short (fewer than [KEEP_READINGS]) with its face settled
+     * and reads like [cube] where it is assigned (at most one sticker otherwise): it cannot change the
+     * cube, only which turn it was seen in.
+     */
+    fun settledFor(cube: Cube): Boolean = counting().all { t ->
+        val s = t.state()
+        s.option != null || (t.size < KEEP_READINGS && s.face != null && s.assigned != FaceOption.NONE && fits(t, s.assigned, cube))
+    }
+
+    private fun fits(t: Track, o: Int, cube: Cube): Boolean {
+        val face = FaceOption.face(o)
+        return (0 until 9).count { n ->
+            val c = t.leading[RotationSearch.turnIndex(n, FaceOption.turn(o))]
+            n != CENTRE && c != null && c != cube[face.ordinal * 9 + n]
+        } <= 1
+    }
 
     /** Faces that an open track could be: its assignment and the next best face. */
     val unsureFaces: Set<Face>
@@ -715,7 +734,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         const val LIVE_MILLIS = 1_000L
 
         /** A track settles when every other way costs this much more. */
-        const val ASSIGN_MARGIN = 3.0
+        const val ASSIGN_MARGIN = 2.5
 
         /** A settled track re-opens when another way is cheaper by this much. */
         const val REOPEN_SLACK = 0.0
