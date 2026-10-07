@@ -1,6 +1,7 @@
 package fi.jukkakot.rubikkisolveri.ui.scan
 
 import androidx.compose.runtime.getValue
+import fi.jukkakot.rubikkisolveri.ui.nav.ManualInputRoute
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import fi.jukkakot.rubikkisolveri.cube.Face
@@ -21,8 +22,8 @@ object LastScan {
 
     var rescanned: Pair<FaceView, List<Rgb>>? by mutableStateOf(null)
 
-    /** The check of the last finished scan (a `ManualInputRoute`), opened from the solution's menu. */
-    var check: Any? = null
+    /** The check of the last finished scan , opened from the solution's menu. */
+    var check: ManualInputRoute? = null
 
     /** Turns [face]'s picture [quarterTurns] clockwise (a rescanned face once the check knows how it was held). */
     fun turnPicture(face: Face, quarterTurns: Int, size: Int = FrameSampler.PICTURE_SIZE) {

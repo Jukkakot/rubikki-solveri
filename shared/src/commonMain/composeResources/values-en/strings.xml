@@ -313,6 +313,10 @@
     <string name="target_paint">Paint your own</string>
     <string name="target_choose">Choose</string>
     <string name="target_close">Close</string>
+    <string name="target_start_title">Where do we start?</string>
+    <string name="target_start_text">Scan the cube as it is now and the guide takes it to %1$s. If the cube is already solved, no scan is needed.</string>
+    <string name="target_start_scan">Scan the cube</string>
+    <string name="target_start_solved">The cube is already solved</string>
     <string name="target_label">Target</string>
     <string name="target_change">Change</string>
     <string name="target_solved">Solved</string>

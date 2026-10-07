@@ -104,4 +104,21 @@ class SolveTargetTest {
         )
         for (t in targets) assertEquals(t, SolveTarget.decode(t.encode()))
     }
+
+    @Test
+    fun paintedTargetFitsAStartHeldAnotherWay() {
+        val painted = CubePattern.CHECKERBOARD.cube().apply("R U")
+        val start = Cube.solved().apply("x y2").apply(Scramble.random(25, Random(5)))
+        val to = SolveTarget.Painted(painted).cubeFor(start)!!
+        assertEquals(Face.entries.map { start.centre(it) }, Face.entries.map { to.centre(it) })
+        assertEquals(painted.apply("x y2"), to)
+        assertEquals(to, start.apply(movesTo(start, to)))
+    }
+
+    @Test
+    fun paintedTargetUnchangedWhenCentresMatch() {
+        val painted = CubePattern.CHECKERBOARD.cube().apply("R U")
+        val start = Cube.solved().apply(Scramble.random(25, Random(6)))
+        assertEquals(painted, SolveTarget.Painted(painted).cubeFor(start))
+    }
 }

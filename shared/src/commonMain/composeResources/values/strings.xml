@@ -314,6 +314,10 @@
     <string name="target_paint">Maalaa oma</string>
     <string name="target_choose">Valitse</string>
     <string name="target_close">Sulje</string>
+    <string name="target_start_title">Mistä aloitetaan?</string>
+    <string name="target_start_text">Skannaa kuutio sellaisena kuin se nyt on, niin opas vie sen kuvioon %1$s. Jos kuutio on jo ratkaistu, skannausta ei tarvita.</string>
+    <string name="target_start_scan">Skannaa kuutio</string>
+    <string name="target_start_solved">Kuutio on jo ratkaistu</string>
     <string name="target_label">Kohde</string>
     <string name="target_change">Vaihda</string>
     <string name="target_solved">Ratkaistu</string>

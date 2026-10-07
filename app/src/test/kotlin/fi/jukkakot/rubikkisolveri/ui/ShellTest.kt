@@ -27,6 +27,8 @@ import fi.jukkakot.rubikkisolveri.ui.nav.LogRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.ManualInputRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.SolveRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.VideoScanRoute
+import fi.jukkakot.rubikkisolveri.ui.nav.TargetRoute
+import androidx.navigation.toRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.LessonsRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.TimerRoute
 import fi.jukkakot.rubikkisolveri.ui.nav.FreeCubeRoute
@@ -142,7 +144,7 @@ class ShellTest {
     fun tapTheCubeToScan() {
         start()
         compose.onNodeWithTag(HOME_CUBE_TAG).performClick()
-        assertTrue(isOn(VideoScanRoute))
+        assertTrue(isOn(VideoScanRoute()))
     }
 
     @Test
@@ -156,14 +158,14 @@ class ShellTest {
     fun theScanStartsAsVideo() {
         start()
         compose.onNodeWithContentDescription("Skannaa kuutio").performClick()
-        assertTrue(isOn(VideoScanRoute))
+        assertTrue(isOn(VideoScanRoute()))
     }
 
     @Test
     fun backFromAScannedSolutionStartsANewScan() {
         start()
         compose.runOnUiThread {
-            nav.navigate(VideoScanRoute)
+            nav.navigate(VideoScanRoute())
             nav.navigate(SolveRoute(fi.jukkakot.rubikkisolveri.cube.Cube.solved().apply("R U").toColorString(), fromScan = true))
         }
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Aloita").fetchSemanticsNodes().isNotEmpty() }
@@ -171,7 +173,35 @@ class ShellTest {
         compose.onNodeWithContentDescription("Takaisin").performClick()
         compose.onNodeWithText("Aloita").assertIsDisplayed()
         compose.onNodeWithContentDescription("Takaisin").performClick()
-        assertTrue(isOn(VideoScanRoute))
+        assertTrue(isOn(VideoScanRoute()))
+    }
+
+    private fun chooseCheckerboardFromHome() {
+        compose.onNodeWithText("Kuviot").performClick()
+        compose.onNodeWithText("Shakkilauta").performScrollTo().performClick()
+        compose.onNodeWithText("Valitse").performClick()
+        compose.onNodeWithText("Mistä aloitetaan?").assertIsDisplayed()
+    }
+
+    @Test
+    fun aPatternFromHomeOnASolvedCube() {
+        start()
+        chooseCheckerboardFromHome()
+        compose.onNodeWithText("Kuutio on jo ratkaistu").performClick()
+        assertTrue(isOn(SolveRoute("x")))
+        assertEquals("p:CHECKERBOARD", nav.currentBackStackEntry!!.toRoute<SolveRoute>().target)
+    }
+
+    @Test
+    fun aPatternFromHomeScansFirstAndBackReturnsToThePicker() {
+        start()
+        chooseCheckerboardFromHome()
+        compose.onNodeWithText("Skannaa kuutio").performClick()
+        assertTrue(isOn(VideoScanRoute()))
+        assertEquals("p:CHECKERBOARD", nav.currentBackStackEntry!!.toRoute<VideoScanRoute>().target)
+        compose.runOnUiThread { nav.popBackStack() }
+        assertTrue(isOn(TargetRoute("x")))
+        compose.onNodeWithText("Mistä aloitetaan?").assertDoesNotExist()
     }
 
     @Test

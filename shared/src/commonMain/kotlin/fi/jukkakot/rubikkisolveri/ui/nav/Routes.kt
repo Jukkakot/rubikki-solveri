@@ -17,7 +17,8 @@ data object LogRoute
  * when that scan was valid and sure (the check then goes on to the solution by itself).
  * With [targetStart] (a colour string) it paints a target for that starting cube instead
  * (`solve-to-target`); [targetFromSolve] as in [TargetRoute]. [replaceSolve]: opened from a solution's
- * menu, whose solution the checked cube replaces.
+ * menu, whose solution the checked cube replaces. [target] (a `SolveTarget.encode()` string) is where
+ * the checked cube's solution leads, carried from a scan started from the target picker.
  */
 @Serializable
 data class ManualInputRoute(
@@ -28,11 +29,15 @@ data class ManualInputRoute(
     val targetStart: String? = null,
     val targetFromSolve: Boolean = false,
     val replaceSolve: Boolean = false,
+    val target: String? = null,
 )
 
-/** The scan; with [face] (a `FaceView` name) only that face, rescanned from the check. */
+/**
+ * The scan; with [face] (a `FaceView` name) only that face, rescanned from the check. [target] as in
+ * [ManualInputRoute], passed on to the solution.
+ */
 @Serializable
-data class ScanRoute(val face: String? = null)
+data class ScanRoute(val face: String? = null, val target: String? = null)
 
 /** [cube] is a colour string (see Cube.toColorString), or null for a solved cube. */
 @Serializable
@@ -76,6 +81,6 @@ data class ScrambleGuideRoute(val moves: String)
 @Serializable
 data object AboutRoute
 
-/** The scan from video (`video-scan`); offered beside the guided scan while it is new. */
+/** The scan from video (`video-scan`), the default scan; [target] as in [ManualInputRoute]. */
 @Serializable
-data object VideoScanRoute
+data class VideoScanRoute(val target: String? = null)

@@ -375,6 +375,15 @@ class ScanScreenTest {
     }
 
     @Test
+    fun aScanForATargetCarriesItToTheSolutionAndTheCheck() {
+        val target = "p:CHECKERBOARD"
+        val sure = ScanOutcome(CubeEditor.of(cube), emptySet(), CubeCheck.validity(cube))
+        assertEquals(SolveRoute(cube.toColorString(), target, fromScan = true), afterScan(sure, target))
+        val unsure = ScanOutcome(CubeEditor.of(cube), setOf(Stickers.index(Face.F, 1)), CubeCheck.validity(cube))
+        assertEquals(target, (afterScan(unsure, target) as ManualInputRoute).target)
+    }
+
+    @Test
     @Config(qualifiers = "fi-w411dp-h891dp")
     fun theCheckOfASureScanWaitsForTheUser() {
         // Opened again from the solution: nothing continues by itself, "Looks right" goes back.

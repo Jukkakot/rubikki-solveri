@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -83,7 +84,9 @@ fun TargetPicture(target: SolveTarget, start: Cube, modifier: Modifier = Modifie
 /**
  * Choosing where the guide leads the cube [start] (`solve-to-target`): a surprise, the pattern
  * gallery (a tap shows the pattern large first), the learn method's stages, or painting one's own.
- * [current] is not offered by the surprise.
+ * [current] is not offered by the surprise. With [askStart] (opened from home) a chosen target first
+ * asks where the cube starts: scanned ([onScan]) or already solved ([onChoose]). [painted] is a target
+ * painted from here and handed back, asked about the same way; [onPaintedSeen] clears it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,8 +96,22 @@ fun TargetScreen(
     onChoose: (SolveTarget) -> Unit,
     onPaint: () -> Unit,
     onBack: () -> Unit,
+    askStart: Boolean = false,
+    onScan: (SolveTarget) -> Unit = {},
+    painted: SolveTarget? = null,
+    onPaintedSeen: () -> Unit = {},
 ) {
     var preview by rememberSaveable { mutableStateOf<String?>(null) }
+    var asking by rememberSaveable { mutableStateOf<String?>(null) }
+    fun choose(target: SolveTarget) {
+        if (askStart) asking = target.encode() else onChoose(target)
+    }
+    LaunchedEffect(painted) {
+        if (painted != null) {
+            choose(painted)
+            onPaintedSeen()
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -136,7 +153,7 @@ fun TargetScreen(
                 ListItem(
                     leadingContent = { StageGoalCube(stage, Modifier.size(48.dp)) },
                     headlineContent = { Text("${stage.ordinal + 1}. ${stringResource(stageName(stage))}") },
-                    modifier = Modifier.clickable { onChoose(SolveTarget.StageDone(stage)) },
+                    modifier = Modifier.clickable { choose(SolveTarget.StageDone(stage)) },
                 )
             }
             item(span = { GridItemSpan(3) }) {
@@ -152,12 +169,31 @@ fun TargetScreen(
             confirmButton = {
                 Button(onClick = {
                     preview = null
-                    onChoose(target)
+                    choose(target)
                 }) { Text(stringResource(Res.string.target_choose)) }
             },
             dismissButton = { OutlinedButton(onClick = { preview = null }) { Text(stringResource(Res.string.target_close)) } },
             title = { Text(targetName(target)) },
             text = { TargetPicture(target, start, Modifier.fillMaxWidth().aspectRatio(1f), large = true) },
+        )
+    }
+    asking?.let(SolveTarget::decode)?.let { target ->
+        AlertDialog(
+            onDismissRequest = { asking = null },
+            confirmButton = {
+                Button(onClick = {
+                    asking = null
+                    onScan(target)
+                }) { Text(stringResource(Res.string.target_start_scan)) }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = {
+                    asking = null
+                    onChoose(target)
+                }) { Text(stringResource(Res.string.target_start_solved)) }
+            },
+            title = { Text(stringResource(Res.string.target_start_title)) },
+            text = { Text(stringResource(Res.string.target_start_text, targetName(target))) },
         )
     }
 }
