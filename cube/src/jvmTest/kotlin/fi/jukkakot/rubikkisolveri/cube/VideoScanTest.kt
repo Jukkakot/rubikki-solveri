@@ -585,4 +585,48 @@ class VideoScanTest {
         assertEquals(ExposureControl.Phase.METERING, exposure.phase)
         assertTrue(scan.state.recognised > before, "${scan.state.recognised} after $before")
     }
+
+    /** The user's striped pattern cube of the 2026-10-07 18:19 web test (white and yellow solid, stripes round the sides). */
+    private val striped = Cube.fromColorString("WWWWWWWWWBRGBRGBRGOGROGROGRYYYYYYYYYGOBGOBGOBRBORBORBO")
+
+    /** A red centre faded towards orange until the palette names it orange. */
+    private val orangeRed: Rgb = ColorClassifier.DEFAULT_PALETTE.let { p ->
+        val r = p.getValue(CubeColor.RED)
+        val o = p.getValue(CubeColor.ORANGE)
+        (1..100).map { t -> Rgb(r.r + (o.r - r.r) * t / 100, r.g + (o.g - r.g) * t / 100, r.b + (o.b - r.b) * t / 100) }
+            .first { ColorClassifier.rankedCentre(it).first() == CubeColor.ORANGE }
+    }
+
+    /** [face] of [cube] in its net order as the default palette reads it, the red centre looking orange. */
+    private fun stripedReading(cube: Cube, face: Face, centre: Point): FaceReading {
+        val colors = (0 until 9).map { n ->
+            val c = cube[face.ordinal * 9 + n]
+            if (n == 4 && c == CubeColor.RED) orangeRed else ColorClassifier.DEFAULT_PALETTE.getValue(c)
+        }
+        return FaceReading(colors, centre, Point(30.0, 0.0), Point(0.0, 30.0))
+    }
+
+    @Test
+    fun aRedCentreLookingOrangeIsNamedRedOnceTheOtherFiveAreSure() {
+        // scan-steady-progress, web test 2026-10-07 18:19: the red face stayed unnamed for 40 s.
+        val scan = VideoScan()
+        var t = 0L
+        fun corner(top: Face, bottom: Face, times: Int = 4) = repeat(times) {
+            scan.onFrame(listOf(stripedReading(striped, bottom, Point(100.0, 200.0)), stripedReading(striped, top, Point(100.0, 110.0))), t)
+            t += 100
+        }
+        for (side in listOf(Face.F, Face.L, Face.B)) corner(Face.U, side)
+        corner(Face.F, Face.D)
+        val known = ArrayList<Int>()
+        repeat(12) {
+            corner(Face.U, Face.R, times = 1)
+            known += scan.state.recognised
+        }
+        assertEquals(known.sorted(), known, "progress never goes back: $known")
+        val s = scan.state
+        assertEquals(CubeColor.RED, s.stickers[Face.R.ordinal * 9 + 4], "the red centre is named red")
+        assertEquals(8, recognisedOn(s, Face.R).size, "the red face's stickers are known")
+        assertTrue(s.complete, "the scan finishes")
+        for (i in 0 until Stickers.COUNT) assertEquals(striped[i], s.stickers[i], "sticker $i")
+    }
 }

@@ -15,6 +15,12 @@ doubtful is not certain: either the joint naming (red↔orange swap within `DOUB
 "stray" rule for a pile with fewer than `MIN_VOTES` inliers whose own nearest colour (orange) is
 taken (`left[0].key != own`). The first task reproduces it with synthetic readings before fixing.
 
+**Found in task 1.1 (2026-10-07):** neither branch. The red face's readings joined the orange
+pile: on the striped cube the red face turned half round has the orange face's stickers once its
+red reads orange (8 of 8 agree), and the centres are within `JOIN_WITHIN`, so `pileFaces` put it
+there; the red face never got a pile of its own (the log's L face `BOGBOGBOG` at 15:18:30 is the red
+face read that way). Decision 1 below replaces the planned "sixth by elimination".
+
 ## Goals / Non-Goals
 
 **Goals:** the red face's case finishes; known stickers do not vanish on a rename; the user sees the
@@ -26,12 +32,14 @@ the orange face at 0 s): left for a later change if they show up again once the 
 
 ## Decisions
 
-1. **Sixth colour by elimination.** When five piles are named and not doubtful, a sixth pile with
-   readings (any number of inliers) is named with the one colour left and is not doubtful, whatever
-   its centre's nearest colour. Its centre still has to differ clearly from the five (it is a pile
-   of its own, as now), so a stray lattice across an edge, which piles with an existing face, is not
-   affected. Alternative: widen the red/orange doubt margin; rejected, it would not help other pairs
-   (white/blue, yellow/white) and still leaves a sixth face waiting.
+1. **A neighbour on the wrong side means another face.** A full face does not join a pile (by
+   stickers or by centre) when a neighbour found in the same picture lies on another side of that
+   pile than the pile's agreeing readings have shown it, at least `MIN_VOTES` times and on that side
+   only. The new pile is kept apart from the refused one, so they are never merged. The planned
+   "sixth by elimination" is not needed: the red face gets its own pile, and the joint naming names
+   it red after `MIN_VOTES` readings. Alternative: elimination in `nameJointly`; rejected, the red
+   face had no pile to name. A pile waiting for its first votes (`waiting`) hides no colour, so the
+   step from waiting to jointly named does not drop the red stickers for a frame.
 2. **Renames keep `sticky`.** The `sticky.fill(null)` on rename goes. Keeping it is safe: a sticky
    colour holds only while its votes still lead (`v[sticky] >= v[lead]`), and the votes are worked
    out again from the readings renamed with the new centre references. Alternative: keep the

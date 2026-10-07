@@ -115,6 +115,9 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         /** A doubtful pile's next-best colour. */
         var otherColor: CubeColor? = null
 
+        /** Doubtful only because it was seen too few times to be named with the others: hides no colour. */
+        var waiting = false
+
         /** Piles seen in one picture with this one: never the same face. */
         val apart = HashSet<Group>()
         val readings = ArrayList<Reading>()
@@ -195,7 +198,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         // Known: from the best cube where it is clear, else from the votes alone.
         val voted = netOf { it.stickers }
         // While a pile seen several times could be either of two colours, no sticker of those colours is known.
-        val unsure = piles.filter { it.doubtful && it.inliers.size >= MIN_VOTES }.flatMap { listOfNotNull(it.color, it.otherColor) }.toSet()
+        val unsure = piles.filter { it.doubtful && !it.waiting && it.inliers.size >= MIN_VOTES }.flatMap { listOfNotNull(it.color, it.otherColor) }.toSet()
         val clearAt = BooleanArray(Stickers.COUNT)
         val net = List(Stickers.COUNT) { i ->
             val face = Face.entries[i / 9]
@@ -376,13 +379,28 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val refs = centreRefs()
         val names = faces.map { f -> f.colors.mapIndexed { n, c -> if (n == CENTRE) null else c?.let { nameSticker(it, refs) } } }
         fun agrees(i: Int, g: Group) = g.anchor?.let { bestTurn(names[i], it.names).second >= MIN_AGREE } == true
+
+        // A face that would put a neighbour of this picture on another side of the pile than the pile has
+        // seen it is another face (`scan-steady-progress`: on a striped cube the red face turned half
+        // round reads as the orange face when its red looks orange; the white face beside it tells).
+        fun clashes(i: Int, g: Group): Boolean {
+            val anchor = g.anchor ?: return false
+            val turn = (bestTurn(names[i], anchor.names).first + g.anchorTurn) % 4
+            return faces.indices.any { j ->
+                val other = out[j] ?: return@any false
+                val side = if (j == i || !faces[j].isFull) null else faces[i].sideTowards(faces[j])
+                val usual = side?.let { usualSide(g, other) }
+                side != null && usual != null && (side + turn) % 4 != usual
+            }
+        }
         val left = faces.indices.filter { faces[it].isFull }.toMutableList()
         while (left.isNotEmpty()) {
             val i = left.minBy { near(it).firstOrNull()?.second ?: Double.MAX_VALUE }
             left.remove(i)
             // A second lattice on a face this picture already has (the same stickers): left out.
             if (taken.any { agrees(i, it) }) continue
-            val near = near(i)
+            val clashing = piles.filter { clashes(i, it) }.toSet()
+            val near = near(i).filter { it.first !in clashing }
             val close = near.filter { it.second <= JOIN_WITHIN }.map { it.first }
             val ranked = ColorClassifier.centreDistances(faces[i].colors[CENTRE]!!).entries.sortedBy { it.value }
             val clearName = ranked[0].key.takeIf { ranked[1].value - ranked[0].value >= NAME_CLEAR }
@@ -401,6 +419,11 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             if (pile != null) {
                 out[i] = pile
                 taken += pile
+                // Never merged with a pile it clashed with: they are two faces.
+                for (g in clashing) if (g !== pile) {
+                    pile.apart += g
+                    g.apart += pile
+                }
             }
         }
         for ((i, face) in faces.withIndex()) if (!face.isFull && centres[i] != null) {
@@ -408,6 +431,17 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
                 .filter { it.second <= JOIN_WITHIN }.minByOrNull { it.second }?.first
         }
         return out.toList()
+    }
+
+    /**
+     * The side of [g]'s frame on which pile [other] is seen next to it: null until its agreeing readings
+     * show it there [MIN_VOTES] times and on no other side.
+     */
+    private fun usualSide(g: Group, other: Group): Int? {
+        val votes = IntArray(4)
+        for (r in g.readings) if (r.inlier) for ((side, o) in r.neighbours) if (o.group === other && !o.removed && o.inlier) votes[(side + r.turn) % 4]++
+        val top = votes.indices.maxBy { votes[it] }
+        return top.takeIf { votes[it] >= MIN_VOTES && votes.indices.all { k -> k == it || votes[k] == 0 } }
     }
 
     private fun drop(pile: Group) {
@@ -472,14 +506,14 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     /**
      * The piles named together, each colour once, the best fit overall (current names win a tie). A
      * pile is doubtful while naming it otherwise costs less than [DOUBT_MARGIN] more. A pile renamed
-     * keeps its readings; only its known stickers are worked out again.
+     * keeps its readings and its stickers; the votes are worked out again with the new references.
      */
     private fun nameJointly() {
         // A pile seen fewer than MIN_VOTES times may be a stray (a lattice across an edge): it takes a colour left over and waits.
         val seen = piles.filter { it.inliers.size >= MIN_VOTES }.ifEmpty { piles.toList() }
         val used = HashSet<CubeColor>()
         fun rename(g: Group, color: CubeColor) {
-            if (g.color != color) g.sticky.fill(null)
+            // The stickers keep what they were read as (`scan-steady-progress`): a sticky colour holds only while its votes still lead.
             g.color = color
             g.named = true
             used += color
@@ -490,6 +524,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             seen.forEachIndexed { i, g ->
                 val other = namings.first { it.second[i] != naming[i] }
                 g.doubtful = other.first - cost < DOUBT_MARGIN
+                g.waiting = false
                 g.otherColor = other.second[i]
                 rename(g, naming[i])
             }
@@ -499,6 +534,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             // Only a face its own clear colour is left for counts at once: a stray named by what was left over waits.
             val own = ColorClassifier.rankedCentre(meanCentre(g)).first()
             g.doubtful = left.isEmpty() || left[0].key != own || (left.size > 1 && left[1].value - left[0].value < DOUBT_MARGIN)
+            g.waiting = true
             rename(g, left.firstOrNull()?.key ?: g.color)
         }
         groups = piles.filter { !it.doubtful }.associateBy { it.color }

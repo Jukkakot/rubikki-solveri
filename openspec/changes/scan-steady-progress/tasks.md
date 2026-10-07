@@ -2,9 +2,9 @@
 
 ## 1. Naming and progress in the scan (cube)
 
-- [ ] 1.1 Add a JVM test in `VideoScanTest` with the striped cube `WWWWWWWWWBRGBRGBRGOGROGROGRYYYYYYYYYGOBGOBGOBRBORBORBO`: the red centre made orange-ish (nearest colour orange), U, D, F, L, B shown in corner views, then the red face several times; assert the red face is named red, its stickers become known and the scan completes. Verify it fails on the current code and note which `nameJointly` branch kept red doubtful.
-- [ ] 1.2 Name a sixth pile by elimination when five piles are named surely (design 1); verify 1.1 passes and the existing naming tests (pale blue alone, blue first, orange first, two faces naming the same centre) still pass.
-- [ ] 1.3 Keep `sticky` on a rename (design 2); add a test that renames a pile with known stickers (e.g. a pile first named by what was left, then by the joint naming) and assert the known count does not drop; verify `./gradlew :cube:jvmTest` passes.
+- [x] 1.1 Add a JVM test in `VideoScanTest` with the striped cube `WWWWWWWWWBRGBRGBRGOGROGROGRYYYYYYYYYGOBGOBGOBRBORBORBO`: the red centre made orange-ish (nearest colour orange), U, D, F, L, B shown in corner views, then the red face several times; assert the red face is named red, its stickers become known and the scan completes. Verify it fails on the current code and note which `nameJointly` branch kept red doubtful.
+- [x] 1.2 Keep a face out of a pile whose neighbour sides it contradicts (design 1, replaces the planned sixth-by-elimination); verify 1.1 passes and the existing naming tests (pale blue alone, blue first, orange first, two faces naming the same centre) still pass.
+- [x] 1.3 Keep `sticky` on a rename (design 2); add a test that renames a pile with known stickers (e.g. a pile first named by what was left, then by the joint naming) and assert the known count does not drop; verify `./gradlew :cube:jvmTest` passes.
 
 ## 2. Paint (shared)
 
