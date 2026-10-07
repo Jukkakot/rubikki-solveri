@@ -32,7 +32,8 @@ turning the cube in the hand: no guidance, no asking the user about colours.
   all recordings (also with look-alike centres); Settings offers the choice of scanner (new / old) so
   both can be compared on the phone too; the new one becomes the default when it is never wrong and
   finishes at least as often; every scan log says which scanner ran.
-- What the user sees stays the same: progress ring, grey veils and dots, stall notice, finish.
+- What the user sees stays the same: progress ring, grey veils and dots, stall notice, finish; one
+  new status text "Käännä kuutiota" while two faces could still be told apart either way.
 
 ## Capabilities
 
@@ -50,7 +51,8 @@ None.
 
 - `cube`: a new scan core (possible pieces per place, face hypotheses per reading, the joint
   narrowing), `CornerReader` reused, `BestCube` reused or folded in; `VideoScan` keeps its public
-  state so the screen and paint in `shared` do not change; Settings gets the scanner choice. `CornerScanHarness` grows into the acceptance
+  state (plus one flag for the turn-the-cube hint) so the screen and paint in `shared` change only
+  by that status text; Settings gets the scanner choice. `CornerScanHarness` grows into the acceptance
   harness.
 - Performance: one frame's narrowing must fit the phone and the browser (Web Worker) next to the
   finder (~40 ms a frame today).

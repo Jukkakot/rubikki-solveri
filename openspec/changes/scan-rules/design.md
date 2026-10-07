@@ -23,7 +23,8 @@ stall logic, the paint.
 look-alike centres; finishing at least as often and about as fast as today; same screen.
 
 **Non-Goals:** a new finder or better lattices (a slipped lattice stays a bad reading, outvoted);
-guidance or colour questions (ruled out by `product.md`); changes in `shared`.
+guidance or colour questions (ruled out by `product.md`); changes in `shared` beyond the one status
+text of decision 5.
 
 ## Decisions
 
@@ -89,6 +90,12 @@ another option costs at least `ASSIGN_MARGIN` more; both hold for about half a s
 stickers: from the best cube where its margin is clear and the stickers' faces come from settled or
 clearly assigned tracks; otherwise the leading vote, as today.
 
+**Turn-the-cube hint** (user, 2026-10-07): while the cube is clear except that two faces could be
+told apart either way (the best and the next joint assignment within `ASSIGN_MARGIN`, swapping
+faces) for about two seconds, `VideoScanState` says so and the status line reads "Käännä kuutiota" /
+"Turn the cube": a description of what helps, not a colour question or a step-by-step guide. It
+goes as soon as the assignment is clear; a stall notice still takes its place.
+
 ### 6. Built beside, both kept
 
 The track solver lives in its own file (`cube/scan/FaceTracks.kt` or similar) and `VideoScan` gets a
@@ -100,7 +107,7 @@ the bar below, and every scan log line carries `engine=rules|look`. The spike's 
 votes added to the old path) goes, since the rules path supersedes it; the old path otherwise stays
 as it is.
 
-**Acceptance bar** (my proposal, see questions): on every fixture, as recorded and robustness, the
+**Acceptance bar** (confirmed by the user, 2026-10-07): on every fixture, as recorded and robustness, the
 rules path never finishes wrong; as recorded it finishes on at least the 8 fixtures today finishes,
 each within 20 % more frames; in the robustness run it finishes on at least 6 of the 11; one frame's
 solve averages under 10 ms on the JVM over all fixtures.
@@ -133,4 +140,7 @@ the old path stays choosable in Settings. Rollback: flip the default back.
 
 ## Open Questions
 
-None that change the plan; the acceptance bar is confirmed with the user before task 1.
+None. Answered 2026-10-07: the acceptance bar as in decision 6 (if no safe rule removes the
+robustness wrong cube of `20261005_151828`, stop and ask); the turn-the-cube hint (decision 5); new
+phone recordings (striped cube, dim light) come later from the user and are added to the fixtures
+then; until then the current fixtures and synthetic tests are the measure.

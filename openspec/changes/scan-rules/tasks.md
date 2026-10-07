@@ -16,15 +16,16 @@
 ## 4. Face solver
 
 - [ ] 4.1 Add the option costs (content against the previous best cube, soft centre look relative to settled centres) and the joint branch-and-bound with settling and re-opening (design 3–4); JVM tests: look-alike red/orange centres shown apart finish right; white and pale-yellow side by side never both white and yellow; the striped cube; blue first, white later never shows a wrong sticker; a face read wrong at first is put right; verify the tests pass.
-- [ ] 4.2 Add the finish rule and known stickers (design 5) and the "two ways to tell the faces" case (does not finish until settled); verify a test with two interchangeable faces never seen with a common neighbour does not finish.
+- [ ] 4.2 Add the finish rule and known stickers (design 5) and the "two ways to tell the faces" case (does not finish until settled); verify a test with two interchangeable faces never seen with a common neighbour does not finish and raises the turn-the-cube flag after about two seconds.
 
 ## 5. Integration
 
 - [ ] 5.1 Give `VideoScan` the mode (design 6), building the same `VideoScanState` from the solver (stickers, leading, found faces with names and known colours, confirmed sides, projection and pose from settled tracks, stall); run the existing `VideoScanTest` and `ScanPaintTest` against both modes; verify both pass (scenarios that only described the old piling are rewritten to the new spec).
 - [ ] 5.2 Run the acceptance harness; study every wrong or unfinished fixture, starting with the robustness wrong cube of `20261005_151828`; add any further safe rule it shows (recorded in design.md); verify the rules path meets the bar.
+- [ ] 5.3 Show the turn-the-cube flag on the status line ("Käännä kuutiota" / "Turn the cube", fi + en strings in `shared`; a stall notice still takes its place); one light test that the line shows it when the state says so; verify it passes.
 
 ## 6. Both scanners, switch and wrap-up
 
 - [ ] 6.1 Add the scanner choice to Settings (new / earlier, remembered, default new) and `engine=rules|look` on the scan log lines; remove the spike's `rules` flag from the old path; a light test that the choice changes the scanner the scan uses and survives a restart; verify the test passes.
 - [ ] 6.2 Make the rules path the default once 5.2 meets the bar; verify `./gradlew test lint assembleDebug :web:wasmJsBrowserDistribution` passes.
-- [ ] 6.3 Update `docs/architecture.md` (the scan pipeline map: both scanners, where the choice lives) and the roadmap entry; list for the user what to try on the phone (both scanners in look-alike light, the striped cube, a normal scramble); verify the docs describe both scanners.
+- [ ] 6.3 Update `docs/architecture.md` (the scan pipeline map: both scanners, where the choice lives) and the roadmap entry; list for the user what to try on the phone (both scanners in look-alike light, the striped cube, a normal scramble) and the recordings to add as fixtures (striped cube, dim light); verify the docs describe both scanners.

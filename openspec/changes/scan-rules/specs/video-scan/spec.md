@@ -109,8 +109,26 @@ what is known. The scan SHALL never stay with everything read and nothing happen
 
 #### Scenario: Two ways to tell the faces
 - **WHEN** the readings fit two cubes about equally, because two faces could be told apart either way
-- **THEN** the scan does not finish until a view settles it
+- **THEN** the scan does not finish until a view settles it, and meanwhile the status line asks to turn the cube
 
 #### Scenario: Stop early
 - **WHEN** the user stops the video scan with stickers still unknown
 - **THEN** the check opens with the known colours and the unknown stickers marked
+
+### Requirement: One status line
+One short status line SHALL lie at the bottom of the picture. It SHALL ask to show the cube when
+none is found, ask to show the grey parts while stickers are needed, ask to turn the cube while two
+faces could still be told apart either way (for about two seconds and more), and say the scan is
+ready at the end. A stall notice SHALL take its place while shown.
+
+#### Scenario: Status line
+- **WHEN** a cube is in view and stickers are still needed
+- **THEN** the line asks to show the grey parts
+
+#### Scenario: No cube
+- **WHEN** no face is found in the picture
+- **THEN** the line asks to show the cube to the camera
+
+#### Scenario: Turn the cube
+- **WHEN** the readings fit two cubes about equally for about two seconds, because two faces could be told apart either way
+- **THEN** the line asks to turn the cube, and it goes back as soon as a view settles it
