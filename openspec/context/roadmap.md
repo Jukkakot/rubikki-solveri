@@ -75,6 +75,11 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
   and dropped: no gain on the test videos, and a face misread straight on beat earlier right angled
   readings (design "Findings" in that archive). Worth another look only with a case it would fix.
 
+- video scan: show a sticker still in doubt as "x or y" (e.g. half red, half orange) instead of
+  only veiled or one leading colour, refined as surer readings come (user, 2026-10-07). The
+  `scan-rules` scanner already keeps every possible colour internally; this is only how it is
+  shown. Look again after the phone test of `scan-rules`, if the user then still misses it.
+
 - `cloud-setup` (all projects, 2026-10-05): global instructions, hooks and skills also in cloud
   sessions: a public repo `jukkakot/claude-config` with them, a cloud environment setup script that
   copies them into `~/.claude/` (refreshed each session) and installs the Android SDK (network:
