@@ -3,7 +3,7 @@
 ## 1. Test data and measurements
 
 - [ ] 1.1 A failing test first: `20261007_132721`'s blue-face-only frames with the centre made pale (named white by the palette), replayed for ~3 s before the whole video; today a known sticker of the white or blue face is wrong at some frame, or the finish comes later than the plain video's. Print frames-to-finish for all video fixtures (the baseline for 3.2)
-- [ ] 1.1b If the user's camera video (blue face on top first) is in `testdata/video/`, extract its frames and fixture (design 5) and add it to the regression list
+- [ ] 1.1b Fixture `20261007_152753` from the committed stills (`VideoScanHarness.writeFixtures`, truth `TRUTH_1007`, a line in `VideoFixtures`); a failing test: today the red side shows wrong known stickers from frame 3 to 77 (orange centre named red); after 2.3 no known sticker is wrong at any frame
 - [ ] 1.2 Measure on all video fixtures (brightness-free centre distance): the spread of one face's centres and the distance between different faces' centres (blue/white, red/orange); pick `JOIN_WITHIN` and `DOUBT_MARGIN` and note the numbers in `design.md`
 
 ## 2. Piles and their names (cube)

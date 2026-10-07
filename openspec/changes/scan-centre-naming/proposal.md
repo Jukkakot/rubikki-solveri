@@ -39,7 +39,7 @@ Decisions (details in `design.md`):
 - Test data: the screen recording has the app's paint over the cube from the first seconds, so the
   finder cannot read it. The regression test is built from the camera video `20261007_132721` (the
   same cube and light) with its blue-face frames moved to the start; a fresh camera video starting
-  with the blue face on top would make a better fixture (the user will film one; used if it is there).
+  with the blue face on top would make a better fixture (the user filmed one, `20261007_152753`: it shows the same with orange named red).
 
 ## Capabilities
 

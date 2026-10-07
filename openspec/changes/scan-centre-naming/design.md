@@ -18,6 +18,12 @@ distances to the palette: white centre `8faac8` W 23.6 / B 69.8; blue centres `2
 B 49.4, `284764` W 45.8 / B 52.1. The two faces' centres are far apart from each other even when
 both are nearest white; the palette is what cannot tell them apart.
 
+The user's camera video `20261007_152753` (9 s, same cube and scramble, brighter light, blue face on
+top first) shows the same mechanism with red and orange: the orange face in view at the start has
+its centre at R 22 / O 23, is named red, and from frame 3 to 77 the red side shows wrong stickers as
+known; it all comes right when the real red face (R 18 / O 36) is seen at frame 78. Blue reads
+clearly blue in this light (B 27 / W 69). Stills in `testdata/video/2026-10-07/stills/20261007_152753/`.
+
 ## Goals / Non-Goals
 
 **Goals:** blue and white never share a pile; the right names as soon as the piles allow; no wrong
@@ -57,7 +63,7 @@ stickers other than the centres.
    the fixtures: the 2026-10-07 blue centre alone (W 47.5 / B 49.4) is doubtful; once the white face
    is a pile of its own it is not; no face in the other videos stays doubtful for long.
 
-5. **Regression fixture without new video.** The screen recording shows the app's paint over the cube
+5. **Regression fixtures.** The screen recording shows the app's paint over the cube
    from the third second, so the finder reads the paint. The test is built from `20261007_132721`:
    its frames whose only full face is the blue face, centre made pale as in `scan-centre-clash`'s test
    (named white by the palette), replayed first for about three seconds, then the whole video. A camera
