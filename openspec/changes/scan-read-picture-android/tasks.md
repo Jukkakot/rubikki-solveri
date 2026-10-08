@@ -14,4 +14,4 @@
 
 - [x] 3.1 `./gradlew check` (JVM tests, lint), the web build and both browser smoke tests
 - [x] 3.2 Docs: `docs/architecture.md` read-picture paragraph (now both platforms; where the bitmap is made); roadmap entry
-- [ ] 3.3 Install on the phone (`adb install -r`, the user asked for installs this session) and list for the user to try: marks stay on a quickly turned cube, the picture's sharpness and smoothness, fps and `showMs` in the log (phone app and browser)
+- [x] 3.3 Install on the phone (`adb install -r`, the user asked for installs this session) and list for the user to try: marks stay on a quickly turned cube, the picture's sharpness and smoothness, fps and `showMs` in the log (phone app and browser)
