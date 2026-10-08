@@ -5,6 +5,7 @@ import fi.jukkakot.rubikkisolveri.cube.scan.FaceTracks
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
+import fi.jukkakot.rubikkisolveri.cube.scan.Tracker
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import kotlin.test.Test
 import kotlin.test.assertNotEquals
@@ -127,28 +128,77 @@ class RulesScanTest {
     }
 
     @Test
-    fun aLongScanReadsAsQuicklyLateAsEarly() {
-        // Third phone test: the rules scanner fell from 14 to 5 pictures a second as face tracks piled up.
-        // A recording that never finishes, played three times over: the tracks worked through stay bounded
-        // and the last time through is not much slower than the one before.
-        val frames = VideoFixtures.load(VideoFixtures.STRIPED_DIM).let { it + it + it }
-        VideoScan(engine = ScanEngine.RULES).let { warm -> frames.take(200).forEachIndexed { i, f -> warm.onFrame(f.faces, i * 100L) } }
-        val scan = VideoScan(engine = ScanEngine.RULES)
+    fun aLongScanStaysWithinItsBudgetPerPicture() {
+        // Browser 1.0.333: the scan logic grew from 9 to 37 ms a picture as a long scan went on (`scan-speed-up-3`).
+        // The long phone recordings (neither finishes): every 100 pictures average at most 5 ms a picture (11–13 before), and a
+        // picture without faces late in the scan costs almost nothing. Tripled on CI (slower, shared runners).
+        val scale = if (System.getenv("CI") != null) 3.0 else 1.0
+        val videos = listOf("web_121505", VideoFixtures.PHONE_SCAN_2)
+        // Warmed up on the same recordings: the JIT reaches every path the timing goes through.
+        for (video in listOf(VideoFixtures.STRIPED) + videos) VideoScan(engine = ScanEngine.RULES).let { warm -> VideoFixtures.load(video).forEachIndexed { i, f -> warm.onFrame(f.faces, i * 100L) } }
         val tracks = VideoScan::class.java.getDeclaredField("tracks").also { it.isAccessible = true }
-        val third = frames.size / 3
-        val nanos = LongArray(frames.size)
-        var most = 0
-        frames.forEachIndexed { i, f ->
-            val start = System.nanoTime()
-            scan.onFrame(f.faces, i * 100L)
-            nanos[i] = System.nanoTime() - start
-            most = maxOf(most, (tracks.get(scan) as FaceTracks).workingTracks)
+        for (video in videos) {
+            val frames = VideoFixtures.load(video)
+            val scan = VideoScan(engine = ScanEngine.RULES)
+            // The windows by the thread's CPU time, not the clock: a parallel build (lint, the app's tests) made the
+            // clock time four times longer. It ticks coarsely (15.6 ms on Windows), which a window's average evens out.
+            val cpu = java.lang.management.ManagementFactory.getThreadMXBean()
+            val cpuNanos = LongArray(frames.size)
+            val nanos = LongArray(frames.size)
+            var most = 0
+            frames.forEachIndexed { i, f ->
+                val startCpu = cpu.currentThreadCpuTime
+                val start = System.nanoTime()
+                scan.onFrame(f.faces, i * 100L)
+                nanos[i] = System.nanoTime() - start
+                cpuNanos[i] = cpu.currentThreadCpuTime - startCpu
+                most = maxOf(most, (tracks.get(scan) as FaceTracks).workingTracks)
+            }
+            assertTrue(most <= 40, "$video: tracks worked through stay bounded: at most $most")
+            val windows = cpuNanos.toList().chunked(100).map { it.average() / 1e6 }
+            assertTrue(windows.all { it <= 5.0 * scale }, "$video: every 100 pictures at most %.1f ms a picture: %s".format(5.0 * scale, windows.joinToString { "%.2f".format(it) }))
+            val empty = frames.indices.filter { it >= 200 && frames[it].faces.isEmpty() }.map { nanos[it] / 1e6 }.sorted()
+            // The median by the clock: most such pictures skip the work (a load slows that little); the few that still work
+            // it out (a state still moving) are in the windows.
+            val median = empty[empty.size / 2]
+            assertTrue(median <= 0.5 * scale, "$video: a picture without faces late in the scan at most %.1f ms (median): %.2f ms".format(0.5 * scale, median))
         }
-        // The second time through against the third: the first holds the cheap start, before faces are told.
-        val second = nanos.drop(third).take(third).average()
-        val last = nanos.drop(2 * third).average()
-        assertTrue(most <= 40, "tracks worked through stay bounded: at most $most")
-        assertTrue(last <= 1.5 * second, "the last time through (%.1f ms) is not much slower than the second (%.1f ms)".format(last / 1e6, second / 1e6))
+    }
+
+    @Test
+    fun aTrackLeftAloneStillEndsOnTimeInPicturesWithoutFaces() {
+        // Pictures that read nothing skip the scan's work (`scan-speed-up-3`), but its time limits still fall on
+        // the first picture past them: a face out of view stops being live, a glimpse leaves the work.
+        val tracks = FaceTracks()
+        var t = 0L
+        repeat(15) {
+            tracks.onFrame(listOf(SyntheticViews.straight(cube, Face.F)), t)
+            t += 100
+        }
+        val seenLast = t - 100
+        val face = tracks.snapshot().single()
+        assertTrue(face.face == Face.F && face.live, "settled and live: $face")
+        while (t - seenLast <= Tracker.GAP_MILLIS) {
+            tracks.onFrame(emptyList(), t)
+            assertTrue(tracks.snapshot().single().live, "live ${t - seenLast} ms after")
+            t += 100
+        }
+        tracks.onFrame(emptyList(), t)
+        assertTrue(!tracks.snapshot().single().live, "not live ${t - seenLast} ms after")
+        // A glimpse elsewhere (two readings, never counted) leaves the work on the first picture past the gap.
+        repeat(2) {
+            tracks.onFrame(listOf(SyntheticViews.straight(cube, Face.U, at = Point(600.0, 600.0))), t)
+            t += 100
+        }
+        assertTrue(tracks.workingTracks == 2, "glimpse followed")
+        val glimpsed = t - 100
+        while (t - glimpsed <= Tracker.GAP_MILLIS) {
+            tracks.onFrame(emptyList(), t)
+            t += 100
+        }
+        assertTrue(tracks.workingTracks == 2, "kept until past the gap")
+        tracks.onFrame(emptyList(), t)
+        assertTrue(tracks.workingTracks == 1, "left at ${t - glimpsed} ms")
     }
 
     @Test

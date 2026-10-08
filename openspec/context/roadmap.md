@@ -75,10 +75,14 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 65 | `scan-read-picture-android` | done | The phone app shows the read picture with its marks too (analysis 640×480 upright as a bitmap, drawn with the marks; marks snap, picture held over a faceless reading); the browser's copy is one `drawImage` into a pool of three canvases (desktop 6 → 1.3 ms). Phone check: copy 1.5–2.5 ms, app 17–21 fps |
 | 66 | `scan-paint-found-only` | done | Recording 18:00: guessed sides floated in the air and beside the cube. Marks only on faces found in the picture; their thin outline only once read steadily. Phone check pending |
 | 67 | `scan-speed-up-2` | done | Finder pictures at long side 240 on both (same faces on the recordings); debug build not debuggable (phone: finder 34–59 → 10–16 ms, 16–23 → 30 pictures/s); the phone's scan on a background thread, the browser's in the finder worker (state as text). Search window and two finders dropped after measuring |
+| 68 | `scan-speed-up-3` | done | The scan logic no longer grows over a long scan: late pictures 8–11 → 1–2.5 ms (JVM), a picture without faces almost free; same results on every fixture (work skipped when nothing changed, pair tables and best-cube costs kept). Budget test 5 ms a 100-picture window. Phone/browser check of `scanMs` pending |
 
 ## Backlog
 
 Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
+
+- rules scan: a track can flip between two states every picture (`web_121505` #19, `=none` ↔ `U?U2`;
+  found in `scan-speed-up-3`). Settling it would change behaviour and also let the scan skip more work.
 
 - video scan: straight-on readings weigh more (user, 2026-10-07). Tried in `scan-centre-clash`
   and dropped: no gain on the test videos, and a face misread straight on beat earlier right angled

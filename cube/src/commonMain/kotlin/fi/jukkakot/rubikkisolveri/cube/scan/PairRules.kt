@@ -31,6 +31,9 @@ class PairRules {
         val sideB = IntArray(4)
         val corners = HashMap<Int, Int>()
         var allowed: BooleanArray? = null
+
+        /** Bumped whenever a picture adds to the rule ([version]). */
+        var version = 0
     }
 
     private val rules = HashMap<Long, Rule>()
@@ -48,6 +51,7 @@ class PairRules {
             faces[a].sideTowards(faces[b])?.let { rule.sideA[(it + ra.turn) % 4]++ }
             faces[b].sideTowards(faces[a])?.let { rule.sideB[(it + rb.turn) % 4]++ }
             rule.allowed = null
+            rule.version++
         }
         for (view in CornerReader.views(faces)) {
             for (x in 0 until 3) for (y in 0 until 3) {
@@ -62,6 +66,7 @@ class PairRules {
                 val rule = rules.getOrPut(key(ta, tb)) { Rule() }
                 rule.corners[code] = (rule.corners[code] ?: 0) + 1
                 rule.allowed = null
+                rule.version++
             }
         }
     }
@@ -73,6 +78,9 @@ class PairRules {
             dominant(rule.sideB.withIndex().associate { it.index to it.value }) != null ||
             dominant(rule.corners) != null
     }
+
+    /** Changes whenever a picture adds to what binds [a] and [b] (0: never seen together): a key for what is worked out from [allowed]. */
+    fun version(a: Track, b: Track): Int = rules[key(a, b)]?.version ?: 0
 
     /** Whether [a] and [b] were ever seen in one picture. */
     fun together(a: Track, b: Track): Boolean = rules.containsKey(key(a, b))

@@ -35,7 +35,7 @@ All three, measured with the replay after each (user, 2026-10-08):
   in a picture and starts from the last picture's turns; the best cube and the turns are searched
   again only when the evidence changed (details and any rate limit in `design.md`).
 - **Test:** the long-scan test gets an absolute budget instead of comparing late with later: on the
-  long phone fixtures no 100-picture window averages over 3 ms a picture on the JVM (about 10 ms in the
+  long phone fixtures no 100-picture window averages over 5 ms a picture on the JVM (about 15 ms in the
   browser), and a picture without faces late in the scan costs a small fraction of that.
 
 Behaviour stays as specced: same faces, same cube, same finish timing on the fixtures (the existing

@@ -188,6 +188,10 @@ Video scan pipeline (`video-scan`):
    picture into hard rules (neighbours, sides, corner handedness), `FaceTracks.kt` assigns the tracks'
    faces and turns together (costs, branch and bound, settling, the evidence for `BestCube`),
    `VideoScan.rulesFrame` builds the same `VideoScanState` (plus `undecided` → "Käännä kuutiota").
+   Per-picture cost (`scan-speed-up-3`): `FaceTracks.onFrame` skips the work when nothing was read, no
+   time limit (`LIMITS`) was crossed and the last work changed nothing (`steady`); pair cost tables are
+   kept by track version (`pairTables`), best-cube costs by the evidence's votes (`costs`, `bestKey`).
+   All exact: `RulesScanTest.aLongScanStaysWithinItsBudgetPerPicture` guards the time.
    Why each rule exists and the known limits: `scan-rules` design (decision 8). Acceptance:
    `ScanAcceptanceHarness` (ACCEPTANCE=1) replays every fixture through both; `RulesTimeline`
    (TIMELINE=<video>) prints the tracks frame by frame for tuning.
