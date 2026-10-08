@@ -36,6 +36,8 @@ class VideoScanHarness {
     /** Camera videos of 2026-10-07 whose stills are committed (360×640, 10 fps); fixtures only. */
     private val stills1007 = File("../testdata/video/2026-10-07/stills")
     private val later = listOf("20261007_152753", "web_181940", "20261007_202058", "20261007_202156", "20261007_202318", "20261007_202403")
+    private val stills1008 = File("../testdata/video/2026-10-08/stills")
+    private val later1008 = listOf("web_084657")
 
     /** The scan right after the videos (scan-log.txt, 12:19:57Z), URFDLB. */
     private val truth = "YWRBWWGYRWGYWRGBOWWRBGGBWBYGROOYYRGBOYROORGBOBRGYBWOOY"
@@ -119,7 +121,7 @@ class VideoScanHarness {
         assumeTrue("set VIDEO_HARNESS=1 to run", System.getenv("VIDEO_HARNESS") == "1")
         assumeTrue("frames not extracted", videos.all { File(stills, it.first).isDirectory })
         val dir = File("src/jvmTest/resources/video").apply { mkdirs() }
-        val sources = (videos.map { it.first } + evening).map { File(stills, it) } + later.map { File(stills1007, it) }
+        val sources = (videos.map { it.first } + evening).map { File(stills, it) } + later.map { File(stills1007, it) } + later1008.map { File(stills1008, it) }
         for (source in sources.filter { it.isDirectory }) {
             val video = source.name
             val files = source.listFiles { f -> f.name.endsWith(".jpg") }!!.sortedBy { it.name }
