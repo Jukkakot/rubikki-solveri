@@ -224,25 +224,28 @@ export function cameraHide() {
   placePicture();
 }
 
-// The read picture (`scan-feedback` design 8): with the worker, each picture sent also gets a copy at
-// the box's size, kept under its number. When the worker's faces for it come back and Kotlin draws
-// their marks, cameraShowFrame puts that copy on a canvas in the video's place: the marks then lie on
-// the very picture they were read from (the picture is the scan's rate and ~60 ms late). Without the
-// worker or createImageBitmap the live video stays.
+// The read picture (`scan-feedback` design 8): with the worker, each picture sent is also drawn, at the
+// box's size, onto one of a few canvases kept where the box is, under its number. When the worker's
+// faces for it come back and Kotlin draws their marks, cameraShowFrame makes that canvas the visible
+// one in the video's place: the marks then lie on the very picture they were read from (the picture is
+// the scan's rate and ~60 ms late). The copy is one drawImage when the picture is sent
+// (`scan-read-picture-android`: createImageBitmap with a resize took 15–22 ms a picture on the phone).
+// Without the worker the live video stays.
 
-const shown = { box: null, on: false, canvas: null, ctx: null, seq: 0, frames: new Map(), times: new Map() };
+const shown = { box: null, on: false, pool: [], seq: 0, frames: new Map(), times: new Map() };
 const SHOW_LONG_MAX = 720; // `scan-paint-steady`: at the full pixel ratio the copy took 20–27 ms a picture on the phone
+const POOL_SIZE = 3; // shown, in the worker, waiting
 
-/** Puts the video, or the read picture's canvas while it is on, where the box is; hides the other. */
+/** Puts the video, or the shown read picture's canvas while one is on, where the box is; hides the rest. */
 function placePicture() {
   const b = shown.box;
   const at = b ? `position:fixed;left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;pointer-events:none;z-index:0` : null;
   if (cam.video) cam.video.style.cssText = at && !shown.on ? `${at};object-fit:cover` : HIDDEN;
-  if (shown.canvas) shown.canvas.style.cssText = at && shown.on ? at : HIDDEN;
+  for (const p of shown.pool) p.canvas.style.cssText = at && shown.on && p.state === 'shown' ? at : HIDDEN;
 }
 
 /** The read picture's copy size for a crop of [w]×[h]: the box's size in device pixels, its long side at most SHOW_LONG_MAX. */
-function showSize(w, h) {
+function showSize() {
   const b = shown.box;
   if (!b) return null;
   const dpr = window.devicePixelRatio || 1;
@@ -250,42 +253,62 @@ function showSize(w, h) {
   return [Math.max(1, Math.round(b.w * k)), Math.max(1, Math.round(b.h * k))];
 }
 
+/** A canvas of the pool that is neither shown nor waiting for its faces, made when the pool is not full; else null. */
+function freeCanvas() {
+  const free = shown.pool.find((p) => p.state === 'free');
+  if (free) return free;
+  if (shown.pool.length >= POOL_SIZE) return null;
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = HIDDEN;
+  document.body.insertBefore(canvas, document.body.firstChild);
+  const p = { canvas, ctx: canvas.getContext('2d'), state: 'free' };
+  shown.pool.push(p);
+  return p;
+}
+
+/** Draws the video's [x,y,w,h] onto a free canvas as picture [seq]'s copy; false when none is free. */
+function copyFrame(v, x, y, w, h, seq) {
+  const size = showSize();
+  const p = size && freeCanvas();
+  if (!p) return false;
+  const started = performance.now();
+  if (p.canvas.width !== size[0] || p.canvas.height !== size[1]) {
+    p.canvas.width = size[0];
+    p.canvas.height = size[1];
+  }
+  p.ctx.drawImage(v, x, y, w, h, 0, 0, size[0], size[1]);
+  p.state = 'waiting';
+  shown.frames.set(seq, p);
+  shown.times.set(seq, performance.now() - started);
+  return true;
+}
+
+/** Picture [seq]'s copy is not needed: its canvas is free again (unless it is the one shown). */
 function dropFrame(seq) {
-  const f = shown.frames.get(seq);
-  if (f) f.close();
+  const p = shown.frames.get(seq);
+  if (p && p.state === 'waiting') p.state = 'free';
   shown.frames.delete(seq);
   shown.times.delete(seq);
 }
 
-/** Draws picture [seq]'s copy in the video's place (older copies are closed); false when there is none. */
+/** Shows picture [seq]'s copy in the video's place (older copies freed); false when there is none. */
 export function cameraShowFrame(seq) {
-  const f = shown.frames.get(seq);
-  if (!f) return false;
-  if (!shown.canvas) {
-    shown.canvas = document.createElement('canvas');
-    shown.ctx = shown.canvas.getContext('2d');
-    document.body.insertBefore(shown.canvas, document.body.firstChild);
-  }
-  if (shown.canvas.width !== f.width || shown.canvas.height !== f.height) {
-    shown.canvas.width = f.width;
-    shown.canvas.height = f.height;
-  }
-  shown.ctx.drawImage(f, 0, 0);
+  const p = shown.frames.get(seq);
+  if (!p) return false;
+  for (const q of shown.pool) if (q.state === 'shown') q.state = 'free';
+  p.state = 'shown';
   for (const k of [...shown.frames.keys()]) if (k <= seq) dropFrame(k);
-  if (!shown.on) {
-    shown.on = true;
-    placePicture();
-  }
+  shown.on = true;
+  placePicture();
   return true;
 }
 
 /** Back to the live video (the scan stopped or the worker is not used). */
 function showLive() {
   for (const k of [...shown.frames.keys()]) dropFrame(k);
-  if (shown.on) {
-    shown.on = false;
-    placePicture();
-  }
+  for (const p of shown.pool) p.state = 'free';
+  shown.on = false;
+  placePicture();
 }
 
 export function cameraVideoWidth() {
@@ -530,23 +553,12 @@ export function scanWorkerSend(x, y, w, h, previewLong) {
   const pw = Math.max(1, Math.round(w * scale));
   const ph = Math.max(1, Math.round(h * scale));
   if (typeof createImageBitmap === 'function') {
-    // The read picture's copy of the same video frame, made in the same task (`scan-feedback`).
-    const size = showSize(w, h);
+    // The read picture's copy of the same video frame, drawn now (`scan-feedback`, `scan-read-picture-android`).
     const seq = ++shown.seq;
-    const started = performance.now();
-    const copy = size
-      ? createImageBitmap(v, x, y, w, h, { resizeWidth: size[0], resizeHeight: size[1], resizeQuality: 'medium' })
-        .then((b) => { shown.times.set(seq, performance.now() - started); return b; }, () => null)
-      : Promise.resolve(null);
-    const sent = createImageBitmap(v, x, y, w, h, { resizeWidth: pw, resizeHeight: ph, resizeQuality: 'low' });
-    Promise.all([sent, copy])
-      .then(([bitmap, display]) => {
-        if (display) {
-          if (scan.worker) shown.frames.set(seq, display); else display.close();
-        }
-        workerQueue({ bitmap, seq: display ? seq : 0 });
-      })
-      .catch(() => { copy.then((d) => d && d.close()); shown.times.delete(seq); sendCanvas(); });
+    const copied = copyFrame(v, x, y, w, h, seq);
+    createImageBitmap(v, x, y, w, h, { resizeWidth: pw, resizeHeight: ph, resizeQuality: 'low' })
+      .then((bitmap) => workerQueue({ bitmap, seq: copied ? seq : 0 }))
+      .catch(() => { dropFrame(seq); sendCanvas(); });
   } else {
     sendCanvas();
   }

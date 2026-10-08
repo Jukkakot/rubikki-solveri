@@ -8,6 +8,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
 import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_DEMO_TAG
+import fi.jukkakot.rubikkisolveri.ui.scan.holdPicture
+import androidx.compose.ui.graphics.asImageBitmap
 import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_RING_TAG
 import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_SPINNER_TAG
 import androidx.compose.ui.test.performClick
@@ -241,6 +243,22 @@ class VideoScanScreenTest {
         // The rules scanner reads a face once it has followed it for a few pictures.
         show(face(Face.U), times = 6)
         compose.onNodeWithTag(VIDEO_SPINNER_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun onThePhoneTheReadPictureIsShownAndTheScanFinishesAsBefore() {
+        // scan-read-picture-android: each picture comes with its upright bitmap.
+        scan()
+        val picture = android.graphics.Bitmap.createBitmap(36, 64, android.graphics.Bitmap.Config.ARGB_8888).asImageBitmap()
+        val withFace = FoundFaces(listOf(face(Face.U)), 360, 640, image = picture)
+        assertTrue(holdPicture(FoundFaces(emptyList(), 360, 640, image = picture), withFace, 100), "a faceless picture waits behind it")
+        for (f in Face.entries) repeat(10) {
+            compose.runOnIdle { found.tryEmit(FoundFaces(listOf(face(f)), 360, 640, image = picture)) }
+            compose.waitForIdle()
+            now += 100
+        }
+        show(times = 6)
+        assertNotNull(outcome)
     }
 
     @Test

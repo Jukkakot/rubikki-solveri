@@ -164,14 +164,18 @@ Video scan pipeline (`video-scan`):
    throws, the page reads on its own thread as before (`scan.worker` line with the reason;
    snapshots carry `worker=true/false`). `web/smoke/video.mjs` runs the video scan in Chromium
    with a fake camera (`--no-worker` blocks the worker). **Read picture** (`scan-feedback`): with the
-   worker, `platform.mjs` also keeps a box-sized copy of each picture sent (numbered); when its faces
-   come back, `FoundFaces.show` → `cameraShowFrame` draws it on a canvas in the video's place from
-   the Compose draw of those marks, so the marks lie on the picture they were read from (the
+   worker, `platform.mjs` also draws each picture sent onto one of three box-sized canvases (numbered;
+   one `drawImage`, `scan-read-picture-android`: `createImageBitmap` with a resize cost 15–22 ms on the
+   phone); when its faces come back, `FoundFaces.show` → `cameraShowFrame` makes that canvas the
+   visible one in the video's place from the Compose draw of those marks, so the marks lie on the picture they were read from (the
    live picture ran ~60 ms ahead of the marks' picture, and they slid off a moving cube). The
    picture then runs at the scan's rate; glide snaps, no motion fade. A reading with no face does
    not replace the shown picture for up to 300 ms (`holdPicture`, `scan-paint-steady`: the marks blinked
    out for a few pictures); the copy is at most 720 px long (at full pixel ratio it cost 20–27 ms a
-   picture on the phone). Without the worker: live video.
+   picture on the phone). Without the worker: live video. **The phone does the same** (`scan-read-picture-android`): `CameraPreview.android.kt` turns each
+   analysis frame (640×480) upright into a `Bitmap` (`ScanImage.picture`), it comes back in
+   `FoundFaces.image`, and `VideoScanContent` draws it over the `PreviewView` (still bound: CameraX
+   crops the analysis to its viewport) in the same Compose frame as its marks.
 3. **Two scanners** (`scan-rules`, 2026-10-07): `VideoScan(engine)` with `ScanEngine.RULES` (the
    default) or `ScanEngine.LOOK` (the earlier one, below). The choice is in Settings ("Videoskanneri";
    Android `SettingsRepository.scanEngine`, browser `StoredSettings.scanEngine`), passed through

@@ -3,6 +3,9 @@ package fi.jukkakot.rubikkisolveri.ui.scan
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CaptureRequest
+import android.graphics.Bitmap
+import android.graphics.Matrix
+import android.graphics.Rect
 import android.util.Size
 import androidx.camera.camera2.interop.Camera2CameraControl
 import androidx.camera.camera2.interop.Camera2CameraInfo
@@ -26,12 +29,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
-import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
 import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
 import fi.jukkakot.rubikkisolveri.cube.scan.ExposureSteps
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
@@ -39,6 +42,7 @@ import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.cube.scan.RgbaFrame
 import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.Evt
+import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
 
@@ -149,6 +153,19 @@ private fun afMode(mode: Int): String = when (mode) {
     else -> mode.toString()
 }
 
+/**
+ * The analysis frame's visible part ([crop] of the RGBA [rgba], [rowStride] bytes a row) turned upright
+ * by [rotation] degrees: the very picture the video scan reads, to show in the camera's place
+ * (`scan-read-picture-android`). A copy: the buffer is reused for the next frame.
+ */
+private fun uprightBitmap(rgba: ByteArray, width: Int, height: Int, rowStride: Int, crop: Rect, rotation: Int): Bitmap {
+    val full = Bitmap.createBitmap(rowStride / 4, height, Bitmap.Config.ARGB_8888)
+    full.copyPixelsFromBuffer(ByteBuffer.wrap(rgba, 0, rowStride * height))
+    val right = minOf(crop.right, width)
+    val turn = Matrix().apply { postRotate(rotation.toFloat()) }
+    return Bitmap.createBitmap(full, crop.left, crop.top, right - crop.left, crop.bottom - crop.top, turn, false)
+}
+
 @Composable
 actual fun CameraPreview(
     torch: Boolean,
@@ -158,7 +175,7 @@ actual fun CameraPreview(
     exposure: CameraSettings,
     onPicture: ((IntArray) -> Unit)?,
     onTorchAvailable: (Boolean) -> Unit,
-    onImage: ((ArgbImage) -> Unit)?,
+    onImage: ((ScanImage) -> Unit)?,
     onMaxDarker: (Int) -> Unit,
     onFaces: ((FoundFaces) -> Unit)?,
     onWorker: (Boolean) -> Unit,
@@ -214,7 +231,10 @@ actual fun CameraPreview(
                 onSamples(FrameSampler.sample(frame))
                 // Every camera picture goes to the video scan; its finder keeps only the newest it can take.
                 if (onImage != null) {
-                    onImage(FrameSampler.upright(frame))
+                    val start = System.nanoTime()
+                    val picture = uprightBitmap(buffer, image.width, image.height, plane.rowStride, crop, rotation)
+                    val pictureMs = (System.nanoTime() - start) / 1e6
+                    onImage(ScanImage(FrameSampler.upright(frame), picture.asImageBitmap(), pictureMs))
                 }
             } catch (e: Exception) {
                 AppLog.logger.error(Evt.SCAN_ERROR, e)

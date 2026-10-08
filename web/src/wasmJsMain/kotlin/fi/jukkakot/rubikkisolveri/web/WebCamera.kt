@@ -46,6 +46,7 @@ import fi.jukkakot.rubikkisolveri.ui.BrowserHooks
 import fi.jukkakot.rubikkisolveri.ui.CameraArgs
 import fi.jukkakot.rubikkisolveri.ui.elapsedMillis
 import fi.jukkakot.rubikkisolveri.ui.scan.FoundFaces
+import fi.jukkakot.rubikkisolveri.ui.scan.ScanImage
 import fi.jukkakot.rubikkisolveri.ui.scan.coverCrop
 import org.jetbrains.compose.resources.stringResource
 import org.khronos.webgl.toByteArray
@@ -258,7 +259,7 @@ private fun WebCameraPreview(args: CameraArgs) {
                         val preview = cameraPreviewData().toByteArray()
                         val pw = cameraPreviewWidth()
                         val ph = cameraPreviewHeight()
-                        onImage(ArgbImage(IntArray(pw * ph) { i -> argb(preview, i * 4) }, pw, ph))
+                        onImage(ScanImage(ArgbImage(IntArray(pw * ph) { i -> argb(preview, i * 4) }, pw, ph)))
                     }
                 }
             } catch (e: Throwable) {

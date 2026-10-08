@@ -70,7 +70,7 @@ class ScanFeedbackTest {
         assertTrue(holdPicture(empty, shown, 100), "held: the marks stay with their picture")
         assertFalse(holdPicture(empty, shown, HOLD_PICTURE_MILLIS), "not for longer than a moment")
         assertFalse(holdPicture(FoundFaces(listOf(face), 360, 640, show = {}), shown, 100), "a picture with a face shows at once")
-        assertFalse(holdPicture(FoundFaces(emptyList(), 360, 640), shown, 100), "the phone's live picture: nothing to hold")
+        assertFalse(holdPicture(FoundFaces(emptyList(), 360, 640), shown, 100), "the live picture: nothing to hold")
         assertFalse(holdPicture(empty, empty, 100), "nothing with marks to hold")
     }
 

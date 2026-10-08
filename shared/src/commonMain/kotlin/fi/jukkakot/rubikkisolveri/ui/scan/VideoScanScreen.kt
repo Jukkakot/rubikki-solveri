@@ -10,6 +10,9 @@ import androidx.compose.material3.DropdownMenuItem
 import fi.jukkakot.rubikkisolveri.cube.Stickers
 import fi.jukkakot.rubikkisolveri.ui.common.RoundIconButton
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -67,7 +70,6 @@ import fi.jukkakot.rubikkisolveri.cube.ColorScheme
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.ui.common.colorName
-import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
 import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
 import fi.jukkakot.rubikkisolveri.cube.scan.ExposureControl
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceFinder
@@ -115,7 +117,12 @@ class FoundFaces(
     val worker: Boolean? = null,
     val showMs: Double = 0.0,
     val show: (() -> Unit)? = null,
-)
+    /** The picture read, upright, to draw filling the camera box under its marks (the phone, `scan-read-picture-android`). */
+    val image: ImageBitmap? = null,
+) {
+    /** The picture shown is this very one ([show] or [image]): its marks snap and do not fade for movement. */
+    val readPicture: Boolean get() = show != null || image != null
+}
 
 /**
  * The video scan: the camera's pictures go through [FaceFinder] off the main thread, the faces found
@@ -126,7 +133,7 @@ class FoundFaces(
 @Composable
 fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome) -> Unit, onSwitch: (() -> Unit)? = null, engine: ScanEngine = ScanEngine.RULES) {
     CameraPermissionGate(alternative = stringResource(Res.string.scan_manual) to onManual) {
-        val images = remember { MutableSharedFlow<ArgbImage>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST) }
+        val images = remember { MutableSharedFlow<ScanImage>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST) }
         val found = remember { MutableSharedFlow<FoundFaces>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST) }
         var torch by remember { mutableStateOf(false) }
         var torchAvailable by remember { mutableStateOf(false) }
@@ -136,10 +143,16 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
         var worker by remember { mutableStateOf<Boolean?>(null) }
         LaunchedEffect(images) {
             withContext(Dispatchers.Default) {
-                images.collect { image ->
+                images.collect { scanImage ->
+                    val image = scanImage.image
                     val start = elapsedMillis()
                     val faces = FaceFinder.find(image.argb, image.width, image.height).let { it.faces + it.partial }.map(FaceReading::of)
-                    found.emit(FoundFaces(faces, image.width, image.height, elapsedMillis() - start, worker?.let { false }))
+                    found.emit(
+                        FoundFaces(
+                            faces, image.width, image.height, elapsedMillis() - start, worker?.let { false },
+                            showMs = scanImage.pictureMs, image = scanImage.picture,
+                        ),
+                    )
                 }
             }
         }
@@ -291,6 +304,8 @@ fun VideoScanContent(
         } else {
             preview(Modifier.fillMaxSize())
         }
+        // The phone: the picture read, over the live preview, with its marks below (`scan-read-picture-android`).
+        painted?.second?.image?.let { Image(it, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds) }
         painted?.let { (s, p) -> PaintLayer(s, p, Modifier.fillMaxSize(), onPainted = log::paintTime) }
         // A face is in view but nothing read yet: a small sign that the scan is working.
         if (!done && picture?.faces?.isNotEmpty() == true && state.recognised == 0) {
@@ -493,7 +508,7 @@ const val VIDEO_DEMO_TAG = "video-turn-demo"
  * ago, under [HOLD_PICTURE_MILLIS]. The marks then do not blink out for a picture or two.
  */
 fun holdPicture(next: FoundFaces, shown: FoundFaces?, sinceFace: Long): Boolean =
-    next.show != null && next.faces.isEmpty() && shown?.faces?.isNotEmpty() == true && sinceFace < HOLD_PICTURE_MILLIS
+    next.readPicture && next.faces.isEmpty() && shown?.faces?.isNotEmpty() == true && sinceFace < HOLD_PICTURE_MILLIS
 
 /** A read picture without a face waits at most this long behind the last one with a face. */
 const val HOLD_PICTURE_MILLIS = 300L
@@ -516,7 +531,7 @@ fun shouldBuzz(before: VideoScanState, after: VideoScanState, now: Long, lastBuz
 private fun PaintLayer(state: VideoScanState, picture: FoundFaces, modifier: Modifier, onPainted: (Double) -> Unit = {}) {
     val width = picture.width
     val height = picture.height
-    val readPicture = picture.show != null
+    val readPicture = picture.readPicture
     val paint = remember(state) {
         val start = TimeSource.Monotonic.markNow()
         ScanPaint.of(state).also { onPainted(start.elapsedNow().inWholeMicroseconds / 1000.0) }

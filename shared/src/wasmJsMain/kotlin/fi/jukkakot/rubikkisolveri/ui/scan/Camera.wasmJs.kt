@@ -2,7 +2,6 @@ package fi.jukkakot.rubikkisolveri.ui.scan
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
 import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.ui.BrowserHooks
@@ -17,7 +16,7 @@ actual fun CameraPreview(
     exposure: CameraSettings,
     onPicture: ((IntArray) -> Unit)?,
     onTorchAvailable: (Boolean) -> Unit,
-    onImage: ((ArgbImage) -> Unit)?,
+    onImage: ((ScanImage) -> Unit)?,
     onMaxDarker: (Int) -> Unit,
     onFaces: ((FoundFaces) -> Unit)?,
     onWorker: (Boolean) -> Unit,
