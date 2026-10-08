@@ -17,10 +17,13 @@ asked for the same on the phone.
 - **Marks as in the browser:** they snap (no glide) and do not fade for movement; the age fade for a
   cube out of view stays; a reading with no face keeps the shown picture for up to 300 ms
   (`holdPicture`).
-- **Analysis size:** OPEN — 640×480 now (the finder uses 360 px of it); shown on a 1080 px wide
-  screen that is soft. Proposal: ask CameraX for 1280×960 for a sharper picture; the finder still
-  gets its 360 px copy, so its cost stays; the extra cost is the bitmap (copy and turn, logged as
-  `showMs` as in the browser).
+- **Analysis size stays 640×480** (user, 2026-10-08: try it as it is first; the picture is softer
+  than the live preview). The bitmap's time per picture is logged as `showMs`, as in the browser.
+- **Browser copy made cheaper:** the phone log of 1.0.317 shows the read picture's copy at 15–22 ms
+  and the scan at 10–13 pictures a second (17 before the read picture). The copy is made instead by
+  drawing the video frame onto one of a few reused canvases (three, placed where the box is) when
+  the picture is sent, and shown by making that canvas the visible one: no `createImageBitmap` with
+  a resize and no second draw. `showMs` is then that draw's own time.
 - Other camera screens (guided scan, camera follow) keep the live preview.
 
 ## Capabilities
@@ -36,4 +39,5 @@ asked for the same on the phone.
   (for the video scan only) and hands it with the faces; the analysis resolution.
 - `shared` (common): `FoundFaces` carries the picture to draw (an `ImageBitmap`) besides the browser's
   `show`; `VideoScanScreen` draws it under the paint; read-picture mode = either.
-- `app`: tests only. `web`: none.
+- `web`: `platform.mjs` copies into a pool of canvases instead of `ImageBitmap`s.
+- `app`: tests only.
