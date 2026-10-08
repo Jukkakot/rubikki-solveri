@@ -77,6 +77,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 67 | `scan-speed-up-2` | done | Finder pictures at long side 240 on both (same faces on the recordings); debug build not debuggable (phone: finder 34–59 → 10–16 ms, 16–23 → 30 pictures/s); the phone's scan on a background thread, the browser's in the finder worker (state as text). Search window and two finders dropped after measuring |
 | 68 | `scan-speed-up-3` | done | The scan logic no longer grows over a long scan: late pictures 8–11 → 1–2.5 ms (JVM), a picture without faces almost free; same results on every fixture (work skipped when nothing changed, pair tables and best-cube costs kept). Budget test 5 ms a 100-picture window. Phone/browser check of `scanMs` pending |
 | 69 | `scan-track-settle` | done | Rules scan: a track never goes back to the face and turn it just left without a new reading of its own (flips without readings 493 → 0 on the fixtures, same finishes); the shown stickers stop switching back and forth in long scans. Phone check: marks calm while the cube is held |
+| 70 | `scan-speed-up-4` | specced | Busiest scan moments cheaper: the best cube's margins only as far as the scan looks (same decisions), and in the browser finding faces and the scan logic side by side in two workers (fps set by the slower, not the sum) |
 
 ## Backlog
 
