@@ -64,6 +64,15 @@ object VideoFixtures {
     const val PHONE_SCAN_1 = "web_084657:66-455"
     const val PHONE_SCAN_2 = "web_084657:499-998"
 
+    /**
+     * Screen recording of the third phone test (web, 2026-10-08 09:13; the camera part, 360 wide, 10 fps,
+     * the app's paint on it), the striped cube turned: [PHONE_RULES_3] the rules scan (it never finished on
+     * the phone), [PHONE_LOOK_3] the look scan right after it, which finished with [TRUTH_1008C].
+     */
+    const val PHONE_RULES_3 = "web_121505:66-373"
+    const val PHONE_LOOK_3 = "web_121505:448-751"
+    const val TRUTH_1008C = "WWWWWWWWWRBOBRGOGRBRGOGRGOBYYYYYYYYYOGRGOBRBOGOBRBOBRG"
+
     data class Frame(val name: String, val faces: List<FaceReading>)
 
     /** [blue] mixed towards white until the default palette names it white, as the phone's camera saw a blue centre in shadow. */

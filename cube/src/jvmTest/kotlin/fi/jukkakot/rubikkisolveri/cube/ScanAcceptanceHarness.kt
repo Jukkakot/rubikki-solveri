@@ -35,6 +35,8 @@ class ScanAcceptanceHarness {
         VideoFixtures.STRIPED_U2_TABLE to VideoFixtures.STRIPED_U2_TRUTH,
         VideoFixtures.STRIPED_U2_DIM to VideoFixtures.STRIPED_U2_TRUTH,
         VideoFixtures.PHONE_SCAN_1 to VideoFixtures.STRIPED_TRUTH,
+        VideoFixtures.PHONE_RULES_3 to VideoFixtures.TRUTH_1008C,
+        VideoFixtures.PHONE_LOOK_3 to VideoFixtures.TRUTH_1008C,
     )
 
     /** One replay: the frame the scan finished at (null: never), whether its cube was the true one, ms per frame. */

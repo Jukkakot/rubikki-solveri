@@ -101,6 +101,57 @@ class RulesScanTest {
     }
 
     @Test
+    fun aClearCubeFinishesWhileNewFacesKeepComingIntoView() {
+        // Third phone test (2026-10-08 09:11): the cube clear, yet it never finished while the cube was turned in
+        // the hand: a new face track, its face known but its turn not yet, read against the cube in the turn it
+        // was guessed in and revoked the finish before its half second came. Here the phone scan played until
+        // clear, then its frames again with the faces somewhere new at once and every third frame (new tracks).
+        val frames = VideoFixtures.load(VideoFixtures.PHONE_SCAN_1)
+        val scan = VideoScan(engine = ScanEngine.RULES)
+        var t = 0L
+        val clearAt = frames.indexOfFirst { f -> scan.onFrame(f.faces, t).also { t += 100 }.complete }
+        assertTrue(clearAt >= 0, "the scan becomes clear")
+        val clearFrom = t - 100
+        var finishedAt: Long? = null
+        for ((k, faces) in frames.map { it.faces }.filter { it.isNotEmpty() }.withIndex()) {
+            val s = scan.onFrame(faces.map { it.copy(centre = it.centre + Point((k / 3 + 1) * 400.0, 0.0)) }, t)
+            t += 100
+            if (s.finished) {
+                finishedAt = t - 100
+                assertTrue(s.stickers.joinToString("") { it?.letter?.toString() ?: "?" } == VideoFixtures.STRIPED_TRUTH, "finishes right")
+                break
+            }
+        }
+        val after = finishedAt?.minus(clearFrom)
+        assertTrue(after != null && after <= VideoScan.FINISH_MILLIS + 100, "finishes half a second after the cube is clear (clear at frame $clearAt, finished after $after ms)")
+    }
+
+    @Test
+    fun aLongScanReadsAsQuicklyLateAsEarly() {
+        // Third phone test: the rules scanner fell from 14 to 5 pictures a second as face tracks piled up.
+        // A recording that never finishes, played three times over: the tracks worked through stay bounded
+        // and the last time through is not much slower than the one before.
+        val frames = VideoFixtures.load(VideoFixtures.STRIPED_DIM).let { it + it + it }
+        VideoScan(engine = ScanEngine.RULES).let { warm -> frames.take(200).forEachIndexed { i, f -> warm.onFrame(f.faces, i * 100L) } }
+        val scan = VideoScan(engine = ScanEngine.RULES)
+        val tracks = VideoScan::class.java.getDeclaredField("tracks").also { it.isAccessible = true }
+        val third = frames.size / 3
+        val nanos = LongArray(frames.size)
+        var most = 0
+        frames.forEachIndexed { i, f ->
+            val start = System.nanoTime()
+            scan.onFrame(f.faces, i * 100L)
+            nanos[i] = System.nanoTime() - start
+            most = maxOf(most, (tracks.get(scan) as FaceTracks).workingTracks)
+        }
+        // The second time through against the third: the first holds the cheap start, before faces are told.
+        val second = nanos.drop(third).take(third).average()
+        val last = nanos.drop(2 * third).average()
+        assertTrue(most <= 40, "tracks worked through stay bounded: at most $most")
+        assertTrue(last <= 1.5 * second, "the last time through (%.1f ms) is not much slower than the second (%.1f ms)".format(last / 1e6, second / 1e6))
+    }
+
+    @Test
     fun aFirstFaceThatCouldBeEitherOfTwoDoesNotFinishNorAskToTurnTheCube() {
         // A centre halfway between red and orange, the face only ever seen alone: red or orange stays open,
         // but a first face followed alone does not ask to turn the cube (it showed at once in the phone test

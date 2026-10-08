@@ -109,6 +109,20 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         s.option != null || (t.size < KEEP_READINGS && s.face != null && s.assigned != FaceOption.NONE && fits(t, s.assigned, cube))
     }
 
+    /**
+     * Once [cube] is clear: every counting track is settled, short (fewer than [KEEP_READINGS]), or reads
+     * like [cube] (at most one sticker otherwise) in some turn of a face it could be (its face, else its
+     * assignment or the next best face). A face newly in view, its face or turn not told yet, then does not
+     * hold the finish back (the third phone test, 2026-10-08 09:11: each new track revoked it for a frame,
+     * so its half second never came), nor does a stray lattice for a moment; one read against the cube for
+     * longer does. Whether the cube stays clear is the evidence's to say.
+     */
+    fun quietFor(cube: Cube): Boolean = holding().all { t ->
+        val s = t.state()
+        val faces = s.face?.let { listOf(it) } ?: listOfNotNull(s.assigned.takeIf { it != FaceOption.NONE }?.let(FaceOption::face), s.otherFace)
+        s.option != null || t.size < KEEP_READINGS || faces.any { f -> (0 until 4).any { k -> fits(t, FaceOption.of(f, k), cube) } }
+    }
+
     private fun fits(t: Track, o: Int, cube: Cube): Boolean {
         val face = FaceOption.face(o)
         return (0 until 9).count { n ->
@@ -201,6 +215,59 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         updateRefs()
         evidence = evidenceOf()
         best = BestCube.solve(evidence, scheme)
+        retire(now)
+    }
+
+    // --- retiring --------------------------------------------------------------------------------
+
+    /** Votes of retired voting tracks per net sticker (net-aligned), counted in the tables as before. */
+    private val archived = Array(Stickers.COUNT) { DoubleArray(6) }
+
+    /** Retired settled tracks' centre colours per face colour (summed RGB and count), for the references. */
+    private val archivedCentres = HashMap<CubeColor, IntArray>()
+
+    /** Tracks the per-frame work goes over (for tests and the log). */
+    val workingTracks: Int get() = tracker.tracks.size
+
+    /**
+     * Ended tracks leave the per-frame work (`scan-rules-finish`): one that never counted, one taken for
+     * no face [RETIRE_MILLIS] ago, and a settled one whose readings are all older than the newest
+     * [MAX_FACE_READINGS] of its face's evidence (it gives no evidence any more). A settled one keeps its
+     * votes in the tables and its centre in the references; it is no longer rechecked, assigned or aligned.
+     * Unsettled ones stay: one may still settle, and retiring them lost the striped U2 cube in dim light
+     * (`202403`).
+     */
+    private fun retire(now: Long) {
+        val newest = assignedReadings().mapValues { (_, l) -> if (l.size < MAX_FACE_READINGS) Long.MIN_VALUE else l.first().first.seq }
+        val out = tracker.tracks.filter { t ->
+            if (now - t.lastAt <= Tracker.GAP_MILLIS) return@filter false
+            val s = t.state()
+            val o = s.option
+            when {
+                !counts(t) -> true
+                o == null -> false
+                o == FaceOption.NONE -> now - t.lastAt > RETIRE_MILLIS
+                else -> newest[FaceOption.face(o)]?.let { from -> t.readings.last().seq < from } == true
+            }
+        }
+        if (out.isEmpty()) return
+        for (t in out) {
+            val o = t.state().option
+            if (o != null && o != FaceOption.NONE) {
+                if (t in voting) add(archived, t, o, 1.0)
+                val sum = archivedCentres.getOrPut(scheme[FaceOption.face(o)]) { IntArray(4) }
+                for (r in t.readings) r.face.colors[CENTRE]?.let {
+                    sum[0] += it.r
+                    sum[1] += it.g
+                    sum[2] += it.b
+                    sum[3]++
+                }
+            }
+            states.remove(t)
+        }
+        val gone = out.toHashSet()
+        tracker.tracks.removeAll { it in gone }
+        voting = voting - gone
     }
 
     // --- colours ---------------------------------------------------------------------------------
@@ -219,7 +286,12 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             val face = t.state().face ?: continue
             for (r in t.readings) r.face.colors[CENTRE]?.let { byColor.getOrPut(scheme[face]) { ArrayList() } += it }
         }
-        val newKnown = byColor.mapValues { (_, l) -> Rgb(l.sumOf { it.r } / l.size, l.sumOf { it.g } / l.size, l.sumOf { it.b } / l.size) }
+        val newKnown = (byColor.keys + archivedCentres.keys).associateWith { c ->
+            val l = byColor[c].orEmpty()
+            val a = archivedCentres[c] ?: IntArray(4)
+            val n = l.size + a[3]
+            Rgb((l.sumOf { it.r } + a[0]) / n, (l.sumOf { it.g } + a[1]) / n, (l.sumOf { it.b } + a[2]) / n)
+        }
         val changed = newKnown.keys != known.keys || newKnown.any { (c, rgb) -> known[c]?.let { o -> kotlin.math.abs(o.r - rgb.r) + kotlin.math.abs(o.g - rgb.g) + kotlin.math.abs(o.b - rgb.b) > REF_STEP } != false }
         if (!changed) return
         known = newKnown
@@ -292,7 +364,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     private class Tables(val votes: Array<DoubleArray>, val totals: DoubleArray)
 
     private fun tables(skip: Track? = null): Tables {
-        val votes = Array(Stickers.COUNT) { DoubleArray(6) }
+        val votes = Array(Stickers.COUNT) { archived[it].copyOf() }
         for (t in tracker.tracks) {
             if (t === skip || t.size < MIN_READINGS || t !in voting) continue
             val o = t.state().option ?: continue
@@ -670,31 +742,31 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     fun turnsClear(): Boolean {
         val faces = Face.entries.filter { f -> counting().any { t -> t.state().byCube && t.state().option?.let { it != FaceOption.NONE && FaceOption.face(it) == f } == true } }
         if (faces.size < 2) return true
-        val extra = IntArray(6)
-        val base = BestCube.cost(evidenceOf(extra), scheme)
+        val base = BestCube.cost(evidenceOf(IntArray(6)), scheme)
         val reads = faces.associateWith { f -> List(4) { k -> leadingOf(f, k) } }
+        val ways = ArrayList<List<Int>>()
         for (i in faces.indices) for (j in i + 1 until faces.size) for (a in 0 until 4) for (b in 0 until 4) {
             val fa = faces[i]
             val fb = faces[j]
             if (a == 0 && b == 0) continue
             if (reads.getValue(fa)[a] == reads.getValue(fa)[0] && reads.getValue(fb)[b] == reads.getValue(fb)[0]) continue
-            extra[fa.ordinal] = a
-            extra[fb.ordinal] = b
-            val c = BestCube.cost(evidenceOf(extra), scheme)
-            extra[fa.ordinal] = 0
-            extra[fb.ordinal] = 0
-            if (c - base < TURN_MARGIN) return false
+            ways += List(6) { when (it) { fa.ordinal -> a; fb.ordinal -> b; else -> 0 } }
         }
         for (mask in 1 until (1 shl faces.size)) {
             val set = faces.filterIndexed { i, _ -> mask and (1 shl i) != 0 }
             if (set.size < 3 || set.all { f -> reads.getValue(f)[2] == reads.getValue(f)[0] }) continue
-            for (f in set) extra[f.ordinal] = 2
-            val c = BestCube.cost(evidenceOf(extra), scheme)
-            for (f in set) extra[f.ordinal] = 0
-            if (c - base < TURN_MARGIN) return false
+            ways += List(6) { n -> if (set.any { it.ordinal == n }) 2 else 0 }
         }
-        return true
+        // The way that was too close last frame first: while the turns stay unclear it usually still is (one
+        // cube cost instead of dozens a frame, `scan-rules-finish`).
+        lastClose?.let { w -> if (ways.remove(w)) ways.add(0, w) }
+        val close = ways.firstOrNull { w -> BestCube.cost(evidenceOf(w.toIntArray()), scheme) - base < TURN_MARGIN }
+        lastClose = close
+        return close == null
     }
+
+    /** The other turns [turnsClear] last found too close to the best (per face, the extra quarter turns). */
+    private var lastClose: List<Int>? = null
 
     /** The colours [face]'s evidence leads with, its open-turn tracks turned [k] more. */
     private fun leadingOf(face: Face, k: Int): List<Int> {
@@ -894,6 +966,9 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** Added to every colour's votes before taking shares. */
         const val SMOOTH = 1.0
+
+        /** A track taken for no face leaves the per-frame work this long after it ended. */
+        const val RETIRE_MILLIS = 2_000L
 
         /** Newest readings per face in the evidence. */
         const val MAX_FACE_READINGS = 40

@@ -827,7 +827,9 @@ class VideoScan(
         val settledFaces = ft.settledFaces
         val unsure = ft.unsureFaces
         val clearness = best?.clearness(evidence) ?: 0.0
-        val complete = best != null && seen.isNotEmpty() && ft.settledFor(best.cube) && unsure.isEmpty() && clearness >= CLEAR_MARGIN && ft.turnsClear()
+        // Once clear, a face newly in view holds it back only by reading against the cube.
+        val quiet = best != null && if (completeSince != null) ft.quietFor(best.cube) else ft.settledFor(best.cube) && unsure.isEmpty()
+        val complete = best != null && seen.isNotEmpty() && quiet && clearness >= CLEAR_MARGIN && ft.turnsClear()
         val clearAt = BooleanArray(Stickers.COUNT)
         val net = List(Stickers.COUNT) { i ->
             val face = Face.entries[i / 9]
