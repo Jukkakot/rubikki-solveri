@@ -14,6 +14,9 @@ import fi.jukkakot.rubikkisolveri.ui.cube3d.V3
 import fi.jukkakot.rubikkisolveri.ui.cube3d.holdFor
 import fi.jukkakot.rubikkisolveri.ui.scan.BUZZ_MILLIS
 import fi.jukkakot.rubikkisolveri.ui.scan.DEMO_IDLE_MILLIS
+import fi.jukkakot.rubikkisolveri.ui.scan.FoundFaces
+import fi.jukkakot.rubikkisolveri.ui.scan.HOLD_PICTURE_MILLIS
+import fi.jukkakot.rubikkisolveri.ui.scan.holdPicture
 import fi.jukkakot.rubikkisolveri.ui.scan.RingSegment
 import fi.jukkakot.rubikkisolveri.ui.scan.ringSegments
 import fi.jukkakot.rubikkisolveri.ui.scan.shouldBuzz
@@ -57,6 +60,18 @@ class ScanFeedbackTest {
         assertFalse(shouldBuzz(before, after, 1_000, 1_000 - BUZZ_MILLIS + 1), "too soon after the last buzz")
         assertFalse(shouldBuzz(before, before, 1_000, 0), "nothing new")
         assertTrue(shouldBuzz(before, before.copy(newStickers = 2), 1_000, 0))
+    }
+
+    @Test
+    fun aBrowserPictureWithoutAFaceWaitsBehindTheShownOneForAMoment() {
+        val face = inView.found.single().reading
+        val shown = FoundFaces(listOf(face), 360, 640, show = {})
+        val empty = FoundFaces(emptyList(), 360, 640, show = {})
+        assertTrue(holdPicture(empty, shown, 100), "held: the marks stay with their picture")
+        assertFalse(holdPicture(empty, shown, HOLD_PICTURE_MILLIS), "not for longer than a moment")
+        assertFalse(holdPicture(FoundFaces(listOf(face), 360, 640, show = {}), shown, 100), "a picture with a face shows at once")
+        assertFalse(holdPicture(FoundFaces(emptyList(), 360, 640), shown, 100), "the phone's live picture: nothing to hold")
+        assertFalse(holdPicture(empty, empty, 100), "nothing with marks to hold")
     }
 
     private fun close(a: V3, b: V3) = kotlin.math.abs(a.x - b.x) + kotlin.math.abs(a.y - b.y) + kotlin.math.abs(a.z - b.z) < 1e-3f

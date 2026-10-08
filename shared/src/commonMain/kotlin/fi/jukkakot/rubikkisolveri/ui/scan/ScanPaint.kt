@@ -86,6 +86,9 @@ data class ScanPaint(
                 // A side seen at an angle is narrower: its veils follow its own sticker spacing.
                 val u = (p(5) - p(3)) * 0.5
                 val v = (p(7) - p(1)) * 0.5
+                // A face found there, named or not, has its own marks: no second layer (`scan-paint-steady`).
+                val reach = maxOf(u.length, v.length, projection.step)
+                if (state.found.any { (it.reading.centre - p(4)).length < reach }) continue
                 for (n in 0 until 9) {
                     val i = side.ordinal * 9 + n
                     val known = state.stickers[i]

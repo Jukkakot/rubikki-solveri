@@ -11,6 +11,9 @@ import kotlin.math.sqrt
  * right, y up, z front; see [Vec3]) to camera coordinates (x right, y up, z towards the viewer).
  * The rows are where the camera's right, up and viewing axes point in the cube.
  */
+/** How [Orientation.chosen] picked between the mirror answers: [ONLY] one (or both alike), a [CUE] from another face, the [PREVIOUS] orientation, or a [GUESS]. */
+enum class Choice { ONLY, CUE, PREVIOUS, GUESS }
+
 data class Orientation(val m: List<Double>) {
     init {
         require(m.size == 9)
@@ -67,15 +70,29 @@ data class Orientation(val m: List<Double>) {
             centre: Point,
             others: List<Pair<Vec3, Point>>,
             previous: Orientation?,
-        ): Orientation? {
-            if (candidates.size < 2) return candidates.firstOrNull()
+        ): Orientation? = chosen(candidates, normal, centre, others, previous)?.first
+
+        /** [choose], with how it chose (`scan-paint-steady`: only a sure tilt draws the cube's other sides). */
+        fun chosen(
+            candidates: List<Orientation>,
+            normal: Vec3,
+            centre: Point,
+            others: List<Pair<Vec3, Point>>,
+            previous: Orientation?,
+        ): Pair<Orientation, Choice>? {
+            if (candidates.size < 2) return candidates.firstOrNull()?.let { it to Choice.ONLY }
+            // Seen nearly straight on, the two mirror answers hardly differ: either will do.
+            if (candidates[0].angleTo(candidates[1]) < ALIKE_RADIANS) return candidates[0] to Choice.ONLY
             val cues = others.filter { (n, _) -> n != normal && n != normal * -1 }
             if (cues.isNotEmpty()) {
-                return candidates.minBy { o -> cues.sumOf { (n, at) -> o.offsetError(n, normal, at - centre) } }
+                return candidates.minBy { o -> cues.sumOf { (n, at) -> o.offsetError(n, normal, at - centre) } } to Choice.CUE
             }
-            if (previous != null) return candidates.minBy { it.angleTo(previous) }
-            return candidates.first()
+            if (previous != null) return candidates.minBy { it.angleTo(previous) } to Choice.PREVIOUS
+            return candidates.first() to Choice.GUESS
         }
+
+        /** Mirror answers closer than this (radians, about 15°) count as one. */
+        const val ALIKE_RADIANS = 0.26
 
         /** Direction mismatch between the on-screen offset of face [n]'s centre from face [from]'s and the observed [d]. */
         private fun Orientation.offsetError(n: Vec3, from: Vec3, d: Point): Double {

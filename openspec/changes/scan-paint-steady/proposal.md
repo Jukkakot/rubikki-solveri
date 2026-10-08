@@ -35,6 +35,10 @@ other (a gap of more than `HOLD_MILLIS` without a pose starts over). "Hold the p
 over keeping old marks on a newer picture (they would sit beside a moving cube) and over a short gap
 (user, 2026-10-08, on my recommendation).
 
+Apply notes: two mirror tilts closer than about 15° count as one (`Orientation.ALIKE_RADIANS`; a face
+seen nearly straight on). The hold is tested as a pure function (`holdPicture`): Robolectric does not
+run Compose's drawing, where the picture is shown.
+
 ## Capabilities
 
 ### New Capabilities

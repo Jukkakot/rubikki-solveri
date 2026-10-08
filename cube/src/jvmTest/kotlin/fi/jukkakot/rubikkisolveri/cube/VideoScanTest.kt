@@ -388,6 +388,27 @@ open class VideoScanTest {
     }
 
     @Test
+    fun onlyASureTiltProjectsTheOtherSides() {
+        // scan-paint-steady: one face seen at a slant has two mirror tilts; guessed, the cube's other sides fell on the table.
+        val scan = VideoScan(engine = engine)
+        fun slanted(face: Face, centre: Point, turn: Int = 0) = reading(face, turn = turn, centre = centre).copy(v = Point(0.0, 20.0))
+        var s = VideoScanState.EMPTY
+        repeat(4) { s = scan.onFrame(listOf(slanted(Face.F, Point(100.0, 200.0)), slanted(Face.U, Point(100.0, 140.0))), it * 100L) }
+        assertNotNull(s.projection, "U beside F tells the tilt")
+        assertNotNull(s.orientation)
+        val after = scan.onFrame(listOf(slanted(Face.F, Point(100.0, 200.0))), 400)
+        assertNotNull(after.orientation, "F alone right after: the tilt follows the sure one")
+        assertEquals(0, after.projectionAge, "built anew")
+        // Out of view for longer than a projection is held: F alone at a slant is a guess again.
+        scan.onFrame(emptyList(), 500)
+        // Turned a quarter on screen, so a new pose shows that F is placed again.
+        val again = (0 until 6).map { scan.onFrame(listOf(slanted(Face.F, Point(100.0, 200.0), turn = 1)), 500 + VideoScan.HOLD_MILLIS + 100 + it * 100L) }
+        assertTrue(again.any { it.pose != Pose(Face.F, Face.U) }, "F is placed again: ${again.map { it.pose }}")
+        assertTrue(again.all { it.orientation == null }, "a guessed tilt is not given")
+        assertTrue(again.all { it.projection == null }, "and nothing is projected from it")
+    }
+
+    @Test
     fun resetClearsTheHeldProjection() {
         val scan = VideoScan(engine = engine)
         settleCorner(scan, 0)

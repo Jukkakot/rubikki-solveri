@@ -182,6 +182,10 @@ class VideoScan(
     private var best: BestCube? = null
     private var lastPose: Pose? = null
     private var lastOrientation: Orientation? = null
+    private var lastOrientationAt = 0L
+
+    /** The last orientation's tilt was sure ([Choice]): a following one chosen by it is sure too. */
+    private var lastSure = false
     private var held: CubeProjection? = null
     private var heldBuiltAt = 0L
     private var heldMovedAt = 0L
@@ -296,9 +300,20 @@ class VideoScan(
     ): VideoScanState {
         if (!complete) completeSince = null else if (completeSince == null) completeSince = nowMillis
         if (main != null) lastPose = Pose(main.front, neighbourAt(main.front, main.turn))
-        val orientation = main?.let { orientationOf(it, others) }
+        val chosen = main?.let { orientationOf(it, others) }
+        // Only a sure tilt draws the cube's other sides (`scan-paint-steady`): a mirror guess put them on the table.
+        val sure = chosen != null && when (chosen.second) {
+            Choice.ONLY, Choice.CUE -> true
+            Choice.PREVIOUS -> lastSure && nowMillis - lastOrientationAt <= HOLD_MILLIS
+            Choice.GUESS -> false
+        }
+        if (chosen != null) {
+            lastOrientation = chosen.first
+            lastOrientationAt = nowMillis
+            lastSure = sure
+        }
+        val orientation = chosen?.first?.takeIf { sure }
         val built = if (main != null && orientation != null) projectionOf(main, orientation) else null
-        if (orientation != null) lastOrientation = orientation
         val projection = holdProjection(built, anchor, nowMillis)
         val recognised = net.count { it != null }
         val brightness = brightness(faces)
@@ -389,6 +404,7 @@ class VideoScan(
         best = null
         lastPose = null
         lastOrientation = null
+        lastSure = false
         held = null
         lastRecognised = 0
         completeSince = null
@@ -797,9 +813,9 @@ class VideoScan(
      * cube vectors they show), the tilt's sign from the [others] faces in view (normal, centre) or the
      * last orientation.
      */
-    private fun orientationOf(main: Held, others: List<Pair<Vec3, Point>>): Orientation? {
+    private fun orientationOf(main: Held, others: List<Pair<Vec3, Point>>): Pair<Orientation, Choice>? {
         val candidates = Orientation.candidates(main.face.u, main.face.v, sideVector(main.front, main.turn + 1), sideVector(main.front, main.turn + 2))
-        return Orientation.choose(candidates, main.front.normal, main.face.centre, others, lastOrientation)
+        return Orientation.chosen(candidates, main.front.normal, main.face.centre, others, lastOrientation)
     }
 
     /** Every sticker projected into this frame from [main] and the cube's [orientation]. */

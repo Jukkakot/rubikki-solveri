@@ -168,7 +168,10 @@ Video scan pipeline (`video-scan`):
    come back, `FoundFaces.show` → `cameraShowFrame` draws it on a canvas in the video's place from
    the Compose draw of those marks, so the marks lie on the picture they were read from (the
    live picture ran ~60 ms ahead of the marks' picture, and they slid off a moving cube). The
-   picture then runs at the scan's rate; glide snaps, no motion fade. Without the worker: live video.
+   picture then runs at the scan's rate; glide snaps, no motion fade. A reading with no face does
+   not replace the shown picture for up to 300 ms (`holdPicture`, `scan-paint-steady`: the marks blinked
+   out for a few pictures); the copy is at most 720 px long (at full pixel ratio it cost 20–27 ms a
+   picture on the phone). Without the worker: live video.
 3. **Two scanners** (`scan-rules`, 2026-10-07): `VideoScan(engine)` with `ScanEngine.RULES` (the
    default) or `ScanEngine.LOOK` (the earlier one, below). The choice is in Settings ("Videoskanneri";
    Android `SettingsRepository.scanEngine`, browser `StoredSettings.scanEngine`), passed through
@@ -183,7 +186,7 @@ Video scan pipeline (`video-scan`):
    The earlier scanner, `cube/scan/VideoScan` (LOOK): votes per sticker (partial faces vote, never anchor), pose, orientation
    (`Orientation`, weak perspective from one face's steps), stall reasons and `reset()`. The
    projection is held over frames without a settled face for up to `HOLD_MILLIS`, moved (not
-   turned) onto the largest face found, with its age in `projectionAge` (`scan-paint`). The votes are evidence for `BestCube` (`video-scan-progress`): the possible cube that
+   turned) onto the largest face found, with its age in `projectionAge` (`scan-paint`); built only from a sure tilt (`Orientation.chosen`: straight on, a cue from another face, or following a sure one; `scan-paint-steady`: a guessed mirror tilt put the veils on the table), and `ScanPaint` skips a projected side where a face is found. The votes are evidence for `BestCube` (`video-scan-progress`): the possible cube that
    fits them best, piece by piece, with a margin per piece place. Each reading gives every colour a
    share by its distance to the cube's own centres, 70 % of it brightness-free (`Tone`; soft votes;
    washed-out readings count little; `video-scan-light`, whose findings explain why no light-colour

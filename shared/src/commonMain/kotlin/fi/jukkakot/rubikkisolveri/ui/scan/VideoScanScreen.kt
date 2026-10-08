@@ -209,6 +209,9 @@ fun VideoScanContent(
     val scan = remember { VideoScan(engine = engine) }
     var state by remember { mutableStateOf(VideoScanState.EMPTY) }
     var picture by remember { mutableStateOf<FoundFaces?>(null) }
+    // What is painted: the state and picture of the last reading shown (`scan-paint-steady`: held over a faceless one).
+    var painted by remember { mutableStateOf<Pair<VideoScanState, FoundFaces>?>(null) }
+    var facedAt by remember { mutableStateOf(0L) }
     var done by remember { mutableStateOf(false) }
     var dismissed by remember { mutableStateOf(emptySet<Stall>()) }
     var progressAt by remember { mutableStateOf<Long?>(null) }
@@ -250,6 +253,8 @@ fun VideoScanContent(
             state = scan.onFrame(f.faces, now)
             log.scanTime(scanStart.elapsedNow().inWholeMicroseconds / 1000.0)
             picture = f
+            if (!holdPicture(f, painted?.second, now - facedAt)) painted = state to f
+            if (f.faces.isNotEmpty()) facedAt = now
             log.onFrame(stateBefore, state, now, torch, exposure.settings.darker)
             val progressed = state.newStickers > 0 || !stateBefore.readSides.containsAll(state.readSides)
             if (progressed || progressAt == null) progressAt = now
@@ -274,6 +279,7 @@ fun VideoScanContent(
         log.restart(state)
         scan.reset()
         state = scan.state
+        painted = painted?.let { scan.state to it.second }
         dismissed = emptySet()
         progressAt = null
         demo = null
@@ -285,7 +291,7 @@ fun VideoScanContent(
         } else {
             preview(Modifier.fillMaxSize())
         }
-        picture?.let { p -> PaintLayer(state, p, Modifier.fillMaxSize(), onPainted = log::paintTime) }
+        painted?.let { (s, p) -> PaintLayer(s, p, Modifier.fillMaxSize(), onPainted = log::paintTime) }
         // A face is in view but nothing read yet: a small sign that the scan is working.
         if (!done && picture?.faces?.isNotEmpty() == true && state.recognised == 0) {
             CircularProgressIndicator(
@@ -480,6 +486,17 @@ private const val DEMO_HOLD_END_MILLIS = 900L
 
 /** Test tag of the small turn demo cube. */
 const val VIDEO_DEMO_TAG = "video-turn-demo"
+
+/**
+ * Whether the read picture [shown] (with its marks) stays on screen instead of [next] (`scan-paint-steady`):
+ * in the browser's read-picture mode, [next] found no face and the last face was found [sinceFace] ms
+ * ago, under [HOLD_PICTURE_MILLIS]. The marks then do not blink out for a picture or two.
+ */
+fun holdPicture(next: FoundFaces, shown: FoundFaces?, sinceFace: Long): Boolean =
+    next.show != null && next.faces.isEmpty() && shown?.faces?.isNotEmpty() == true && sinceFace < HOLD_PICTURE_MILLIS
+
+/** A read picture without a face waits at most this long behind the last one with a face. */
+const val HOLD_PICTURE_MILLIS = 300L
 
 /** Whether a picture taking the scan from [before] to [after] buzzes at [now] (last buzz at [lastBuzz]): new stickers known or a new side read, spaced. */
 fun shouldBuzz(before: VideoScanState, after: VideoScanState, now: Long, lastBuzz: Long): Boolean =

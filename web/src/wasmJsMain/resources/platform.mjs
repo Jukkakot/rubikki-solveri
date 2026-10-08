@@ -231,7 +231,7 @@ export function cameraHide() {
 // worker or createImageBitmap the live video stays.
 
 const shown = { box: null, on: false, canvas: null, ctx: null, seq: 0, frames: new Map(), times: new Map() };
-const SHOW_LONG_MAX = 1280;
+const SHOW_LONG_MAX = 720; // `scan-paint-steady`: at the full pixel ratio the copy took 20–27 ms a picture on the phone
 
 /** Puts the video, or the read picture's canvas while it is on, where the box is; hides the other. */
 function placePicture() {

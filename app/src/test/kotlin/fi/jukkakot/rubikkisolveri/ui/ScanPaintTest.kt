@@ -74,6 +74,18 @@ open class ScanPaintTest {
     }
 
     @Test
+    fun anOpenFaceOverAProjectedSideGetsOnlyItsOwnMarks() {
+        val state = cornerView()
+        val f = state.found.first()
+        // F found but its side not told yet (no centre name): the projection's F side lies under it.
+        val open = state.copy(found = listOf(f.copy(names = f.names.mapIndexed { n, c -> if (n == 4) null else c })))
+        val paint = ScanPaint.of(open)
+        assertEquals(9, paint.tiles.count { it.key >= 54 } + paint.dots.count { it.key >= 54 }, "the face's own nine marks")
+        val keys = paint.tiles.map { it.key } + paint.dots.map { it.key }
+        assertTrue(keys.none { it < 54 && it / 9 == Face.F.ordinal }, "no projected F side under it")
+    }
+
+    @Test
     fun aKnownColourWinsOverADifferentReadOne() {
         val state = cornerView()
         val f = state.found.first()
