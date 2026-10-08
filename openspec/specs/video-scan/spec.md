@@ -333,12 +333,13 @@ small movements that holding brings, the marks SHALL stay. Only while the cube m
 a moment, so that no mark floats beside a moving cube. When no face has been found for about a
 second, the marks SHALL fade out. They SHALL come back as soon as the cube is seen again.
 
-In the browser, where the scan reads its pictures beside the page, the screen SHALL instead show
-the very picture the scan read with that picture's marks, so the marks lie exactly on the cube also
-while it moves: the picture then changes at the scan's rate and a little behind the live camera,
-and the marks neither glide nor fade for movement. A picture in which no face was found SHALL not
-replace the one shown for up to about 0.3 seconds, so the marks do not blink out for a few
-pictures. Where the browser cannot read beside the page, the live picture and the rules above stay.
+In the phone app, and in the browser where the scan reads its pictures beside the page, the screen
+SHALL instead show the very picture the scan read with that picture's marks, so the marks lie
+exactly on the cube also while it moves: the picture then changes at the scan's rate and a little
+behind the live camera, and the marks neither glide nor fade for movement. A picture in which no
+face was found SHALL not replace the one shown for up to about 0.3 seconds, so the marks do not
+blink out for a few pictures. Until the first picture is read, and where the browser cannot read
+beside the page, the live picture and the rules above stay.
 
 #### Scenario: Turning the cube
 - **WHEN** the user turns the cube slowly in front of the camera
@@ -349,7 +350,7 @@ pictures. Where the browser cannot read beside the page, the live picture and th
 - **THEN** the marks stay shown
 
 #### Scenario: Moving quickly
-- **WHEN** the user moves or turns the cube quickly, about a side width a second or faster, in the phone app
+- **WHEN** the user moves or turns the cube quickly, about a side width a second or faster, where the live picture is shown
 - **THEN** the marks fade out while it moves and appear again on the cube soon after it slows
 
 #### Scenario: Pose missed for a moment
@@ -361,11 +362,11 @@ pictures. Where the browser cannot read beside the page, the live picture and th
 - **THEN** the marks fade out within about a second, and appear again when the cube is back
 
 #### Scenario: Browser marks on the moving cube
-- **WHEN** the user turns the cube quickly in front of the camera in the browser
+- **WHEN** the user turns the cube quickly in front of the camera, in the phone app or in the browser
 - **THEN** each picture shown has its marks on the cube's stickers, without lagging beside it
 
 #### Scenario: Browser picture without a face
-- **WHEN** in the browser two or three pictures in a row find no face while the cube is moved
+- **WHEN** two or three pictures in a row find no face while the cube is moved
 - **THEN** the last picture with its marks stays shown instead of a picture without marks, and the next picture with a face replaces it
 
 ### Requirement: Progress ring
