@@ -17,8 +17,8 @@ gradle/gradle-daemon-jvm.properties
 
 # npm (web/smoke)
 node_modules/
-# Test videos are large: kept locally only (testdata/video/<date>/*.mp4), frames extracted from them too.
-testdata/video/**/*.mp4
-testdata/video/**/frames/
+# Test material (videos, stills, contact sheets, shared logs) stays local: the fixtures that matter are
+# cube/src/jvmTest/resources/video/*.txt. Stills committed earlier stay tracked; add new ones with git add -f.
+testdata/video/**
 # Simulation tables (ScanSimulation, SIMULATION=<runs>); the numbers that matter go into findings.
 testdata/video/simulation*.txt
