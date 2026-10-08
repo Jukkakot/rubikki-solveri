@@ -27,6 +27,8 @@ object VideoScanLog {
         darker: Int = 0,
         worker: Boolean? = null,
         centres: String = "",
+        scanMs: Double = 0.0,
+        paintMs: Double = 0.0,
     ): Array<Pair<String, Any?>> = arrayOf(
         "kind" to "snapshot",
         "known" to Face.entries.joinToString(" ") { f -> "${f.name}${(0 until 9).count { state.stickers[f.ordinal * 9 + it] != null }}" },
@@ -35,6 +37,9 @@ object VideoScanLog {
         "light" to state.brightness,
         "faces" to tenths(facesPerFrame),
         "finderMs" to finderMs.roundToInt(),
+        // Per picture beside the finder's: the scan's own work, and working out and drawing the paint (not the GPU's part), `scan-speed-up`.
+        "scanMs" to tenths(scanMs),
+        "paintMs" to tenths(paintMs),
         "fps" to tenths(fps),
         "torch" to torch,
         "darker" to darker,

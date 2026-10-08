@@ -187,21 +187,24 @@ object FaceFinder {
                 val i = queue[head++]
                 val x = i % width
                 val y = i / width
-                fun visit(j: Int) {
-                    if (label[j] || dark[j]) return
-                    if (abs(r[i] - r[j]) + abs(g[i] - g[j]) + abs(b[i] - b[j]) > joinWithin) return
+                // The four neighbours left, right, up and down (a loop, not a local function: it runs for every pixel).
+                for (d in 0 until 4) {
+                    val j = when (d) {
+                        0 -> if (x > 0) i - 1 else continue
+                        1 -> if (x < width - 1) i + 1 else continue
+                        2 -> if (y > 0) i - width else continue
+                        else -> if (y < height - 1) i + width else continue
+                    }
+                    if (label[j] || dark[j]) continue
+                    if (abs(r[i] - r[j]) + abs(g[i] - g[j]) + abs(b[i] - b[j]) > joinWithin) continue
                     // Also close to the blob's mean, so a slow drift cannot carry it into the background.
-                    if (abs(sr - r[j] * tail) + abs(sg - g[j] * tail) + abs(sb - b[j] * tail) > meanWithin * tail) return
+                    if (abs(sr - r[j] * tail) + abs(sg - g[j] * tail) + abs(sb - b[j] * tail) > meanWithin * tail) continue
                     label[j] = true
                     queue[tail++] = j
                     sr += r[j]
                     sg += g[j]
                     sb += b[j]
                 }
-                if (x > 0) visit(i - 1)
-                if (x < width - 1) visit(i + 1)
-                if (y > 0) visit(i - width)
-                if (y < height - 1) visit(i + width)
                 if (tail > maxArea) tooBig = true
             }
             val area = tail
@@ -262,14 +265,17 @@ object FaceFinder {
     internal fun medianColor(pixels: IntArray, count: Int, r: IntArray, g: IntArray, b: IntArray): Rgb {
         fun bright(i: Int) = maxOf(r[i], g[i], b[i])
         fun saturation(i: Int) = bright(i).let { top -> if (top == 0) 0.0 else (top - minOf(r[i], g[i], b[i])).toDouble() / top }
-        val byBrightness = IntArray(count) { pixels[it] }.sortedBy { bright(it) }
-        val darker = byBrightness.subList(0, (count + 1) / 2)
-        val baseSaturation = darker.map { saturation(it) }.sorted()[darker.size / 2]
-        val baseBright = bright(darker[darker.size / 2])
+        // Sorted by brightness, ties in pixel order (as a stable sort): brightness and place packed in one Long.
+        val keys = LongArray(count) { k -> (bright(pixels[k]).toLong() shl 32) or k.toLong() }
+        keys.sort()
+        val byBrightness = IntArray(count) { pixels[(keys[it] and 0xffffffffL).toInt()] }
+        val darkerSize = (count + 1) / 2
+        val baseSaturation = DoubleArray(darkerSize) { saturation(byBrightness[it]) }.also { it.sort() }[darkerSize / 2]
+        val baseBright = bright(byBrightness[darkerSize / 2])
         val kept = if (baseSaturation < GLARE_MIN_SATURATION) {
             byBrightness
         } else {
-            byBrightness.filter { bright(it) <= baseBright * GLARE_BRIGHTER || saturation(it) >= baseSaturation * GLARE_GREYER }
+            byBrightness.filter { bright(it) <= baseBright * GLARE_BRIGHTER || saturation(it) >= baseSaturation * GLARE_GREYER }.toIntArray()
         }
         fun median(ch: IntArray): Int {
             val values = IntArray(kept.size) { ch[kept[it]] }
@@ -295,6 +301,7 @@ object FaceFinder {
         val near = blobs.indices.filter { it != c && (blobs[it].centre - centre.centre).length < reach }
             .sortedBy { (blobs[it].centre - centre.centre).length }
             .take(NEIGHBOURS)
+        val d2 = DoubleArray(blobs.size) { (blobs[it].centre - centre.centre).let { d -> d.x * d.x + d.y * d.y } }
         var best: FaceLattice? = null
         for (ai in near.indices) for (bi in ai + 1 until near.size) {
             val u = blobs[near[ai]].centre - centre.centre
@@ -303,7 +310,10 @@ object FaceFinder {
             val lv = v.length
             if (abs(u.cross(v)) < 0.4 * lu * lv) continue
             if (lu > 3 * lv || lv > 3 * lu) continue
-            val candidate = fit(blobs, c, u, v) ?: continue
+            // Only blobs a lattice place could take (each place within 1 + 3 × the larger tolerance steps of the centre along u and v).
+            val r = (1 + 3 * maxOf(stretch, tolerance)) * (lu + lv)
+            val within = blobs.indices.filter { it != c && d2[it] <= r * r }
+            val candidate = fit(blobs, c, u, v, within) ?: continue
             if (best == null || candidate.hits > best.hits || (candidate.hits == best.hits && candidate.quality > best.quality)) best = candidate
         }
         return best?.takeIf { it.hits >= 7 }
@@ -313,28 +323,33 @@ object FaceFinder {
      * Fits a lattice with steps [u0] and [v0] around blob [c]: the four edge places are predicted
      * from the steps, the corners from the edges found (a small perspective correction).
      */
-    private fun fit(blobs: List<Blob>, c: Int, u0: Point, v0: Point): FaceLattice? {
+    private fun fit(blobs: List<Blob>, c: Int, u0: Point, v0: Point, within: List<Int>): FaceLattice? {
         val o = blobs[c].centre
         val det = u0.cross(v0)
         var error = 0.0
-        val taken = HashSet<Int>()
-        taken += c
+        val taken = BooleanArray(blobs.size)
+        taken[c] = true
         // The blob nearest to [p] in lattice steps, within [alongU] steps along u and [alongV] along v.
         fun nearest(p: Point, alongU: Double, alongV: Double): Int? {
             var best = -1
-            var bestD = 1.0
-            for (i in blobs.indices) {
-                if (i in taken) continue
-                val d = blobs[i].centre - p
-                val dist = hypot(d.cross(v0) / det / alongU, u0.cross(d) / det / alongV)
-                if (dist < bestD) {
+            // Squared distances compared (hypot is slow and this runs about a thousand times a frame).
+            var bestD2 = 1.0
+            for (i in within) {
+                if (taken[i]) continue
+                val q = blobs[i].centre
+                val dx = q.x - p.x
+                val dy = q.y - p.y
+                val a = (dx * v0.y - dy * v0.x) / det / alongU
+                val b = (u0.x * dy - u0.y * dx) / det / alongV
+                val dist2 = a * a + b * b
+                if (dist2 < bestD2) {
                     best = i
-                    bestD = dist
+                    bestD2 = dist2
                 }
             }
             if (best < 0) return null
-            taken += best
-            error += bestD
+            taken[best] = true
+            error += sqrt(bestD2)
             return best
         }
         // Steps as predicted; an edge found replaces its prediction for the corners next to it.
@@ -342,6 +357,8 @@ object FaceFinder {
         val um = nearest(o - u0, stretch, tolerance)
         val vp = nearest(o + v0, tolerance, stretch)
         val vm = nearest(o - v0, tolerance, stretch)
+        // Three edges missing leave at most six of nine.
+        if (listOf(up, um, vp, vm).count { it == null } >= 3) return null
         fun at(i: Int?, fallback: Point) = i?.let { blobs[it].centre } ?: fallback
         val eu = mapOf(1 to at(up, o + u0), -1 to at(um, o - u0))
         val ev = mapOf(1 to at(vp, o + v0), -1 to at(vm, o - v0))

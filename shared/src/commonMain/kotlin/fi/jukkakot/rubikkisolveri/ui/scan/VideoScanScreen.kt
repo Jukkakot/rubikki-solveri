@@ -93,6 +93,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
+import kotlin.time.TimeSource
 
 /**
  * The faces (full and partial) [FaceFinder] found in one camera picture of [width]×[height] pixels, in
@@ -227,7 +228,9 @@ fun VideoScanContent(
             frame.lockedWashed?.let { log.lock(exposure.settings.darker, it) }
             log.picture(f, now)
             val stateBefore = state
+            val scanStart = TimeSource.Monotonic.markNow()
             state = scan.onFrame(f.faces, now)
+            log.scanTime(scanStart.elapsedNow().inWholeMicroseconds / 1000.0)
             picture = f
             log.onFrame(stateBefore, state, now, torch, exposure.settings.darker)
             if (state.newStickers > 0 && now - lastBuzz >= BUZZ_MILLIS) {
@@ -260,7 +263,7 @@ fun VideoScanContent(
         } else {
             preview(Modifier.fillMaxSize())
         }
-        picture?.let { p -> PaintLayer(state, p.width, p.height, Modifier.fillMaxSize()) }
+        picture?.let { p -> PaintLayer(state, p.width, p.height, Modifier.fillMaxSize(), onPainted = log::paintTime) }
         // A face is in view but nothing read yet: a small sign that the scan is working.
         if (!done && picture?.faces?.isNotEmpty() == true && state.recognised == 0) {
             CircularProgressIndicator(
@@ -328,6 +331,8 @@ private class ScanLogger(private val engine: ScanEngine, private val scan: Video
     private var frames = 0
     private var faces = 0
     private var finderMs = 0L
+    private var scanMs = 0.0
+    private var paintMs = 0.0
     private var worker: Boolean? = null
 
     /** Every picture the finder read. */
@@ -337,6 +342,16 @@ private class ScanLogger(private val engine: ScanEngine, private val scan: Video
         faces += f.faces.size
         finderMs += f.finderMs
         worker = f.worker
+    }
+
+    /** The scan's work on one picture. */
+    fun scanTime(ms: Double) {
+        scanMs += ms
+    }
+
+    /** Working out or drawing the paint on the cube (it redraws while it glides): summed per picture. */
+    fun paintTime(ms: Double) {
+        paintMs += ms
     }
 
     fun onFrame(before: VideoScanState, now: VideoScanState, at: Long, torch: Boolean, darker: Int) {
@@ -366,12 +381,14 @@ private class ScanLogger(private val engine: ScanEngine, private val scan: Video
         AppLog.info(
             Evt.SCAN_VIDEO, null,
             "engine" to engine.logName,
-            *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n, fps, torch, darker, worker, scan.centreLog),
+            *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n, fps, torch, darker, worker, scan.centreLog, scanMs / n, paintMs / n),
         )
         lastSnapshot = at
         frames = 0
         faces = 0
         finderMs = 0
+        scanMs = 0.0
+        paintMs = 0.0
     }
 
     private fun event(kind: String, vararg fields: Pair<String, Any?>) = AppLog.info(Evt.SCAN_VIDEO, null, "kind" to kind, "engine" to engine.logName, *fields)
@@ -398,8 +415,11 @@ fun videoStatus(state: VideoScanState): StringResource = when {
  * cube moves quickly ([MotionFade]) and the projection's part when it grows old ([paintAlpha]).
  */
 @Composable
-private fun PaintLayer(state: VideoScanState, width: Int, height: Int, modifier: Modifier) {
-    val paint = remember(state) { ScanPaint.of(state) }
+private fun PaintLayer(state: VideoScanState, width: Int, height: Int, modifier: Modifier, onPainted: (Double) -> Unit = {}) {
+    val paint = remember(state) {
+        val start = TimeSource.Monotonic.markNow()
+        ScanPaint.of(state).also { onPainted(start.elapsedNow().inWholeMicroseconds / 1000.0) }
+    }
     val glide = remember { Glide() }
     val motion = remember { MotionFade() }
     val still = remember(state) {
@@ -427,6 +447,7 @@ private fun PaintLayer(state: VideoScanState, width: Int, height: Int, modifier:
     }
     val alpha = paintAlpha(state.projectionAge) * shown
     Canvas(modifier) {
+        val drawStart = TimeSource.Monotonic.markNow()
         val sx = size.width / width
         val sy = size.height / height
         fun at(p: Point) = Offset((p.x * sx).toFloat(), (p.y * sy).toFloat())
@@ -471,6 +492,7 @@ private fun PaintLayer(state: VideoScanState, width: Int, height: Int, modifier:
             drawPath(path, StickerColors.PLASTIC.copy(alpha = 0.6f * alpha), style = Stroke(6.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
             drawPath(path, Color.White.copy(alpha = alpha), style = Stroke(3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
         }
+        onPainted(drawStart.elapsedNow().inWholeMicroseconds / 1000.0)
     }
 }
 

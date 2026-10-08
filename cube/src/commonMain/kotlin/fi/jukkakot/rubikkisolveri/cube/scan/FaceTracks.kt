@@ -695,7 +695,8 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         if (openOn.isEmpty()) return
         for (list in openOn.values) for (t in list) t.state().let { it.assigned = it.option ?: it.assigned }
         val extra = IntArray(6)
-        fun cost(): Double = BestCube.cost(evidenceOf(extra), scheme)
+        var turned = TurnedEvidence()
+        fun cost(): Double = BestCube.cost(turned.of(extra), scheme)
         var base = cost()
         repeat(2) {
             for (face in openOn.keys) {
@@ -717,9 +718,10 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             for (t in list) t.state().assigned = FaceOption.of(face, FaceOption.turn(t.state().assigned) + k)
         }
         extra.fill(0)
+        turned = TurnedEvidence()
         for ((face, list) in openOn) {
-            val leading = leadingOf(face, 0)
-            val settled = (1 until 4).filter { k -> leadingOf(face, k) != leading }.all { k ->
+            val leading = turned.leading(face, 0)
+            val settled = (1 until 4).filter { k -> turned.leading(face, k) != leading }.all { k ->
                 extra[face.ordinal] = k
                 val c = cost()
                 extra[face.ordinal] = 0
@@ -742,8 +744,9 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     fun turnsClear(): Boolean {
         val faces = Face.entries.filter { f -> counting().any { t -> t.state().byCube && t.state().option?.let { it != FaceOption.NONE && FaceOption.face(it) == f } == true } }
         if (faces.size < 2) return true
-        val base = BestCube.cost(evidenceOf(IntArray(6)), scheme)
-        val reads = faces.associateWith { f -> List(4) { k -> leadingOf(f, k) } }
+        val turned = TurnedEvidence()
+        val base = BestCube.cost(turned.of(IntArray(6)), scheme)
+        val reads = faces.associateWith { f -> List(4) { k -> turned.leading(f, k) } }
         val ways = ArrayList<List<Int>>()
         for (i in faces.indices) for (j in i + 1 until faces.size) for (a in 0 until 4) for (b in 0 until 4) {
             val fa = faces[i]
@@ -760,7 +763,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         // The way that was too close last frame first: while the turns stay unclear it usually still is (one
         // cube cost instead of dozens a frame, `scan-rules-finish`).
         lastClose?.let { w -> if (ways.remove(w)) ways.add(0, w) }
-        val close = ways.firstOrNull { w -> BestCube.cost(evidenceOf(w.toIntArray()), scheme) - base < TURN_MARGIN }
+        val close = ways.firstOrNull { w -> BestCube.cost(turned.of(w.toIntArray()), scheme) - base < TURN_MARGIN }
         lastClose = close
         return close == null
     }
@@ -768,11 +771,38 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     /** The other turns [turnsClear] last found too close to the best (per face, the extra quarter turns). */
     private var lastClose: List<Int>? = null
 
-    /** The colours [face]'s evidence leads with, its open-turn tracks turned [k] more. */
-    private fun leadingOf(face: Face, k: Int): List<Int> {
-        val extra = IntArray(6).also { it[face.ordinal] = k }
-        val votes = evidenceOf(extra).votes
-        return List(9) { n -> votes[face.ordinal * 9 + n].let { v -> if (v.sum() <= 0.0) -1 else v.indices.maxBy { v[it] } } }
+    /**
+     * The evidence with each face's open-turn tracks turned some quarter turns more, as [evidenceOf] with
+     * that extra, from each face's votes worked out once per turn (`scan-speed-up`): a trial turn is a
+     * look-up, not a pass over every reading. A face's votes add up in [evidenceOf]'s order, so the numbers
+     * are the same. Made anew whenever the assignments change.
+     */
+    private inner class TurnedEvidence {
+        private val readings = assignedReadings()
+        private val byTurn = Array(6) { arrayOfNulls<List<DoubleArray>>(4) }
+
+        private fun votes(face: Int, k: Int): List<DoubleArray> {
+            byTurn[face][k]?.let { return it }
+            val list = readings[Face.entries[face]].orEmpty()
+            // A face without open-turn readings reads the same in every turn.
+            if (k != 0 && list.none { it.third }) return votes(face, 0)
+            val votes = List(9) { DoubleArray(6) }
+            for ((r, turn, open) in list) {
+                val t = if (open) turn + k else turn
+                for (n in 0 until 9) {
+                    if (n == CENTRE) continue
+                    r.shares[r.at(RotationSearch.turnIndex(n, t))]?.let { sh -> for (c in 0 until 6) votes[n][c] += sh[c] }
+                }
+            }
+            byTurn[face][k] = votes
+            return votes
+        }
+
+        /** The evidence, each face's open-turn tracks turned [extra] (per face) more. */
+        fun of(extra: IntArray): StickerEvidence = StickerEvidence(List(Stickers.COUNT) { s -> votes(s / 9, extra[s / 9])[s % 9] })
+
+        /** The colours [face]'s evidence leads with, its open-turn tracks turned [k] more. */
+        fun leading(face: Face, k: Int): List<Int> = votes(face.ordinal, k).map { v -> if (v.sum() <= 0.0) -1 else v.indices.maxBy { v[it] } }
     }
 
     /** The tracks whose readings are evidence: per face, those agreeing with its most supported track. */
