@@ -164,38 +164,54 @@ Rescanning a single face from the colour check SHALL use the guided scan.
 - **THEN** the guided scan opens for that face only
 
 ### Requirement: Colours on the camera picture
-The camera picture SHALL show both which stickers are still needed and what each known sticker was
-read as, without covering the real cube. A sticker still needed SHALL be covered by a grey veil
-smaller than the sticker. A known sticker SHALL show a small dot in its read colour at its centre,
-small enough that the real sticker shows around it, so a misread can be seen at a glance.
+The camera picture SHALL show both which stickers the camera has not read yet and what each read
+sticker was read as, without covering the real cube. A sticker not read yet SHALL be covered by a
+grey veil smaller than the sticker. A read sticker SHALL show a small mark in its read colour at its
+centre, small enough that the real sticker shows around it, so a misread can be seen at a glance: a
+thin hollow ring while it is only read, a filled dot once it is known. A sticker counts as read as
+soon as the camera has read its face steadily over a few pictures, before the scan knows which face
+of the cube it is.
 
 #### Scenario: Reading shown
-- **WHEN** a face is found in the picture with some of its stickers still needed
-- **THEN** those stickers show a grey veil and the known ones show a small dot in their read colour
+- **WHEN** a face is found in the picture and some of its stickers have not been read yet
+- **THEN** those stickers show a grey veil, the read ones a hollow ring and the known ones a filled dot, each in its read colour
 
 #### Scenario: Misread visible
 - **WHEN** a sticker is read as a different colour than it really is
-- **THEN** its dot shows the read colour, which differs from the real sticker around it
+- **THEN** its mark shows the read colour, which differs from the real sticker around it
+
+#### Scenario: Read before placed
+- **WHEN** a face is held to the camera for about half a second while the scan cannot yet tell which face of the cube it is
+- **THEN** its grey veils give way to hollow rings in the colours read, without waiting for the scan to place it
+
+#### Scenario: Read becomes known
+- **WHEN** a read sticker becomes known
+- **THEN** its hollow ring fills to a dot
 
 ### Requirement: Progress on the real cube
 The screen SHALL show the progress on the real cube in the camera picture, not on a separate cube.
-Every sticker still needed on a side of the real cube turned towards the camera SHALL be veiled in
-grey, so the grey parts show what is left to show; known stickers SHALL show only their small dot.
+Every sticker not yet read on a side of the real cube turned towards the camera SHALL be veiled in
+grey, so the grey parts show what is left to show; read stickers SHALL show only their small mark.
 A side SHALL get a white outline and a small tick at its centre only when the rest of the cube
 confirms all its stickers, not on its own readings alone. When the cube's pose cannot be told, at
-least the faces found SHALL be marked. A small vibration SHALL tell when new stickers become known.
+least the faces found SHALL be marked. A small vibration SHALL tell when new stickers become known
+and when a new side is read (a segment of the progress ring lights).
 
 #### Scenario: Filling in
-- **WHEN** a side is shown to the camera and its stickers become known
-- **THEN** their grey veils give way to small dots, and the side gets an outline and a tick once the rest of the cube confirms it
+- **WHEN** a side is shown to the camera and its stickers are read
+- **THEN** their grey veils give way to small marks, and the side gets an outline and a tick once the rest of the cube confirms it
 
 #### Scenario: Sure only with the rest of the cube
 - **WHEN** a side has been read many times the same way but the rest of the cube does not confirm it yet
-- **THEN** its stickers show dots and no veil, but the side has no outline and no tick
+- **THEN** its stickers show hollow rings and no veil, but the side has no outline and no tick
 
 #### Scenario: Side at an angle
 - **WHEN** the cube is held so that a side is seen at an angle too steep to read
-- **THEN** that side's needed stickers are still veiled
+- **THEN** that side's stickers not read yet are still veiled
+
+#### Scenario: New side read
+- **WHEN** a face with the blue centre is read for the first time in the scan
+- **THEN** the phone gives a short vibration and the blue segment of the ring lights
 
 #### Scenario: Sides done at a glance
 - **WHEN** the white and the green side are confirmed and both are turned towards the camera
@@ -304,6 +320,12 @@ small movements that holding brings, the marks SHALL stay. Only while the cube m
 a moment, so that no mark floats beside a moving cube. When no face has been found for about a
 second, the marks SHALL fade out. They SHALL come back as soon as the cube is seen again.
 
+In the browser, where the scan reads its pictures beside the page, the screen SHALL instead show
+the very picture the scan read with that picture's marks, so the marks lie exactly on the cube also
+while it moves: the picture then changes at the scan's rate and a little behind the live camera,
+and the marks neither glide nor fade for movement. Where the browser cannot read beside the page,
+the live picture and the rules above stay.
+
 #### Scenario: Turning the cube
 - **WHEN** the user turns the cube slowly in front of the camera
 - **THEN** the marks glide with the stickers and do not flicker or jump between positions
@@ -313,7 +335,7 @@ second, the marks SHALL fade out. They SHALL come back as soon as the cube is se
 - **THEN** the marks stay shown
 
 #### Scenario: Moving quickly
-- **WHEN** the user moves or turns the cube quickly, about a side width a second or faster
+- **WHEN** the user moves or turns the cube quickly, about a side width a second or faster, in the phone app
 - **THEN** the marks fade out while it moves and appear again on the cube soon after it slows
 
 #### Scenario: Pose missed for a moment
@@ -324,18 +346,32 @@ second, the marks SHALL fade out. They SHALL come back as soon as the cube is se
 - **WHEN** the cube is taken out of the picture
 - **THEN** the marks fade out within about a second, and appear again when the cube is back
 
+#### Scenario: Browser marks on the moving cube
+- **WHEN** the user turns the cube quickly in front of the camera in the browser
+- **THEN** each picture shown has its marks on the cube's stickers, without lagging beside it
+
 ### Requirement: Progress ring
-A small ring at the top of the picture SHALL fill with the share of the cube's stickers that are
-known, without a number. It SHALL be full when the scan finishes, also when the scan finishes with
-some stickers never seen.
+A small ring at the top of the picture SHALL show the six sides as six segments, each in its
+centre's colour, without numbers. A segment SHALL be faint while no face with that centre colour
+has been read, lit once one has, and full once the rest of the cube confirms that side. The ring
+SHALL be full in every segment when the scan finishes, also when the scan finishes with some
+stickers never seen. A faint segment tells which side is still to show.
 
 #### Scenario: Half known
-- **WHEN** 27 of the 54 stickers are known
-- **THEN** the ring is half full
+- **WHEN** three sides have been read and none is confirmed yet
+- **THEN** three segments are lit, not full, and the other three are faint
+
+#### Scenario: One side still unread
+- **WHEN** five sides have been read and the orange side has not been shown
+- **THEN** five segments are lit and the orange one is faint
+
+#### Scenario: Read but not confirmed
+- **WHEN** the white side has been read but the rest of the cube does not confirm it yet
+- **THEN** the white segment is lit but not full
 
 #### Scenario: Finish before every sticker is seen
 - **WHEN** the scan finishes with 50 stickers known
-- **THEN** the ring is full
+- **THEN** every segment of the ring is full
 
 ### Requirement: Scan screen layout
 The camera picture SHALL fill the screen, with no title and no buttons below it. On the picture
@@ -353,13 +389,18 @@ what is known. The dim-light and stall notices SHALL stay as before.
 
 ### Requirement: One status line
 One short status line SHALL lie at the bottom of the picture. It SHALL ask to show the cube when
-none is found, ask to show the grey parts while stickers are needed, ask to turn the cube while two
-faces could still be told apart either way (for about two seconds and more), and say the scan is
-ready at the end. A stall notice SHALL take its place while shown.
+none is found, ask to show the grey parts while sides are still unread, ask to turn the cube once
+every side has been read but the cube is not yet clear, ask to turn the cube while two faces could
+still be told apart either way (for about two seconds and more), and say the scan is ready at the
+end. A stall notice SHALL take its place while shown.
 
 #### Scenario: Status line
-- **WHEN** a cube is in view and stickers are still needed
+- **WHEN** a cube is in view and some sides have not been read yet
 - **THEN** the line asks to show the grey parts
+
+#### Scenario: Every side read
+- **WHEN** all six sides have been read and the scan cannot yet tell the whole cube
+- **THEN** the line asks to turn the cube
 
 #### Scenario: No cube
 - **WHEN** no face is found in the picture
@@ -382,3 +423,26 @@ scanner ran, so the two can be compared from real use.
 #### Scenario: Which scanner in the log
 - **WHEN** a video scan runs
 - **THEN** its log lines say which scanner it used
+
+### Requirement: Turn shown on a small cube
+When nothing new has been read for about two seconds while the scan is not finished, a small 3D
+cube SHALL appear by the status line and show, as a short repeating movement, how to turn the real
+cube. Its stickers SHALL be grey except its six centres in their colours, so its orientation can be
+told. When a side is still unread and the scan knows how the cube is held, the small cube SHALL
+start as the real cube is held and turn so that the unread side faces the camera; when every side
+has been read but the cube is not yet clear, or the scan does not know how the cube is held, it
+SHALL tilt from one side facing the camera to a corner view with three sides showing. The movement
+SHALL stay the same while the side to show stays the same, and the small cube SHALL go away as soon
+as something new is read. No arrow SHALL be drawn on the real cube.
+
+#### Scenario: Unread side shown
+- **WHEN** the orange side has not been read, the scan knows how the cube is held, and nothing new has been read for two seconds
+- **THEN** a small cube with grey stickers and coloured centres appears by the status line, starting as the cube is held and turning its orange centre towards the camera, again and again
+
+#### Scenario: Corners shown
+- **WHEN** every side has been read, the cube is not yet clear and nothing new has been read for two seconds
+- **THEN** the small cube tilts from one side facing the camera to a corner view with three sides showing
+
+#### Scenario: Gone on progress
+- **WHEN** the small cube is shown and a new sticker or side is read
+- **THEN** the small cube goes away
