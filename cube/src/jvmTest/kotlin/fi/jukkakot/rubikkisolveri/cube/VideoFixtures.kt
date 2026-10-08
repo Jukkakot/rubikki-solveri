@@ -55,6 +55,15 @@ object VideoFixtures {
     const val STRIPED_U2_DIM = "20261007_202403"
     const val STRIPED_U2_TRUTH = "WWWWWWWWWGOBBRGBRGRBOOGROGRYYYYYYYYYBRGGOBGOBOGRRBORBO"
 
+    /**
+     * Screen recording of the first phone test of the rules scanner (web, Samsung Browser, 2026-10-08
+     * 08:45; the camera part, 360 wide, 10 fps, the app's paint on it). Stills f0021–f0049 and
+     * f0480–f0488 are the home screen's painted cube (left out); [PHONE_SCAN_1] is the first scan (the plain striped cube, [STRIPED_TRUTH]),
+     * [PHONE_SCAN_2] the second (the cube turned, its state not known).
+     */
+    const val PHONE_SCAN_1 = "web_084657:66-455"
+    const val PHONE_SCAN_2 = "web_084657:499-998"
+
     data class Frame(val name: String, val faces: List<FaceReading>)
 
     /** [blue] mixed towards white until the default palette names it white, as the phone's camera saw a blue centre in shadow. */
@@ -93,9 +102,12 @@ object VideoFixtures {
         }
     }
 
+    /** The frames of [video]; `name:from-to` takes frames from (inclusive) to (exclusive) of it. */
     fun load(video: String): List<Frame> {
-        val text = VideoFixtures::class.java.getResource("/video/$video.txt")!!.readText()
-        return text.lines().filter { it.isNotBlank() }.map { line ->
+        val (name, range) = video.split(":").let { it[0] to it.getOrNull(1)?.split("-")?.map(String::toInt) }
+        val text = VideoFixtures::class.java.getResource("/video/$name.txt")!!.readText()
+        val lines = text.lines().filter { it.isNotBlank() }.let { l -> if (range == null) l else l.subList(range[0], minOf(range[1], l.size)) }
+        return lines.map { line ->
             val parts = line.split(" | ")
             Frame(
                 parts[0],

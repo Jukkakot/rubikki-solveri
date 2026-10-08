@@ -231,7 +231,7 @@ open class VideoScanTest {
         repeat(4) { s = scan.onFrame(listOf(u, b), it * 100L) }
         for (n in 0 until 9) s.stickers[Face.U.ordinal * 9 + n]?.let { assertEquals(truth[Face.U.ordinal * 9 + n], it, "U $n") }
         assertEquals(CubeColor.BLUE, s.stickers[Face.B.ordinal * 9 + 4])
-        assertEquals(8, recognisedOn(s, Face.U).size)
+        assertEquals(aloneCount(Face.U, (0 until 9) - 4), recognisedOn(s, Face.U).size)
     }
 
     @Test
@@ -244,7 +244,7 @@ open class VideoScanTest {
         repeat(60) { scan.onFrame(listOf(bad), it * 100L) }
         assertTrue((0..2).all { scan.state.stickers[Face.U.ordinal * 9 + it] != null && scan.state.stickers[Face.U.ordinal * 9 + it] != names[it] }, "known wrong first")
         repeat(40) { scan.onFrame(listOf(right), 6_000 + it * 100L) }
-        for (n in 0 until 9) assertEquals(names[n], scan.state.stickers[Face.U.ordinal * 9 + n], "sticker $n")
+        for (n in 0 until 9) assertEquals(aloneShows(Face.U, n), scan.state.stickers[Face.U.ordinal * 9 + n], "sticker $n")
     }
 
     /** Frames until the cube is first complete (null: never) and stickers recognised at the halfway frame, replaying only the faces [keep] lets through. */
@@ -280,7 +280,7 @@ open class VideoScanTest {
         var t = 0L
         repeat(4) { scan.onFrame(listOf(reading(Face.U)), t++ * 100) }
         val before = scan.state.stickers.toList()
-        assertEquals(9, before.count { it != null })
+        assertEquals(aloneCount(Face.U, 0 until 9), before.count { it != null })
         val after = scan.onFrame(listOf(reading(Face.U, wrong = 0)), t * 100)
         assertEquals(before, after.stickers)
         assertTrue(after.contradictions.isEmpty())
@@ -304,7 +304,7 @@ open class VideoScanTest {
         var s = VideoScanState.EMPTY
         repeat(4) { s = scan.onFrame(listOf(f, u), it * 100L) }
         assertEquals(Pose(Face.F, Face.U), s.pose)
-        for (face in listOf(Face.U, Face.F)) for (n in 0 until 9) assertEquals(truth[face.ordinal * 9 + n], s.stickers[face.ordinal * 9 + n])
+        for (face in listOf(Face.U, Face.F)) for (n in 0 until 9) assertEquals(aloneShows(face, n), s.stickers[face.ordinal * 9 + n])
     }
 
     @Test
@@ -348,9 +348,9 @@ open class VideoScanTest {
         println("rules scanner: a face alone shows after ${FaceTracks.MIN_READINGS - 1 + first + 1} readings")
         assertTrue(first in 0..2, "shows within a few readings: $first")
         s = scan.state
-        assertTrue(s.found.single().recognised.all { it }, "${s.found.single().recognised}")
+        assertEquals((0 until 9).map { aloneShows(Face.U, it) != null }, s.found.single().recognised)
         assertEquals(9, s.found.single().names.count { it != null })
-        for (n in 0 until 9) assertEquals(truth[Face.U.ordinal * 9 + n], s.stickers[Face.U.ordinal * 9 + n])
+        for (n in 0 until 9) assertEquals(aloneShows(Face.U, n), s.stickers[Face.U.ordinal * 9 + n])
     }
 
     /** A corner view of F (U above it) four times from [start]: F and U settle and a projection is built. */
@@ -398,6 +398,16 @@ open class VideoScanTest {
     /** Places of [face] known in [state], the centre left out (it is known as soon as the face is seen). */
     private fun recognisedOn(state: VideoScanState, face: Face) = (0 until 9).filter { it != 4 && state.stickers[face.ordinal * 9 + it] != null }
 
+    /**
+     * [face]'s sticker [n] as a face seen without the red and orange centres shows it: the rules scanner
+     * holds red and orange until both those centres are known (scan-rules-phone).
+     */
+    private fun aloneShows(face: Face, n: Int): CubeColor? =
+        truth[face.ordinal * 9 + n].takeUnless { engine == ScanEngine.RULES && n != 4 && it in FaceTracks.WARM }
+
+    /** How many of [face]'s places [places] such a face shows. */
+    private fun aloneCount(face: Face, places: Iterable<Int>) = places.count { aloneShows(face, it) != null }
+
     @Test
     fun aPartialFaceVotesForTheStickersItShows() {
         val scan = VideoScan(engine = engine)
@@ -407,7 +417,7 @@ open class VideoScanTest {
         val turn = if (engine == ScanEngine.LOOK) 1 else 0
         val s = scan.onFrame(listOf(reading(Face.U, turn = turn, missing = setOf(1))), 200)
         // Missing place 1 of the reading is one place of the face; the other seven around the centre reach three votes.
-        assertEquals(7, recognisedOn(s, Face.U).size)
+        assertEquals(aloneCount(Face.U, listOf(0, 2, 3, 5, 6, 7, 8)), recognisedOn(s, Face.U).size)
         for (n in recognisedOn(s, Face.U)) assertEquals(truth[Face.U.ordinal * 9 + n], s.stickers[Face.U.ordinal * 9 + n])
     }
 
@@ -532,7 +542,7 @@ open class VideoScanTest {
     fun aSideReadManyTimesButNotConfirmedHasNoTick() {
         val scan = VideoScan(engine = engine)
         repeat(20) { scan.onFrame(listOf(reading(Face.U)), it * 100L) }
-        assertEquals(9, recognisedOn(scan.state, Face.U).size + 1, "all nine known from their own votes")
+        assertEquals(aloneCount(Face.U, 0 until 9), recognisedOn(scan.state, Face.U).size + 1, "all known from their own votes")
         assertTrue(scan.state.confirmed.isEmpty(), "${scan.state.confirmed}")
         val faces = Face.entries.map { reading(it, centre = Point(100.0, 100.0 + 300 * it.ordinal)) }
         var t = 2_000L
@@ -612,7 +622,7 @@ open class VideoScanTest {
         exposure.onTorch(true, t)
         repeat(4) {
             t += 100
-            listOf(reading(Face.R)).let { exposure.onFrame(it, 200, 200, t); scan.onFrame(it, t) }
+            listOf(reading(Face.F)).let { exposure.onFrame(it, 200, 200, t); scan.onFrame(it, t) }
         }
         assertEquals(ExposureControl.Phase.METERING, exposure.phase)
         assertTrue(scan.state.recognised > before, "${scan.state.recognised} after $before")

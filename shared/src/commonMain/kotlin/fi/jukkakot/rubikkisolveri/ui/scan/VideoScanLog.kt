@@ -26,6 +26,7 @@ object VideoScanLog {
         torch: Boolean = false,
         darker: Int = 0,
         worker: Boolean? = null,
+        centres: String = "",
     ): Array<Pair<String, Any?>> = arrayOf(
         "kind" to "snapshot",
         "known" to Face.entries.joinToString(" ") { f -> "${f.name}${(0 until 9).count { state.stickers[f.ordinal * 9 + it] != null }}" },
@@ -39,6 +40,8 @@ object VideoScanLog {
         "darker" to darker,
         "worker" to worker,
         "stall" to state.stall?.name?.lowercase(),
+        // The centres as the camera reads them (rules scanner), e.g. how red its orange looks.
+        "centres" to centres.ifEmpty { null },
     )
 
     /** The sides done in [state]: the rest of the cube confirms all nine stickers ([VideoScanState.confirmed]). */

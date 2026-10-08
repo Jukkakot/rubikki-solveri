@@ -7,6 +7,8 @@ import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.Edge
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.Stickers
+import kotlin.math.PI
+import kotlin.math.atan2
 import kotlin.math.ln
 import kotlin.math.min
 
@@ -24,6 +26,15 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     private val rules = PairRules()
     private var refs: Map<CubeColor, Tone> = defaultRefs()
     private var known: Map<CubeColor, Rgb> = emptyMap()
+
+    /** The hue of each counting track's centre that looks red or orange, by track id, for this frame ([warmOrderCost]). */
+    private var warmHues: Map<Int, Double> = emptyMap()
+
+    /** Both red and orange centres are known: the two are named against the cube's own colours, not the palette. */
+    val warmCalibrated: Boolean get() = CubeColor.RED in known && CubeColor.ORANGE in known
+
+    /** Each counting track's face (`?` while open) and centre as read, for the scan log: the camera's own colours. */
+    val centreLog: String get() = counting().mapNotNull { t -> t.state().centre?.let { c -> "${t.state().face?.name ?: "?"}${c.toHex()}" } }.joinToString(" ")
 
     private class State {
         var votes: List<DoubleArray> = List(9) { DoubleArray(6) }
@@ -181,6 +192,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             track.updateLeading()
         }
         for (t in tracker.tracks) if (now - t.lastAt <= Tracker.GAP_MILLIS) votesOf(t)
+        warmHues = warmHuesOf()
         recheck()
         assignOpen(now)
         updateVoting(now)
@@ -380,8 +392,31 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val centre = t.state().centre ?: return 0.0
         val d = ColorClassifier.centreDistances(centre, known)
         val least = d.values.min()
-        return LOOK_WEIGHT * min(d.getValue(scheme[face]) - least, LOOK_CAP)
+        return LOOK_WEIGHT * min(d.getValue(scheme[face]) - least, LOOK_CAP) + warmOrderCost(t, face)
     }
+
+    /**
+     * Red and orange told apart by each other: a warm centre clearly more orange (by hue) than another
+     * track's is not the red face, one clearly redder is not the orange face. The palette and a lone
+     * centre cannot do it in every light (the camera's orange looked red in the phone test of 2026-10-08,
+     * and once taken for the red face it was its own red reference).
+     */
+    private fun warmOrderCost(t: Track, face: Face): Double {
+        val color = scheme[face]
+        if (color !in WARM) return 0.0
+        val h = warmHues[t.id] ?: return 0.0
+        val others = warmHues.filterKeys { it != t.id }.values
+        val wrong = if (color == CubeColor.RED) others.any { it < h - WARM_HUE_STEP } else others.any { it > h + WARM_HUE_STEP }
+        return if (wrong) WARM_ORDER_COST else 0.0
+    }
+
+    /** [warmHues] of the counting tracks now. */
+    private fun warmHuesOf(): Map<Int, Double> = counting().mapNotNull { t ->
+        t.state().centre?.takeIf { c -> ColorClassifier.rankedCentre(c).first() in WARM }?.let { c ->
+            val lab = ColorClassifier.scaled(c).toLab()
+            t.id to atan2(lab.b, lab.a) * 180 / PI
+        }
+    }.toMap()
 
     /** Every option's cost for [t] alone against [like], hard rules against the settled tracks applied. */
     private fun unary(t: Track, like: Array<DoubleArray>, settled: List<Track>, domain: IntArray): DoubleArray {
@@ -496,8 +531,8 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         // re-open and are assigned together again.
         val faceOnly = counting().filter { it.state().face != null }
         for (a in faceOnly) for (b in faceOnly) {
-            if (a.id >= b.id || a.state().face != b.state().face || (a.state().option != null && b.state().option != null)) continue
-            val f = a.state().face!!
+            if (a.id >= b.id || a.state().face == null || a.state().face != b.state().face || (a.state().option != null && b.state().option != null)) continue
+            val f = a.state().face ?: continue
             val oa = a.state().option ?: a.state().assigned.takeIf { it != FaceOption.NONE } ?: FaceOption.of(f, 0)
             if ((0 until 4).all { k -> disagreeing(a, oa, b, FaceOption.of(f, k)) > MAX_DISAGREE }) {
                 for (t in listOf(a, b)) t.state().let {
@@ -805,6 +840,13 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** A tie-breaker: a way other than last frame's costs this much more (half of it for a turn other than the track's own). */
         const val STICKY = 0.02
+
+        /** Red and orange, which the palette alone cannot always tell apart. */
+        val WARM: Set<CubeColor> = setOf(CubeColor.RED, CubeColor.ORANGE)
+
+        /** Hue (degrees) by which one warm centre must be more orange than another to rule it out as red ([warmOrderCost]), and the cost. */
+        const val WARM_HUE_STEP = 6.0
+        const val WARM_ORDER_COST = 8.0
 
         /** Cost per sticker beyond [MAX_DISAGREE] that two tracks taken for one face read otherwise. */
         const val CLASH_COST = 4.0

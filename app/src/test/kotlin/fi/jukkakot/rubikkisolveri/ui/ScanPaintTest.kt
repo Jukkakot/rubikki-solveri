@@ -30,11 +30,16 @@ open class ScanPaintTest {
         centre, Point(30.0, 0.0), Point(0.0, 30.0),
     )
 
-    /** F with U above it, four times: both settle, a projection is built. */
+    /**
+     * F with U above it, four times: both settle, a projection is built. The red and orange faces are
+     * seen first elsewhere, so that red and orange stickers are known (the rules scanner holds them until then).
+     */
     private fun cornerView(): VideoScanState {
         val scan = VideoScan(engine = engine)
         var s = VideoScanState.EMPTY
-        repeat(4) { s = scan.onFrame(listOf(reading(Face.F, Point(100.0, 200.0)), reading(Face.U, Point(100.0, 110.0))), it * 100L) }
+        var t = 0L
+        for ((k, warm) in listOf(Face.R, Face.L).withIndex()) repeat(4) { scan.onFrame(listOf(reading(warm, Point(700.0 + 300 * k, 600.0))), t); t += 100 }
+        repeat(4) { s = scan.onFrame(listOf(reading(Face.F, Point(100.0, 200.0)), reading(Face.U, Point(100.0, 110.0))), t); t += 100 }
         return s
     }
 

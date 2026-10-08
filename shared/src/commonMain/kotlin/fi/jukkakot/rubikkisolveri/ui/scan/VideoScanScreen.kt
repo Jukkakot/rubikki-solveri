@@ -197,7 +197,7 @@ fun VideoScanContent(
     val exposure = remember { ExposureControl() }
     exposure.maxDarker = maxDarker
     var lastTorch by remember { mutableStateOf(torch) }
-    val log = remember { ScanLogger(engine) }
+    val log = remember { ScanLogger(engine, scan) }
     val haptics = LocalHapticFeedback.current
 
     fun finish(outcome: ScanOutcome) {
@@ -323,7 +323,7 @@ fun VideoScanContent(
 const val VIDEO_SPINNER_TAG = "video-spinner"
 
 /** The turning points of the scan and a snapshot every two seconds, into the log; every line says which [engine] ran. */
-private class ScanLogger(private val engine: ScanEngine) {
+private class ScanLogger(private val engine: ScanEngine, private val scan: VideoScan) {
     private var lastSnapshot: Long? = null
     private var frames = 0
     private var faces = 0
@@ -366,7 +366,7 @@ private class ScanLogger(private val engine: ScanEngine) {
         AppLog.info(
             Evt.SCAN_VIDEO, null,
             "engine" to engine.logName,
-            *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n, fps, torch, darker, worker),
+            *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n, fps, torch, darker, worker, scan.centreLog),
         )
         lastSnapshot = at
         frames = 0

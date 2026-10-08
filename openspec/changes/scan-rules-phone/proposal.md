@@ -38,3 +38,16 @@ meet it).
 
 `cube/scan/FaceTracks.kt`, `VideoScan.rulesFrame` (names, display, hint); a new fixture and the
 acceptance harness; possibly `ScanAcceptanceHarness` bar notes. No UI or settings change.
+
+## Decisions (made while implementing)
+
+- Red and orange stay unshown (stickers and both faces) until both centres are known. A first red
+  face alone no longer shows its red stickers as known; the scan as a whole is not slower (the
+  acceptance harness: 202156 and 202403 faster, the rest the same).
+- Warm faces are told apart by hue relative to each other (6° step, cost 8), not by the palette alone.
+  At a cost of 12 or more `202058` finishes WRONG with every side turned 180° (the striped cube's
+  mirror): the turn check lets that cube through. Latent, worth its own change.
+- "Nearly read" for the hint: four faces settled.
+- Known, not fixed here: in the recording a face's lattice is sometimes found one row off (the white
+  row above taken as the back face's bottom row), showing three wrong stickers for under a second;
+  the earlier code does the same.

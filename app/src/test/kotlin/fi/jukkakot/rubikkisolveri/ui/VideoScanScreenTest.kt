@@ -16,6 +16,7 @@ import fi.jukkakot.rubikkisolveri.cube.Stickers
 import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
+import fi.jukkakot.rubikkisolveri.cube.scan.FaceTracks
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
@@ -144,8 +145,10 @@ class VideoScanScreenTest {
         // The first face: the camera meters and focuses at it, and its frames are read meanwhile.
         show(face(Face.U), times = 3)
         assertEquals(listOf(CameraSettings(meter = Point(0.5, 0.5), focus = Point(0.5, 0.5))), settings)
-        // The face in view, read three times: its stickers are known before the camera locks.
-        compose.onNodeWithContentDescription("9/54 tarraa tunnistettu").assertExists()
+        // The face in view, read three times: its stickers are known before the camera locks (red and orange
+        // only once both those faces are seen).
+        val known = (0 until 9).count { it == 4 || cube[Face.U.ordinal * 9 + it] !in FaceTracks.WARM }
+        compose.onNodeWithContentDescription("$known/54 tarraa tunnistettu").assertExists()
         assertTrue(checkEnabled())
         show(face(Face.U), times = 4)
         assertEquals(CameraSettings(meter = Point(0.5, 0.5), focus = Point(0.5, 0.5), lock = true), settings.last())

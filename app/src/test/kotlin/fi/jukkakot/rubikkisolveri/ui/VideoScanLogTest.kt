@@ -15,7 +15,8 @@ class VideoScanLogTest {
         // U and R fully known, F's first three, nothing else.
         val stickers = cube.toList().mapIndexed { i, c -> if (i < 18 || i in 18..20) c else null }
         val state = VideoScanState.EMPTY.copy(stickers = stickers, clearness = 1.234, brightness = 142, stall = Stall.STUCK, confirmed = setOf(Face.U))
-        val fields = VideoScanLog.snapshot(state, facesPerFrame = 1.26, finderMs = 17.6, fps = 14.66, torch = true, darker = 2).toMap()
+        val fields = VideoScanLog.snapshot(state, facesPerFrame = 1.26, finderMs = 17.6, fps = 14.66, torch = true, darker = 2, centres = "Ub0b4b8 ?9a2b1c").toMap()
+        assertEquals("Ub0b4b8 ?9a2b1c", fields["centres"])
         assertEquals("snapshot", fields["kind"])
         assertEquals("U9 R9 F3 D0 L0 B0", fields["known"])
         assertEquals(cube.toColorString().take(21) + "?".repeat(33), fields["cube"])

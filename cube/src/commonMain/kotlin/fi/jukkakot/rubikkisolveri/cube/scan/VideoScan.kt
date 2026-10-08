@@ -191,6 +191,9 @@ class VideoScan(
     /** The rules scanner's tracks ([ScanEngine.RULES]). */
     private var tracks = FaceTracks(scheme)
 
+    /** The rules scanner's face centres as read ([FaceTracks.centreLog]), for the scan log; empty for the look scanner. */
+    val centreLog: String get() = if (engine == ScanEngine.RULES) tracks.centreLog else ""
+
     /**
      * Handles the faces found in one frame taken at [nowMillis]. A partial face (stickers missing)
      * counts only with its centre and only for a face already started by a full one.
@@ -834,6 +837,8 @@ class VideoScan(
                 complete -> true
                 i % 9 == CENTRE -> shown
                 face in unsure -> false
+                // A piece that touches a face an open track could be is not known either.
+                BestCube.placeOf(i).any { Face.entries[it / 9] in unsure } -> false
                 face in seen && face !in settledFaces -> false
                 face !in seen && unsure.isNotEmpty() -> false
                 else -> best.supportedMargin(i, evidence) >= CLEAR_MARGIN
@@ -845,6 +850,13 @@ class VideoScan(
                 // Its own votes, unless the best cube is clearly of another mind (a red sticker named orange when the references changed).
                 shown -> ownVotes(evidence, i)?.takeIf { c -> best == null || best.margin(i) < CLEAR_MARGIN || c == best.cube[i] }
                 else -> null
+            }?.takeIf { c ->
+                // Until both the red and the orange centre are known, neither colour nor the red and orange faces are
+                // known: in a light where the camera's orange looks red the palette names it red (phone test 2026-10-08),
+                // and a lone orange face looking red is taken for the red one.
+                val held = !ft.warmCalibrated && (c in FaceTracks.WARM || scheme[face] in FaceTracks.WARM)
+                if (held) clearAt[i] = false
+                !held
             }
         }
         val confirmed = Face.entries.filter { f -> (0 until 9).all { clearAt[f.ordinal * 9 + it] } }.toSet()
@@ -864,7 +876,7 @@ class VideoScan(
         val anchor = faces.indices.filter { faces[it].colors[CENTRE] != null }.maxByOrNull { faces[it].area }?.let { i ->
             faces[i] to (picture.getOrNull(i)?.let { ft.faceOf(it.first) } ?: scheme.faceOf(ColorClassifier.rankedCentre(faces[i].colors[CENTRE]!!).first()))
         }
-        return finish(faces, nowMillis, net, leading, confirmed, emptySet(), found, complete, clearness, main, others, anchor, ft.undecided(nowMillis))
+        return finish(faces, nowMillis, net, leading, confirmed, emptySet(), found, complete, clearness, main, others, anchor, ft.undecided(nowMillis) && seen.size >= HINT_SEEN)
     }
 
     /** The colour [sticker]'s own votes make sure ([MIN_VOTES], [MARGIN] over the next), or null. */
@@ -948,6 +960,9 @@ class VideoScan(
 
         /** Readings that must agree before a sticker counts (`video-scan-spike`: wrong readings lasted at most 2 frames, 5 for one sticker). */
         const val MIN_VOTES = 3
+
+        /** Faces settled before an open one asks to turn the cube: not while a first face is still followed. */
+        const val HINT_SEEN = 4
 
         /** The leading colour needs this many times the votes of the next. */
         const val MARGIN = 2

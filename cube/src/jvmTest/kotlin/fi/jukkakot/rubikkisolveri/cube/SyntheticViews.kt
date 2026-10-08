@@ -29,12 +29,12 @@ object SyntheticViews {
      * The three faces of [corner] (in [Corner.faces] order) as the camera sees them looking at that
      * corner from outside; see [view].
      */
-    fun corner(cube: Cube, corner: Corner, roll: Double = 0.0, turns: List<Int> = listOf(0, 0, 0), centre: Map<Face, Rgb> = emptyMap(), at: Point = Point(200.0, 300.0)): List<FaceReading> =
-        view(cube, corner.faces, roll, turns, centre, at)
+    fun corner(cube: Cube, corner: Corner, roll: Double = 0.0, turns: List<Int> = listOf(0, 0, 0), centre: Map<Face, Rgb> = emptyMap(), at: Point = Point(200.0, 300.0), colors: (CubeColor) -> Rgb = ColorClassifier.DEFAULT_PALETTE::getValue): List<FaceReading> =
+        view(cube, corner.faces, roll, turns, centre, at, colors)
 
     /** The two faces of [edge] (in [Edge.faces] order) seen from outside across their common edge; see [view]. */
-    fun edge(cube: Cube, edge: Edge, roll: Double = 0.0, turns: List<Int> = listOf(0, 0), centre: Map<Face, Rgb> = emptyMap(), at: Point = Point(200.0, 300.0)): List<FaceReading> =
-        view(cube, edge.faces, roll, turns, centre, at)
+    fun edge(cube: Cube, edge: Edge, roll: Double = 0.0, turns: List<Int> = listOf(0, 0), centre: Map<Face, Rgb> = emptyMap(), at: Point = Point(200.0, 300.0), colors: (CubeColor) -> Rgb = ColorClassifier.DEFAULT_PALETTE::getValue): List<FaceReading> =
+        view(cube, edge.faces, roll, turns, centre, at, colors)
 
     /**
      * [faces] of [cube] looking at the cube along the sum of their normals, the picture rolled by
@@ -42,7 +42,7 @@ object SyntheticViews {
      * `RotationSearch.turnIndex(net index, turn)`); [centre] overrides a face's centre colour; the
      * cube's middle lands at [at].
      */
-    fun view(cube: Cube, faces: List<Face>, roll: Double = 0.0, turns: List<Int> = List(faces.size) { 0 }, centre: Map<Face, Rgb> = emptyMap(), at: Point = Point(200.0, 300.0)): List<FaceReading> {
+    fun view(cube: Cube, faces: List<Face>, roll: Double = 0.0, turns: List<Int> = List(faces.size) { 0 }, centre: Map<Face, Rgb> = emptyMap(), at: Point = Point(200.0, 300.0), colors: (CubeColor) -> Rgb = ColorClassifier.DEFAULT_PALETTE::getValue): List<FaceReading> {
         val d = faces.map { v(it.normal) }.reduce(V::plus).unit()
         val any = if (abs(d.y) < 0.9) V(0.0, 1.0, 0.0) else V(1.0, 0.0, 0.0)
         val e0 = (any cross d).unit()
@@ -61,11 +61,11 @@ object SyntheticViews {
             fun netOf(j: Int) = (0 until 9).first { RotationSearch.turnIndex(it, k) == j }
             val u = step(pos(netOf(5)) + c * -1.0)
             val vv = step(pos(netOf(7)) + c * -1.0)
-            val colors = (0 until 9).map { j ->
+            val stickers = (0 until 9).map { j ->
                 val n = netOf(j)
-                if (n == 4 && face in centre) centre.getValue(face) else ColorClassifier.DEFAULT_PALETTE.getValue(cube[face.ordinal * 9 + n])
+                if (n == 4 && face in centre) centre.getValue(face) else colors(cube[face.ordinal * 9 + n])
             }
-            FaceReading(colors, screen(c), u, vv)
+            FaceReading(stickers, screen(c), u, vv)
         }
     }
 
