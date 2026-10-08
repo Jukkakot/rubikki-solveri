@@ -8,7 +8,7 @@
 
 ## 2. Cheaper browser copy (web)
 
-- [ ] 2.0 `platform.mjs`: the read picture's copy drawn with `drawImage(video, crop → canvas)` into one of three reused canvases (box-sized, at most 720 px long, placed where the box is) when the picture is sent; `cameraShowFrame(seq)` makes that canvas the visible one and hides the others and the video; a canvas is reused only when it is neither shown nor waiting for its faces (else no copy for that picture: it then shows nothing new). `showMs` = the draw's own time. No `createImageBitmap` for the copy (the worker's own bitmap stays). Verify with the web build and `web/smoke/video.mjs`
+- [ ] 2.1 `platform.mjs`: the read picture's copy drawn with `drawImage(video, crop → canvas)` into one of three reused canvases (box-sized, at most 720 px long, placed where the box is) when the picture is sent; `cameraShowFrame(seq)` makes that canvas the visible one and hides the others and the video; a canvas is reused only when it is neither shown nor waiting for its faces (else no copy for that picture: it then shows nothing new). `showMs` = the draw's own time. No `createImageBitmap` for the copy (the worker's own bitmap stays). Verify with the web build and `web/smoke/video.mjs`
 
 ## 3. Wrap-up
 
