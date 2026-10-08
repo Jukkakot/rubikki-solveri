@@ -68,6 +68,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 58 | `scan-rules` | done | Rules scanner beside the earlier one: faces followed from picture to picture and known by the rules of a real cube (neighbours, sides, corner handedness, pieces), never finishes wrong on the fixtures, 9/11 with look-alike centres (earlier 1/11); Settings offers both, the new one by default; "Käännä kuutiota" while two faces could be either way. Phone test pending |
 | 59 | `scan-rules-phone` | done | First phone test stalled (camera's orange read red, taken for the red face): red and orange told apart by hue against each other, held until both centres are known; hint only once four faces are settled; log carries the centres. Phone test pending. |
 | 60 | `scan-rules-phone-2` | done | Second phone test: a finished scan lacked red/orange (held after complete), one stuck (orange centre taken for red). Held colours released at the finish, warm hue order a hard rule, the turn check catches the striped cube's half-turn mirror. Phone test pending |
+| 61 | `scan-rules-finish` | specced | Third phone test: the rules scan knew the striped cube in 20 s but never finished (each new face in view revoked the finish), and slowed from 14 to 5 fps as face tracks piled up. A new face that fits no longer holds the finish back; old tracks leave the per-frame work; today's recording a fixture; then speed-up ideas |
 
 ## Backlog
 
