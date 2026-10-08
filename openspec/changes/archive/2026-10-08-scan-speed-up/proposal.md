@@ -34,7 +34,7 @@ None. The change is about speed only and no behaviour changes (`skip_specs`). Th
 - `cube/scan/FaceFinder.kt`
 - `cube/scan/FaceTracks.kt`
 - the video scan screen's log (`shared/.../ui/scan/VideoScanScreen.kt`, `VideoScanLog`)
-- a timing harness in `cube/src/jvmTest`
+- no committed timing harness: the measuring test was temporary
 
 ## Decisions
 - **Finder, measured on 100 phone stills of `web_121505` (360×600, JVM):** blobs 14.8 ms and lattices 8.7 ms

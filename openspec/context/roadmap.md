@@ -69,6 +69,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 59 | `scan-rules-phone` | done | First phone test stalled (camera's orange read red, taken for the red face): red and orange told apart by hue against each other, held until both centres are known; hint only once four faces are settled; log carries the centres. Phone test pending. |
 | 60 | `scan-rules-phone-2` | done | Second phone test: a finished scan lacked red/orange (held after complete), one stuck (orange centre taken for red). Held colours released at the finish, warm hue order a hard rule, the turn check catches the striped cube's half-turn mirror. Phone test pending |
 | 61 | `scan-rules-finish` | done | Third phone test: the rules scan knew the striped cube in 20 s but never finished (each new face in view revoked the finish), and slowed from 14 to 5 fps as face tracks piled up. A new face that fits no longer holds the finish back; old tracks leave the per-frame work; today's recording a fixture; then speed-up ideas |
+| 62 | `scan-speed-up` | done | Speed-ups worth their effort: the face finder twice as fast with the same faces (23.5 → 11.5 ms a frame on JVM), trial turns from per-face votes (about 1 ms less a frame), scan and paint times in the log. Phone check of the frame rate pending |
 
 ## Backlog
 
