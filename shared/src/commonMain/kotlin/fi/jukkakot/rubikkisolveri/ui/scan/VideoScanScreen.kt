@@ -64,7 +64,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import fi.jukkakot.rubikkisolveri.cube.ColorScheme
+import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.Face
+import fi.jukkakot.rubikkisolveri.ui.common.colorName
 import fi.jukkakot.rubikkisolveri.cube.scan.ArgbImage
 import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
 import fi.jukkakot.rubikkisolveri.cube.scan.ExposureControl
@@ -82,7 +84,10 @@ import fi.jukkakot.rubikkisolveri.res.*
 import fi.jukkakot.rubikkisolveri.ui.common.BackButton
 import fi.jukkakot.rubikkisolveri.ui.common.FitColumn
 import fi.jukkakot.rubikkisolveri.ui.common.RoundIconToggle
+import fi.jukkakot.rubikkisolveri.ui.cube3d.Cube3D
+import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeViewState
 import fi.jukkakot.rubikkisolveri.ui.cube3d.StickerColors
+import kotlinx.coroutines.delay
 import fi.jukkakot.rubikkisolveri.ui.elapsedMillis
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
@@ -195,6 +200,8 @@ fun VideoScanContent(
     var picture by remember { mutableStateOf<FoundFaces?>(null) }
     var done by remember { mutableStateOf(false) }
     var dismissed by remember { mutableStateOf(emptySet<Stall>()) }
+    var progressAt by remember { mutableStateOf<Long?>(null) }
+    var demo by remember { mutableStateOf<TurnDemo?>(null) }
     val exposure = remember { ExposureControl() }
     exposure.maxDarker = maxDarker
     var lastTorch by remember { mutableStateOf(torch) }
@@ -233,7 +240,10 @@ fun VideoScanContent(
             log.scanTime(scanStart.elapsedNow().inWholeMicroseconds / 1000.0)
             picture = f
             log.onFrame(stateBefore, state, now, torch, exposure.settings.darker)
-            if (state.newStickers > 0 && now - lastBuzz >= BUZZ_MILLIS) {
+            val progressed = state.newStickers > 0 || !stateBefore.readSides.containsAll(state.readSides)
+            if (progressed || progressAt == null) progressAt = now
+            demo = turnDemo(state, now - (progressAt ?: now), demo)
+            if (shouldBuzz(stateBefore, state, now, lastBuzz)) {
                 lastBuzz = now
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             }
@@ -254,9 +264,10 @@ fun VideoScanContent(
         scan.reset()
         state = scan.state
         dismissed = emptySet()
+        progressAt = null
+        demo = null
     }
 
-    val share by animateFloatAsState(if (done || state.complete) 1f else state.recognised / Stickers.COUNT.toFloat(), tween(250))
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         if (cameraFailed) {
             Text(stringResource(Res.string.scan_camera_error), color = Color.White, modifier = Modifier.align(Alignment.Center))
@@ -299,7 +310,7 @@ fun VideoScanContent(
                     onCheck = { finish(scan.outcome()) }.takeIf { state.recognised > 0 },
                 )
             },
-        ) { ProgressRing(share, state.recognised) }
+        ) { ProgressRing(ringSegments(state, done)) }
         if (state.dim && stall == null) DimNotice(Modifier.align(Alignment.TopStart).statusBarsPadding().padding(start = 12.dp, top = 72.dp))
         val bottom = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
         if (stall != null) {
@@ -312,12 +323,15 @@ fun VideoScanContent(
                 modifier = bottom,
             )
         } else {
-            Text(
-                statusText(state),
-                color = Color.White,
-                style = MaterialTheme.typography.titleSmall,
-                modifier = bottom.padding(16.dp).background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(50)).padding(horizontal = 16.dp, vertical = 8.dp),
-            )
+            Row(bottom.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                demo?.takeIf { !done }?.let { TurnDemoCube(it) }
+                Text(
+                    statusText(state),
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(50)).padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
         }
     }
 }
@@ -398,13 +412,64 @@ private class ScanLogger(private val engine: ScanEngine, private val scan: Video
 @Composable
 private fun statusText(state: VideoScanState): String = stringResource(videoStatus(state))
 
-/** The status line's text for [state]. */
+/** The status line's text for [state]: done, no cube, turn (undecided, or every side read but not clear), grey. */
 fun videoStatus(state: VideoScanState): StringResource = when {
     state.complete -> Res.string.video_status_done
     state.found.isEmpty() -> Res.string.video_status_find
-    state.undecided -> Res.string.video_status_turn
+    state.undecided || state.readSides.size == CubeColor.entries.size -> Res.string.video_status_turn
     else -> Res.string.video_status_grey
 }
+
+/** A progress ring segment: no face of its colour read, one read, or its side confirmed. */
+enum class RingSegment { FAINT, LIT, FULL }
+
+/** The ring's segment order: opposite sides across the ring. */
+val RING_ORDER = listOf(CubeColor.WHITE, CubeColor.RED, CubeColor.GREEN, CubeColor.YELLOW, CubeColor.ORANGE, CubeColor.BLUE)
+
+/** Each side's segment for [state] in [RING_ORDER]; every one full once [done] or complete (`scan-feedback` design 2). */
+fun ringSegments(state: VideoScanState, done: Boolean = false): List<Pair<CubeColor, RingSegment>> = RING_ORDER.map { c ->
+    c to when {
+        done || state.complete || ColorScheme.STANDARD.faceOf(c) in state.confirmed -> RingSegment.FULL
+        c in state.readSides -> RingSegment.LIT
+        else -> RingSegment.FAINT
+    }
+}
+
+/**
+ * The small cube by the status line showing how to turn the real one ([TurnDemo]): grey with coloured
+ * centres, not draggable, turning from [demo]'s start to its end again and again.
+ */
+@Composable
+private fun TurnDemoCube(demo: TurnDemo) {
+    val view = remember { CubeViewState(demo.from) }
+    LaunchedEffect(demo) {
+        while (true) {
+            view.rotation = demo.from
+            delay(DEMO_HOLD_START_MILLIS)
+            view.animateTo(demo.to, DEMO_TURN_MILLIS)
+            delay(DEMO_HOLD_END_MILLIS)
+        }
+    }
+    Cube3D(
+        colors = DEMO_COLORS.map(StickerColors::of),
+        modifier = Modifier.size(64.dp).testTag(VIDEO_DEMO_TAG),
+        viewState = view,
+        description = stringResource(Res.string.video_turn_demo),
+        draggable = false,
+    )
+}
+
+/** The demo loop (~2.5 s): rest as held, turn, rest turned. */
+private const val DEMO_HOLD_START_MILLIS = 400L
+private const val DEMO_TURN_MILLIS = 1_200
+private const val DEMO_HOLD_END_MILLIS = 900L
+
+/** Test tag of the small turn demo cube. */
+const val VIDEO_DEMO_TAG = "video-turn-demo"
+
+/** Whether a picture taking the scan from [before] to [after] buzzes at [now] (last buzz at [lastBuzz]): new stickers known or a new side read, spaced. */
+fun shouldBuzz(before: VideoScanState, after: VideoScanState, now: Long, lastBuzz: Long): Boolean =
+    (after.newStickers > 0 || !before.readSides.containsAll(after.readSides)) && now - lastBuzz >= BUZZ_MILLIS
 
 /**
  * The paint on the real cube in the latest picture of [width]×[height] pixels (the picture fills the
@@ -469,9 +534,17 @@ private fun PaintLayer(state: VideoScanState, width: Int, height: Int, modifier:
             if (a <= 0f) continue
             val c = at(drawn[dot.key] ?: dot.centre)
             val r = (DOT_SHARE / 2 * minOf(dot.u.length * sx, dot.v.length * sy)).toFloat()
-            // A dark rim so a white or yellow dot shows on a bright sticker.
-            drawCircle(StickerColors.PLASTIC.copy(alpha = 0.7f * a), r + 1.5.dp.toPx(), c)
-            drawCircle(StickerColors.of(dot.color).copy(alpha = a), r, c)
+            val rim = 1.5.dp.toPx()
+            if (dot.sure) {
+                // A dark rim so a white or yellow dot shows on a bright sticker.
+                drawCircle(StickerColors.PLASTIC.copy(alpha = 0.7f * a), r + rim, c)
+                drawCircle(StickerColors.of(dot.color).copy(alpha = a), r, c)
+            } else {
+                // Only read: a hollow ring of the dot's size, dark-rimmed on both sides; it fills once known.
+                val w = maxOf(r * RING_SHARE, 2.dp.toPx())
+                drawCircle(StickerColors.PLASTIC.copy(alpha = 0.7f * a), r + rim - (w + 2 * rim) / 2, c, style = Stroke(w + 2 * rim))
+                drawCircle(StickerColors.of(dot.color).copy(alpha = a), r - w / 2, c, style = Stroke(w))
+            }
         }
         for (corners in paint.found) {
             drawPath(outline(corners), Color.White.copy(alpha = 0.35f * shown), style = Stroke(1.dp.toPx(), join = StrokeJoin.Round))
@@ -502,22 +575,44 @@ private const val MOTION_FADE_MILLIS = 150
 /** A known sticker's dot across, as a share of its sticker step: small, so the real sticker shows round it. */
 private const val DOT_SHARE = 0.35
 
+/** A read sticker's ring stroke as a share of its radius (`scan-feedback` design 6). */
+private const val RING_SHARE = 0.28f
+
 /** How strongly a needed sticker's grey veil covers it. */
 private const val VEIL_ALPHA = 0.55f
 
-/** A small ring that fills with the share of stickers known (no number on screen). */
+/**
+ * A small ring of six segments, one per side in its centre's colour (`scan-feedback`): faint while
+ * unread, lit once read, solid once confirmed. Its description names the sides still unread.
+ */
 @Composable
-private fun ProgressRing(share: Float, known: Int) {
-    val description = stringResource(Res.string.video_progress, known)
-    Canvas(Modifier.size(40.dp).semantics { contentDescription = description }) {
-        val stroke = 4.dp.toPx()
+private fun ProgressRing(segments: List<Pair<CubeColor, RingSegment>>) {
+    val unread = segments.filter { it.second == RingSegment.FAINT }.map { stringResource(colorName(it.first)) }
+    val description = if (unread.isEmpty()) stringResource(Res.string.video_progress_all) else stringResource(Res.string.video_progress, unread.joinToString(", "))
+    Canvas(Modifier.size(40.dp).semantics { contentDescription = description }.testTag(VIDEO_RING_TAG)) {
+        val stroke = 5.dp.toPx()
         drawCircle(Color.Black.copy(alpha = 0.55f))
-        val inset = stroke / 2 + 4.dp.toPx()
+        val inset = stroke / 2 + 3.5.dp.toPx()
         val box = Size(size.width - 2 * inset, size.height - 2 * inset)
-        drawArc(Color.White.copy(alpha = 0.25f), 0f, 360f, false, Offset(inset, inset), box, style = Stroke(stroke))
-        drawArc(Color.White, -90f, 360f * share, false, Offset(inset, inset), box, style = Stroke(stroke, cap = StrokeCap.Round))
+        val sweep = 360f / segments.size
+        segments.forEachIndexed { i, (color, seg) ->
+            val start = -90f - sweep / 2 + i * sweep + RING_GAP_DEGREES / 2
+            val c = StickerColors.of(color)
+            val (alpha, width) = when (seg) {
+                RingSegment.FAINT -> 0.3f to stroke * 0.35f
+                RingSegment.LIT -> 0.75f to stroke * 0.55f
+                RingSegment.FULL -> 1f to stroke
+            }
+            drawArc(c.copy(alpha = alpha), start, sweep - RING_GAP_DEGREES, false, Offset(inset, inset), box, style = Stroke(width))
+        }
     }
 }
+
+/** The gap between two ring segments. */
+private const val RING_GAP_DEGREES = 8f
+
+/** Test tag of the progress ring. */
+const val VIDEO_RING_TAG = "video-ring"
 
 /** The ⋮ menu's items: one picture at a time, by hand, and the colour check with what is known ([onCheck] null until a sticker is). */
 @Composable
@@ -602,5 +697,5 @@ private const val REST_PIXELS = 0.5
 /** The first glide step's length when there is no previous frame yet. */
 private const val FRAME_MILLIS = 16f
 
-/** Shortest gap between two vibrations for new stickers. */
-private const val BUZZ_MILLIS = 300L
+/** Shortest gap between two vibrations for new stickers or sides. */
+const val BUZZ_MILLIS = 300L

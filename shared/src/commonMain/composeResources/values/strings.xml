@@ -353,5 +353,7 @@
     <string name="settings_scanner">Videoskanneri</string>
     <string name="scanner_rules">Uusi: kuution säännöt</string>
     <string name="scanner_look">Aiempi: keskipalojen värit</string>
-    <string name="video_progress">%1$d/54 tarraa tunnistettu</string>
+    <string name="video_progress">Lukematta: %1$s</string>
+    <string name="video_progress_all">Kaikki sivut luettu</string>
+    <string name="video_turn_demo">Näin kuutiota käännetään</string>
 </resources>

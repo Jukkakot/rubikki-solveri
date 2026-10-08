@@ -26,6 +26,12 @@ data class FoundFace(
     val recognised: List<Boolean>,
     /** The known colour of each recognised sticker in reading order (null where not recognised). */
     val known: List<CubeColor?> = List(9) { null },
+    /**
+     * Each sticker's colour as read steadily (`scan-feedback`), in reading order: the leading colour of
+     * the face's followed readings once they count, before the scan knows which face it is; null where
+     * not read yet (all of it before the face counts).
+     */
+    val read: List<CubeColor?>? = null,
 )
 
 /**
@@ -64,6 +70,8 @@ data class VideoScanState(
     val projectionAge: Long = 0,
     /** Two faces could still be told apart either way for a while: the status line asks to turn the cube (`scan-rules`). */
     val undecided: Boolean = false,
+    /** The centre colours of every face read steadily in this scan, kept after it leaves the picture: the ring's lit segments (`scan-feedback`). */
+    val readSides: Set<CubeColor> = emptySet(),
 ) {
     val recognised: Int get() = stickers.count { it != null }
 
@@ -184,6 +192,7 @@ class VideoScan(
     private var dimSince: Long? = null
     private var progressAt = 0L
     private var mostKnown = 0
+    private val readSides = HashSet<CubeColor>()
 
     var state: VideoScanState = VideoScanState.EMPTY
         private set
@@ -256,6 +265,7 @@ class VideoScan(
         val others = main?.let { m -> usable.filter { it !== m && it.group !== m.group && !it.group.doubtful }.map { scheme.faceOf(it.group.color).normal to it.face.centre } }.orEmpty()
         val anchor = usable.filter { !it.removed && trusted(it.group) }.maxByOrNull { it.area }?.let { it.face to scheme.faceOf(it.group.color) }
         val leading = netOf { it.leading }.mapIndexed { i, c -> if (net[i] == null) c else null }
+        readSides += groups.filterValues { it.inliers.size >= MIN_VOTES }.keys
         return finish(
             faces, nowMillis, net, leading, confirmed, contradictions, faces.mapIndexed { i, face -> foundFace(face, fresh[i], net) }, complete, clearness,
             main?.let { Held(it.face, scheme.faceOf(it.group.color), netTurn(it)) }, others, anchor,
@@ -311,6 +321,7 @@ class VideoScan(
             stall = stall(nowMillis, faces.isNotEmpty(), brightness, dim, recognised, complete),
             projectionAge = if (projection == null) 0 else nowMillis - heldMovedAt,
             undecided = undecided && !complete,
+            readSides = readSides.toSet(),
         )
         lastRecognised = recognised
         return state
@@ -386,6 +397,7 @@ class VideoScan(
         dimSince = null
         progressAt = 0L
         mostKnown = 0
+        readSides.clear()
         state = VideoScanState.EMPTY
     }
 
@@ -810,7 +822,7 @@ class VideoScan(
                 recognised[at] = known[at] != null
             }
         }
-        return FoundFace(face, r.names.toList(), recognised, known)
+        return FoundFace(face, r.names.toList(), recognised, known, read = known)
     }
 
     /**
@@ -867,6 +879,7 @@ class VideoScan(
             if (net[i] != null || v.sum() <= 0.0) null else CubeColor.entries[v.indices.maxBy { v[it] }]
         }
         val picture = ft.picture
+        for ((t, _) in picture.filterNotNull()) if (t.size >= FaceTracks.MIN_READINGS) t.leading[CENTRE]?.let { readSides += it }
         val found = faces.mapIndexed { i, face -> rulesFound(face, picture.getOrNull(i), net) }
         val placed = picture.filterNotNull().filter { (t, _) -> ft.settled(t) }.maxByOrNull { it.second.face.area }
         val main = placed?.let { (t, r) ->
@@ -892,9 +905,11 @@ class VideoScan(
     /** [face] as the rules scanner took it: names in reading order, its places known in [net] once its face and turn are known. */
     private fun rulesFound(face: FaceReading, entry: Pair<Track, TrackReading>?, net: List<CubeColor?>): FoundFace {
         val (track, r) = entry ?: return FoundFace(face, List(9) { null }, List(9) { false })
-        val side = tracks.faceOf(track) ?: return FoundFace(face, r.names.mapIndexed { n, c -> if (n == CENTRE) null else c }, List(9) { false })
+        // Read once its track counts: the track's leading colours in this reading's order.
+        val read = if (track.size < FaceTracks.MIN_READINGS) null else MutableList<CubeColor?>(9) { null }.also { l -> for (m in 0 until 9) l[r.at(m)] = track.leading[m] }
+        val side = tracks.faceOf(track) ?: return FoundFace(face, r.names.mapIndexed { n, c -> if (n == CENTRE) null else c }, List(9) { false }, read = read)
         val names = r.names.mapIndexed { n, c -> if (n == CENTRE) scheme[side] else c }
-        val option = tracks.optionOf(track) ?: return FoundFace(face, names, List(9) { false })
+        val option = tracks.optionOf(track) ?: return FoundFace(face, names, List(9) { false }, read = read)
         val recognised = MutableList(9) { false }
         val known = MutableList<CubeColor?>(9) { null }
         for (n in 0 until 9) {
@@ -902,7 +917,7 @@ class VideoScan(
             known[at] = net[side.ordinal * 9 + n]
             recognised[at] = known[at] != null
         }
-        return FoundFace(face, names, recognised, known)
+        return FoundFace(face, names, recognised, known, read)
     }
 
     /** [outcome] of the rules scanner. */

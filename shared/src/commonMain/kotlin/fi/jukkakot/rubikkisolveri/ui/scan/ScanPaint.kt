@@ -15,18 +15,20 @@ import kotlin.math.exp
 data class PaintTile(val key: Int, val centre: Point, val u: Point, val v: Point)
 
 /**
- * The small dot over one known sticker in its read colour (`scan-steady-progress`): centred at
- * [centre], [u] and [v] its sticker steps. [key] is the key its veil had, so a sticker becoming
- * known glides on.
+ * The small mark over one read sticker in its read colour (`scan-steady-progress`, `scan-feedback`):
+ * centred at [centre], [u] and [v] its sticker steps; a filled dot when the sticker is known ([sure]),
+ * a hollow ring while it is only read. [key] is the key its veil had, so a sticker becoming read or
+ * known keeps its place.
  */
-data class PaintDot(val key: Int, val centre: Point, val u: Point, val v: Point, val color: CubeColor)
+data class PaintDot(val key: Int, val centre: Point, val u: Point, val v: Point, val color: CubeColor, val sure: Boolean = true)
 
 /** A side's centre and its sticker steps: where a finished side's tick goes. */
 data class PaintTick(val centre: Point, val u: Point, val v: Point)
 
 /**
- * What to paint over one camera picture (`scan-paint-calm`, `scan-steady-progress`): a veil over
- * every sticker still needed ([tiles]), a small dot in its read colour on every known one ([dots]),
+ * What to paint over one camera picture (`scan-paint-calm`, `scan-steady-progress`, `scan-feedback`):
+ * a veil over every sticker not read yet ([tiles]), a small mark in its read colour on every read one
+ * ([dots]; a ring while only read, a dot once known),
  * the [outlines] and [ticks] of confirmed sides, and a dim outline round each other face found
  * ([found]; four corners each).
  */
@@ -60,8 +62,14 @@ data class ScanPaint(
                 for (n in 0 until 9) {
                     val centre = r.centre + r.u * (n % 3 - 1.0) + r.v * (n / 3 - 1.0)
                     val key = if (side != null) FOUND_KEY + side.ordinal * 9 + n else LOOSE_KEY + f * 9 + n
+                    // Known wins over read: a confirmed colour corrects an early misread.
                     val known = face.known[n]?.takeIf { face.recognised[n] }
-                    if (known != null) dots += PaintDot(key, centre, r.u, r.v, known) else if (!face.recognised[n]) tiles += PaintTile(key, centre, r.u, r.v)
+                    val read = face.read?.get(n)
+                    when {
+                        known != null -> dots += PaintDot(key, centre, r.u, r.v, known)
+                        read != null -> dots += PaintDot(key, centre, r.u, r.v, read, sure = false)
+                        !face.recognised[n] -> tiles += PaintTile(key, centre, r.u, r.v)
+                    }
                 }
                 val corners = listOf(-1.5 to -1.5, 1.5 to -1.5, 1.5 to 1.5, -1.5 to 1.5).map { (a, b) -> r.centre + r.u * a + r.v * b }
                 if (side != null && side in state.confirmed) {
@@ -81,7 +89,12 @@ data class ScanPaint(
                 for (n in 0 until 9) {
                     val i = side.ordinal * 9 + n
                     val known = state.stickers[i]
-                    if (known == null) tiles += PaintTile(i, p(n), u, v) else dots += PaintDot(i, p(n), u, v, known)
+                    val read = state.leading[i]
+                    when {
+                        known != null -> dots += PaintDot(i, p(n), u, v, known)
+                        read != null -> dots += PaintDot(i, p(n), u, v, read, sure = false)
+                        else -> tiles += PaintTile(i, p(n), u, v)
+                    }
                 }
                 if (side in state.confirmed) {
                     outlines += listOf(0, 2, 8, 6).map { n -> p(4) + (p(n) - p(4)) * 1.5 }

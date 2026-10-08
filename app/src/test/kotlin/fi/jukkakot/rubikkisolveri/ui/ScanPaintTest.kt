@@ -1,6 +1,7 @@
 package fi.jukkakot.rubikkisolveri.ui
 
 import fi.jukkakot.rubikkisolveri.cube.Cube
+import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
@@ -53,11 +54,34 @@ open class ScanPaintTest {
         assertEquals(cube[Face.F.ordinal * 9], topLeft.color, "F's first sticker in its colour")
         // F's first sticker no longer known: a veil on it, the top-left of the face at (100,200) one step up and left.
         val f = state.found.first()
-        val needed = state.copy(found = listOf(f.copy(recognised = listOf(false) + f.recognised.drop(1))) + state.found.drop(1))
+        val needed = state.copy(found = listOf(f.copy(recognised = listOf(false) + f.recognised.drop(1), read = listOf(null) + f.read!!.drop(1))) + state.found.drop(1))
         val paint = ScanPaint.of(needed)
         val tile = paint.tiles.single()
         assertTrue((tile.centre - Point(70.0, 170.0)).length < 1e-6, "$tile")
         assertEquals(17, paint.dots.size, "the needed sticker has no dot")
+        assertTrue(paint.dots.all { it.sure }, "known stickers: filled dots")
+    }
+
+    @Test
+    fun aFaceReadButNotPlacedShowsRingsAndNoVeils() {
+        val state = cornerView()
+        val f = state.found.first()
+        val open = state.copy(found = listOf(f.copy(recognised = List(9) { false }, known = List(9) { null })), projection = null)
+        val paint = ScanPaint.of(open)
+        assertTrue(paint.tiles.isEmpty(), "read stickers are not veiled")
+        assertEquals(9, paint.dots.size)
+        assertTrue(paint.dots.none { it.sure }, "read only: hollow rings")
+    }
+
+    @Test
+    fun aKnownColourWinsOverADifferentReadOne() {
+        val state = cornerView()
+        val f = state.found.first()
+        val other = CubeColor.entries.first { it != f.known[0] }
+        val paint = ScanPaint.of(state.copy(found = listOf(f.copy(read = listOf(other) + f.read!!.drop(1))), projection = null))
+        val dot = paint.dots.single { (it.centre - Point(70.0, 170.0)).length < 1e-6 }
+        assertEquals(f.known[0], dot.color)
+        assertTrue(dot.sure)
     }
 
     @Test

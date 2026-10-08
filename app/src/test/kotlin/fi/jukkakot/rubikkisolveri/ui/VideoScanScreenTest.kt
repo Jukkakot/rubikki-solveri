@@ -7,6 +7,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
+import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_DEMO_TAG
+import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_RING_TAG
 import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_SPINNER_TAG
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
@@ -16,7 +18,6 @@ import fi.jukkakot.rubikkisolveri.cube.Stickers
 import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
-import fi.jukkakot.rubikkisolveri.cube.scan.FaceTracks
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
@@ -96,6 +97,9 @@ class VideoScanScreenTest {
         }
     }
 
+    /** The progress ring's description: the sides not read yet. */
+    private fun ring(): String = compose.onNodeWithTag(VIDEO_RING_TAG).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].joinToString()
+
     /** Whether the menu's colour check can be used now (the menu is closed again through "by hand", a no-op here). */
     private fun checkEnabled(): Boolean {
         compose.onNodeWithContentDescription("Valikko").performClick()
@@ -140,15 +144,14 @@ class VideoScanScreenTest {
     @Test
     fun stickersFillInAndTheCameraMetersOnTheFaceThenLocks() {
         scan()
-        compose.onNodeWithContentDescription("0/54 tarraa tunnistettu").assertExists()
+        assertTrue("valkoinen" in ring(), "nothing read yet")
         assertFalse(checkEnabled())
         // The first face: the camera meters and focuses at it, and its frames are read meanwhile.
         show(face(Face.U), times = 3)
         assertEquals(listOf(CameraSettings(meter = Point(0.5, 0.5), focus = Point(0.5, 0.5))), settings)
         // The face in view, read three times: its stickers are known before the camera locks (red and orange
         // only once both those faces are seen).
-        val known = (0 until 9).count { it == 4 || cube[Face.U.ordinal * 9 + it] !in FaceTracks.WARM }
-        compose.onNodeWithContentDescription("$known/54 tarraa tunnistettu").assertExists()
+        assertFalse("valkoinen" in ring(), "the white side read")
         assertTrue(checkEnabled())
         show(face(Face.U), times = 4)
         assertEquals(CameraSettings(meter = Point(0.5, 0.5), focus = Point(0.5, 0.5), lock = true), settings.last())
@@ -161,8 +164,7 @@ class VideoScanScreenTest {
         val partial = face(Face.U).let { it.copy(colors = it.colors.toMutableList().also { c -> c[1] = null }) }
         show(face(Face.U), times = 4)
         show(partial, times = 4)
-        compose.onNodeWithContentDescription("0/54 tarraa tunnistettu").assertDoesNotExist()
-        compose.onNodeWithContentDescription("/54 tarraa tunnistettu", substring = true).assertExists()
+        assertFalse("valkoinen" in ring(), "the white side read")
         assertTrue(checkEnabled())
     }
 
@@ -200,7 +202,7 @@ class VideoScanScreenTest {
         compose.onNodeWithText("Aloita alusta").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Aloita alusta").assertDoesNotExist()
-        compose.onNodeWithContentDescription("0/54 tarraa tunnistettu").assertExists()
+        assertTrue("valkoinen" in ring(), "progress cleared")
         assertFalse(checkEnabled())
         assertNull(outcome)
     }
@@ -239,5 +241,20 @@ class VideoScanScreenTest {
         // The rules scanner reads a face once it has followed it for a few pictures.
         show(face(Face.U), times = 6)
         compose.onNodeWithTag(VIDEO_SPINNER_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun theRingNamesTheUnreadSideAndTheTurnCubeComesWhenStuck() {
+        scan()
+        for (f in listOf(Face.U, Face.R, Face.F, Face.D, Face.B)) show(face(f), times = 6)
+        compose.onNodeWithTag(VIDEO_RING_TAG).assertExists()
+        compose.onNodeWithContentDescription("Lukematta: oranssi").assertExists()
+        compose.onNodeWithTag(VIDEO_DEMO_TAG).assertDoesNotExist()
+        // Nothing new for more than two seconds: the small cube shows how to turn.
+        show(face(Face.B), times = 30)
+        compose.onNodeWithTag(VIDEO_DEMO_TAG).assertExists()
+        // Something new read: it goes.
+        show(face(Face.L), times = 4)
+        compose.onNodeWithTag(VIDEO_DEMO_TAG).assertDoesNotExist()
     }
 }

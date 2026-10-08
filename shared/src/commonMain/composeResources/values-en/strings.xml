@@ -352,5 +352,7 @@
     <string name="settings_scanner">Video scanner</string>
     <string name="scanner_rules">New: the cube's rules</string>
     <string name="scanner_look">Earlier: the centres' colours</string>
-    <string name="video_progress">%1$d/54 stickers known</string>
+    <string name="video_progress">Not read yet: %1$s</string>
+    <string name="video_progress_all">Every side read</string>
+    <string name="video_turn_demo">How to turn the cube</string>
 </resources>
