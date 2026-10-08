@@ -194,8 +194,13 @@ Every sticker not yet read on a side of the real cube turned towards the camera 
 grey, so the grey parts show what is left to show; read stickers SHALL show only their small mark.
 A side SHALL get a white outline and a small tick at its centre only when the rest of the cube
 confirms all its stickers, not on its own readings alone. When the cube's pose cannot be told, at
-least the faces found SHALL be marked. A small vibration SHALL tell when new stickers become known
-and when a new side is read (a segment of the progress ring lights).
+least the faces found SHALL be marked. Sides not found in the picture SHALL be marked only when the
+way the cube is tilted is sure (the face is seen straight on, another known face in the same
+picture shows the tilt, or it follows a sure tilt of the pictures just before); otherwise only the
+faces found are marked, so no mark lands beside the cube. A side not found SHALL not be marked where
+a face found in the picture lies, so a face never gets two layers of marks. A small vibration SHALL
+tell when new stickers become known and when a new side is read (a segment of the progress ring
+lights).
 
 #### Scenario: Filling in
 - **WHEN** a side is shown to the camera and its stickers are read
@@ -208,6 +213,14 @@ and when a new side is read (a segment of the progress ring lights).
 #### Scenario: Side at an angle
 - **WHEN** the cube is held so that a side is seen at an angle too steep to read
 - **THEN** that side's stickers not read yet are still veiled
+
+#### Scenario: Tilt not sure
+- **WHEN** one face is seen at a slant, no other known face is in the picture and no sure tilt came just before
+- **THEN** only that face is marked, and no veils are drawn beside it on the table
+
+#### Scenario: Open face not marked twice
+- **WHEN** a face is found whose side the scan cannot tell yet, where the cube's projection has a side
+- **THEN** that face shows only its own marks, not the projection's veils as well
 
 #### Scenario: New side read
 - **WHEN** a face with the blue centre is read for the first time in the scan
@@ -323,8 +336,9 @@ second, the marks SHALL fade out. They SHALL come back as soon as the cube is se
 In the browser, where the scan reads its pictures beside the page, the screen SHALL instead show
 the very picture the scan read with that picture's marks, so the marks lie exactly on the cube also
 while it moves: the picture then changes at the scan's rate and a little behind the live camera,
-and the marks neither glide nor fade for movement. Where the browser cannot read beside the page,
-the live picture and the rules above stay.
+and the marks neither glide nor fade for movement. A picture in which no face was found SHALL not
+replace the one shown for up to about 0.3 seconds, so the marks do not blink out for a few
+pictures. Where the browser cannot read beside the page, the live picture and the rules above stay.
 
 #### Scenario: Turning the cube
 - **WHEN** the user turns the cube slowly in front of the camera
@@ -349,6 +363,10 @@ the live picture and the rules above stay.
 #### Scenario: Browser marks on the moving cube
 - **WHEN** the user turns the cube quickly in front of the camera in the browser
 - **THEN** each picture shown has its marks on the cube's stickers, without lagging beside it
+
+#### Scenario: Browser picture without a face
+- **WHEN** in the browser two or three pictures in a row find no face while the cube is moved
+- **THEN** the last picture with its marks stays shown instead of a picture without marks, and the next picture with a face replaces it
 
 ### Requirement: Progress ring
 A small ring at the top of the picture SHALL show the six sides as six segments, each in its
