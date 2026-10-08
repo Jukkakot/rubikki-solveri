@@ -36,10 +36,10 @@ beside the page, the live picture and the rules above stay.
 - **WHEN** the cube is taken out of the picture
 - **THEN** the marks fade out within about a second, and appear again when the cube is back
 
-#### Scenario: Marks on the moving cube
+#### Scenario: Browser marks on the moving cube
 - **WHEN** the user turns the cube quickly in front of the camera, in the phone app or in the browser
 - **THEN** each picture shown has its marks on the cube's stickers, without lagging beside it
 
-#### Scenario: Picture without a face
+#### Scenario: Browser picture without a face
 - **WHEN** two or three pictures in a row find no face while the cube is moved
 - **THEN** the last picture with its marks stays shown instead of a picture without marks, and the next picture with a face replaces it
