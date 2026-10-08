@@ -664,7 +664,8 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
      * The turns the best cube settled stay clear also when two of those faces turn together: every
      * such pair of other turns that reads them differently makes the best cube at least [TURN_MARGIN]
      * costlier (the striped cube with its front and back both half round is another possible cube,
-     * 2026-10-07 20:24). Checked for the finish only.
+     * 2026-10-07 20:24), and also when three or more of them all turn half round (the striped cube with
+     * every side half round is its mirror, `202058`, 2026-10-08). Checked for the finish only.
      */
     fun turnsClear(): Boolean {
         val faces = Face.entries.filter { f -> counting().any { t -> t.state().byCube && t.state().option?.let { it != FaceOption.NONE && FaceOption.face(it) == f } == true } }
@@ -682,6 +683,14 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             val c = BestCube.cost(evidenceOf(extra), scheme)
             extra[fa.ordinal] = 0
             extra[fb.ordinal] = 0
+            if (c - base < TURN_MARGIN) return false
+        }
+        for (mask in 1 until (1 shl faces.size)) {
+            val set = faces.filterIndexed { i, _ -> mask and (1 shl i) != 0 }
+            if (set.size < 3 || set.all { f -> reads.getValue(f)[2] == reads.getValue(f)[0] }) continue
+            for (f in set) extra[f.ordinal] = 2
+            val c = BestCube.cost(evidenceOf(extra), scheme)
+            for (f in set) extra[f.ordinal] = 0
             if (c - base < TURN_MARGIN) return false
         }
         return true
@@ -844,9 +853,13 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         /** Red and orange, which the palette alone cannot always tell apart. */
         val WARM: Set<CubeColor> = setOf(CubeColor.RED, CubeColor.ORANGE)
 
-        /** Hue (degrees) by which one warm centre must be more orange than another to rule it out as red ([warmOrderCost]), and the cost. */
+        /**
+         * Hue (degrees) by which one warm centre must be more orange than another to rule it out as red
+         * ([warmOrderCost]), and the cost: high enough to be a rule (a mild cost lost to misread stickers on
+         * the phone, 2026-10-08 07:43).
+         */
         const val WARM_HUE_STEP = 6.0
-        const val WARM_ORDER_COST = 8.0
+        const val WARM_ORDER_COST = 1000.0
 
         /** Cost per sticker beyond [MAX_DISAGREE] that two tracks taken for one face read otherwise. */
         const val CLASH_COST = 4.0

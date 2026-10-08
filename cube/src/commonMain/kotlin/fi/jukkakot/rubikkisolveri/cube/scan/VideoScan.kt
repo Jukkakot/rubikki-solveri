@@ -854,7 +854,7 @@ class VideoScan(
                 // Until both the red and the orange centre are known, neither colour nor the red and orange faces are
                 // known: in a light where the camera's orange looks red the palette names it red (phone test 2026-10-08),
                 // and a lone orange face looking red is taken for the red one.
-                val held = !ft.warmCalibrated && (c in FaceTracks.WARM || scheme[face] in FaceTracks.WARM)
+                val held = !complete && !ft.warmCalibrated && (c in FaceTracks.WARM || scheme[face] in FaceTracks.WARM)
                 if (held) clearAt[i] = false
                 !held
             }
