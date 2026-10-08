@@ -192,6 +192,10 @@ Video scan pipeline (`video-scan`):
    time limit (`LIMITS`) was crossed and the last work changed nothing (`steady`); pair cost tables are
    kept by track version (`pairTables`), best-cube costs by the evidence's votes (`costs`, `bestKey`).
    All exact: `RulesScanTest.aLongScanStaysWithinItsBudgetPerPicture` guards the time.
+   A track never goes back to the decisions it just left without a new reading of its own (`hold`,
+   `scan-track-settle`: recheck, joint assignment and best-cube turns undid each other picture after picture;
+   making them judge alike was tried and dropped, see that design). Guarded by
+   `RulesScanTest.aTrackDoesNotSwitchBackAndForthWithoutNewReadings`.
    Why each rule exists and the known limits: `scan-rules` design (decision 8). Acceptance:
    `ScanAcceptanceHarness` (ACCEPTANCE=1) replays every fixture through both; `RulesTimeline`
    (TIMELINE=<video>) prints the tracks frame by frame for tuning.

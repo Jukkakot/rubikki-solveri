@@ -76,14 +76,11 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 66 | `scan-paint-found-only` | done | Recording 18:00: guessed sides floated in the air and beside the cube. Marks only on faces found in the picture; their thin outline only once read steadily. Phone check pending |
 | 67 | `scan-speed-up-2` | done | Finder pictures at long side 240 on both (same faces on the recordings); debug build not debuggable (phone: finder 34–59 → 10–16 ms, 16–23 → 30 pictures/s); the phone's scan on a background thread, the browser's in the finder worker (state as text). Search window and two finders dropped after measuring |
 | 68 | `scan-speed-up-3` | done | The scan logic no longer grows over a long scan: late pictures 8–11 → 1–2.5 ms (JVM), a picture without faces almost free; same results on every fixture (work skipped when nothing changed, pair tables and best-cube costs kept). Budget test 5 ms a 100-picture window. Phone/browser check of `scanMs` pending |
-| 69 | `scan-track-settle` | specced | Rules scan: a track's face and turn no longer switch back and forth picture after picture (settle only what the recheck keeps, a face-only track's turn left to the cube); a held cube's marks hold still and its pictures skip the work |
+| 69 | `scan-track-settle` | done | Rules scan: a track never goes back to the face and turn it just left without a new reading of its own (flips without readings 493 → 0 on the fixtures, same finishes); the shown stickers stop switching back and forth in long scans. Phone check: marks calm while the cube is held |
 
 ## Backlog
 
 Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
-
-- rules scan: a track can flip between two states every picture (`web_121505` #19, `=none` ↔ `U?U2`;
-  found in `scan-speed-up-3`). Settling it would change behaviour and also let the scan skip more work.
 
 - video scan: straight-on readings weigh more (user, 2026-10-07). Tried in `scan-centre-clash`
   and dropped: no gain on the test videos, and a face misread straight on beat earlier right angled

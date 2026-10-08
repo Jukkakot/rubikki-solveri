@@ -56,7 +56,25 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** The turn was settled by the best cube (worked out again as the readings change), not by a picture. */
         var byCube = false
+
+        /** The decisions after the last picture's work, the ones before them, and the newest reading when they changed ([hold]; a turn settled by the cube or by a picture is the same way back). */
+        var kept: Decision? = null
+        var left: Decision? = null
+        var leftSeq = -1L
+
+        fun decision() = Decision(face, option, assigned, otherFace, byCube)
+
+        fun restore(d: Decision) {
+            face = d.face
+            option = d.option
+            assigned = d.assigned
+            otherFace = d.otherFace
+            byCube = d.byCube
+            if (face != null || option != null) openSince = null
+        }
     }
+
+    private data class Decision(val face: Face?, val option: Int?, val assigned: Int, val otherFace: Face?, val byCube: Boolean)
 
     private val states = HashMap<Track, State>()
     private fun Track.state(): State = states.getOrPut(this) { State() }
@@ -160,12 +178,15 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         return out.mapValues { (_, l) -> l.sortedBy { it.first.seq }.takeLast(MAX_FACE_READINGS) }
     }
 
-    /** A counting track as the solver holds it (for tuning and tests). */
-    data class TrackInfo(val id: Int, val size: Int, val leading: List<CubeColor?>, val face: Face?, val option: Int?, val assigned: Int, val live: Boolean)
+    /** A counting track as the solver holds it (for tuning and tests); [newest] is its newest reading's number. */
+    data class TrackInfo(
+        val id: Int, val size: Int, val leading: List<CubeColor?>, val face: Face?, val option: Int?, val assigned: Int, val live: Boolean,
+        val otherFace: Face? = null, val newest: Long = 0,
+    )
 
     fun snapshot(): List<TrackInfo> = counting().sortedBy { it.id }.map { t ->
         val s = t.state()
-        TrackInfo(t.id, t.size, t.leading, s.face, s.option, s.assigned, lastNow - t.lastAt <= Tracker.GAP_MILLIS)
+        TrackInfo(t.id, t.size, t.leading, s.face, s.option, s.assigned, lastNow - t.lastAt <= Tracker.GAP_MILLIS, s.otherFace, t.readings.last().seq)
     }
 
     /** One line per counting track (for tuning): id, readings, settled face/option or assignment. */
@@ -245,6 +266,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         assignOpen(now)
         updateVoting(now)
         settleTurns()
+        if (hold()) updateVoting(now)
         // Faces settled in this frame give their centres as references at once: name the stickers again before they are shown.
         updateRefs()
         evidence = evidenceOf()
@@ -254,6 +276,34 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             bestKey = key
         }
         retire(now)
+    }
+
+    /**
+     * A track does not go back to the decisions it just left without a new reading of its own (`scan-track-settle`):
+     * the steps above judge a track in different ways (alone, together, by the best cube), and what one decides another
+     * could undo picture after picture. Returns whether some track was held.
+     */
+    private fun hold(): Boolean {
+        var held = false
+        for (t in tracker.tracks) {
+            val s = t.state()
+            val now = s.decision()
+            val kept = s.kept
+            if (kept == null || now == kept) {
+                s.kept = now
+                continue
+            }
+            val newest = t.readings.last().seq
+            if (s.left?.copy(byCube = now.byCube) == now && newest == s.leftSeq) {
+                s.restore(kept)
+                held = true
+                continue
+            }
+            s.left = kept
+            s.leftSeq = newest
+            s.kept = now
+        }
+        return held
     }
 
     // --- retiring --------------------------------------------------------------------------------
@@ -666,16 +716,14 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             val cost = unary(t, like, others, all)
             if (s.option == FaceOption.NONE) {
                 // Taken for no face: re-opens when some face fits it better.
-                if (all.any { it != FaceOption.NONE && cost[it] < cost[FaceOption.NONE] - REOPEN_SLACK }) s.option = null
+                if (!keepsNone(cost)) s.option = null
                 continue
             }
             val face = s.face!!
-            val ownFace = (0 until 4).minOf { cost[FaceOption.of(face, it)] }
-            val otherFace = all.filter { it == FaceOption.NONE || FaceOption.face(it) != face }.minOf { cost[it] }
-            if (otherFace < ownFace - REOPEN_SLACK) {
+            if (!keepsFace(cost, face)) {
                 s.face = null
                 s.option = null
-            } else if (own != null && !s.byCube && all.filter { it != own }.minOf { cost[it] } < cost[own] - REOPEN_SLACK) {
+            } else if (own != null && !s.byCube && !keepsOption(cost, own)) {
                 s.option = null
             }
             // Re-opened: out of the tables for the tracks after it.
@@ -688,14 +736,34 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         for (a in faceOnly) for (b in faceOnly) {
             if (a.id >= b.id || a.state().face == null || a.state().face != b.state().face || (a.state().option != null && b.state().option != null)) continue
             val f = a.state().face ?: continue
-            val oa = a.state().option ?: a.state().assigned.takeIf { it != FaceOption.NONE } ?: FaceOption.of(f, 0)
-            if ((0 until 4).all { k -> disagreeing(a, oa, b, FaceOption.of(f, k)) > MAX_DISAGREE }) {
+            if (clash(a, b, f)) {
                 for (t in listOf(a, b)) t.state().let {
                     it.face = null
                     it.option = null
                 }
             }
         }
+    }
+
+    // [recheck]'s tests, also kept by [assignOpen] before it settles anything: what one settles, the other does not
+    // re-open with the same readings (`scan-track-settle`).
+
+    /** Taken for no face, given its [cost] per option alone against the settled tracks: no face fits it better. */
+    private fun keepsNone(cost: DoubleArray): Boolean = (0 until FaceOption.FACES).none { cost[it] < cost[FaceOption.NONE] - REOPEN_SLACK }
+
+    /** Taken for [face]: no other face, nor no face, fits it better. */
+    private fun keepsFace(cost: DoubleArray, face: Face): Boolean {
+        val ownFace = (0 until 4).minOf { cost[FaceOption.of(face, it)] }
+        return cost.indices.none { (it == FaceOption.NONE || FaceOption.face(it) != face) && cost[it] < ownFace - REOPEN_SLACK }
+    }
+
+    /** Settled as [own]: no other way fits it better. */
+    private fun keepsOption(cost: DoubleArray, own: Int): Boolean = cost.indices.none { it != own && cost[it] < cost[own] - REOPEN_SLACK }
+
+    /** [a] and [b], both taken for [f], read it otherwise in every turn of [b] ([a] as settled or assigned). */
+    private fun clash(a: Track, b: Track, f: Face): Boolean {
+        val oa = a.state().option ?: a.state().assigned.takeIf { it != FaceOption.NONE } ?: FaceOption.of(f, 0)
+        return (0 until 4).all { k -> disagreeing(a, oa, b, FaceOption.of(f, k)) > MAX_DISAGREE }
     }
 
     /**

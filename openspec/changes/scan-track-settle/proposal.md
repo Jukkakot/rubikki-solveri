@@ -17,11 +17,9 @@ one check sets, the other undoes in the next picture, and so on.
 
 ## What Changes
 
-- A settled or face-only decision changes only when something new speaks against it. Every decision is
-  made under one rule: the scan never settles what its own recheck would re-open in the next picture
-  with the same readings. The way to do it is picked by measuring on the replay (design).
-- The same applies to the turn guessed for a face-only track (`B?B1` ↔ `B?B3`) and to the face it
-  leans to (`?B1/L` ↔ `B?B0`).
+- A track does not go back to the decisions it just left (face, turn, no face) without a new reading of
+  its own. Tried first and dropped: making the checks judge alike, and leaving a face-only track's turn to
+  the cube (each moved the flips elsewhere and lost finishes; design Findings).
 - No change in what the scan aims for: it still finishes on the fixtures it finishes on today, never
   wrongly, and about as fast.
 - Gain in speed: a held cube reaches a steady state, so pictures without new readings skip the work
@@ -40,6 +38,6 @@ one check sets, the other undoes in the next picture, and so on.
 
 ## Impact
 
-- Module `cube` only (`scan/FaceTracks.kt`: `recheck`, `assignOpen`, `settleTurns`); tests in
+- Module `cube` only (`scan/FaceTracks.kt`: the deciding steps, `hold`); tests in
   `RulesScanTest`. No change in `app`, `shared` or `web` (they show the same state, only calmer).
 - Older scanner (Settings: earlier scanner) untouched.

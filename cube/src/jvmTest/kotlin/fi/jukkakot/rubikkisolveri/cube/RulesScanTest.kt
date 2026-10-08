@@ -219,4 +219,44 @@ class RulesScanTest {
             t += 100
         }
     }
+
+    @Test
+    fun aTrackDoesNotSwitchBackAndForthWithoutNewReadings() {
+        // `scan-track-settle`: a track's face and turn change only when something new speaks for it. A track that
+        // goes A, B, A over three pictures without a new reading (`213929` #19 went `=none` ↔ `U?U2` for 20
+        // pictures) fails; the same with new readings is counted for the log only.
+        val field = VideoScan::class.java.getDeclaredField("tracks").also { it.isAccessible = true }
+        fun state(x: FaceTracks.TrackInfo) = listOf(x.face, x.option, x.assigned, x.otherFace)
+        val bare = ArrayList<String>()
+        var withReadings = 0
+        for (video in FLIP_FIXTURES) {
+            val frames = if (video == "blueFirst") VideoFixtures.blueFirst(30) else VideoFixtures.load(video)
+            val scan = VideoScan(engine = ScanEngine.RULES)
+            val history = HashMap<Int, ArrayDeque<Pair<Int, FaceTracks.TrackInfo>>>()
+            frames.forEachIndexed { i, f ->
+                scan.onFrame(f.faces, i * 100L)
+                for (info in (field.get(scan) as FaceTracks).snapshot()) {
+                    val h = history.getOrPut(info.id) { ArrayDeque() }
+                    h.addLast(i to info)
+                    if (h.size > 3) h.removeFirst()
+                    if (h.size < 3 || h.last().first - h.first().first != 2) continue
+                    val (a, b, c) = h.map { it.second }
+                    if (state(a) != state(c) || state(a) == state(b)) continue
+                    if (a.newest == b.newest && b.newest == c.newest) bare += "$video #${info.id} at $i: ${state(a)} / ${state(b)}" else withReadings++
+                }
+            }
+        }
+        println("Track flips with new readings: $withReadings")
+        assertTrue(bare.isEmpty(), "${bare.size} flips without new readings, first: ${bare.take(5)}")
+    }
+
+    private companion object {
+        /** Every recording the scan tests use, and slices of the long ones (`scan-speed-up-3`'s replay list). */
+        val FLIP_FIXTURES = listOf(
+            "20261005_151828", "20261005_151903", "20261005_213729", "20261005_213817", "20261005_213850", "20261005_213929",
+            "20261007_132049", "20261007_132721", "20261007_152753", "20261007_202058", "20261007_202156", "20261007_202318",
+            "20261007_202403", "20261007_web", "web_084657", "web_121505", "web_181940",
+            "web_084657:66-455", "web_084657:499-998", "web_121505:66-373", "web_121505:448-751", "blueFirst",
+        )
+    }
 }
