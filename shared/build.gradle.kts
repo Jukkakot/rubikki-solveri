@@ -54,3 +54,7 @@ compose.resources {
     packageOfResClass = "fi.jukkakot.rubikkisolveri.res"
     publicResClass = true
 }
+
+// No browser UI tests here (the screens are tested on the JVM in app): the plugin's check that wasm UI
+// tests can load Skiko asks for an executable this library does not need, and fails `check`.
+tasks.matching { it.name == "checkComposeUiTestConfigurationForWasmJs" }.configureEach { enabled = false }
