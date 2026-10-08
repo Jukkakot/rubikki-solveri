@@ -52,7 +52,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.khronos.webgl.toByteArray
 
 /** The long side of the scaled copy the video scan finds faces in (the picture itself is the camera's own video). */
-const val PREVIEW_LONG_SIDE = 360
+const val PREVIEW_LONG_SIDE = FrameSampler.FINDER_LONG_SIDE
 
 /** The grid square's size for reading colours (the grid's cells ≈ 63 px, like the phone's analysis). */
 const val ANALYSIS_SIZE = 264

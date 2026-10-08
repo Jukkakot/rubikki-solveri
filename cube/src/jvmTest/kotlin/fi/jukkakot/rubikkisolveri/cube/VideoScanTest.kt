@@ -471,7 +471,7 @@ open class VideoScanTest {
         val image = FrameSampler.upright(RgbaFrame(4, 2, 16, bytes, 90))
         assertEquals(2 to 4, image.width to image.height)
         assertEquals(200, (image.argb[0] shr 16) and 0xff)
-        val small = FrameSampler.upright(RgbaFrame(4, 2, 16, bytes, 0), shortSide = 1)
+        val small = FrameSampler.upright(RgbaFrame(4, 2, 16, bytes, 0), longSide = 2)
         assertEquals(2 to 1, small.width to small.height)
     }
 

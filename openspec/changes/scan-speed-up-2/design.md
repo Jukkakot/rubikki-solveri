@@ -52,3 +52,19 @@ finder runs in one coroutine on `Dispatchers.Default`; the browser in one worker
   measured in the log (`scanMs` becomes the worker's time, a new `stateMs` the page's decode).
 - [Item 5 is the biggest] → last, after 1–4 are measured; if 1–4 already reach the camera's rate in
   the browser, 5 can be stopped and recorded as not needed (asked of the user then).
+
+## Findings
+
+**Finder size (task 1.1, `FinderSizeHarness`, JVM desktop, committed stills scaled bilinear):**
+
+| video | 640 (phone before) | 480 | 360 (browser before) | 300 | 240 |
+|---|---|---|---|---|---|
+| 20261005_151828 | 1.04 faces, 16.5 ms, clear@223 ok | 1.04, 8.6 | 1.04, 5.6, ok | 1.06, 4.7, ok | 1.06, 3.7, clear@223 ok |
+| web_181940 | 1.03, 14.0, clear@197 ok | 1.02, 8.5, @111 | 1.03, 5.9, @108 | 1.03, 5.2, @111 | 1.03, 4.2, clear@108 ok |
+| 20261007_202058 | 0.52, 13.0, – | 0.51, 6.5 | 0.52, 4.1 | 0.53, 3.3 | 0.50, 2.6, – |
+| web_084657 (scan 1) | 0.56, 13.3, clear@100 ok | 0.57, 8.1, @100 | 0.59, 5.5, @112 | 0.58, 4.5, @100 | 0.58, 3.7, clear@100 ok |
+| web_121505 (rules 3) | 0.79, 15.7, – | 0.79, 9.7 | 0.79, 6.8 | 0.76, 5.8 | 0.78, 5.0, – |
+
+Full faces per picture do not change down to 240, the scans clear as early and right (the two
+without a clear never cleared before either). **Chosen: `FINDER_LONG_SIDE = 240`** (phone finder ~4×
+less work, browser ~1.4×). A cube far away and small may be read less well (accepted by the user).

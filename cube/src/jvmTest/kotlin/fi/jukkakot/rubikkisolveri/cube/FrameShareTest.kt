@@ -23,7 +23,7 @@ class FrameShareTest {
         }
         for (rotation in listOf(0, 90, 180, 270)) {
             val frame = RgbaFrame(w, h, w * 4, bytes, rotation, cropLeft = 20, cropTop = 10, cropRight = 180, cropBottom = 110)
-            val image = FrameSampler.upright(frame, shortSide = 1_000)
+            val image = FrameSampler.upright(frame, longSide = 1_000)
             for ((i, j) in listOf(0 to 0, image.width / 3 to image.height / 2, image.width - 1 to image.height - 1)) {
                 val share = Point((i + 0.5) / image.width, (j + 0.5) / image.height)
                 val back = FrameSampler.toFrameShare(share, w, h, rotation, 20, 10, 180, 110)

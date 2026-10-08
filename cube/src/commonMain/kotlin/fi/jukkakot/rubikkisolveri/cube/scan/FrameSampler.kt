@@ -106,25 +106,33 @@ object FrameSampler {
     const val PICTURE_SIZE = 120
 
     /**
-     * The visible part of [frame] upright as seen on screen, ARGB row by row (nearest pixel), scaled
-     * down so its shorter side is at most [shortSide]: the picture the video scan's [FaceFinder]
-     * looks for faces in.
+     * The visible part of [frame] upright as seen on screen, ARGB row by row, scaled down so its
+     * longer side is at most [longSide]: the picture the video scan's [FaceFinder] looks for faces in.
+     * Each pixel is the mean of four samples of its area (scaled well down, one nearest pixel is noisy).
      */
-    fun upright(frame: RgbaFrame, shortSide: Int = FINDER_SHORT_SIDE): ArgbImage {
+    fun upright(frame: RgbaFrame, longSide: Int = FINDER_LONG_SIDE): ArgbImage {
         val cw = frame.cropRight - frame.cropLeft
         val ch = frame.cropBottom - frame.cropTop
         val turned = frame.rotation == 90 || frame.rotation == 270
         val sw = if (turned) ch else cw
         val sh = if (turned) cw else ch
-        val scale = minOf(1.0, shortSide.toDouble() / minOf(sw, sh))
+        val scale = minOf(1.0, longSide.toDouble() / maxOf(sw, sh))
         val w = (sw * scale).toInt().coerceAtLeast(1)
         val h = (sh * scale).toInt().coerceAtLeast(1)
         val argb = IntArray(w * h) { i ->
-            val (fx, fy) = toFrame((i % w + 0.5f) / w, (i / w + 0.5f) / h, frame.rotation)
-            val x = (frame.cropLeft + fx * cw).toInt().coerceIn(0, frame.width - 1)
-            val y = (frame.cropTop + fy * ch).toInt().coerceIn(0, frame.height - 1)
-            val p = frame.pixel(x, y)
-            (0xff shl 24) or (p.r shl 16) or (p.g shl 8) or p.b
+            var r = 0
+            var g = 0
+            var b = 0
+            for (k in 0 until 4) {
+                val (fx, fy) = toFrame((i % w + SUB[k]) / w, (i / w + SUB[3 - k]) / h, frame.rotation)
+                val x = (frame.cropLeft + fx * cw).toInt().coerceIn(0, frame.width - 1)
+                val y = (frame.cropTop + fy * ch).toInt().coerceIn(0, frame.height - 1)
+                val p = frame.pixel(x, y)
+                r += p.r
+                g += p.g
+                b += p.b
+            }
+            (0xff shl 24) or ((r / 4) shl 16) or ((g / 4) shl 8) or (b / 4)
         }
         return ArgbImage(argb, w, h)
     }
@@ -151,8 +159,15 @@ object FrameSampler {
         )
     }
 
-    /** The face finder's frames: shorter side in pixels (the test videos' frames were 360×640). */
-    const val FINDER_SHORT_SIDE = 360
+    /**
+     * The face finder's pictures: longer side in pixels, phone and browser alike (`scan-speed-up-2`
+     * design 1: down to 240 the finder found as many faces on the recorded videos, in a quarter of the
+     * time at 640).
+     */
+    const val FINDER_LONG_SIDE = 240
+
+    /** Where in a picture pixel [upright]'s four samples lie (x, and y in reverse order). */
+    private val SUB = floatArrayOf(0.25f, 0.75f, 0.25f, 0.75f)
 
     /** A cell looks like a sticker when its middle is this much lighter (Lab L) than its gap. */
     const val MIN_GAP_CONTRAST = 15.0

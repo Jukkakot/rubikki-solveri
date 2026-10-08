@@ -2,8 +2,8 @@
 
 ## 1. Finder picture size (cube, shared, web)
 
-- [ ] 1.1 Harness measurement (design 1): full faces per picture, finder time and scan result on `testdata/video/` for long sides 360/320/280/240; numbers and the choice into `design.md`
-- [ ] 1.2 `FrameSampler.upright` by long side (`FINDER_LONG_SIDE`, the chosen value), the browser's `PREVIEW_LONG_SIDE` the same constant; tests that use `upright` updated
+- [x] 1.1 Harness measurement (design 1): full faces per picture, finder time and scan result on `testdata/video/` for long sides 360/320/280/240; numbers and the choice into `design.md`
+- [x] 1.2 `FrameSampler.upright` by long side (`FINDER_LONG_SIDE`, the chosen value), the browser's `PREVIEW_LONG_SIDE` the same constant; tests that use `upright` updated
 
 ## 2. Phone build (app)
 
