@@ -73,3 +73,8 @@ less work, browser ~1.4×). A cube far away and small may be read less well (acc
 window covered 28–33k px of 32–34k (the cube is held close and fills most of the picture; the window
 is its box grown by half), finder time 3.7 vs 3.8 ms, same faces and results. About 3 % for a class,
 two crop paths and a failure mode: not kept (decided while applying, reported to the user).
+
+**Phone build (task 2.1).** The same scan on the phone (SM-S921B), finder at 240: debug build finder
+34–59 ms, scan 22–56 ms, 16–23 pictures a second; non-debuggable build finder 10–16 ms, scan 12–13 ms,
+30–31 pictures a second (the camera's rate). The debug build is now not debuggable (decision 2); the
+`profile` type was removed again. Two finders (4) are not needed on the phone: it reads every picture.

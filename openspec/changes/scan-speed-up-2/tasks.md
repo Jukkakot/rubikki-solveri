@@ -7,7 +7,7 @@
 
 ## 2. Phone build (app)
 
-- [ ] 2.1 `profile` build type (design 2), installed with adb over the debug app; compare `finderMs`/`scanMs` with the debug build on the phone (log or a short on-device timing run); result into `design.md`; keep or drop as decided there
+- [x] 2.1 `profile` build type (design 2), installed with adb over the debug app; compare `finderMs`/`scanMs` with the debug build on the phone (log or a short on-device timing run); result into `design.md`; keep or drop as decided there
 
 ## 3. Search window (cube, shared, web)
 
