@@ -42,7 +42,10 @@ change a known sticker or finish the scan; readings that disagree with each othe
 against each other and recent clear readings SHALL count over old ones, so that a face read wrong at
 first is put right by later clear views. Red and orange readings SHALL count as weaker evidence
 against each other than other colours. Renaming or re-turning a face SHALL NOT forget what its
-stickers were read as.
+stickers were read as. The scan's view of which face and turn each reading shows SHALL change
+only when something new speaks for it (a new reading, or a reading growing old): while nothing new
+is read it SHALL stay the same, and it SHALL NOT go back and forth between two views picture after
+picture.
 
 #### Scenario: One bad frame
 - **WHEN** one frame reads a sticker wrong among many that read it right
@@ -99,6 +102,14 @@ stickers were read as.
 #### Scenario: Rename keeps the stickers
 - **WHEN** a face's name or turn changes as more is seen
 - **THEN** the stickers whose readings still agree stay known, and the number of known stickers does not drop
+
+#### Scenario: Nothing new read
+- **WHEN** the cube is out of view, or a face has left the picture, and no new reading arrives
+- **THEN** the shown stickers, the ring and the faces' names and turns stay as they are
+
+#### Scenario: Held still
+- **WHEN** the cube is held still in view for a few seconds
+- **THEN** no sticker switches back and forth between two colours picture after picture
 
 ### Requirement: Finish the video scan
 The scan SHALL finish when one possible cube fits what has been read clearly better than every other
