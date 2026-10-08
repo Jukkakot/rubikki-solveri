@@ -103,8 +103,19 @@ import kotlin.time.TimeSource
 /**
  * The faces (full and partial) [FaceFinder] found in one camera picture of [width]×[height] pixels, in
  * [finderMs]; [worker] whether the browser's worker found them (null where there is none: the phone).
+ * [show], where given (the browser's worker), puts that very picture on screen in the camera's place
+ * (`scan-feedback` design 8); it is called when the faces' marks are first drawn. [showMs]: making
+ * that picture's copy took this long.
  */
-class FoundFaces(val faces: List<FaceReading>, val width: Int, val height: Int, val finderMs: Long = 0, val worker: Boolean? = null)
+class FoundFaces(
+    val faces: List<FaceReading>,
+    val width: Int,
+    val height: Int,
+    val finderMs: Long = 0,
+    val worker: Boolean? = null,
+    val showMs: Double = 0.0,
+    val show: (() -> Unit)? = null,
+)
 
 /**
  * The video scan: the camera's pictures go through [FaceFinder] off the main thread, the faces found
@@ -274,7 +285,7 @@ fun VideoScanContent(
         } else {
             preview(Modifier.fillMaxSize())
         }
-        picture?.let { p -> PaintLayer(state, p.width, p.height, Modifier.fillMaxSize(), onPainted = log::paintTime) }
+        picture?.let { p -> PaintLayer(state, p, Modifier.fillMaxSize(), onPainted = log::paintTime) }
         // A face is in view but nothing read yet: a small sign that the scan is working.
         if (!done && picture?.faces?.isNotEmpty() == true && state.recognised == 0) {
             CircularProgressIndicator(
@@ -347,6 +358,7 @@ private class ScanLogger(private val engine: ScanEngine, private val scan: Video
     private var finderMs = 0L
     private var scanMs = 0.0
     private var paintMs = 0.0
+    private var showMs = 0.0
     private var worker: Boolean? = null
 
     /** Every picture the finder read. */
@@ -355,6 +367,7 @@ private class ScanLogger(private val engine: ScanEngine, private val scan: Video
         frames++
         faces += f.faces.size
         finderMs += f.finderMs
+        showMs += f.showMs
         worker = f.worker
     }
 
@@ -395,7 +408,7 @@ private class ScanLogger(private val engine: ScanEngine, private val scan: Video
         AppLog.info(
             Evt.SCAN_VIDEO, null,
             "engine" to engine.logName,
-            *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n, fps, torch, darker, worker, scan.centreLog, scanMs / n, paintMs / n),
+            *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n, fps, torch, darker, worker, scan.centreLog, scanMs / n, paintMs / n, showMs / n),
         )
         lastSnapshot = at
         frames = 0
@@ -403,6 +416,7 @@ private class ScanLogger(private val engine: ScanEngine, private val scan: Video
         finderMs = 0
         scanMs = 0.0
         paintMs = 0.0
+        showMs = 0.0
     }
 
     private fun event(kind: String, vararg fields: Pair<String, Any?>) = AppLog.info(Evt.SCAN_VIDEO, null, "kind" to kind, "engine" to engine.logName, *fields)
@@ -478,16 +492,22 @@ fun shouldBuzz(before: VideoScanState, after: VideoScanState, now: Long, lastBuz
  * a dim outline round each other face found ([ScanPaint]). Veils and dots glide towards their places
  * at the display's rate ([Glide]); everything fades while the
  * cube moves quickly ([MotionFade]) and the projection's part when it grows old ([paintAlpha]).
+ * Where the picture shown is the one read ([FoundFaces.show], the browser), the marks are drawn with
+ * it: they snap to their places and do not fade for movement (`scan-feedback` design 8).
  */
 @Composable
-private fun PaintLayer(state: VideoScanState, width: Int, height: Int, modifier: Modifier, onPainted: (Double) -> Unit = {}) {
+private fun PaintLayer(state: VideoScanState, picture: FoundFaces, modifier: Modifier, onPainted: (Double) -> Unit = {}) {
+    val width = picture.width
+    val height = picture.height
+    val readPicture = picture.show != null
     val paint = remember(state) {
         val start = TimeSource.Monotonic.markNow()
         ScanPaint.of(state).also { onPainted(start.elapsedNow().inWholeMicroseconds / 1000.0) }
     }
-    val glide = remember { Glide() }
+    val glide = remember(readPicture) { if (readPicture) Glide(tauMillis = SNAP_TAU_MILLIS) else Glide() }
     val motion = remember { MotionFade() }
     val still = remember(state) {
+        if (readPicture) return@remember true
         val projection = state.projection
         val largest = state.found.maxByOrNull { it.reading.area }?.reading
         val centre = projection?.let { pr -> Point(pr.points.sumOf { it.x } / pr.points.size, pr.points.sumOf { it.y } / pr.points.size) } ?: largest?.centre
@@ -513,6 +533,8 @@ private fun PaintLayer(state: VideoScanState, width: Int, height: Int, modifier:
     val alpha = paintAlpha(state.projectionAge) * shown
     Canvas(modifier) {
         val drawStart = TimeSource.Monotonic.markNow()
+        // The picture these marks were read from, in the same frame as they are drawn.
+        picture.show?.invoke()
         val sx = size.width / width
         val sy = size.height / height
         fun at(p: Point) = Offset((p.x * sx).toFloat(), (p.y * sy).toFloat())
@@ -568,6 +590,9 @@ private fun PaintLayer(state: VideoScanState, width: Int, height: Int, modifier:
         onPainted(drawStart.elapsedNow().inWholeMicroseconds / 1000.0)
     }
 }
+
+/** With the read picture shown the marks snap: a glide this short is there at once. */
+private const val SNAP_TAU_MILLIS = 0.001f
 
 /** How long the marks take to fade out or in as the cube starts or stops moving. */
 private const val MOTION_FADE_MILLIS = 150

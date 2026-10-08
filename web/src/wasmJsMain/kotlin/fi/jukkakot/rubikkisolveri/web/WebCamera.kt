@@ -162,7 +162,7 @@ private fun WebCameraPreview(args: CameraArgs) {
         if (running && wantsWorker) {
             val started = elapsedMillis()
             scanWorkerStart(
-                { text ->
+                { text, seq, showMs ->
                     try {
                         val f = FaceCodec.decode(text)
                         if (worker != true) {
@@ -170,7 +170,9 @@ private fun WebCameraPreview(args: CameraArgs) {
                             current.onWorker(true)
                             AppLog.info(Evt.SCAN_WORKER, null, "worker" to true, "startMs" to elapsedMillis() - started)
                         }
-                        current.onFaces?.invoke(FoundFaces(f.faces, f.width, f.height, f.finderMs, worker = true))
+                        // The picture these faces were read from is shown when their marks are first drawn (`scan-feedback`).
+                        val show = if (seq > 0) ({ cameraShowFrame(seq); Unit }) else null
+                        current.onFaces?.invoke(FoundFaces(f.faces, f.width, f.height, f.finderMs, worker = true, showMs = showMs, show = show))
                     } catch (e: Throwable) {
                         AppLog.logger.error(Evt.SCAN_ERROR, e, "worker faces")
                     }

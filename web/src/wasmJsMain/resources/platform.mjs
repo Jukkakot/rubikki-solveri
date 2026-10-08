@@ -213,14 +213,79 @@ const HIDDEN = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;point
 
 /** Shows the camera's video at [x, y] (CSS pixels from the page's top left), [w]×[h], cropped to cover. */
 export function cameraShow(x, y, w, h) {
-  const v = cam.video;
-  if (!v) return;
-  v.style.cssText = `position:fixed;left:${x}px;top:${y}px;width:${w}px;height:${h}px;object-fit:cover;pointer-events:none;z-index:0`;
+  shown.box = { x, y, w, h };
+  placePicture();
 }
 
 /** Hides the video again (it keeps playing for the reading). */
 export function cameraHide() {
-  if (cam.video) cam.video.style.cssText = HIDDEN;
+  shown.box = null;
+  shown.on = false;
+  placePicture();
+}
+
+// The read picture (`scan-feedback` design 8): with the worker, each picture sent also gets a copy at
+// the box's size, kept under its number. When the worker's faces for it come back and Kotlin draws
+// their marks, cameraShowFrame puts that copy on a canvas in the video's place: the marks then lie on
+// the very picture they were read from (the picture is the scan's rate and ~60 ms late). Without the
+// worker or createImageBitmap the live video stays.
+
+const shown = { box: null, on: false, canvas: null, ctx: null, seq: 0, frames: new Map(), times: new Map() };
+const SHOW_LONG_MAX = 1280;
+
+/** Puts the video, or the read picture's canvas while it is on, where the box is; hides the other. */
+function placePicture() {
+  const b = shown.box;
+  const at = b ? `position:fixed;left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;pointer-events:none;z-index:0` : null;
+  if (cam.video) cam.video.style.cssText = at && !shown.on ? `${at};object-fit:cover` : HIDDEN;
+  if (shown.canvas) shown.canvas.style.cssText = at && shown.on ? at : HIDDEN;
+}
+
+/** The read picture's copy size for a crop of [w]×[h]: the box's size in device pixels, its long side at most SHOW_LONG_MAX. */
+function showSize(w, h) {
+  const b = shown.box;
+  if (!b) return null;
+  const dpr = window.devicePixelRatio || 1;
+  const k = Math.min(dpr, SHOW_LONG_MAX / Math.max(b.w, b.h));
+  return [Math.max(1, Math.round(b.w * k)), Math.max(1, Math.round(b.h * k))];
+}
+
+function dropFrame(seq) {
+  const f = shown.frames.get(seq);
+  if (f) f.close();
+  shown.frames.delete(seq);
+  shown.times.delete(seq);
+}
+
+/** Draws picture [seq]'s copy in the video's place (older copies are closed); false when there is none. */
+export function cameraShowFrame(seq) {
+  const f = shown.frames.get(seq);
+  if (!f) return false;
+  if (!shown.canvas) {
+    shown.canvas = document.createElement('canvas');
+    shown.ctx = shown.canvas.getContext('2d');
+    document.body.insertBefore(shown.canvas, document.body.firstChild);
+  }
+  if (shown.canvas.width !== f.width || shown.canvas.height !== f.height) {
+    shown.canvas.width = f.width;
+    shown.canvas.height = f.height;
+  }
+  shown.ctx.drawImage(f, 0, 0);
+  for (const k of [...shown.frames.keys()]) if (k <= seq) dropFrame(k);
+  if (!shown.on) {
+    shown.on = true;
+    placePicture();
+  }
+  return true;
+}
+
+/** Back to the live video (the scan stopped or the worker is not used). */
+function showLive() {
+  for (const k of [...shown.frames.keys()]) dropFrame(k);
+  if (shown.on) {
+    shown.on = false;
+    placePicture();
+  }
 }
 
 export function cameraVideoWidth() {
@@ -362,7 +427,7 @@ export function cameraAbilities() {
 // a newer one waits in place of an older (only the newest is kept). Kotlin falls back to reading on
 // the page when the worker fails.
 
-const scan = { worker: null, ready: false, busy: false, pending: null, onFaces: null, onFail: null, timer: 0 };
+const scan = { worker: null, ready: false, busy: false, pending: null, onFaces: null, onFail: null, timer: 0, inFlight: 0 };
 const WORKER_START_MS = 15000;
 
 function workerFail(reason) {
@@ -373,10 +438,15 @@ function workerFail(reason) {
 
 function workerPost(msg) {
   scan.busy = true;
-  scan.worker.postMessage(msg, msg.bitmap ? [msg.bitmap] : [msg.data]);
+  scan.inFlight = msg.seq || 0;
+  const { seq, ...body } = msg;
+  scan.worker.postMessage(body, msg.bitmap ? [msg.bitmap] : [msg.data]);
 }
 
-/** Starts the worker; [onFaces] gets each picture's faces as numbers, [onFail] the reason it cannot be used. */
+/**
+ * Starts the worker; [onFaces] gets each picture's faces as numbers, its number (0: no read picture
+ * kept) and the ms its read picture's copy took, [onFail] the reason it cannot be used.
+ */
 export function scanWorkerStart(onFaces, onFail) {
   scanWorkerStop();
   scan.onFaces = onFaces;
@@ -408,12 +478,16 @@ export function scanWorkerStart(onFaces, onFail) {
       return;
     }
     scan.busy = false;
+    const answered = scan.inFlight;
     if (scan.pending) {
       const next = scan.pending;
       scan.pending = null;
       workerPost(next);
     }
-    if (scan.onFaces) scan.onFaces(m.faces);
+    // Copies of earlier answers never shown go: the newest answer is the one to show.
+    for (const k of [...shown.frames.keys()]) if (k < answered) dropFrame(k);
+    const seq = shown.frames.has(answered) ? answered : 0;
+    if (scan.onFaces) scan.onFaces(m.faces, seq, shown.times.get(seq) || 0);
   };
 }
 
@@ -430,13 +504,17 @@ export function scanWorkerIdle() {
 function workerQueue(msg) {
   if (!scan.worker) {
     if (msg.bitmap) msg.bitmap.close();
+    if (msg.seq) dropFrame(msg.seq);
     return;
   }
   if (!scan.busy) {
     workerPost(msg);
     return;
   }
-  if (scan.pending && scan.pending.bitmap) scan.pending.bitmap.close();
+  if (scan.pending) {
+    if (scan.pending.bitmap) scan.pending.bitmap.close();
+    if (scan.pending.seq) dropFrame(scan.pending.seq);
+  }
   scan.pending = msg;
 }
 
@@ -452,9 +530,23 @@ export function scanWorkerSend(x, y, w, h, previewLong) {
   const pw = Math.max(1, Math.round(w * scale));
   const ph = Math.max(1, Math.round(h * scale));
   if (typeof createImageBitmap === 'function') {
-    createImageBitmap(v, x, y, w, h, { resizeWidth: pw, resizeHeight: ph, resizeQuality: 'low' })
-      .then((bitmap) => workerQueue({ bitmap }))
-      .catch(() => sendCanvas());
+    // The read picture's copy of the same video frame, made in the same task (`scan-feedback`).
+    const size = showSize(w, h);
+    const seq = ++shown.seq;
+    const started = performance.now();
+    const copy = size
+      ? createImageBitmap(v, x, y, w, h, { resizeWidth: size[0], resizeHeight: size[1], resizeQuality: 'medium' })
+        .then((b) => { shown.times.set(seq, performance.now() - started); return b; }, () => null)
+      : Promise.resolve(null);
+    const sent = createImageBitmap(v, x, y, w, h, { resizeWidth: pw, resizeHeight: ph, resizeQuality: 'low' });
+    Promise.all([sent, copy])
+      .then(([bitmap, display]) => {
+        if (display) {
+          if (scan.worker) shown.frames.set(seq, display); else display.close();
+        }
+        workerQueue({ bitmap, seq: display ? seq : 0 });
+      })
+      .catch(() => { copy.then((d) => d && d.close()); shown.times.delete(seq); sendCanvas(); });
   } else {
     sendCanvas();
   }
@@ -469,6 +561,7 @@ export function scanWorkerStop() {
   clearTimeout(scan.timer);
   if (scan.worker) scan.worker.terminate();
   if (scan.pending && scan.pending.bitmap) scan.pending.bitmap.close();
+  showLive();
   scan.worker = null;
   scan.ready = false;
   scan.busy = false;

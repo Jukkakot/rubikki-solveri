@@ -42,10 +42,11 @@ external fun cameraCompensationStep(): Double
 external fun cameraSetCompensation(ev: Double)
 external fun cameraPointOfInterest(x: Double, y: Double)
 external fun cameraAbilities(): String
-external fun scanWorkerStart(onFaces: (String) -> Unit, onFail: (String) -> Unit)
+external fun scanWorkerStart(onFaces: (String, Int, Double) -> Unit, onFail: (String) -> Unit)
 external fun scanWorkerReady(): Boolean
 external fun scanWorkerIdle(): Boolean
 external fun scanWorkerSend(x: Int, y: Int, w: Int, h: Int, previewLong: Int)
 external fun scanWorkerStop()
 external fun cameraShow(x: Double, y: Double, w: Double, h: Double)
 external fun cameraHide()
+external fun cameraShowFrame(seq: Int): Boolean

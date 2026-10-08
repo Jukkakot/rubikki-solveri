@@ -95,3 +95,18 @@ a corner view, not which link between faces the scanner lacks).
   offset] → the show call is made from the Compose draw of that reading; checked on the phone.
 - [Early dots from a track that later turns out to be a stray lattice] → a track that never counts
   shows nothing; one that counts and is wrong shows dots only while it is in view.
+
+## Implementation notes (apply, 2026-10-08)
+
+- `readSides` takes a counting track's leading centre colour (rules) or a pile seen `MIN_VOTES` times
+  (look). The striped phone fixture is clear with five sides read (the sixth follows), so the test
+  asks for at least five by `complete`; the ring is full on complete anyway.
+- The turn demo starts from `orientation` when known, else from the last `pose`; with neither, the
+  corner tilt. It is shown only where the status line is (not under a stall notice).
+- Ring segment looks: faint = 30 % alpha at a third of the stroke, lit = 75 % at half, full = solid.
+  The read ring's stroke is ~0.28 of the dot's radius, dark-rimmed like the dot.
+- Read picture: up to three copies may be alive for a moment (in flight, waiting, answered not yet
+  drawn); each is closed once a newer one is drawn or dropped. The copy is drawn and closed at once.
+- `./gradlew check` also runs `:shared:checkComposeUiTestConfigurationForWasmJs`, which fails on
+  `main` as it was (no wasm UI tests are declared); the project's chain `test lint assembleDebug`, the
+  web build and both browser smoke tests passed.
