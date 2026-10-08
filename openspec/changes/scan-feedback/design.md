@@ -16,12 +16,13 @@ the marks are drawn by Compose over a hole in the canvas, with `Glide` (τ 60 ms
 which side is missing; in the browser the marks lie on the cube in the picture shown.
 
 **Non-Goals:** changes to how the scanner decides (rules, costs, finish); the Android picture path;
-GPU work; arrows or turn hints.
+GPU work; arrows on the real cube; a computed "best next view" (the demo shows a side to show or
+a corner view, not which link between faces the scanner lacks).
 
 ## Decisions
 
 1. **"Read" is track-level.** A found face's sticker is read when its track counts (≥ `MIN_READINGS`
-   pictures) and that sticker's votes have a leading colour; the dot shows that leading colour. The
+   pictures) and that sticker's votes have a leading colour; its mark (decision 6) shows that colour. The
    found face carries it (`FoundFace.read`, reading order) next to `known`. Known wins over read where
    both exist (a confirmed colour corrects an early misread). On projection sides not found in the
    frame, a sticker shows a dot when known or when `state.leading` has a colour; otherwise a veil.
@@ -41,11 +42,34 @@ GPU work; arrows or turn hints.
    alpha filled to half thickness, full = solid at full thickness. The accessibility description
    names the sides still unread instead of the sticker count.
 
-4. **Corner hint in the status line.** New text `video_status_corners` ("Näytä kuution kulmia"),
-   shown when `readSides` has all six colours, the cube is not complete, and no stall or
-   `undecided` hint takes precedence. Order: done > no cube > undecided (turn) > corners > grey.
+4. **Status line once every side is read.** When `readSides` has all six colours and the cube is
+   not complete, the line shows the existing "Käännä kuutiota" (`video_status_turn`), not "show the
+   grey parts" (nothing is grey then). Order: done > no cube > turn (undecided or all read) > grey.
+   The earlier idea of a corner text was dropped for the small demo cube (decision 5; user,
+   2026-10-08).
 
-5. **Browser: show the read picture.** When the worker is in use, `scanWorkerSend` also makes a
+5. **Turn demo on a small cube.** A `Cube3D` about 64 dp next to the status line, not draggable,
+   all stickers grey except the six centres (user, 2026-10-08), so its orientation reads at a glance.
+   Shown when no new sticker became known and no new side was read for `DEMO_IDLE_MILLIS` (2 s) and
+   the scan is not complete; hidden at once on either. Its movement, a loop of about 2.5 s (turn,
+   hold, jump back):
+   - unread side and `orientation`/`pose` known: start from the real cube's orientation as the
+     camera sees it, end with the first unread side (in W R G Y O B order) facing the camera,
+     by the shortest whole-cube rotation;
+   - every side read, or no pose: from one side facing the camera to the standard corner view
+     (three sides showing).
+   The target only changes when the side to show changes, so the loop does not jump while the
+   user holds still. Rejected: an arrow on the real cube (removed in `scan-paint` because it came
+   and went and its meaning was unclear); a text-only hint (the user wanted the movement shown).
+
+6. **Marks: hollow ring vs. dot.** `PaintDot` gets `sure: Boolean`: a known sticker draws the
+   filled dot as now, a read-only one a ring of the same outer size, stroke about a quarter of its
+   radius, in the read colour. A key keeps its place when it turns sure, so the ring fills in place.
+
+7. **Vibration on a new side.** The same short haptic as for new stickers when `readSides` grows,
+   under the existing `BUZZ_MILLIS` spacing so a corner view (three new sides) buzzes once.
+
+8. **Browser: show the read picture.** When the worker is in use, `scanWorkerSend` also makes a
    display-size `ImageBitmap` of the same video frame (the cover crop at the box's CSS size × device
    pixel ratio, capped at 1280 px on the long side) and keeps it under the frame's sequence number.
    When the worker's faces for that number come back, the page holds it as the frame to show; the
@@ -57,7 +81,7 @@ GPU work; arrows or turn hints.
    old glide/fade stay. Alternative: predicting the motion — rejected, it overshoots when the cube
    stops; optical-flow tracking between readings — too big for the gain.
 
-6. **Android unchanged.** The phone app keeps the live preview with glide and fade; the user tests
+9. **Android unchanged.** The phone app keeps the live preview with glide and fade; the user tests
    mainly in the browser (2026-10-08). If the browser result is liked, the same idea for Android
    (show the analysis image) is a later change.
 

@@ -7,9 +7,11 @@
 
 ## 2. Paint, ring and status line (shared)
 
-- [ ] 2.1 `ScanPaint.of`: found faces dot `known` else `read`, veil only when neither; projection sides dot `stickers` else `leading`. Tests in `ScanPaintTest`/`RulesScanPaintTest`: a read-but-open face has dots and no veils; a known colour wins over a different read one
+- [ ] 2.1 `ScanPaint.of`: found faces mark `known` (filled dot, `sure`) else `read` (hollow ring), veil only when neither; projection sides likewise from `stickers` / `leading`; drawing of the ring mark. Tests in `ScanPaintTest`/`RulesScanPaintTest`: a read-but-open face has rings and no veils; a known colour wins over a different read one and is sure
 - [ ] 2.2 Progress ring as six segments (faint / lit / full, W R G Y O B), accessibility text naming the unread sides; full in every segment when complete. Smoke test in `VideoScanScreenTest`: renders with a state of five read sides
-- [ ] 2.3 Status line: `video_status_corners` (fi "Näytä kuution kulmia", en "Show the cube's corners") when all six sides are read and the cube is not complete; order done > no cube > turn > corners > grey. Unit test on `videoStatus`
+- [ ] 2.3 Status line: `video_status_turn` also when all six sides are read and the cube is not complete; order done > no cube > turn > grey. Unit test on `videoStatus`
+- [ ] 2.4 Vibration when `readSides` grows, within the existing `BUZZ_MILLIS` spacing. Covered by a small unit test of the buzz decision (pure function)
+- [ ] 2.5 Turn demo cube: a pure `turnDemo(state, sinceProgress)` (cube module or shared logic) giving null / (start orientation, end orientation): unread side with known pose = real orientation to that side facing the camera by the shortest whole-cube turn; all read or no pose = face-on to corner view; same result while the side to show stays. JVM tests for the three cases. Then the small `Cube3D` (~64 dp, grey stickers, coloured centres, looping ~2.5 s) by the status line, shown after 2 s without progress and hidden on progress; smoke test in `VideoScanScreenTest`
 
 ## 3. Browser: the read picture with its marks (web)
 
@@ -20,4 +22,4 @@
 
 - [ ] 4.1 Build and checks: `./gradlew check` (JVM tests, lint) and the web build + smoke test green
 - [ ] 4.2 Docs: `docs/architecture.md` video-scan paint/ring and the browser's read-picture path (where it lives, why); roadmap: add `scan-feedback` as done with a one-line summary
-- [ ] 4.3 For the user to try in the browser: does a face "take" within about half a second, does the ring tell the missing side, does the corner hint appear and help, do the marks stay on a quickly turned cube, and how the ~17 fps picture feels
+- [ ] 4.3 For the user to try in the browser: does a face "take" within about half a second, does the ring tell the missing side, does the small turn cube appear when stuck, and does its movement make sense, do the hollow rings fill to dots, does the phone buzz on a new side, do the marks stay on a quickly turned cube, and how the ~17 fps picture feels
