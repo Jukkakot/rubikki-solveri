@@ -3,6 +3,7 @@ package fi.jukkakot.rubikkisolveri.ui.scan
 import fi.jukkakot.rubikkisolveri.cube.ColorScheme
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.Face
+import fi.jukkakot.rubikkisolveri.cube.scan.FoundFace
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
 import kotlin.math.exp
@@ -26,7 +27,7 @@ data class PaintDot(val key: Int, val centre: Point, val u: Point, val v: Point,
 data class PaintTick(val centre: Point, val u: Point, val v: Point)
 
 /**
- * What to paint over one camera picture (`scan-paint-calm`, `scan-steady-progress`, `scan-feedback`):
+ * What to paint over one camera picture, on the faces found in it (`scan-paint-calm`, `scan-steady-progress`, `scan-feedback`):
  * a veil over every sticker not read yet ([tiles]), a small mark in its read colour on every read one
  * ([dots]; a ring while only read, a dot once known),
  * the [outlines] and [ticks] of confirmed sides, and a dim outline round each other face found
@@ -43,9 +44,10 @@ data class ScanPaint(
         val EMPTY = ScanPaint(emptyList(), emptyList())
 
         /**
-         * The paint for [state]: the stickers still needed on every face found in this frame and on
-         * every other side of the projection turned towards the camera. A side the rest of the cube
-         * confirms gets an outline and a tick; a face found otherwise a dim outline.
+         * The paint for [state]: the faces found in this frame only (`scan-paint-found-only`: the
+         * projection's guessed sides floated beside the cube in the hand). A side the rest of the cube
+         * confirms gets an outline and a tick; a face read steadily ([FoundFace.read]) otherwise a dim
+         * outline, a lattice found for one picture none.
          */
         fun of(state: VideoScanState): ScanPaint {
             val tiles = ArrayList<PaintTile>()
@@ -53,12 +55,10 @@ data class ScanPaint(
             val outlines = ArrayList<List<Point>>()
             val ticks = ArrayList<PaintTick>()
             val found = ArrayList<List<Point>>()
-            val foundSides = HashSet<Face>()
             state.found.forEachIndexed { f, face ->
                 val r = face.reading
                 // The side this face is, once its centre is named: the centre's colour tells it.
                 val side = face.names[4]?.let { c -> Face.entries.firstOrNull { ColorScheme.STANDARD[it] == c } }
-                if (side != null) foundSides += side
                 for (n in 0 until 9) {
                     val centre = r.centre + r.u * (n % 3 - 1.0) + r.v * (n / 3 - 1.0)
                     val key = if (side != null) FOUND_KEY + side.ordinal * 9 + n else LOOSE_KEY + f * 9 + n
@@ -75,33 +75,8 @@ data class ScanPaint(
                 if (side != null && side in state.confirmed) {
                     outlines += corners
                     ticks += PaintTick(r.centre, r.u, r.v)
-                } else {
+                } else if (face.read != null) {
                     found += corners
-                }
-            }
-            val projection = state.projection ?: return ScanPaint(tiles, outlines, ticks, found, dots)
-            for (side in projection.facing) {
-                if (side in foundSides) continue
-                val p = { n: Int -> projection.points[side.ordinal * 9 + n] }
-                // A side seen at an angle is narrower: its veils follow its own sticker spacing.
-                val u = (p(5) - p(3)) * 0.5
-                val v = (p(7) - p(1)) * 0.5
-                // A face found there, named or not, has its own marks: no second layer (`scan-paint-steady`).
-                val reach = maxOf(u.length, v.length, projection.step)
-                if (state.found.any { (it.reading.centre - p(4)).length < reach }) continue
-                for (n in 0 until 9) {
-                    val i = side.ordinal * 9 + n
-                    val known = state.stickers[i]
-                    val read = state.leading[i]
-                    when {
-                        known != null -> dots += PaintDot(i, p(n), u, v, known)
-                        read != null -> dots += PaintDot(i, p(n), u, v, read, sure = false)
-                        else -> tiles += PaintTile(i, p(n), u, v)
-                    }
-                }
-                if (side in state.confirmed) {
-                    outlines += listOf(0, 2, 8, 6).map { n -> p(4) + (p(n) - p(4)) * 1.5 }
-                    ticks += PaintTick(p(4), u, v)
                 }
             }
             return ScanPaint(tiles, outlines, ticks, found, dots)

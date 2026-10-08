@@ -523,7 +523,7 @@ fun shouldBuzz(before: VideoScanState, after: VideoScanState, now: Long, lastBuz
  * colour on every known one (`scan-steady-progress`), a white outline and a tick on a confirmed side,
  * a dim outline round each other face found ([ScanPaint]). Veils and dots glide towards their places
  * at the display's rate ([Glide]); everything fades while the
- * cube moves quickly ([MotionFade]) and the projection's part when it grows old ([paintAlpha]).
+ * cube moves quickly ([MotionFade]). Only the faces found in the picture are painted (`scan-paint-found-only`).
  * Where the picture shown is the one read ([FoundFaces.show], the browser), the marks are drawn with
  * it: they snap to their places and do not fade for movement (`scan-feedback` design 8).
  */
@@ -540,10 +540,9 @@ private fun PaintLayer(state: VideoScanState, picture: FoundFaces, modifier: Mod
     val motion = remember { MotionFade() }
     val still = remember(state) {
         if (readPicture) return@remember true
-        val projection = state.projection
         val largest = state.found.maxByOrNull { it.reading.area }?.reading
-        val centre = projection?.let { pr -> Point(pr.points.sumOf { it.x } / pr.points.size, pr.points.sumOf { it.y } / pr.points.size) } ?: largest?.centre
-        val side = projection?.let { 3 * it.step } ?: largest?.let { 3 * it.u.length } ?: 0.0
+        val centre = largest?.centre
+        val side = largest?.let { 3 * it.u.length } ?: 0.0
         motion.step(centre, side, elapsedMillis())
     }
     val shown by animateFloatAsState(if (still) 1f else 0f, tween(MOTION_FADE_MILLIS), label = "motion")
@@ -562,7 +561,8 @@ private fun PaintLayer(state: VideoScanState, picture: FoundFaces, modifier: Mod
             if (drawn.all { (key, at) -> (targets.getValue(key) - at).length < REST_PIXELS }) break
         }
     }
-    val alpha = paintAlpha(state.projectionAge) * shown
+    // Every mark is on a face found in this picture (`scan-paint-found-only`): nothing ages.
+    val alpha = shown
     Canvas(modifier) {
         val drawStart = TimeSource.Monotonic.markNow()
         // The picture these marks were read from, in the same frame as they are drawn.
@@ -576,15 +576,14 @@ private fun PaintLayer(state: VideoScanState, picture: FoundFaces, modifier: Mod
         }
         for (tile in paint.tiles) {
             val centre = drawn[tile.key] ?: tile.centre
-            // Projection veils fade with the projection's age; a face found in this frame is current.
-            val a = (if (tile.key < Stickers.COUNT) alpha else shown)
+            val a = shown
             if (a <= 0f) continue
             val h = TILE_SHARE / 2
             val corners = listOf(-h to -h, h to -h, h to h, -h to h).map { (du, dv) -> centre + tile.u * du.toDouble() + tile.v * dv.toDouble() }
             drawPath(outline(corners), NEEDED.copy(alpha = VEIL_ALPHA * a))
         }
         for (dot in paint.dots) {
-            val a = (if (dot.key < Stickers.COUNT) alpha else shown)
+            val a = shown
             if (a <= 0f) continue
             val c = at(drawn[dot.key] ?: dot.centre)
             val r = (DOT_SHARE / 2 * minOf(dot.u.length * sx, dot.v.length * sy)).toFloat()

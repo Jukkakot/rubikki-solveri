@@ -74,15 +74,13 @@ open class ScanPaintTest {
     }
 
     @Test
-    fun anOpenFaceOverAProjectedSideGetsOnlyItsOwnMarks() {
+    fun anOpenFaceGetsOnlyItsOwnMarks() {
         val state = cornerView()
         val f = state.found.first()
-        // F found but its side not told yet (no centre name): the projection's F side lies under it.
+        // F found but its side not told yet (no centre name).
         val open = state.copy(found = listOf(f.copy(names = f.names.mapIndexed { n, c -> if (n == 4) null else c })))
         val paint = ScanPaint.of(open)
-        assertEquals(9, paint.tiles.count { it.key >= 54 } + paint.dots.count { it.key >= 54 }, "the face's own nine marks")
-        val keys = paint.tiles.map { it.key } + paint.dots.map { it.key }
-        assertTrue(keys.none { it < 54 && it / 9 == Face.F.ordinal }, "no projected F side under it")
+        assertEquals(9, paint.tiles.size + paint.dots.size, "the face's own nine marks")
     }
 
     @Test
@@ -97,17 +95,20 @@ open class ScanPaintTest {
     }
 
     @Test
-    fun aFaceFoundGetsADimOutline() {
-        assertEquals(2, ScanPaint.of(cornerView()).found.size)
+    fun aFaceReadSteadilyGetsADimOutlineAStrayLatticeNone() {
+        val state = cornerView()
+        assertEquals(2, ScanPaint.of(state).found.size)
+        val stray = state.copy(found = listOf(state.found.first().copy(read = null)) + state.found.drop(1))
+        assertEquals(1, ScanPaint.of(stray).found.size, "a lattice not read steadily gets no outline")
     }
 
     @Test
-    fun aProjectedSideWithoutReadingsIsGreyWhereNeeded() {
+    fun noFaceFoundPaintsNothingEvenWithAProjection() {
+        // scan-paint-found-only: the guessed sides floated beside the cube; only faces found are painted.
         val state = cornerView()
-        // The cube's pose known from before, no face in this picture and nothing known yet.
+        assertTrue(state.projection != null)
         val paint = ScanPaint.of(state.copy(found = emptyList(), stickers = List(54) { null }))
-        assertEquals(9, paint.tiles.size, "the side facing the camera")
-        assertTrue(paint.tiles.all { it.key < 54 })
+        assertEquals(ScanPaint(emptyList(), emptyList()), paint)
     }
 
     @Test

@@ -190,7 +190,7 @@ Video scan pipeline (`video-scan`):
    The earlier scanner, `cube/scan/VideoScan` (LOOK): votes per sticker (partial faces vote, never anchor), pose, orientation
    (`Orientation`, weak perspective from one face's steps), stall reasons and `reset()`. The
    projection is held over frames without a settled face for up to `HOLD_MILLIS`, moved (not
-   turned) onto the largest face found, with its age in `projectionAge` (`scan-paint`); built only from a sure tilt (`Orientation.chosen`: straight on, a cue from another face, or following a sure one; `scan-paint-steady`: a guessed mirror tilt put the veils on the table), and `ScanPaint` skips a projected side where a face is found. The votes are evidence for `BestCube` (`video-scan-progress`): the possible cube that
+   turned) onto the largest face found, with its age in `projectionAge` (`scan-paint`); built only from a sure tilt (`Orientation.chosen`: straight on, a cue from another face, or following a sure one; `scan-paint-steady`: a guessed mirror tilt put the veils on the table), now used for the pose and the turn demo only, not painted. The votes are evidence for `BestCube` (`video-scan-progress`): the possible cube that
    fits them best, piece by piece, with a margin per piece place. Each reading gives every colour a
    share by its distance to the cube's own centres, 70 % of it brightness-free (`Tone`; soft votes;
    washed-out readings count little; `video-scan-light`, whose findings explain why no light-colour
@@ -210,13 +210,13 @@ Video scan pipeline (`video-scan`):
    360 px wide). Phone recordings come in by Quick Share links: the global `quickshare` skill.
 4. `ui/scan/VideoScanScreen`: the camera fills the screen with the progress painted on the real
    cube (`ScanPaint`, `scan-paint-calm`, `scan-steady-progress`, `scan-feedback`: a grey veil over
-   each sticker not read yet on the found faces and the projection's sides facing the camera, a
+   each sticker not read yet on the faces found in the picture (only those: `scan-paint-found-only`,
+   the projection's guessed sides floated beside the cube in the hand), a
    hollow ring in the read colour on each read one (`FoundFace.read`: the face's track's leading
    colours once it counts, before it is placed, so a face visibly takes at once), a filled dot once
    known, a white outline and a tick
-   on a side the best cube confirms, a dim outline round other faces found; `Glide` moves the veils
-   at the display's rate, `MotionFade` hides the marks only on clearly fast moves, the
-   projection's paint fades with its age), back / ring of six side segments (`ringSegments`:
+   on a side the best cube confirms, a dim outline round other faces read steadily; `Glide` moves the veils
+   at the display's rate and `MotionFade` hides the marks only on clearly fast moves, where the live picture shows), back / ring of six side segments (`ringSegments`:
    faint unread, lit read = `VideoScanState.readSides`, full confirmed) / torch / ⋮ menu (one picture at a time, by hand,
    "Korjaa värit") on the picture, one status line at the bottom; no turn arrow on the real cube, no done-sides row
    (`scan-paint`); after 2 s without progress a small grey `Cube3D` with coloured centres by the
