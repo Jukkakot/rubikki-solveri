@@ -96,6 +96,12 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -169,6 +175,7 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
             maxDarker = maxDarker,
             onExposure = { exposure = it },
             engine = engine,
+            scanContext = remember { Dispatchers.Default.limitedParallelism(1) },
         ) { modifier ->
             CameraPreview(
                 torch = torch,
@@ -217,9 +224,14 @@ fun VideoScanContent(
     clock: () -> Long = ::elapsedMillis,
     onSwitch: (() -> Unit)? = null,
     engine: ScanEngine = ScanEngine.RULES,
+    scanContext: CoroutineContext = EmptyCoroutineContext,
     preview: @Composable (Modifier) -> Unit,
 ) {
     val scan = remember { VideoScan(engine = engine) }
+    // The scan runs one picture at a time in [scanContext] (the phone: off the drawing thread,
+    // `scan-speed-up-2`); a check or a restart waits for the picture in hand.
+    val scanLock = remember { Mutex() }
+    val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf(VideoScanState.EMPTY) }
     var picture by remember { mutableStateOf<FoundFaces?>(null) }
     // What is painted: the state and picture of the last reading shown (`scan-paint-steady`: held over a faceless one).
@@ -263,7 +275,7 @@ fun VideoScanContent(
             log.picture(f, now)
             val stateBefore = state
             val scanStart = TimeSource.Monotonic.markNow()
-            state = scan.onFrame(f.faces, now)
+            state = scanLock.withLock { withContext(scanContext) { scan.onFrame(f.faces, now) } }
             log.scanTime(scanStart.elapsedNow().inWholeMicroseconds / 1000.0)
             picture = f
             if (!holdPicture(f, painted?.second, now - facedAt)) painted = state to f
@@ -276,7 +288,7 @@ fun VideoScanContent(
                 lastBuzz = now
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             }
-            if (state.finished) finish(scan.outcome())
+            if (state.finished) finish(scanLock.withLock { scan.outcome() })
         }
     }
     // The torch changes the light: the camera meters again before its frames are read and locked.
@@ -288,9 +300,9 @@ fun VideoScanContent(
     }
     DisposableEffect(Unit) { onDispose { if (!done) log.leave(state, clock(), torch, exposure.settings.darker) } }
 
-    fun restart() {
+    fun restart() = scope.launch {
         log.restart(state)
-        scan.reset()
+        scanLock.withLock { scan.reset() }
         state = scan.state
         painted = painted?.let { scan.state to it.second }
         dismissed = emptySet()
@@ -339,7 +351,7 @@ fun VideoScanContent(
                     close = close,
                     onSwitch = onSwitch,
                     onManual = onManual,
-                    onCheck = { finish(scan.outcome()) }.takeIf { state.recognised > 0 },
+                    onCheck = { scope.launch { finish(scanLock.withLock { scan.outcome() }) }; Unit }.takeIf { state.recognised > 0 },
                 )
             },
         ) { ProgressRing(ringSegments(state, done)) }
@@ -350,8 +362,8 @@ fun VideoScanContent(
                 stall,
                 torch = torch.takeIf { torchAvailable && stall != Stall.NO_CUBE },
                 onTorch = onTorch,
-                onRestart = ::restart,
-                onFix = { finish(scan.outcome()) },
+                onRestart = { restart() },
+                onFix = { scope.launch { finish(scanLock.withLock { scan.outcome() }) } },
                 modifier = bottom,
             )
         } else {

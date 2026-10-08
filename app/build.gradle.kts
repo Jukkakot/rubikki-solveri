@@ -83,6 +83,14 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
+        // As debug but not debuggable (the runtime then compiles the code fully), signed with the debug
+        // key so it installs over the debug app: how fast the scan is without the debugger's handicaps
+        // (`scan-speed-up-2` design 2).
+        create("profile") {
+            initWith(getByName("debug"))
+            isDebuggable = false
+            matchingFallbacks += "debug"
+        }
     }
 
     compileOptions {

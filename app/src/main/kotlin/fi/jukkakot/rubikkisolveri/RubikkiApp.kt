@@ -26,7 +26,7 @@ class RubikkiApp : Application() {
         logger.info(
             Evt.APP_START, null,
             "ver" to BuildConfig.VERSION_NAME, "sdk" to Build.VERSION.SDK_INT, "device" to Build.MODEL,
-            "crashedLastTime" to crashedLastTime,
+            "crashedLastTime" to crashedLastTime, "build" to BuildConfig.BUILD_TYPE,
         )
         Thread({
             val start = System.nanoTime()

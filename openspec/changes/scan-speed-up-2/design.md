@@ -68,3 +68,8 @@ finder runs in one coroutine on `Dispatchers.Default`; the browser in one worker
 Full faces per picture do not change down to 240, the scans clear as early and right (the two
 without a clear never cleared before either). **Chosen: `FINDER_LONG_SIDE = 240`** (phone finder ~4×
 less work, browser ~1.4×). A cube far away and small may be read less well (accepted by the user).
+
+**Search window (task 3.1, dropped).** Measured with a `FinderWindow` at 240 on the same stills: the
+window covered 28–33k px of 32–34k (the cube is held close and fills most of the picture; the window
+is its box grown by half), finder time 3.7 vs 3.8 ms, same faces and results. About 3 % for a class,
+two crop paths and a failure mode: not kept (decided while applying, reported to the user).
