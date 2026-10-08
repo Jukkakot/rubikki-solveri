@@ -19,12 +19,21 @@ function pixels(msg) {
   return { width: msg.width, height: msg.height, data: new Uint8ClampedArray(msg.data) };
 }
 
-/** [find] gets each picture (width, height, RGBA bytes) and returns the faces as numbers. */
-export function workerListen(find) {
+/**
+ * [find] gets each picture (width, height, RGBA bytes) and returns the faces as numbers; [scanned] then
+ * gives the scan's answer for it (`scan-speed-up-2`). A command ({cmd, id}) goes to [command], whose
+ * answer goes back as {reply: id, text}.
+ */
+export function workerListen(find, scanned, command) {
   self.onmessage = (e) => {
     try {
+      if (e.data && e.data.cmd !== undefined) {
+        self.postMessage({ reply: e.data.id, text: command(e.data.cmd) });
+        return;
+      }
       const p = pixels(e.data);
-      self.postMessage({ faces: find(p.width, p.height, new Int8Array(p.data.buffer, p.data.byteOffset, p.data.length)) });
+      const faces = find(p.width, p.height, new Int8Array(p.data.buffer, p.data.byteOffset, p.data.length));
+      self.postMessage({ faces, scan: scanned() });
     } catch (err) {
       self.postMessage({ error: (err && (err.name + ': ' + err.message)) || String(err) });
     }

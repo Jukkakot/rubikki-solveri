@@ -78,3 +78,9 @@ two crop paths and a failure mode: not kept (decided while applying, reported to
 34–59 ms, scan 22–56 ms, 16–23 pictures a second; non-debuggable build finder 10–16 ms, scan 12–13 ms,
 30–31 pictures a second (the camera's rate). The debug build is now not debuggable (decision 2); the
 `profile` type was removed again. Two finders (4) are not needed on the phone: it reads every picture.
+
+**Two finders (task 4.1, dropped) and the scan worker (5.2, changed).** After 1, 2 and 5 both platforms
+read at the camera's rate (phone app 30–31 pictures a second; browser on the desktop with a cube video
+26–31, worker finder 10–12 ms + scan 6–11 ms): a second finder has nothing to do. With one finder the
+scan runs in that same worker after the faces are found (no third worker, no faces hop), its state
+back as text; an answer from before a restart is left out by the restart count.

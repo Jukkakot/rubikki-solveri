@@ -16,15 +16,15 @@
 
 ## 4. Two finders (shared, web)
 
-- [ ] 4.1 Phone: two finder coroutines, answers numbered, older ones dropped; browser: two finder workers, the page sends to an idle one, older answers dropped (their picture copies freed). Unit test of the drop rule (pure)
+- [x] 4.1 (dropped after measuring: both read at the camera rate, see design) Phone: two finder coroutines, answers numbered, older ones dropped; browser: two finder workers, the page sends to an idle one, older answers dropped (their picture copies freed). Unit test of the drop rule (pure)
 
 ## 5. Scan logic off the drawing thread (cube, shared, webworker, web)
 
 - [x] 5.1 Phone: `VideoScan.onFrame` in the pipeline's single-threaded background context, the state handed to Compose
-- [ ] 5.2 Browser: kotlinx.serialization in `cube` for the state the screen uses and `ScanOutcome`; a scan-logic worker (second entry of `webworker`) owning `VideoScan` (faces in, state out; reset, outcome, engine as messages); the page uses it when workers run, else as now. Codec round-trip test on the JVM; `web/smoke/video.mjs` passes
+- [x] 5.2 (in the finder worker, see design) Browser: kotlinx.serialization in `cube` for the state the screen uses and `ScanOutcome`; a scan-logic worker (second entry of `webworker`) owning `VideoScan` (faces in, state out; reset, outcome, engine as messages); the page uses it when workers run, else as now. Codec round-trip test on the JVM; `web/smoke/video.mjs` passes
 
 ## 6. Wrap-up
 
-- [ ] 6.1 `./gradlew check`, web build, both browser smoke tests
-- [ ] 6.2 Docs: `docs/architecture.md` (finder size, window, two finders, scan worker; where each lives); roadmap entry
-- [ ] 6.3 Install on the phone; list for the user to try: pictures a second (`fps`) and `finderMs` in the log of both, a cube held at the usual distance still read, nothing else changed
+- [x] 6.1 `./gradlew check`, web build, both browser smoke tests
+- [x] 6.2 Docs: `docs/architecture.md` (finder size, window, two finders, scan worker; where each lives); roadmap entry
+- [x] 6.3 Install on the phone; list for the user to try: pictures a second (`fps`) and `finderMs` in the log of both, a cube held at the usual distance still read, nothing else changed

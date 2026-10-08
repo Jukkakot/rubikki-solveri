@@ -427,21 +427,12 @@ class VideoScan(
         if (engine == ScanEngine.RULES) return rulesOutcome()
         val known = state.stickers
         val net = known.mapIndexed { i, c -> c ?: if (i % 9 == CENTRE) scheme[Face.entries[i / 9]] else state.leading[i] }
-        val editor = CubeEditor(net, scheme)
         // A face whose rotation is not settled may sit turned wrong in the net: all of it is doubtful.
         val turnedUnsure = Face.entries.filter { groups[scheme[it]] != null && it !in settled && !state.complete }
         val uncertain = known.indices.filter { (known[it] == null || Face.entries[it / 9] in turnedUnsure) && it % 9 != CENTRE }.toSet()
         val inferred = known.indices.filter { known[it] != null && it % 9 != CENTRE && evidence.sure(it) != known[it] }.toSet()
-        val cube = editor.toCube()
         val samples = netOf { it.samples }
-        return ScanOutcome(
-            editor = editor,
-            uncertain = uncertain,
-            validity = cube?.let { CubeCheck.validity(it, scheme) } ?: Validity.WrongColorCount(editor.counts().filterValues { it != 9 }),
-            samples = if (samples.all { it != null }) samples.map { it!! } else emptyList(),
-            rotations = rotations,
-            inferred = inferred,
-        )
+        return outcomeOf(net, uncertain, if (samples.all { it != null }) samples.map { it!! } else emptyList(), rotations, inferred, scheme)
     }
 
     /**
@@ -940,7 +931,6 @@ class VideoScan(
     private fun rulesOutcome(): ScanOutcome {
         val known = state.stickers
         val net = known.mapIndexed { i, c -> c ?: if (i % 9 == CENTRE) scheme[Face.entries[i / 9]] else state.leading[i] }
-        val editor = CubeEditor(net, scheme)
         val turnedUnsure = if (state.complete) emptySet() else tracks.seenFaces - tracks.settledFaces
         val uncertain = known.indices.filter { (known[it] == null || Face.entries[it / 9] in turnedUnsure) && it % 9 != CENTRE }.toSet()
         val inferred = known.indices.filter { known[it] != null && it % 9 != CENTRE && tracks.evidence.sure(it) != known[it] }.toSet()
@@ -954,19 +944,32 @@ class VideoScan(
             val agreeing = list.filter { it.second == net[i] }.ifEmpty { list }.map { it.first }
             if (agreeing.isEmpty()) null else Rgb(FrameSampler.median(agreeing.map { it.r }), FrameSampler.median(agreeing.map { it.g }), FrameSampler.median(agreeing.map { it.b }))
         }
-        val cube = editor.toCube()
-        return ScanOutcome(
-            editor = editor,
-            uncertain = uncertain,
-            validity = cube?.let { CubeCheck.validity(it, scheme) } ?: Validity.WrongColorCount(editor.counts().filterValues { it != 9 }),
-            samples = if (samples.all { it != null }) samples.map { it!! } else emptyList(),
-            rotations = tracks.rotations(),
-            inferred = inferred,
-        )
+        return outcomeOf(net, uncertain, if (samples.all { it != null }) samples.map { it!! } else emptyList(), tracks.rotations(), inferred, scheme)
     }
 
     companion object {
         private const val CENTRE = 4
+
+        /** The outcome of a scan whose net is [net] (also rebuilt from text in the browser, [ScanStateCodec]). */
+        fun outcomeOf(
+            net: List<CubeColor?>,
+            uncertain: Set<Int>,
+            samples: List<Rgb>,
+            rotations: Map<Face, Int>,
+            inferred: Set<Int>,
+            scheme: ColorScheme = ColorScheme.STANDARD,
+        ): ScanOutcome {
+            val editor = CubeEditor(net, scheme)
+            val cube = editor.toCube()
+            return ScanOutcome(
+                editor = editor,
+                uncertain = uncertain,
+                validity = cube?.let { CubeCheck.validity(it, scheme) } ?: Validity.WrongColorCount(editor.counts().filterValues { it != 9 }),
+                samples = samples,
+                rotations = rotations,
+                inferred = inferred,
+            )
+        }
 
         /**
          * A face joins a pile whose centre is at most this far from its own ([ColorClassifier.scaled]

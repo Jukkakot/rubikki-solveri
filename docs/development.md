@@ -16,6 +16,9 @@
 
 ## Checks — Implemented
 
+The debug build is not debuggable (`scan-speed-up-2`: debuggable, the phone's video scan ran about three
+times slower); Run ▶ installs it as before, logs are read from logcat (`adb logcat`), not with `run-as`.
+
 Run before every commit (CI runs the same):
 
 ```

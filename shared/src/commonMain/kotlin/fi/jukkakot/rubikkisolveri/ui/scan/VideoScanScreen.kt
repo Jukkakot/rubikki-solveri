@@ -125,9 +125,26 @@ class FoundFaces(
     val show: (() -> Unit)? = null,
     /** The picture read, upright, to draw filling the camera box under its marks (the phone, `scan-read-picture-android`). */
     val image: ImageBitmap? = null,
+    /** The scan's answer where it ran with the finder (the browser's worker). */
+    val scanned: Scanned? = null,
 ) {
     /** The picture shown is this very one ([show] or [image]): its marks snap and do not fade for movement. */
     val readPicture: Boolean get() = show != null || image != null
+}
+
+/**
+ * The scan run where the faces were found (the browser's worker, `scan-speed-up-2` design 5): its
+ * [state] after this picture, its centre line for the log, its time, and how many restarts it has had
+ * ([resets]: an answer from before the last restart is left out).
+ */
+class Scanned(val state: VideoScanState, val centreLog: String, val scanMs: Double, val resets: Int, val remote: RemoteScan)
+
+/** The scan where it runs elsewhere (the browser's worker): started again with an engine, its outcome asked for. */
+interface RemoteScan {
+    /** Starts the scan again with [engine]; answers how many restarts it has had. */
+    suspend fun reset(engine: ScanEngine): Int
+
+    suspend fun outcome(): ScanOutcome
 }
 
 /**
@@ -244,7 +261,12 @@ fun VideoScanContent(
     val exposure = remember { ExposureControl() }
     exposure.maxDarker = maxDarker
     var lastTorch by remember { mutableStateOf(torch) }
-    val log = remember { ScanLogger(engine, scan) }
+    // The browser's worker runs the scan itself; [remote] is set from its first answer.
+    var remote by remember { mutableStateOf<RemoteScan?>(null) }
+    var remoteResets by remember { mutableStateOf(0) }
+    var remoteCentres by remember { mutableStateOf("") }
+    val log = remember { ScanLogger(engine) { remote?.let { remoteCentres } ?: scan.centreLog } }
+    suspend fun outcomeNow(): ScanOutcome = remote?.outcome() ?: scanLock.withLock { scan.outcome() }
     val haptics = LocalHapticFeedback.current
 
     fun finish(outcome: ScanOutcome) {
@@ -274,9 +296,23 @@ fun VideoScanContent(
             frame.lockedWashed?.let { log.lock(exposure.settings.darker, it) }
             log.picture(f, now)
             val stateBefore = state
-            val scanStart = TimeSource.Monotonic.markNow()
-            state = scanLock.withLock { withContext(scanContext) { scan.onFrame(f.faces, now) } }
-            log.scanTime(scanStart.elapsedNow().inWholeMicroseconds / 1000.0)
+            val scanned = f.scanned
+            if (scanned != null && remote == null) {
+                remote = scanned.remote
+                // The worker starts with the default scanner; another one starts it again.
+                if (engine != ScanEngine.RULES) remoteResets = scanned.remote.reset(engine)
+            }
+            if (scanned != null) {
+                // An answer from before the last restart is left out.
+                if (scanned.resets < remoteResets) return@collect
+                state = scanned.state
+                remoteCentres = scanned.centreLog
+                log.scanTime(scanned.scanMs)
+            } else {
+                val scanStart = TimeSource.Monotonic.markNow()
+                state = scanLock.withLock { withContext(scanContext) { scan.onFrame(f.faces, now) } }
+                log.scanTime(scanStart.elapsedNow().inWholeMicroseconds / 1000.0)
+            }
             picture = f
             if (!holdPicture(f, painted?.second, now - facedAt)) painted = state to f
             if (f.faces.isNotEmpty()) facedAt = now
@@ -288,7 +324,7 @@ fun VideoScanContent(
                 lastBuzz = now
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             }
-            if (state.finished) finish(scanLock.withLock { scan.outcome() })
+            if (state.finished) finish(outcomeNow())
         }
     }
     // The torch changes the light: the camera meters again before its frames are read and locked.
@@ -303,6 +339,7 @@ fun VideoScanContent(
     fun restart() = scope.launch {
         log.restart(state)
         scanLock.withLock { scan.reset() }
+        remote?.let { remoteResets = it.reset(engine) }
         state = scan.state
         painted = painted?.let { scan.state to it.second }
         dismissed = emptySet()
@@ -351,7 +388,7 @@ fun VideoScanContent(
                     close = close,
                     onSwitch = onSwitch,
                     onManual = onManual,
-                    onCheck = { scope.launch { finish(scanLock.withLock { scan.outcome() }) }; Unit }.takeIf { state.recognised > 0 },
+                    onCheck = { scope.launch { finish(outcomeNow()) }; Unit }.takeIf { state.recognised > 0 },
                 )
             },
         ) { ProgressRing(ringSegments(state, done)) }
@@ -363,7 +400,7 @@ fun VideoScanContent(
                 torch = torch.takeIf { torchAvailable && stall != Stall.NO_CUBE },
                 onTorch = onTorch,
                 onRestart = { restart() },
-                onFix = { scope.launch { finish(scanLock.withLock { scan.outcome() }) } },
+                onFix = { scope.launch { finish(outcomeNow()) } },
                 modifier = bottom,
             )
         } else {
@@ -384,7 +421,7 @@ fun VideoScanContent(
 const val VIDEO_SPINNER_TAG = "video-spinner"
 
 /** The turning points of the scan and a snapshot every two seconds, into the log; every line says which [engine] ran. */
-private class ScanLogger(private val engine: ScanEngine, private val scan: VideoScan) {
+private class ScanLogger(private val engine: ScanEngine, private val centres: () -> String) {
     private var lastSnapshot: Long? = null
     private var frames = 0
     private var faces = 0
@@ -441,7 +478,7 @@ private class ScanLogger(private val engine: ScanEngine, private val scan: Video
         AppLog.info(
             Evt.SCAN_VIDEO, null,
             "engine" to engine.logName,
-            *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n, fps, torch, darker, worker, scan.centreLog, scanMs / n, paintMs / n, showMs / n),
+            *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n, fps, torch, darker, worker, centres(), scanMs / n, paintMs / n, showMs / n),
         )
         lastSnapshot = at
         frames = 0

@@ -47,6 +47,13 @@ import fi.jukkakot.rubikkisolveri.ui.CameraArgs
 import fi.jukkakot.rubikkisolveri.ui.elapsedMillis
 import fi.jukkakot.rubikkisolveri.ui.scan.FoundFaces
 import fi.jukkakot.rubikkisolveri.ui.scan.ScanImage
+import fi.jukkakot.rubikkisolveri.ui.scan.RemoteScan
+import fi.jukkakot.rubikkisolveri.ui.scan.Scanned
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanStateCodec
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import fi.jukkakot.rubikkisolveri.ui.scan.coverCrop
 import org.jetbrains.compose.resources.stringResource
 import org.khronos.webgl.toByteArray
@@ -163,7 +170,7 @@ private fun WebCameraPreview(args: CameraArgs) {
         if (running && wantsWorker) {
             val started = elapsedMillis()
             scanWorkerStart(
-                { text, seq, showMs ->
+                { text, seq, showMs, scanText ->
                     try {
                         val f = FaceCodec.decode(text)
                         if (worker != true) {
@@ -173,7 +180,7 @@ private fun WebCameraPreview(args: CameraArgs) {
                         }
                         // The picture these faces were read from is shown when their marks are first drawn (`scan-feedback`).
                         val show = if (seq > 0) ({ cameraShowFrame(seq); Unit }) else null
-                        current.onFaces?.invoke(FoundFaces(f.faces, f.width, f.height, f.finderMs, worker = true, showMs = showMs, show = show))
+                        current.onFaces?.invoke(FoundFaces(f.faces, f.width, f.height, f.finderMs, worker = true, showMs = showMs, show = show, scanned = scannedOf(scanText)))
                     } catch (e: Throwable) {
                         AppLog.logger.error(Evt.SCAN_ERROR, e, "worker faces")
                     }
@@ -274,6 +281,30 @@ private fun WebCameraPreview(args: CameraArgs) {
             .onGloballyPositioned { place = it.boundsInWindow() }
             .drawBehind { drawRect(Color.Black, blendMode = BlendMode.Clear) },
     )
+}
+
+/**
+ * The worker's scan answer for a picture (`scan-speed-up-2` design 5): state, centre line, scan ms and
+ * restarts, apart by the worker's separator; null without one or when it cannot be read.
+ */
+private fun scannedOf(text: String): Scanned? {
+    if (text.isEmpty()) return null
+    return try {
+        val parts = text.split('\u0001')
+        Scanned(ScanStateCodec.decode(parts[0]), parts[1], parts[2].toDouble(), parts[3].toInt(), WorkerScan)
+    } catch (e: Throwable) {
+        AppLog.logger.error(Evt.SCAN_ERROR, e, "worker scan")
+        null
+    }
+}
+
+/** The scan in the browser's worker: restarted and asked for its outcome by messages. */
+private object WorkerScan : RemoteScan {
+    private suspend fun ask(cmd: String): String = suspendCoroutine { c -> scanWorkerCommand(cmd) { c.resume(it) } }
+
+    override suspend fun reset(engine: ScanEngine): Int = ask("reset:${engine.name}").toIntOrNull() ?: 0
+
+    override suspend fun outcome(): ScanOutcome = ScanStateCodec.decodeOutcome(ask("outcome"))
 }
 
 /** The camera's compensation index of [ev] at [step] EV a step. */

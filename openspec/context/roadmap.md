@@ -74,6 +74,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 64 | `scan-paint-steady` | done | Browser phone test 16:40: grey ghost veils on the table (a guessed mirror tilt), double veils on open faces, marks blinking out for a few pictures, copy 20–27 ms. Projection only from a sure tilt, no projected side under a found face, the read picture held over a faceless reading (300 ms), copy capped at 720 px. Browser check 17:15: looks good; copy still 15–22 ms → next |
 | 65 | `scan-read-picture-android` | done | The phone app shows the read picture with its marks too (analysis 640×480 upright as a bitmap, drawn with the marks; marks snap, picture held over a faceless reading); the browser's copy is one `drawImage` into a pool of three canvases (desktop 6 → 1.3 ms). Phone check: copy 1.5–2.5 ms, app 17–21 fps |
 | 66 | `scan-paint-found-only` | done | Recording 18:00: guessed sides floated in the air and beside the cube. Marks only on faces found in the picture; their thin outline only once read steadily. Phone check pending |
+| 67 | `scan-speed-up-2` | done | Finder pictures at long side 240 on both (same faces on the recordings); debug build not debuggable (phone: finder 34–59 → 10–16 ms, 16–23 → 30 pictures/s); the phone's scan on a background thread, the browser's in the finder worker (state as text). Search window and two finders dropped after measuring |
 
 ## Backlog
 

@@ -450,7 +450,7 @@ export function cameraAbilities() {
 // a newer one waits in place of an older (only the newest is kept). Kotlin falls back to reading on
 // the page when the worker fails.
 
-const scan = { worker: null, ready: false, busy: false, pending: null, onFaces: null, onFail: null, timer: 0, inFlight: 0 };
+const scan = { worker: null, ready: false, busy: false, pending: null, onFaces: null, onFail: null, timer: 0, inFlight: 0, replies: new Map(), nextReply: 1 };
 const WORKER_START_MS = 15000;
 
 function workerFail(reason) {
@@ -468,7 +468,8 @@ function workerPost(msg) {
 
 /**
  * Starts the worker; [onFaces] gets each picture's faces as numbers, its number (0: no read picture
- * kept) and the ms its read picture's copy took, [onFail] the reason it cannot be used.
+ * kept), the ms its read picture's copy took and the worker's scan answer for it, [onFail] the reason
+ * it cannot be used.
  */
 export function scanWorkerStart(onFaces, onFail) {
   scanWorkerStop();
@@ -500,6 +501,12 @@ export function scanWorkerStart(onFaces, onFail) {
       workerFail('error: ' + m.error);
       return;
     }
+    if (m.reply !== undefined) {
+      const done = scan.replies.get(m.reply);
+      scan.replies.delete(m.reply);
+      if (done) done(m.text || '');
+      return;
+    }
     scan.busy = false;
     const answered = scan.inFlight;
     if (scan.pending) {
@@ -510,8 +517,22 @@ export function scanWorkerStart(onFaces, onFail) {
     // Copies of earlier answers never shown go: the newest answer is the one to show.
     for (const k of [...shown.frames.keys()]) if (k < answered) dropFrame(k);
     const seq = shown.frames.has(answered) ? answered : 0;
-    if (scan.onFaces) scan.onFaces(m.faces, seq, shown.times.get(seq) || 0);
+    if (scan.onFaces) scan.onFaces(m.faces, seq, shown.times.get(seq) || 0, m.scan || '');
   };
+}
+
+/**
+ * Sends the worker's scan a command (`reset:<engine>`, `outcome`; `scan-speed-up-2`); [onReply] gets its
+ * answer, or '' when there is no worker.
+ */
+export function scanWorkerCommand(cmd, onReply) {
+  if (!scanWorkerReady()) {
+    onReply('');
+    return;
+  }
+  const id = scan.nextReply++;
+  scan.replies.set(id, onReply);
+  scan.worker.postMessage({ cmd, id });
 }
 
 /** Whether pictures can go to the worker. */
@@ -580,6 +601,8 @@ export function scanWorkerStop() {
   scan.pending = null;
   scan.onFaces = null;
   scan.onFail = null;
+  for (const done of scan.replies.values()) done('');
+  scan.replies.clear();
 }
 
 // --- Page ----------------------------------------------------------------------------------------

@@ -140,8 +140,8 @@ Video scan pipeline (`video-scan`):
 1. `CameraPreview(onImage)`: every picture the camera delivers (`scan-paint`: no limit of the
    app's own; the finder's one-picture buffer drops what it cannot take; in the browser the worker
    gets the newest picture whenever it is idle, the page-thread fallback stays at 66 ms), the visible picture
-   upright, short side ≤ 360 px (`FrameSampler.upright` on Android; the browser passes its 360-px
-   copy as is). In the browser the picture the user sees is the camera's own `<video>`, placed
+   upright, long side ≤ 240 px on both (`FrameSampler.FINDER_LONG_SIDE`; `scan-speed-up-2`: the recorded
+   videos gave the same faces down to 240, measured in `FinderSizeHarness`). In the browser the picture the user sees is the camera's own `<video>`, placed
    under the app's canvas where the preview box is; the box draws itself transparent
    (`web/WebCamera.kt`, `cameraShow` in `platform.mjs`), so the marks are drawn on top of the
    full-resolution video.
@@ -158,9 +158,13 @@ Video scan pipeline (`video-scan`):
 2. `cube/scan/FaceFinder`: full 3×3 lattices (and partial ones with 7–8 stickers) anywhere in the picture (spike `video-scan-spike`,
    findings in its archive); run on `Dispatchers.Default` on Android. In the browser it runs in a
    Web Worker (`webworker` module, `scan-worker.js`): the page makes an `ImageBitmap` of the visible
-   part at 360 px (`createImageBitmap`, or canvas A's pixels where that fails), transfers it, the
+   part at 240 px (`createImageBitmap`, or canvas A's pixels where that fails), transfers it, the
    worker reads its pixels in an `OffscreenCanvas` and sends the faces back as numbers
-   (`FaceCodec`); one picture at a time, only the newest waits. If the worker cannot start or
+   (`FaceCodec`); one picture at a time, only the newest waits. The worker also runs the
+   `VideoScan` on them and sends its state as text (`ScanStateCodec`, `FoundFaces.scanned`; restart and
+   outcome are messages, `RemoteScan`), so the page only draws (`scan-speed-up-2`; the scan cost the
+   page 8–28 ms a picture). On the phone the scan runs on its own background thread
+   (`VideoScanContent(scanContext)`). If the worker cannot start or
    throws, the page reads on its own thread as before (`scan.worker` line with the reason;
    snapshots carry `worker=true/false`). `web/smoke/video.mjs` runs the video scan in Chromium
    with a fake camera (`--no-worker` blocks the worker). **Read picture** (`scan-feedback`): with the
