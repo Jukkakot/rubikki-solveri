@@ -169,6 +169,7 @@ private fun WebCameraPreview(args: CameraArgs) {
     DisposableEffect(running, wantsWorker) {
         if (running && wantsWorker) {
             val started = elapsedMillis()
+            var pipeline = false
             scanWorkerStart(
                 { text, seq, showMs, scanText ->
                     try {
@@ -177,6 +178,11 @@ private fun WebCameraPreview(args: CameraArgs) {
                             worker = true
                             current.onWorker(true)
                             AppLog.info(Evt.SCAN_WORKER, null, "worker" to true, "startMs" to elapsedMillis() - started)
+                        }
+                        // The scan in its own worker beside the finder (`scan-speed-up-4`): said once it takes over.
+                        if (!pipeline && scanWorkerPipeline()) {
+                            pipeline = true
+                            AppLog.info(Evt.SCAN_WORKER, null, "worker" to true, "pipeline" to true, "startMs" to elapsedMillis() - started)
                         }
                         // The picture these faces were read from is shown when their marks are first drawn (`scan-feedback`).
                         val show = if (seq > 0) ({ cameraShowFrame(seq); Unit }) else null

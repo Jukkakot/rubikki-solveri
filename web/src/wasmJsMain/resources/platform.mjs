@@ -234,7 +234,7 @@ export function cameraHide() {
 
 const shown = { box: null, on: false, pool: [], seq: 0, frames: new Map(), times: new Map() };
 const SHOW_LONG_MAX = 720; // `scan-paint-steady`: at the full pixel ratio the copy took 20–27 ms a picture on the phone
-const POOL_SIZE = 3; // shown, in the worker, waiting
+const POOL_SIZE = 5; // shown; in the finder and waiting for it; in the scan worker and waiting for it (`scan-speed-up-4`)
 
 /** Puts the video, or the shown read picture's canvas while one is on, where the box is; hides the rest. */
 function placePicture() {
@@ -449,14 +449,116 @@ export function cameraAbilities() {
 // page's one thread only draws (`camera-exposure` design 8). One picture at a time is in the worker;
 // a newer one waits in place of an older (only the newest is kept). Kotlin falls back to reading on
 // the page when the worker fails.
+//
+// Pipeline (`scan-speed-up-4`): a second worker of the same script (the scan worker, `pipe`) runs the video
+// scan, the first one then only finds faces (`role:find`). The finder's faces go on to the scan worker with
+// the picture's number and the time they were found; again only the newest waits. A picture is answered to
+// Kotlin when its scan comes back, so its marks still lie on it. The finder reads the next picture while the
+// scan works: the pictures a second follow the slower of the two, not both together. Until the scan worker
+// is ready, or if it cannot start, the finder scans as before.
 
-const scan = { worker: null, ready: false, busy: false, pending: null, onFaces: null, onFail: null, timer: 0, inFlight: 0, replies: new Map(), nextReply: 1 };
+const scan = {
+  worker: null, ready: false, busy: false, pending: null, onFaces: null, onFail: null, timer: 0, inFlight: 0, replies: new Map(), nextReply: 1,
+  pipe: null, pipeline: false, lastReset: { count: 0, engine: 'RULES' },
+};
 const WORKER_START_MS = 15000;
 
 function workerFail(reason) {
   const onFail = scan.onFail;
   scanWorkerStop();
   if (onFail) onFail(reason);
+}
+
+/** Starts the scan worker beside the finder; it takes over the scan once both are ready ([pipeOn]). */
+function pipeStart() {
+  let w;
+  try {
+    w = new Worker('scan-worker.js');
+  } catch (e) {
+    return;
+  }
+  const pipe = { worker: w, ready: false, busy: false, pending: null, inFlight: null, timer: 0 };
+  scan.pipe = pipe;
+  const off = () => {
+    if (scan.pipe !== pipe) return;
+    if (scan.pipeline) {
+      workerFail('scan worker failed');
+      return;
+    }
+    clearTimeout(pipe.timer);
+    w.terminate();
+    scan.pipe = null;
+  };
+  pipe.timer = setTimeout(() => { if (!pipe.ready) off(); }, WORKER_START_MS);
+  w.onerror = off;
+  w.onmessage = (e) => {
+    if (scan.pipe !== pipe) return;
+    const m = e.data || {};
+    if (m.ready) {
+      pipe.ready = true;
+      clearTimeout(pipe.timer);
+      pipeOn();
+      return;
+    }
+    if (m.error) {
+      off();
+      return;
+    }
+    if (m.reply !== undefined) {
+      reply(m);
+      return;
+    }
+    pipe.busy = false;
+    const done = pipe.inFlight;
+    if (pipe.pending) {
+      const next = pipe.pending;
+      pipe.pending = null;
+      pipePost(next);
+    }
+    for (const k of [...shown.frames.keys()]) if (k < done.seq) dropFrame(k);
+    const seq = shown.frames.has(done.seq) ? done.seq : 0;
+    if (scan.onFaces) scan.onFaces(done.faces, seq, shown.times.get(seq) || 0, m.scan || '');
+  };
+}
+
+/** The scan worker takes the scan over: when both are ready and no command is waiting for its answer. */
+function pipeOn() {
+  const pipe = scan.pipe;
+  if (scan.pipeline || !pipe || !pipe.ready || !scan.ready || scan.replies.size > 0) return;
+  scan.pipeline = true;
+  const r = scan.lastReset;
+  pipe.worker.postMessage({ cmd: `adopt:${r.count}:${r.engine}`, id: 0 });
+  scan.worker.postMessage({ cmd: 'role:find', id: 0 });
+}
+
+function pipePost(msg) {
+  const pipe = scan.pipe;
+  pipe.busy = true;
+  pipe.inFlight = msg;
+  pipe.worker.postMessage({ scanFaces: msg.faces, at: msg.at });
+}
+
+/** The finder's faces of picture [seq] on to the scan worker; a newer one waits in place of an older. */
+function pipeQueue(msg) {
+  const pipe = scan.pipe;
+  if (!pipe.busy) {
+    pipePost(msg);
+    return;
+  }
+  if (pipe.pending && pipe.pending.seq) dropFrame(pipe.pending.seq);
+  pipe.pending = msg;
+}
+
+function reply(m) {
+  if (!m.reply) return;
+  const done = scan.replies.get(m.reply);
+  scan.replies.delete(m.reply);
+  if (done) done(m.text || '');
+}
+
+/** Whether the scan runs in its own worker beside the finder (`scan-speed-up-4`). */
+export function scanWorkerPipeline() {
+  return scan.pipeline;
 }
 
 function workerPost(msg) {
@@ -487,6 +589,7 @@ export function scanWorkerStart(onFaces, onFail) {
     return;
   }
   scan.worker = w;
+  pipeStart();
   scan.timer = setTimeout(() => { if (scan.worker === w && !scan.ready) workerFail('no answer'); }, WORKER_START_MS);
   w.onerror = (e) => { if (scan.worker === w) workerFail('error: ' + ((e && e.message) || 'load failed')); };
   w.onmessage = (e) => {
@@ -495,6 +598,7 @@ export function scanWorkerStart(onFaces, onFail) {
     if (m.ready) {
       scan.ready = true;
       clearTimeout(scan.timer);
+      pipeOn();
       return;
     }
     if (m.error) {
@@ -502,9 +606,8 @@ export function scanWorkerStart(onFaces, onFail) {
       return;
     }
     if (m.reply !== undefined) {
-      const done = scan.replies.get(m.reply);
-      scan.replies.delete(m.reply);
-      if (done) done(m.text || '');
+      reply(m);
+      pipeOn();
       return;
     }
     scan.busy = false;
@@ -513,6 +616,10 @@ export function scanWorkerStart(onFaces, onFail) {
       const next = scan.pending;
       scan.pending = null;
       workerPost(next);
+    }
+    if (scan.pipeline) {
+      pipeQueue({ faces: m.faces, at: m.at, seq: answered });
+      return;
     }
     // Copies of earlier answers never shown go: the newest answer is the one to show.
     for (const k of [...shown.frames.keys()]) if (k < answered) dropFrame(k);
@@ -531,8 +638,13 @@ export function scanWorkerCommand(cmd, onReply) {
     return;
   }
   const id = scan.nextReply++;
-  scan.replies.set(id, onReply);
-  scan.worker.postMessage({ cmd, id });
+  // The scan worker gets the scan's commands once it runs the scan; a reset is kept for its taking over.
+  const engine = cmd.startsWith('reset:') ? cmd.slice('reset:'.length) : null;
+  scan.replies.set(id, (text) => {
+    if (engine) scan.lastReset = { count: parseInt(text, 10) || 0, engine };
+    onReply(text);
+  });
+  (scan.pipeline ? scan.pipe.worker : scan.worker).postMessage({ cmd, id });
 }
 
 /** Whether pictures can go to the worker. */
@@ -601,8 +713,15 @@ export function scanWorkerStop() {
   scan.pending = null;
   scan.onFaces = null;
   scan.onFail = null;
+  if (scan.pipe) {
+    clearTimeout(scan.pipe.timer);
+    scan.pipe.worker.terminate();
+  }
+  scan.pipe = null;
+  scan.pipeline = false;
   for (const done of scan.replies.values()) done('');
   scan.replies.clear();
+  scan.lastReset = { count: 0, engine: 'RULES' };
 }
 
 // --- Page ----------------------------------------------------------------------------------------

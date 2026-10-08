@@ -76,4 +76,28 @@ pictures until their answer comes (`shown.frames`).
 
 ## Findings
 
-(filled in during apply)
+Baseline (1.1, HEAD `a38f0bf`, JVM bench, ms a picture per 100-picture window, all pictures / with faces):
+
+| fixture | windows |
+|---|---|
+| `web_121505` | 1.06 / 1.96, 4.45 / 4.81, 2.99 / 3.02, 1.59 / 1.98, 1.96 / 3.10, 1.70 / 2.86, 1.59 / 2.00, 0.65 / 1.56 (max 17.7) |
+| `20261007_202403` | 1.79 / 1.86, 2.90 / 2.93, 1.00 / 1.18, 1.86 / 1.92 (complete at 138 in the bench's timing) |
+
+Profile (`web_121505` ×3, share of `VideoScan.onFrame` samples): `BestCube.solve` 29.5 % (`alternative` 26.9 %),
+`bestCost` 18.0 %, `assignOpen` 16.5 %, `settleTurns` 15.2 %, `recheck` 12.7 %, `turnsClear` 7.9 %, `updateRefs` 7.8 %.
+Replay baseline: `r6.txt` in the scratchpad (this session).
+
+Margin cap (1.2, 1.3): the replay of all fixtures matches line for line (clearness compared capped at 2.5 on both
+sides), and `BestCubeTest.marginsWorkedOutOnlyAsFarAsTheScanLooksDecideAlike` checks 20 evidences. The time hardly
+moved: `web_121505` over three passes 2.15 / 2.20 / 1.96 ms a picture before, 2.12 / 2.27 / 2.05 after. The
+profile's `alternative` share fell from 27 % to 14 %, but within the noise of 500 samples. On that recording
+the cube is seldom clear, so most places have an alternative under the cap anyway. Kept: exact, and it cuts the
+work on a clear cube.
+
+Shared margin search (1.4): not done. `alternative` is about 14 % after the cap, under the 15 % line, and the
+cap showed how little the margins weigh in wall time.
+
+Pipeline (2.x, desktop Chromium, `web/smoke/video.mjs` with `20261005_151828` as a fake camera at 15 pictures a
+second): before 29–36 answers a second, after 33–51; the scan worker takes over about 0 ms after the finder is
+ready (`scan.worker ... pipeline=true`). `--no-worker` still falls back to the page. The phone's numbers are for
+the user's next browser test (fps with two faces in view against `finderMs`).

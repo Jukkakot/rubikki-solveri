@@ -272,7 +272,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         evidence = evidenceOf()
         val key = EvidenceKey(evidence)
         if (key != bestKey) {
-            best = BestCube.solve(evidence, scheme)
+            best = BestCube.solve(evidence, scheme, VideoScan.MARGIN_LOOK)
             bestKey = key
         }
         retire(now)

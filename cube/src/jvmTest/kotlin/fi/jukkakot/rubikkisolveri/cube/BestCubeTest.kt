@@ -80,6 +80,23 @@ class BestCubeTest {
     }
 
     @Test
+    fun marginsWorkedOutOnlyAsFarAsTheScanLooksDecideAlike() {
+        // `scan-speed-up-4`: the scan works margins out to MARGIN_LOOK only; under it they are the same numbers.
+        val random = Random(5)
+        val cap = fi.jukkakot.rubikkisolveri.cube.scan.VideoScan.MARGIN_LOOK
+        repeat(20) {
+            val cube = Cube.solved().apply(Scramble.random(random = random))
+            val unseen = (0 until Stickers.COUNT).filter { random.nextDouble() < 0.3 }.toSet()
+            val misread = (0 until 3).associate { random.nextInt(Stickers.COUNT) to CubeColor.entries[random.nextInt(6)] }
+            val e = evidence(cube, votes = 1 + random.nextInt(6), unseen = unseen, misread = misread)
+            val full = assertNotNull(BestCube.solve(e))
+            val capped = assertNotNull(BestCube.solve(e, cap = cap))
+            assertEquals(full.cube, capped.cube)
+            for (s in 0 until Stickers.COUNT) assertEquals(minOf(full.margin(s), cap), minOf(capped.margin(s), cap), 1e-9, "sticker $s")
+        }
+    }
+
+    @Test
     fun emptyEvidenceIsNotClear() {
         val best = assertNotNull(BestCube.solve(StickerEvidence.EMPTY))
         assertTrue(best.minMargin < 0.01, "${best.minMargin}")

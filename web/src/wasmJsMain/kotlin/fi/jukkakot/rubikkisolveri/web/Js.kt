@@ -48,6 +48,7 @@ external fun scanWorkerReady(): Boolean
 external fun scanWorkerIdle(): Boolean
 external fun scanWorkerSend(x: Int, y: Int, w: Int, h: Int, previewLong: Int)
 external fun scanWorkerStop()
+external fun scanWorkerPipeline(): Boolean
 external fun cameraShow(x: Double, y: Double, w: Double, h: Double)
 external fun cameraHide()
 external fun cameraShowFrame(seq: Int): Boolean

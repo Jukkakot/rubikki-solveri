@@ -231,7 +231,7 @@ class VideoScan(
         updateRotations()
 
         evidence = evidenceFor(rotations)
-        val best = BestCube.solve(evidence, scheme)
+        val best = BestCube.solve(evidence, scheme, MARGIN_LOOK)
         this.best = best
         val seen = Face.entries.filter { groups[scheme[it]] != null }
         val clearness = best?.clearness(evidence) ?: 0.0
@@ -1020,6 +1020,13 @@ class VideoScan(
 
         /** The best cube is clear when every place's margin reaches this ([BestCube.clearness]; chosen by simulation with soft votes, `video-scan-light` findings). */
         const val CLEAR_MARGIN = 2.0
+
+        /**
+         * How far the best cube's margins are worked out: every decision only compares them with [CLEAR_MARGIN]
+         * (`scan-speed-up-4`; half a point more keeps a margin of exactly that clear of rounding). The log's
+         * clearness shows at most this.
+         */
+        const val MARGIN_LOOK = CLEAR_MARGIN + 0.5
 
         /** Frames between working the faces' rotations out again while the leading colours stay the same. */
         const val ROTATION_EVERY = 10

@@ -6,6 +6,7 @@ import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanStateCodec
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
+import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
 import org.khronos.webgl.toByteArray
 
 /**
@@ -13,11 +14,17 @@ import org.khronos.webgl.toByteArray
  * ([FaceCodec]), and the video scan itself run on them here, off the page's thread (`scan-speed-up-2`
  * design 5): its state goes back as text ([ScanStateCodec]). Commands: `reset:<engine>` starts the
  * scan again, `outcome` answers the scan's outcome.
+ *
+ * The page may run two of them as a pipeline (`scan-speed-up-4`): `role:find` makes one only find faces, and
+ * the other gets the faces as text ([scanFaces]) and only scans; `adopt:<resets>:<engine>` starts its scan as
+ * the finder's last reset left it.
  */
 fun main() {
     var scan = VideoScan()
     var resets = 0
     var scanned = ""
+    var scanning = true
+    fun answer(state: VideoScanState, started: Double) = listOf(ScanStateCodec.encode(state), scan.centreLog, (now() - started).toString(), resets.toString()).joinToString(SEPARATOR)
     workerListen(
         find = { width, height, rgba ->
             val start = now()
@@ -28,17 +35,34 @@ fun main() {
             }
             val faces = FaceFinder.find(argb, width, height).let { it.faces + it.partial }.map(FaceReading::of)
             val found = now()
-            val state = scan.onFrame(faces, found.toLong())
-            scanned = listOf(ScanStateCodec.encode(state), scan.centreLog, (now() - found).toString(), resets.toString()).joinToString(SEPARATOR)
+            scanned = if (scanning) {
+                answer(scan.onFrame(faces, found.toLong()), found)
+            } else {
+                ""
+            }
             FaceCodec.encode(FaceCodec.Found(faces, width, height, (found - start).toLong()))
         },
         scanned = { scanned },
+        scanFaces = { text, at ->
+            val started = now()
+            answer(scan.onFrame(FaceCodec.decode(text).faces, at.toLong()), started)
+        },
         command = { text ->
             when {
                 text.startsWith("reset:") -> {
                     scan = VideoScan(engine = ScanEngine.entries.first { it.name == text.removePrefix("reset:") })
                     resets++
                     resets.toString()
+                }
+                text.startsWith("adopt:") -> {
+                    val (count, engine) = text.removePrefix("adopt:").split(":")
+                    scan = VideoScan(engine = ScanEngine.entries.first { it.name == engine })
+                    resets = count.toInt()
+                    resets.toString()
+                }
+                text == "role:find" -> {
+                    scanning = false
+                    ""
                 }
                 text == "outcome" -> ScanStateCodec.encodeOutcome(scan.outcome())
                 else -> ""

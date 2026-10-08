@@ -34,6 +34,7 @@ object VideoScanLog {
         "kind" to "snapshot",
         "known" to Face.entries.joinToString(" ") { f -> "${f.name}${(0 until 9).count { state.stickers[f.ordinal * 9 + it] != null }}" },
         "cube" to state.stickers.joinToString("") { it?.letter?.toString() ?: "?" },
+        // At most `VideoScan.MARGIN_LOOK` (2.5): the scan works margins out only as far as it decides with them (`scan-speed-up-4`).
         "margin" to tenths(state.clearness),
         "light" to state.brightness,
         "faces" to tenths(facesPerFrame),

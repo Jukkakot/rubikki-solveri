@@ -112,9 +112,9 @@ class BestCube(val cube: Cube, val cost: Double, val cornerMargins: DoubleArray,
          * twists; edges: 12 × 12 with two flips. The pieces' orders are walked cheapest first until the
          * best with twist and flip sums fixed is found for each permutation parity; corners and edges of
          * the same parity then make the cube. Null when no possible cube is found (cannot happen with
-         * finite costs).
+         * finite costs). Margins are worked out up to [cap]; a larger one reads as [cap].
          */
-        fun solve(evidence: StickerEvidence, scheme: ColorScheme = ColorScheme.STANDARD): BestCube? {
+        fun solve(evidence: StickerEvidence, scheme: ColorScheme = ColorScheme.STANDARD, cap: Double = MARGIN_CAP): BestCube? {
             val (corners, edges) = pieceCosts(evidence, scheme)
             val bestCorners = PieceSearch.bestByParity(corners, 3)
             val bestEdges = PieceSearch.bestByParity(edges, 2)
@@ -124,8 +124,8 @@ class BestCube(val cube: Cube, val cost: Double, val cornerMargins: DoubleArray,
             val cost = c.cost + e.cost
             if (cost >= INF) return null
 
-            // Margins only matter up to [MARGIN_CAP]: each search stops once nothing cheaper can follow.
-            val limit = cost + MARGIN_CAP
+            // Margins only matter up to [cap]: each search stops once nothing cheaper can follow.
+            val limit = cost + cap
             val edgeBest = DoubleArray(2) { bestEdges[it]?.cost ?: INF }
             val cornerBest = DoubleArray(2) { bestCorners[it]?.cost ?: INF }
             val cornerMargins = DoubleArray(8) { slot -> alternative(corners, slot, c.perm[slot], c.ori[slot], 3, edgeBest, limit) - cost }

@@ -163,7 +163,10 @@ Video scan pipeline (`video-scan`):
    (`FaceCodec`); one picture at a time, only the newest waits. The worker also runs the
    `VideoScan` on them and sends its state as text (`ScanStateCodec`, `FoundFaces.scanned`; restart and
    outcome are messages, `RemoteScan`), so the page only draws (`scan-speed-up-2`; the scan cost the
-   page 8–28 ms a picture). On the phone the scan runs on its own background thread
+   page 8–28 ms a picture). Pipeline (`scan-speed-up-4`): `platform.mjs` starts the same script twice; once
+   both are ready the first only finds faces (`role:find`) and the second scans them (`scanFaces`, `adopt:`
+   takes over the last reset), so finder and scan work side by side; until then, or if the second fails to
+   start, the first does both (`scan.worker ... pipeline=true` in the log). Five read-picture canvases. On the phone the scan runs on its own background thread
    (`VideoScanContent(scanContext)`). If the worker cannot start or
    throws, the page reads on its own thread as before (`scan.worker` line with the reason;
    snapshots carry `worker=true/false`). `web/smoke/video.mjs` runs the video scan in Chromium
