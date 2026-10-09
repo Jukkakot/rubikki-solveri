@@ -80,6 +80,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 70 | `scan-speed-up-4` | done | Browser: finding faces and the scan logic side by side in two workers (desktop Chromium 29–36 → 33–51 answers a second); the best cube's margins only as far as the scan looks (same decisions, little time saved; log `margin` at most 2.5). Phone check: fps with two faces in view near 1000 / `finderMs` |
 | 71 | `scan-rules-only` | done | Browser phone test 2026-10-09: rules scan finished right in 4–7 s, the earlier scanner stalled once → earlier scanner and its Settings choice removed; grey veils only on faces followed from an earlier picture (no ghost tiles beside a fast-turned cube) |
 | 72 | `scan-recording` | done | Every video scan records what the scan was given (faces and colours per picture, with times), the newest three kept and shared with the log, replayed exactly in tests; a setting hides the scan marks for clean screen recordings (user 2026-10-09: a failed scan must become test material) |
+| 73 | `scan-never-locked` | specced | Recording 2026-10-09 10:08: every face's colours right but turns settled wrong together, never recovered. Nothing locked: when not clear, all faces' turns and namings rechecked together and a clearly better whole wins, also over ticked sides (silently); readings that disagree most count least |
 
 ## Backlog
 
