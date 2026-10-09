@@ -17,8 +17,10 @@ gradle/gradle-daemon-jvm.properties
 
 # npm (web/smoke)
 node_modules/
-# Test material (videos, stills, contact sheets, shared logs) stays local: the fixtures that matter are
-# cube/src/jvmTest/resources/video/*.txt. Stills committed earlier stay tracked; add new ones with git add -f.
+# Test material (videos, frames, contact sheets, shared logs) stays local; the stills the harnesses read
+# (testdata/video/<date>/stills/, made with tools/make-stills.sh) are committed so cloud sessions have them.
 testdata/video/**
+!testdata/video/**/
+!testdata/video/*/stills/**
 # Simulation tables (ScanSimulation, SIMULATION=<runs>); the numbers that matter go into findings.
 testdata/video/simulation*.txt

@@ -2,8 +2,8 @@
 
 ## 1. Stills in git
 
-- [ ] 1.1 `.gitignore`: keep ignoring `testdata/video/**` but not `testdata/video/*/stills/**` (videos, frames, sheets, shared logs stay local). Verify: `git status` lists only still JPEGs as new.
-- [ ] 1.2 Commit the untracked stills (2026-10-07 four 20:20 recordings, 2026-10-08 `web_084657`, 2026-10-08c `web_121505`). Verify: `git ls-files` count equals the files on disk for every stills folder.
+- [x] 1.1 `.gitignore`: keep ignoring `testdata/video/**` but not `testdata/video/*/stills/**` (videos, frames, sheets, shared logs stay local). Verify: `git status` lists only still JPEGs as new.
+- [x] 1.2 Commit the untracked stills (2026-10-07 four 20:20 recordings, 2026-10-08 `web_084657`, 2026-10-08c `web_121505`). Verify: `git ls-files` count equals the files on disk for every stills folder.
 
 ## 2. Making stills anywhere
 
