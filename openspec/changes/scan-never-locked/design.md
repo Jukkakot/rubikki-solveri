@@ -51,3 +51,28 @@ one quarter, D by a half, L and R by a quarter) and stayed there. Replay with `R
   finish still needs `FINISH_MILLIS` of clearness. The acceptance harness (13 fixtures, robustness
   variant) must keep zero wrong finishes.
 - **Time.** The budget test and the logged `scanMs` keep it in check. `scanMs` was 6–20 ms in the browser.
+
+## Implementation notes
+
+- **Turns only, not namings.** `FaceTracks.wholeRecheck` turns each face's assigned readings together
+  (all its tracks, not one representative: same-face tracks stay aligned) over every way, 4ⁿ for the n
+  faces with readings. Doubtful namings were left out: the joint assignment already re-names open
+  tracks every picture, and the recording needed only the turns. The spec says so.
+- **Pictures bind.** A way that breaks a `PairRules` rule between two tracks is not tried. Without
+  this, three faces seen together (`aDarkBlueCentreNamedWhiteDoesNotSpoilTheWhiteFace`) were turned
+  against what the picture showed and flipped back every 250 ms.
+- **Pruning.** Ways are ranked by wrong pieces in the leading colours (an edge of two colours that
+  cannot meet, a corner not in the right order); only ways with no more wrong pieces than now, the
+  best `RECHECK_TRIALS` = 16, get `BestCube.cost`. Without the "no more than now" filter the recheck
+  took 1.8 ms median; with it 0.22 ms median, 2.9 ms 90th, 4.7 ms most (JVM, 58 runs on the recording).
+- **Before `hold`.** The recheck runs before `hold`, so the other steps cannot turn its result back
+  without a new reading (`aTrackDoesNotSwitchBackAndForthWithoutNewReadings` failed when it ran after).
+  Adopted turns are by the cube (`byCube`) from then on.
+- **Recording.** `web_20261009_100824` now finishes with the true cube about 10 s in (picture ~205 of
+  891); before it never finished. `web_20261009_100814` unchanged. Synthetic: of 60 scrambles with
+  each face shown alone and its reading turned, 5 never finished before; all 60 finish right now.
+- **Fixtures (`ScanAcceptanceHarness`).** As recorded: every finish frame and cube the same (13 of 18
+  finish, all right). Robustness: `20261007_202403` now finishes right at 148 (never before; 8 → 9 of 18); the
+  rest the same. No wrong finish. Per frame 2.0 → 2.2 ms on average.
+- **Task 3 (disagreement score) not done:** no fixture or recording needed it after the recheck. Kept
+  in the roadmap backlog.

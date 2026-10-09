@@ -20,9 +20,8 @@ must be found as fast as possible.
   for the faces named by their centres (at most 4⁶ = 4096), and every naming of the faces still in
   doubt. When a combination makes a clearly better cube, it replaces the current one at once, even
   for faces that were settled or confirmed with a tick.
-- Each followed face gets a disagreement score against the best cube. When no combination makes the
-  cube clear, the faces that disagree most are weighed down first, so a misread face is found
-  quickly instead of spoiling the others.
+- (Dropped in implementation: a disagreement score per followed face, weighing down the faces that
+  disagree most. The recheck alone fixed the recording and no fixture needed it; kept in the backlog.)
 - The correction is silent. Stickers and ticks just change to the better cube, and a tick may go
   and come back.
 

@@ -80,11 +80,16 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 70 | `scan-speed-up-4` | done | Browser: finding faces and the scan logic side by side in two workers (desktop Chromium 29–36 → 33–51 answers a second); the best cube's margins only as far as the scan looks (same decisions, little time saved; log `margin` at most 2.5). Phone check: fps with two faces in view near 1000 / `finderMs` |
 | 71 | `scan-rules-only` | done | Browser phone test 2026-10-09: rules scan finished right in 4–7 s, the earlier scanner stalled once → earlier scanner and its Settings choice removed; grey veils only on faces followed from an earlier picture (no ghost tiles beside a fast-turned cube) |
 | 72 | `scan-recording` | done | Every video scan records what the scan was given (faces and colours per picture, with times), the newest three kept and shared with the log, replayed exactly in tests; a setting hides the scan marks for clean screen recordings (user 2026-10-09: a failed scan must become test material) |
-| 73 | `scan-never-locked` | specced | Recording 2026-10-09 10:08: every face's colours right but turns settled wrong together, never recovered. Nothing locked: when not clear, all faces' turns and namings rechecked together and a clearly better whole wins, also over ticked sides (silently); readings that disagree most count least |
+| 73 | `scan-never-locked` | done | Recording 2026-10-09 10:08: every face's colours right but turns settled wrong together, never recovered. Nothing locked: when not clear, all faces' turns rechecked together and a clearly better whole wins, also over ticked sides (silently). The recording now finishes right; one more robustness fixture finishes, no other change. Down-weighting disagreeing readings not needed yet (no case). Phone check pending |
 
 ## Backlog
 
 Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
+
+- video scan: a disagreement score per followed face against the best cube; while no whole is
+  clear, a face reading above 3/8 against it counts half (dropped from `scan-never-locked`: the
+  whole-cube recheck fixed its recording and no fixture needed it). Take up with a recording of one
+  face misread that holds the others back.
 
 - video scan: straight-on readings weigh more (user, 2026-10-07). Tried in `scan-centre-clash`
   and dropped: no gain on the test videos, and a face misread straight on beat earlier right angled

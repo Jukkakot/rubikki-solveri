@@ -199,6 +199,11 @@ Video scan pipeline (`video-scan`):
    `scan-track-settle`: recheck, joint assignment and best-cube turns undid each other picture after picture;
    making them judge alike was tried and dropped, see that design). Guarded by
    `RulesScanTest.aTrackDoesNotSwitchBackAndForthWithoutNewReadings`.
+   Nothing locked (`scan-never-locked`): while the cube is not clear, `FaceTracks.wholeRecheck` turns all
+   faces' readings together (every way the pictures' rules allow, ranked by the pieces their leading colours
+   make, the best few by `BestCube` cost) and adopts a whole cheaper by `ASSIGN_MARGIN`, also over settled
+   and ticked faces; turns settled wrong together otherwise prop each other up. Guarded by
+   `ScanNeverLockedTest` (recording `web_20261009_100824`, budget).
    Why each rule exists and the known limits: `scan-rules` design (decision 8). Acceptance:
    `ScanAcceptanceHarness` (ACCEPTANCE=1) replays every fixture and holds each finish within 1.2 times
    the frame stored in its `FINISHED` (the finishes when the earlier scanner went); `RulesTimeline`

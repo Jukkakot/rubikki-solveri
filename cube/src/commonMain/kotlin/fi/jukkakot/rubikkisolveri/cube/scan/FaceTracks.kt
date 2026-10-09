@@ -11,6 +11,7 @@ import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.ln
 import kotlin.math.min
+import kotlin.time.TimeSource
 
 /**
  * Which face each followed face ([Track]) is, by the rules of a real cube (`scan-rules` design 3–5).
@@ -241,6 +242,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
     fun onFrame(faces: List<FaceReading>, now: Long) {
         lastNow = now
+        recheckNanos = 0L
         picture = tracker.onFrame(faces, now) { rgb -> nameSticker(rgb) }
         // Nothing read, no time limit crossed and the last picture's work changed nothing: the same work would give
         // the same state, so it is left as it is (`scan-speed-up-3`). A state that still moves is worked out again.
@@ -252,6 +254,9 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     }
 
     private fun work(now: Long) {
+        // Before this picture's work: the last best cube was clear, and a counting track got a reading now ([wholeRecheck]).
+        val wasClear = best?.let { it.clearness(evidence) >= VideoScan.CLEAR_MARGIN } == true
+        val read = picture.any { it != null && counts(it.first) }
         lastCosts = costs
         costs = HashMap()
         rules.observe(picture.filterNotNull())
@@ -266,7 +271,9 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         assignOpen(now)
         updateVoting(now)
         settleTurns()
-        if (hold()) updateVoting(now)
+        // Before [hold]: what the recheck turns, the steps above do not turn back without a new reading.
+        val turnedAll = wholeRecheck(now, wasClear, read)
+        if (hold() || turnedAll) updateVoting(now)
         // Faces settled in this frame give their centres as references at once: name the stickers again before they are shown.
         updateRefs()
         evidence = evidenceOf()
@@ -878,6 +885,121 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         }
     }
 
+    /** How long the last picture's [wholeRecheck] took (0: it did not run), for the budget test. */
+    var recheckNanos = 0L
+        private set
+
+    /** When [wholeRecheck] last ran. */
+    private var recheckedAt: Long? = null
+
+    /** How many times [wholeRecheck] replaced the turns (for tests and tuning). */
+    var wholeChanges = 0
+        private set
+
+    /**
+     * Nothing locked (`scan-never-locked`): while the cube is not clear and a counting track got a new reading
+     * (at most every [RECHECK_MILLIS]), every face's readings are turned together, every way at once, instead
+     * of each face against the others' current turns (a set of turns settled wrong together props itself up,
+     * recording `web_20261009_100824`). Ways that break a picture's rule ([PairRules]) are not tried; the others
+     * are ranked by the wrong pieces their leading colours make (a cheap count over all 4⁶, as [RotationSearch]),
+     * and the best [RECHECK_TRIALS] with no more wrong pieces than now get the best cube's cost; one
+     * cheaper than now by [ASSIGN_MARGIN] turns every track of each face, settled or not (by the cube from
+     * then on). Returns whether it did.
+     */
+    private fun wholeRecheck(now: Long, wasClear: Boolean, read: Boolean): Boolean {
+        if (wasClear || !read) return false
+        recheckedAt?.let { if (now - it < RECHECK_MILLIS) return false }
+        recheckedAt = now
+        val start = TimeSource.Monotonic.markNow()
+        return turnAll().also { recheckNanos = start.elapsedNow().inWholeNanoseconds }
+    }
+
+    /** [wholeRecheck]'s search and adoption. */
+    private fun turnAll(): Boolean {
+        val turned = TurnedEvidence(all = true)
+        val faces = Face.entries.filter { turned.has(it) }
+        if (faces.size < 2) return false
+        // Per face and extra turn, the leading colour of each net sticker (-1: none; centres by the scheme).
+        val lead = Array(6) { f ->
+            val face = Face.entries[f]
+            Array(4) { k -> (if (face in faces) turned.leading(face, k).toIntArray() else IntArray(9) { -1 }).also { it[CENTRE] = scheme[face].ordinal } }
+        }
+        val extra = IntArray(6)
+        fun colour(i: Int) = lead[i / 9][extra[i / 9]][i % 9]
+        fun setWay(w: Int) {
+            extra.fill(0)
+            for ((j, f) in faces.withIndex()) extra[f.ordinal] = (w shr (2 * j)) and 3
+        }
+        // What the pictures bind (`PairRules`): per pair of tracks on two of the faces, the extra turns of both it allows.
+        val placed = counting().mapNotNull { t -> (t.state().option ?: t.state().assigned).takeIf { it != FaceOption.NONE && FaceOption.face(it) in faces }?.let { t to it } }
+        val bound = ArrayList<Triple<Int, Int, BooleanArray>>()
+        for ((i, a) in placed.withIndex()) for (b in placed.subList(i + 1, placed.size)) {
+            val allowed = rules.allowed(a.first, b.first) ?: continue
+            val fa = FaceOption.face(a.second)
+            val fb = FaceOption.face(b.second)
+            val ok = BooleanArray(16) { x -> allowed[FaceOption.of(fa, FaceOption.turn(a.second) + x / 4) * FaceOption.COUNT + FaceOption.of(fb, FaceOption.turn(b.second) + x % 4)] }
+            if (!ok.all { it }) bound += Triple(fa.ordinal, fb.ordinal, ok)
+        }
+        val ways = 1 shl (2 * faces.size)
+        val wrong = IntArray(ways)
+        for (w in 0 until ways) {
+            setWay(w)
+            if (bound.any { (fa, fb, ok) -> !ok[extra[fa] * 4 + extra[fb]] }) {
+                wrong[w] = Int.MAX_VALUE
+                continue
+            }
+            var bad = 0
+            for (e in EDGE_STICKERS) {
+                val a = colour(e[0])
+                val b = colour(e[1])
+                if (a >= 0 && b >= 0 && adj[a][b] == 0.0) bad++
+            }
+            for (c in CORNER_STICKERS) {
+                val a = colour(c[0])
+                val b = colour(c[1])
+                val d = colour(c[2])
+                if (a >= 0 && b >= 0 && d >= 0) {
+                    if (!corner[a][b][d]) bad++
+                } else if ((a >= 0 && b >= 0 && adj[a][b] == 0.0) || (b >= 0 && d >= 0 && adj[b][d] == 0.0) || (a >= 0 && d >= 0 && adj[a][d] == 0.0)) {
+                    bad++
+                }
+            }
+            wrong[w] = bad
+        }
+        // Only ways with no more wrong pieces than now are worth the best cube's cost (now is allowed: the pictures bound it).
+        val trials = (1 until ways).filter { wrong[it] != Int.MAX_VALUE && wrong[it] <= wrong[0] }.sortedBy { wrong[it] }.take(RECHECK_TRIALS)
+        if (trials.isEmpty()) return false
+        val base = bestCost(turned.of(IntArray(6)))
+        var least = base
+        var pick = 0
+        for (w in trials) {
+            setWay(w)
+            val c = bestCost(turned.of(extra))
+            if (c < least) {
+                least = c
+                pick = w
+            }
+        }
+        if (pick == 0 || least > base - ASSIGN_MARGIN) return false
+        setWay(pick)
+        for (t in counting()) {
+            val s = t.state()
+            val o = (s.option ?: s.assigned).takeIf { it != FaceOption.NONE } ?: continue
+            val face = FaceOption.face(o)
+            val k = extra[face.ordinal]
+            if (k == 0) continue
+            val way = FaceOption.of(face, FaceOption.turn(o) + k)
+            s.assigned = way
+            if (s.face == face) {
+                s.option = way
+                s.byCube = true
+            }
+        }
+        lastClose = null
+        wholeChanges++
+        return true
+    }
+
     /**
      * The turns the best cube settled stay clear also when two of those faces turn together: every
      * such pair of other turns that reads them differently makes the best cube at least [TURN_MARGIN]
@@ -943,18 +1065,21 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
      * look-up, not a pass over every reading. A face's votes add up in [evidenceOf]'s order, so the numbers
      * are the same. Made anew whenever the assignments change.
      */
-    private inner class TurnedEvidence {
+    private inner class TurnedEvidence(private val all: Boolean = false) {
         private val readings = assignedReadings()
+
+        /** Whether [face] has assigned readings. */
+        fun has(face: Face): Boolean = !readings[face].isNullOrEmpty()
         private val byTurn = Array(6) { arrayOfNulls<List<DoubleArray>>(4) }
 
         private fun votes(face: Int, k: Int): List<DoubleArray> {
             byTurn[face][k]?.let { return it }
             val list = readings[Face.entries[face]].orEmpty()
             // A face without open-turn readings reads the same in every turn.
-            if (k != 0 && list.none { it.third }) return votes(face, 0)
+            if (k != 0 && !all && list.none { it.third }) return votes(face, 0)
             val votes = List(9) { DoubleArray(6) }
             for ((r, turn, open) in list) {
-                val t = if (open) turn + k else turn
+                val t = if (open || all) turn + k else turn
                 for (n in 0 until 9) {
                     if (n == CENTRE) continue
                     r.shares[r.at(RotationSearch.turnIndex(n, t))]?.let { sh -> for (c in 0 until 6) votes[n][c] += sh[c] }
@@ -964,7 +1089,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             return votes
         }
 
-        /** The evidence, each face's open-turn tracks turned [extra] (per face) more. */
+        /** The evidence, each face's open-turn tracks (with `all`, every track) turned [extra] (per face) more. */
         fun of(extra: IntArray): StickerEvidence = StickerEvidence(List(Stickers.COUNT) { s -> votes(s / 9, extra[s / 9])[s % 9] })
 
         /** The colours [face]'s evidence leads with, its open-turn tracks turned [k] more. */
@@ -1184,6 +1309,12 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         /** A centre reference moving less than this (summed RGB) does not rename the readings. */
         const val REF_STEP = 6
 
+        /** [wholeRecheck] runs at most this often. */
+        const val RECHECK_MILLIS = 250L
+
+        /** Ways of turning the faces whose best cube [wholeRecheck] works out (the fewest wrong pieces first). */
+        const val RECHECK_TRIALS = 16
+
         /** A face open this long asks to turn the cube. */
         const val HINT_MILLIS = 2_000L
 
@@ -1214,6 +1345,9 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
                     intArrayOf(c.stickers[(k + 1) % 3], c.stickers[(k + 2) % 3])
                 } ?: IntArray(0)
         }
+
+        private val EDGE_STICKERS: List<IntArray> = Edge.entries.map { it.stickers.toIntArray() }
+        private val CORNER_STICKERS: List<IntArray> = Corner.entries.map { it.stickers.toIntArray() }
 
         /** For two neighbouring faces, the net index pairs (on the first, on the second) of the stickers that share pieces. */
         private val SHARED: Map<Pair<Face, Face>, List<Pair<Int, Int>>> = buildMap {
