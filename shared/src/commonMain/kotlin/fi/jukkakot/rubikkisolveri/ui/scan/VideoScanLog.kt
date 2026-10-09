@@ -1,7 +1,7 @@
 package fi.jukkakot.rubikkisolveri.ui.scan
 
 import fi.jukkakot.rubikkisolveri.cube.Face
-import fi.jukkakot.rubikkisolveri.cube.scan.ScanCorners
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanSides
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
 import kotlin.math.roundToInt
 
@@ -50,9 +50,9 @@ object VideoScanLog {
         "darker" to darker,
         "worker" to worker,
         "stall" to state.stall?.name?.lowercase(),
-        // The corner row (`scan-next-view`): corners read of eight, and the pulsing one by its colours (e.g. WRG).
-        "corners" to "${state.readCorners.size}/8",
-        "next" to state.nextCorner?.let { c -> ScanCorners.colors(c).joinToString("") { it.letter.toString() } },
+        // The side row (`scan-side-balls`): sides done of six, and the pulsing one by its colour letter (e.g. B).
+        "sides" to "${state.doneSides.size}/6",
+        "next" to state.nextSide?.let { ScanSides.color(it).letter.toString() },
         // The centres as the camera reads them (rules scanner), e.g. how red its orange looks.
         "centres" to centres.ifEmpty { null },
     )

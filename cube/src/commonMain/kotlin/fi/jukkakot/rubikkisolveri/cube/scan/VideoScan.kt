@@ -1,7 +1,6 @@
 package fi.jukkakot.rubikkisolveri.cube.scan
 
 import fi.jukkakot.rubikkisolveri.cube.ColorScheme
-import fi.jukkakot.rubikkisolveri.cube.Corner
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeCheck
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
@@ -80,11 +79,11 @@ data class VideoScanState(
     val readSides: Set<CubeColor> = emptySet(),
     /** Sides whose turn is still open: seen but their turn not settled, or a face an open track could be (`scan-next-view`). */
     val openTurns: Set<Face> = emptySet(),
-    /** The corners read ([ScanCorners.read]): the corner row's dimmed ones; all eight only once [complete]. */
-    val readCorners: Set<Corner> = emptySet(),
-    /** The corner worth showing next ([NextCorner.choose]); null once every corner is read. */
-    val nextCorner: Corner? = null,
-    /** The stickers that are part of the clear cube (not known from their own votes alone): what a read corner needs. */
+    /** The sides done ([ScanSides.done]): the side row's ticked balls; all six only once [complete]. */
+    val doneSides: Set<Face> = emptySet(),
+    /** The side worth showing next ([NextSide.choose]); null once every side is done. */
+    val nextSide: Face? = null,
+    /** The stickers that are part of the clear cube (not known from their own votes alone): what a done side needs. */
     val clear: Set<Int> = emptySet(),
 ) {
     val recognised: Int get() = stickers.count { it != null }
@@ -336,7 +335,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             readSides = readSides.toSet(),
             openTurns = openTurns,
             clear = clear,
-        ).let { s -> s.copy(readCorners = ScanCorners.read(s, state.nextCorner), nextCorner = NextCorner.choose(s, state.nextCorner)) }
+        ).let { s -> s.copy(doneSides = ScanSides.done(s, state.nextSide), nextSide = NextSide.choose(s, state.nextSide, scheme)) }
         lastRecognised = recognised
         return state
     }

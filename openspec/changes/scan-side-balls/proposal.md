@@ -50,3 +50,12 @@ state should also live: when the scan finds it was wrong about a side, the tick 
 - **The last ball held:** if every side would be done but the cube is not complete, the side
   touching the open doubt stays undone. That is the side with the most open doubt, else the current
   pick.
+- **Steady on a tie (implementation):** a new pick needs a strictly higher score as well as 1.5×, so
+  two sides at 0 do not swap (the old corner rule switched there).
+- **Unread before score:** while some side is unread, only unread sides are candidates; the current
+  pick is kept only while it is still unread. At the start (nothing read) white is first by row order.
+- **Needed stickers in the turn demo:** the next side's stickers (not the centre) that are unknown or
+  not yet part of the clear cube, so a side known only from its own readings still shows what is missing.
+- **Turn demo without a known hold:** it starts face-on and still turns the next side forward (the
+  old plain tilt to a corner view stays only for the moment no next side exists).
+- **Log:** `sides=N/6 next=<colour letter>`; the state text carries `sides` (6-bit mask) and `next` (row index).

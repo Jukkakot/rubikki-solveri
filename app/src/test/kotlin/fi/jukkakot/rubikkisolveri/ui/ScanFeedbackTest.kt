@@ -1,6 +1,5 @@
 package fi.jukkakot.rubikkisolveri.ui
 
-import fi.jukkakot.rubikkisolveri.cube.Corner
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
 import fi.jukkakot.rubikkisolveri.cube.Face
@@ -20,10 +19,10 @@ import fi.jukkakot.rubikkisolveri.ui.scan.DEMO_IDLE_MILLIS
 import fi.jukkakot.rubikkisolveri.ui.scan.FoundFaces
 import fi.jukkakot.rubikkisolveri.ui.scan.HOLD_PICTURE_MILLIS
 import fi.jukkakot.rubikkisolveri.ui.scan.holdPicture
-import fi.jukkakot.rubikkisolveri.ui.scan.CornerLook
+import fi.jukkakot.rubikkisolveri.ui.scan.SideLook
 import fi.jukkakot.rubikkisolveri.ui.scan.DEMO_COLORS
 import fi.jukkakot.rubikkisolveri.ui.scan.VideoStatus
-import fi.jukkakot.rubikkisolveri.ui.scan.cornerLooks
+import fi.jukkakot.rubikkisolveri.ui.scan.sideLooks
 import fi.jukkakot.rubikkisolveri.ui.scan.shouldBuzz
 import fi.jukkakot.rubikkisolveri.ui.scan.turnDemo
 import fi.jukkakot.rubikkisolveri.ui.scan.videoStatus
@@ -33,32 +32,32 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** The scan's feedback (`scan-feedback`, `scan-next-view`): the corner row, the status line, the buzz and the turn demo. */
+/** The scan's feedback (`scan-feedback`, `scan-side-balls`): the side row, the status line, the buzz and the turn demo. */
 class ScanFeedbackTest {
     private val inView = VideoScanState.EMPTY.copy(found = listOf(FoundFace(FaceReading(List(9) { null }, Point(0.0, 0.0), Point(1.0, 0.0), Point(0.0, 1.0)), List(9) { null }, List(9) { false })))
     private val all = CubeColor.entries.toSet()
 
     @Test
-    fun cornerRowShowsEightFromTheStartReadOnesDimmedAndTheNextMarked() {
-        val start = cornerLooks(VideoScanState.EMPTY)
-        assertEquals(8, start.size)
-        assertTrue(start.all { it.second == CornerLook.OPEN }, "none dimmed at the start")
-        val s = inView.copy(readCorners = setOf(Corner.UFL), nextCorner = Corner.UBR)
-        val looks = cornerLooks(s)
-        assertEquals(start.map { it.first }, looks.map { it.first }, "every corner keeps its place")
-        assertEquals(CornerLook.READ, looks.toMap()[Corner.UFL])
-        assertEquals(CornerLook.NEXT, looks.toMap()[Corner.UBR])
-        assertEquals(CornerLook.OPEN, looks.toMap()[Corner.URF])
-        assertTrue(cornerLooks(s.copy(complete = true)).all { it.second == CornerLook.READ })
-        assertTrue(cornerLooks(s, done = true).all { it.second == CornerLook.READ })
+    fun sideRowShowsSixFromTheStartDoneOnesDimmedAndTheNextMarked() {
+        val start = sideLooks(VideoScanState.EMPTY)
+        assertEquals(6, start.size)
+        assertTrue(start.all { it.second == SideLook.OPEN }, "none dimmed at the start")
+        val s = inView.copy(doneSides = setOf(Face.F), nextSide = Face.B)
+        val looks = sideLooks(s)
+        assertEquals(start.map { it.first }, looks.map { it.first }, "every side keeps its place")
+        assertEquals(SideLook.DONE, looks.toMap()[Face.F])
+        assertEquals(SideLook.NEXT, looks.toMap()[Face.B])
+        assertEquals(SideLook.OPEN, looks.toMap()[Face.U])
+        assertTrue(sideLooks(s.copy(complete = true)).all { it.second == SideLook.DONE })
+        assertTrue(sideLooks(s, done = true).all { it.second == SideLook.DONE })
     }
 
     @Test
-    fun theLineCountsCornersOnceEverySideIsRead() {
-        assertEquals(VideoStatus.Line(Res.string.video_status_grey), videoStatus(inView.copy(readSides = all - CubeColor.BLUE)))
-        assertEquals(VideoStatus.CornersLeft(8), videoStatus(inView.copy(readSides = all)))
-        assertEquals(VideoStatus.Line(Res.string.video_status_done), videoStatus(inView.copy(readSides = all, complete = true)))
-        assertEquals(VideoStatus.Line(Res.string.video_status_find), videoStatus(VideoScanState.EMPTY.copy(readSides = all)))
+    fun theLineNamesTheNextSideByItsColour() {
+        assertEquals(VideoStatus.ShowSide(CubeColor.BLUE), videoStatus(inView.copy(nextSide = Face.B)))
+        assertEquals(VideoStatus.ShowSide(CubeColor.ORANGE), videoStatus(inView.copy(readSides = all, undecided = true, nextSide = Face.L)), "also once every side is read")
+        assertEquals(VideoStatus.Line(Res.string.video_status_done), videoStatus(inView.copy(nextSide = Face.B, complete = true)))
+        assertEquals(VideoStatus.Line(Res.string.video_status_find), videoStatus(VideoScanState.EMPTY.copy(nextSide = Face.U)))
     }
 
     @Test
@@ -86,8 +85,8 @@ class ScanFeedbackTest {
     private fun close(a: V3, b: V3) = kotlin.math.abs(a.x - b.x) + kotlin.math.abs(a.y - b.y) + kotlin.math.abs(a.z - b.z) < 1e-3f
 
     @Test
-    fun anUnreadSideTurnsTowardsTheCameraFromHowTheCubeIsHeld() {
-        val held = inView.copy(readSides = all - CubeColor.ORANGE, pose = Pose(Face.F, Face.U))
+    fun theNextSideTurnsTowardsTheCameraFromHowTheCubeIsHeld() {
+        val held = inView.copy(readSides = all - CubeColor.ORANGE, pose = Pose(Face.F, Face.U), nextSide = Face.L)
         assertNull(turnDemo(held, DEMO_IDLE_MILLIS - 1), "not before two seconds without progress")
         val demo = turnDemo(held, DEMO_IDLE_MILLIS)!!
         assertEquals(CubeColor.ORANGE, demo.side)
@@ -95,47 +94,36 @@ class ScanFeedbackTest {
         // Orange is the left side (L) in the standard scheme: it ends facing the camera, by a quarter turn.
         assertTrue(close(demo.to.rotate(V3.of(Face.L.normal)), V3(0f, 0f, 1f)), "orange faces the camera")
         assertEquals((Math.PI / 2).toFloat(), demo.from.angleTo(demo.to), 1e-3f)
+        assertEquals(DEMO_COLORS, demo.colors, "nothing known: grey with coloured centres")
         assertNull(turnDemo(held.copy(complete = true), DEMO_IDLE_MILLIS))
     }
 
     @Test
-    fun everySideReadOrNoHoldTiltsToACornerView() {
-        val read = turnDemo(inView.copy(readSides = all, pose = Pose(Face.F, Face.U)), DEMO_IDLE_MILLIS)!!
-        assertNull(read.side)
-        assertEquals(Quat.IDENTITY, read.from)
-        assertEquals(CubeScene.DEFAULT_VIEW, read.to)
-        val noHold = turnDemo(inView.copy(readSides = setOf(CubeColor.WHITE)), DEMO_IDLE_MILLIS)!!
-        assertNull(noHold.side)
-        assertEquals(CubeScene.DEFAULT_VIEW, noHold.to)
+    fun noHoldStartsFaceOnAndNoNextSideTiltsToACornerView() {
+        val noHold = turnDemo(inView.copy(nextSide = Face.B), DEMO_IDLE_MILLIS)!!
+        assertEquals(CubeColor.BLUE, noHold.side)
+        assertEquals(Quat.IDENTITY, noHold.from)
+        assertTrue(close(noHold.to.rotate(V3.of(Face.B.normal)), V3(0f, 0f, 1f)), "blue faces the camera")
+        val none = turnDemo(inView, DEMO_IDLE_MILLIS)!!
+        assertNull(none.side)
+        assertEquals(CubeScene.DEFAULT_VIEW, none.to)
     }
 
     @Test
-    fun everySideReadTurnsTheNextCornerForwardWithItsNeededStickers() {
+    fun knownStickersInColourAndTheNeededOnesOnTheNextSideBlink() {
         val solved = Cube.solved()
-        // Every sticker known but those of the white–red–blue corner (UBR).
-        val stickers = List(Stickers.COUNT) { i -> solved[i].takeIf { i !in Corner.UBR.stickers } }
-        val s = inView.copy(readSides = all, pose = Pose(Face.F, Face.U), stickers = stickers, nextCorner = Corner.UBR)
+        val blue = (0 until 9).map { Face.B.ordinal * 9 + it }
+        // Every sticker known but two on the blue side; one more blue sticker known but not part of the clear cube.
+        val stickers = List(Stickers.COUNT) { i -> solved[i].takeIf { i != blue[0] && i != blue[8] } }
+        val clear = (0 until Stickers.COUNT).toSet() - blue[0] - blue[8] - blue[5]
+        val s = inView.copy(readSides = all, pose = Pose(Face.F, Face.U), stickers = stickers, clear = clear, nextSide = Face.B)
         val demo = turnDemo(s, DEMO_IDLE_MILLIS)!!
-        assertEquals(Corner.UBR, demo.corner)
-        assertNull(demo.side)
-        assertEquals(Corner.UBR.stickers.toSet(), demo.needed, "the corner's unknown stickers blink")
+        assertEquals(CubeColor.BLUE, demo.side)
+        assertEquals(setOf(blue[0], blue[5], blue[8]), demo.needed, "the side's stickers still needed blink")
         assertEquals(CubeColor.WHITE, demo.colors[0], "known stickers in colour")
-        assertNull(demo.colors[Corner.UBR.stickers[0]], "unknown ones grey")
-        assertTrue(demo.from.angleTo(holdFor(Pose(Face.F, Face.U))) < 1e-3f, "starts as held")
-        val towards = V3.of(Face.U.normal) + V3.of(Face.B.normal) + V3.of(Face.R.normal)
-        assertTrue(close(demo.to.rotate(towards.normalized()), V3(0f, 0f, 1f)), "the corner faces the camera")
-        assertTrue(turnDemo(s.copy(pose = Pose(Face.R, Face.U)), DEMO_IDLE_MILLIS + 100, demo) === demo, "the same loop while the corner stays")
-        // Before every side is read: grey with coloured centres, as before.
-        assertEquals(DEMO_COLORS, turnDemo(s.copy(readSides = all - CubeColor.ORANGE), DEMO_IDLE_MILLIS)!!.colors)
-    }
-
-    @Test
-    fun theMovementStaysWhileTheSideToShowStays() {
-        val held = inView.copy(readSides = all - CubeColor.ORANGE, pose = Pose(Face.F, Face.U))
-        val first = turnDemo(held, DEMO_IDLE_MILLIS)!!
-        val moved = turnDemo(held.copy(pose = Pose(Face.R, Face.U)), DEMO_IDLE_MILLIS + 100, first)
-        assertTrue(moved === first, "the same loop while orange is still to show")
-        val next = turnDemo(held.copy(readSides = all - CubeColor.BLUE, pose = Pose(Face.R, Face.U)), DEMO_IDLE_MILLIS, first)!!
-        assertEquals(CubeColor.BLUE, next.side)
+        assertNull(demo.colors[blue[0]], "unknown ones grey")
+        assertTrue(turnDemo(s.copy(pose = Pose(Face.R, Face.U)), DEMO_IDLE_MILLIS + 100, demo) === demo, "the same loop while the side stays")
+        val next = turnDemo(s.copy(nextSide = Face.R), DEMO_IDLE_MILLIS, demo)!!
+        assertEquals(CubeColor.RED, next.side, "a new loop for a new side")
     }
 }

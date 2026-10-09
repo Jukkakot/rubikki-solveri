@@ -75,7 +75,7 @@ import fi.jukkakot.rubikkisolveri.cube.scan.ExposureControl
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceFinder
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
-import fi.jukkakot.rubikkisolveri.cube.scan.ScanCorners
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanSides
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanRecording
 import androidx.lifecycle.Lifecycle
@@ -108,7 +108,6 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.StringResource
-import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 import kotlin.time.TimeSource
@@ -432,9 +431,9 @@ fun VideoScanContent(
             },
         ) {}
         if (state.dim && stall == null) DimNotice(Modifier.align(Alignment.TopStart).statusBarsPadding().padding(start = 12.dp, top = 72.dp))
-        // The corner row above the status line (or the stall notice), the whole scan (`scan-next-view`).
+        // The side row above the status line (or the stall notice), the whole scan (`scan-side-balls`).
         Column(Modifier.align(Alignment.BottomCenter).navigationBarsPadding(), horizontalAlignment = Alignment.CenterHorizontally) {
-            CornerRow(cornerLooks(state, done), Modifier.padding(horizontal = 16.dp))
+            SideRow(sideLooks(state, done), Modifier.padding(horizontal = 16.dp))
             if (stall != null) {
                 StallNotice(
                     stall,
@@ -536,31 +535,29 @@ private class ScanLogger(private val centres: () -> String) {
     private fun event(kind: String, vararg fields: Pair<String, Any?>) = AppLog.info(Evt.SCAN_VIDEO, null, "kind" to kind, *fields)
 }
 
-/** The one status line: show the cube, show the grey parts, how many corners are left, or ready. */
+/** The one status line: show the cube, show the next side by its colour, or ready. */
 @Composable
 private fun statusText(state: VideoScanState): String = when (val s = videoStatus(state)) {
     is VideoStatus.Line -> stringResource(s.text)
-    is VideoStatus.CornersLeft -> pluralStringResource(Res.plurals.video_status_corners, s.count, s.count)
+    is VideoStatus.ShowSide -> stringResource(Res.string.video_status_side, stringResource(colorName(s.color)))
 }
 
-/** What the status line says: a fixed [Line], or how many corners are left. */
+/** What the status line says: a fixed [Line], or the side to show next by its centre colour. */
 sealed interface VideoStatus {
     data class Line(val text: StringResource) : VideoStatus
-    data class CornersLeft(val count: Int) : VideoStatus
+    data class ShowSide(val color: CubeColor) : VideoStatus
 }
 
 /**
- * The status line for [state]: done, no cube, the corners left once every side is read
- * (`scan-next-view` design 4; the honest count of `scan-corner-ticks`, never zero before complete),
- * else the grey parts.
+ * The status line for [state] (`scan-side-balls`): done, no cube, else the next side
+ * ([VideoScanState.nextSide]) by its colour, all the time until the scan is complete.
  */
 fun videoStatus(state: VideoScanState): VideoStatus {
-    val left = ScanCorners.ROW.size - state.readCorners.size
+    val next = state.nextSide
     return when {
         state.complete -> VideoStatus.Line(Res.string.video_status_done)
-        state.found.isEmpty() -> VideoStatus.Line(Res.string.video_status_find)
-        state.readSides.size == CubeColor.entries.size -> VideoStatus.CornersLeft(left)
-        else -> VideoStatus.Line(Res.string.video_status_grey)
+        state.found.isEmpty() || next == null -> VideoStatus.Line(Res.string.video_status_find)
+        else -> VideoStatus.ShowSide(ScanSides.color(next))
     }
 }
 

@@ -18,7 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import fi.jukkakot.rubikkisolveri.ui.scan.holdPicture
 import androidx.compose.ui.graphics.asImageBitmap
-import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_CORNERS_TAG
+import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_SIDES_TAG
 import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_SPINNER_TAG
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
@@ -107,8 +107,8 @@ class VideoScanScreenTest {
         }
     }
 
-    /** The corner row's description: how many corners are read, and the next one. */
-    private fun corners(): String = compose.onNodeWithTag(VIDEO_CORNERS_TAG).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].joinToString()
+    /** The side row's description: how many sides are done, and the next one. */
+    private fun sides(): String = compose.onNodeWithTag(VIDEO_SIDES_TAG).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].joinToString()
 
     /** Whether the menu's colour check can be used now (the menu is closed again through "by hand", a no-op here). */
     private fun checkEnabled(): Boolean {
@@ -126,7 +126,7 @@ class VideoScanScreenTest {
         compose.onNodeWithText("Korjaa värit").assertDoesNotExist()
         compose.onNodeWithText("Näytä kuutio kameralle").assertIsDisplayed()
         show(face(Face.U), times = 9)
-        compose.onNodeWithText("Näytä harmaat kohdat").assertIsDisplayed()
+        compose.onNodeWithText("Näytä punainen puoli").assertIsDisplayed()
     }
 
     @Test
@@ -154,7 +154,7 @@ class VideoScanScreenTest {
     @Test
     fun stickersFillInAndTheCameraMetersOnTheFaceThenLocks() {
         scan()
-        assertTrue("0/8" in corners(), "nothing read yet")
+        assertTrue("0/6" in sides(), "nothing read yet")
         assertFalse(checkEnabled())
         // The first face: the camera meters and focuses at it, and its frames are read meanwhile.
         show(face(Face.U), times = 3)
@@ -210,7 +210,7 @@ class VideoScanScreenTest {
         compose.onNodeWithText("Aloita alusta").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Aloita alusta").assertDoesNotExist()
-        assertTrue("0/8" in corners(), "progress cleared")
+        assertTrue("0/6" in sides(), "progress cleared")
         assertFalse(checkEnabled())
         assertNull(outcome)
     }
@@ -268,12 +268,12 @@ class VideoScanScreenTest {
     }
 
     @Test
-    fun theCornerRowShowsFromTheStartAndTheTurnCubeComesWhenStuck() {
+    fun theSideRowShowsFromTheStartAndTheTurnCubeComesWhenStuck() {
         scan()
-        compose.onNodeWithTag(VIDEO_CORNERS_TAG).assertIsDisplayed()
+        compose.onNodeWithTag(VIDEO_SIDES_TAG).assertIsDisplayed()
         for (f in listOf(Face.U, Face.R, Face.F, Face.D, Face.B)) show(face(f), times = 6)
-        assertTrue("Seuraavaksi" in corners(), "a next corner: ${corners()}")
-        compose.onNodeWithText("Näytä harmaat kohdat").assertExists()
+        assertTrue("Seuraavaksi" in sides(), "a next side: ${sides()}")
+        compose.onNodeWithText("Näytä oranssi puoli").assertExists()
         compose.onNodeWithTag(VIDEO_DEMO_TAG).assertDoesNotExist()
         // Nothing new for more than two seconds: the small cube shows how to turn.
         show(face(Face.B), times = 30)
@@ -309,7 +309,7 @@ class VideoScanScreenTest {
     }
 
     @Test
-    fun hiddenMarksDrawNoPaintButTheCornerRowStays() {
+    fun hiddenMarksDrawNoPaintButTheSideRowStays() {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
                 VideoScanContent(found, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {}, clock = { now }, preview = {}, hideMarks = true)
@@ -317,7 +317,7 @@ class VideoScanScreenTest {
         }
         show(face(Face.U), times = 9)
         compose.onNodeWithTag(VIDEO_PAINT_TAG).assertDoesNotExist()
-        compose.onNodeWithTag(VIDEO_CORNERS_TAG).assertIsDisplayed()
+        compose.onNodeWithTag(VIDEO_SIDES_TAG).assertIsDisplayed()
     }
 
     @Test

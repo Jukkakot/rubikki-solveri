@@ -350,12 +350,8 @@
     <string name="solve_pause">Pause</string>
     <string name="solve_menu">Menu</string>
     <string name="solve_to_start">Back to start</string>
-    <string name="video_status_grey">Show the grey parts</string>
-    <plurals name="video_status_corners">
-        <item quantity="one">%1$d corner left</item>
-        <item quantity="other">%1$d corners left</item>
-    </plurals>
-    <string name="video_corners">Corners read %1$d/%2$d</string>
-    <string name="video_corner_next">Next the %1$s corner</string>
+    <string name="video_status_side">Show the %1$s side</string>
+    <string name="video_sides">Sides done %1$d/%2$d</string>
+    <string name="video_side_next">Next the %1$s side</string>
     <string name="video_turn_demo">How to turn the cube</string>
 </resources>

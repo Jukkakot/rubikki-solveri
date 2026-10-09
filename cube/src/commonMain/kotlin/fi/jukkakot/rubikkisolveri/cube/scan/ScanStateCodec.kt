@@ -43,7 +43,7 @@ object ScanStateCodec {
         val readSides: String = "",
         val contradictions: List<Int> = emptyList(),
         val openTurns: String = "",
-        val corners: Int = 0,
+        val sides: Int = 0,
         val next: Int = -1,
         val clear: List<Int> = emptyList(),
     )
@@ -91,8 +91,8 @@ object ScanStateCodec {
             readSides = colors(state.readSides.toList()),
             contradictions = state.contradictions.toList(),
             openTurns = state.openTurns.joinToString("") { it.name },
-            corners = ScanCorners.mask(state.readCorners),
-            next = state.nextCorner?.let { ScanCorners.ROW.indexOf(it) } ?: -1,
+            sides = ScanSides.mask(state.doneSides),
+            next = state.nextSide?.let { ScanSides.ROW.indexOf(it) } ?: -1,
             clear = state.clear.sorted(),
         ),
     )
@@ -126,8 +126,8 @@ object ScanStateCodec {
             undecided = s.undecided,
             readSides = colorsOf(s.readSides).filterNotNull().toSet(),
             openTurns = s.openTurns.map { Face.valueOf(it.toString()) }.toSet(),
-            readCorners = ScanCorners.ofMask(s.corners),
-            nextCorner = ScanCorners.ROW.getOrNull(s.next),
+            doneSides = ScanSides.ofMask(s.sides),
+            nextSide = ScanSides.ROW.getOrNull(s.next),
             clear = s.clear.toSet(),
         )
     }
