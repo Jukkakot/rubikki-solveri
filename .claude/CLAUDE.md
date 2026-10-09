@@ -7,7 +7,8 @@ decisions: `openspec/context/product.md`; plan: `openspec/context/roadmap.md`; w
 
 Read `openspec/context/roadmap.md` and run `openspec list`, then tell the user in two or three
 lines where the project stands (last finished change, active change and its task progress, the
-natural next step).
+natural next step). Project memory is `.claude/memory/` (index `MEMORY.md`): read the index, and
+write new project memories there, not in `~/.claude/projects/` (so cloud sessions see them).
 
 ## Specs first (decided 2026-10-06)
 
