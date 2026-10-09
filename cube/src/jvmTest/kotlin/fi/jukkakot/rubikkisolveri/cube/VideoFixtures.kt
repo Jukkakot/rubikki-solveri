@@ -5,6 +5,9 @@ import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 import fi.jukkakot.rubikkisolveri.cube.scan.RotationSearch
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanRecording
+import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
+import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
 
 /**
  * The face readings of the test videos of 2026-10-05 and 2026-10-07, one line per frame (written by
@@ -72,6 +75,38 @@ object VideoFixtures {
     const val PHONE_RULES_3 = "web_121505:66-373"
     const val PHONE_LOOK_3 = "web_121505:448-751"
     const val TRUTH_1008C = "WWWWWWWWWRBOBRGOGRBRGOGRGOBYYYYYYYYYOGRGOBRBOGOBRBOBRG"
+
+    /** A scan recording shared with the log (`scan-recording`), from `recordings/<name>.txt`. */
+    fun loadRecording(name: String): ScanRecording.Recording =
+        ScanRecording.read(VideoFixtures::class.java.getResource("/recordings/$name.txt")!!.readText())
+
+    /** The scan at the end of a [replay]: its last state, whether it finished on the way, every picture's state. */
+    class Replay(val scan: VideoScan, val finished: Boolean, val states: List<VideoScanState>)
+
+    /**
+     * Replays [recording] as the device ran it: each picture at its scan time (`t0 + ms`), a fresh
+     * scan at each reset; [each] gets every entry with the scan and (for a picture) its state.
+     */
+    fun replay(recording: ScanRecording.Recording, each: (ScanRecording.Entry, VideoScan, VideoScanState?) -> Unit = { _, _, _ -> }): Replay {
+        var scan = VideoScan()
+        val states = ArrayList<VideoScanState>()
+        var finished = false
+        for (entry in recording.entries) {
+            when (entry) {
+                is ScanRecording.Reset -> {
+                    scan = VideoScan()
+                    each(entry, scan, null)
+                }
+                is ScanRecording.Picture -> {
+                    val s = scan.onFrame(entry.found.faces, recording.t0 + entry.ms)
+                    states += s
+                    finished = finished || s.finished
+                    each(entry, scan, s)
+                }
+            }
+        }
+        return Replay(scan, finished, states)
+    }
 
     data class Frame(val name: String, val faces: List<FaceReading>)
 

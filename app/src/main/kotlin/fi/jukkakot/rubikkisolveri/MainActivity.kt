@@ -23,6 +23,7 @@ import fi.jukkakot.rubikkisolveri.settings.ThemeMode
 import fi.jukkakot.rubikkisolveri.log.ScanPictures
 import fi.jukkakot.rubikkisolveri.ui.guide.HandsfreeSpeed
 import fi.jukkakot.rubikkisolveri.ui.log.shareLogIntent
+import fi.jukkakot.rubikkisolveri.log.ScanRecordings
 import fi.jukkakot.rubikkisolveri.ui.nav.AppActions
 import fi.jukkakot.rubikkisolveri.ui.nav.RubikkiNavHost
 import fi.jukkakot.rubikkisolveri.ui.theme.RubikkiTheme
@@ -43,6 +44,7 @@ class MainActivity : AppCompatActivity() {
             val themeMode by settings.themeMode.collectAsStateWithLifecycle(ThemeMode.SYSTEM)
             val showNotation by settings.showNotation.collectAsStateWithLifecycle(false)
             val handsfreeSpeed by settings.handsfreeSpeed.collectAsStateWithLifecycle(HandsfreeSpeed.NORMAL)
+            val hideScanMarks by settings.hideScanMarks.collectAsStateWithLifecycle(false)
             val scope = rememberCoroutineScope()
             val navController = rememberNavController()
             DisposableEffect(navController) {
@@ -74,12 +76,13 @@ class MainActivity : AppCompatActivity() {
                             logger.flush()
                             logger.file.clear()
                             ScanPictures.of(this).clear()
+                            ScanRecordings.of(this).clear()
                             logger.info(Evt.LOG_CLEARED)
                         },
                         shareLog = {
                             logger.info(Evt.LOG_SHARED)
                             logger.flush()
-                            startActivity(shareLogIntent(this, logger.file.file, ScanPictures.of(this).list()))
+                            startActivity(shareLogIntent(this, logger.file.file, ScanPictures.of(this).list() + ScanRecordings.of(this).files()))
                         },
                         crashedLastTime = app.crashedLastTime,
                         onCrashNoticeShown = app::crashNoticeShown,
@@ -96,6 +99,12 @@ class MainActivity : AppCompatActivity() {
                             scope.launch { settings.setHandsfreeSpeed(speed) }
                         },
                         scanPictures = ScanPictures.of(this),
+                        scanRecordings = ScanRecordings.of(this),
+                        hideScanMarks = hideScanMarks,
+                        onHideScanMarks = { hide ->
+                            logger.info(Evt.SETTINGS_CHANGED, null, "hideScanMarks" to hide)
+                            scope.launch { settings.setHideScanMarks(hide) }
+                        },
                     ),
                 )
             }

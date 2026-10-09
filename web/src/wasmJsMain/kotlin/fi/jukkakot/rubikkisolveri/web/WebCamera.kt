@@ -289,14 +289,18 @@ private fun WebCameraPreview(args: CameraArgs) {
 }
 
 /**
- * The worker's scan answer for a picture (`scan-speed-up-2` design 5): state, centre line, scan ms and
- * restarts, apart by the worker's separator; null without one or when it cannot be read.
+ * The worker's scan answer for a picture (`scan-speed-up-2` design 5): state, centre line, scan ms,
+ * restarts, the scan time and the pictures of its scan (`scan-recording`), apart by the worker's separator; null without one or when it cannot be read.
  */
 private fun scannedOf(text: String): Scanned? {
     if (text.isEmpty()) return null
     return try {
         val parts = text.split('\u0001')
-        Scanned(ScanStateCodec.decode(parts[0]), parts[1], parts[2].toDouble(), parts[3].toInt(), WorkerScan)
+        Scanned(
+            ScanStateCodec.decode(parts[0]), parts[1], parts[2].toDouble(), parts[3].toInt(), WorkerScan,
+            at = parts.getOrNull(4)?.toLongOrNull() ?: -1,
+            pictures = parts.getOrNull(5)?.toIntOrNull() ?: 0,
+        )
     } catch (e: Throwable) {
         AppLog.logger.error(Evt.SCAN_ERROR, e, "worker scan")
         null

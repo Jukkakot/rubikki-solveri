@@ -139,6 +139,9 @@
     <string name="settings_moves">Siirrot</string>
     <string name="settings_notation">Näytä siirtomerkinnät</string>
     <string name="settings_notation_summary">Esim. R, U' ja F2 sanallisen ohjeen alla</string>
+    <string name="settings_scan">Skannaus</string>
+    <string name="settings_hide_marks">Piilota skannauksen merkit</string>
+    <string name="settings_hide_marks_summary">Kamerakuva ilman merkintöjä, siistiä näyttötallennetta varten</string>
     <string name="follow_camera">Seuraa kameralla</string>
     <string name="follow_show_3d">Näytä 3D-kuutio</string>
     <string name="follow_hold">Pidä vihreä keskiö kameraa kohti ja valkoinen ylhäällä, etupuoli ruudukossa.</string>

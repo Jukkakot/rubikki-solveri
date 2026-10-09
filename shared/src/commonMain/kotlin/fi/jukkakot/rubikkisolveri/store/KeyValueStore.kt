@@ -45,6 +45,7 @@ object StoreKeys {
     const val PROGRESS = "rubikki.progress.v1"
     const val LOG = "rubikki.log.v1"
     const val SCAN_PICTURES = "rubikki.scanpics.v1"
+    const val SCAN_RECORDINGS = "rubikki.scanrecordings.v1"
     const val LANGUAGE = "rubikki.language"
     const val CRASHED = "rubikki.crashed"
 }

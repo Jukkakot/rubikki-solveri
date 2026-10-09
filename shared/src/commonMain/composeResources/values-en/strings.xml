@@ -138,6 +138,9 @@
     <string name="settings_moves">Moves</string>
     <string name="settings_notation">Show move notation</string>
     <string name="settings_notation_summary">For example R, U' and F2 under the words</string>
+    <string name="settings_scan">Scanning</string>
+    <string name="settings_hide_marks">Hide scan marks</string>
+    <string name="settings_hide_marks_summary">The camera picture without marks, for a clean screen recording</string>
     <string name="follow_camera">Follow with the camera</string>
     <string name="follow_show_3d">Show the 3D cube</string>
     <string name="follow_hold">Keep the green centre towards the camera and white on top, the front in the grid.</string>

@@ -42,10 +42,18 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         store.edit { it[HANDSFREE_SPEED] = speed.name }
     }
 
+    /** Hide the video scan's marks on the camera picture (clean screen recordings); off by default. */
+    val hideScanMarks: Flow<Boolean> = store.data.map { it[HIDE_SCAN_MARKS] ?: false }
+
+    suspend fun setHideScanMarks(hide: Boolean) {
+        store.edit { it[HIDE_SCAN_MARKS] = hide }
+    }
+
     private companion object {
         val THEME = stringPreferencesKey("theme_mode")
         val NOTATION = booleanPreferencesKey("show_notation")
         val HANDSFREE_SPEED = stringPreferencesKey("handsfree_speed")
+        val HIDE_SCAN_MARKS = booleanPreferencesKey("hide_scan_marks")
     }
 }
 

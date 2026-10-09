@@ -10,6 +10,7 @@ import fi.jukkakot.rubikkisolveri.store.StoreKeys
 import fi.jukkakot.rubikkisolveri.store.StoredLog
 import fi.jukkakot.rubikkisolveri.store.StoredProgressRepository
 import fi.jukkakot.rubikkisolveri.store.StoredScanPictures
+import fi.jukkakot.rubikkisolveri.store.StoredScanRecordings
 import fi.jukkakot.rubikkisolveri.store.StoredSettings
 import fi.jukkakot.rubikkisolveri.ui.BrowserHooks
 import kotlin.time.Clock
@@ -29,6 +30,8 @@ class WebServices {
     val progress = StoredProgressRepository(store)
     val logStore = StoredLog(store)
     val scanPictures = StoredScanPictures(store, ::encodePngBase64) { Clock.System.now().toEpochMilliseconds() }
+    /** Straight in localStorage: a full quota drops the recording, not the app's storage (`scan-recording`). */
+    val scanRecordings = StoredScanRecordings(BrowserStorage) { AppLog.logger.warn(Evt.SCAN_VIDEO, "recording not kept: ${it.message}") }
     val logger = Logger(logStore, { level, line -> log(level.name, line) }, { it() })
 
     /** True once if the previous visit ended in an uncaught error; clears the mark. */

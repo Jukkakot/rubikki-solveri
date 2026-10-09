@@ -45,6 +45,8 @@ fun SettingsScreen(
     showNotation: Boolean = false,
     onShowNotation: (Boolean) -> Unit = {},
     onOpenAbout: () -> Unit = {},
+    hideScanMarks: Boolean = false,
+    onHideScanMarks: (Boolean) -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -79,6 +81,14 @@ fun SettingsScreen(
                 supportingContent = { Text(stringResource(Res.string.settings_notation_summary)) },
                 trailingContent = { Switch(checked = showNotation, onCheckedChange = null) },
                 modifier = Modifier.toggleable(value = showNotation, role = Role.Switch, onValueChange = onShowNotation),
+            )
+            HorizontalDivider()
+            SectionTitle(Res.string.settings_scan)
+            ListItem(
+                headlineContent = { Text(stringResource(Res.string.settings_hide_marks)) },
+                supportingContent = { Text(stringResource(Res.string.settings_hide_marks_summary)) },
+                trailingContent = { Switch(checked = hideScanMarks, onCheckedChange = null) },
+                modifier = Modifier.toggleable(value = hideScanMarks, role = Role.Switch, onValueChange = onHideScanMarks),
             )
             HorizontalDivider()
             SectionTitle(Res.string.settings_diagnostics)

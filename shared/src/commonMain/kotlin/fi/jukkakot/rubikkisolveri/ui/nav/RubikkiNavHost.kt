@@ -48,6 +48,9 @@ import fi.jukkakot.rubikkisolveri.settings.ThemeMode
 import fi.jukkakot.rubikkisolveri.Platform
 import fi.jukkakot.rubikkisolveri.log.NoScanPictures
 import fi.jukkakot.rubikkisolveri.log.ScanPictureStore
+import fi.jukkakot.rubikkisolveri.log.NoScanRecordings
+import fi.jukkakot.rubikkisolveri.log.ScanRecordingStore
+import fi.jukkakot.rubikkisolveri.ui.scan.ScanRecordingSetup
 import fi.jukkakot.rubikkisolveri.ui.home.HomeEntry
 import fi.jukkakot.rubikkisolveri.cube.SolveTarget
 import fi.jukkakot.rubikkisolveri.ui.target.TargetScreen
@@ -76,6 +79,11 @@ class AppActions(
     /** The idle spin of the home cube; off in tests, whose clock would never go idle. */
     val homeSpin: Boolean = true,
     val scanPictures: ScanPictureStore = NoScanPictures,
+    /** The video scans' recordings, kept with the log (`scan-recording`). */
+    val scanRecordings: ScanRecordingStore = NoScanRecordings,
+    /** Hide the scan's marks on the camera picture, for clean screen recordings. */
+    val hideScanMarks: Boolean = false,
+    val onHideScanMarks: (Boolean) -> Unit = {},
     val platform: Platform = Platform.ANDROID,
 )
 
@@ -120,6 +128,8 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 onThemeMode = actions.onThemeMode,
                 showNotation = actions.showNotation,
                 onShowNotation = actions.onShowNotation,
+                hideScanMarks = actions.hideScanMarks,
+                onHideScanMarks = actions.onHideScanMarks,
                 onOpenAbout = { navController.navigate(AboutRoute) },
                 onOpenLog = { navController.navigate(LogRoute) },
                 onBack = { navController.popBackStack() },
@@ -225,6 +235,8 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                     LastScan.check = afterScanCheck(outcome, route.target)
                     navController.navigate(afterScan(outcome, route.target))
                 },
+                recording = ScanRecordingSetup(actions.scanRecordings, actions.platform.name.lowercase(), actions.version),
+                hideMarks = actions.hideScanMarks,
             ) }
         }
         composable<FreeCubeRoute> { entry ->

@@ -23,7 +23,15 @@ fun main() {
     var resets = 0
     var scanned = ""
     var scanning = true
-    fun answer(state: VideoScanState, started: Double) = listOf(ScanStateCodec.encode(state), scan.centreLog, (now() - started).toString(), resets.toString()).joinToString(SEPARATOR)
+    // Pictures the current scan has had: 1 tells the page a fresh scan began (`scan-recording`).
+    var pictures = 0
+    fun answer(state: VideoScanState, started: Double, at: Long) =
+        listOf(ScanStateCodec.encode(state), scan.centreLog, (now() - started).toString(), resets.toString(), at.toString(), pictures.toString()).joinToString(SEPARATOR)
+    // The scan gets the faces as the page receives and records them (the text, read back), so a replay is exact.
+    fun scanOne(faces: List<FaceReading>, at: Long, started: Double): String {
+        pictures++
+        return answer(scan.onFrame(faces, at), started, at)
+    }
     workerListen(
         find = { width, height, rgba ->
             val start = now()
@@ -34,27 +42,25 @@ fun main() {
             }
             val faces = FaceFinder.find(argb, width, height).let { it.faces + it.partial }.map(FaceReading::of)
             val found = now()
-            scanned = if (scanning) {
-                answer(scan.onFrame(faces, found.toLong()), found)
-            } else {
-                ""
-            }
-            FaceCodec.encode(FaceCodec.Found(faces, width, height, (found - start).toLong()))
+            val text = FaceCodec.encode(FaceCodec.Found(faces, width, height, (found - start).toLong()))
+            scanned = if (scanning) scanOne(FaceCodec.decode(text).faces, found.toLong(), found) else ""
+            text
         },
         scanned = { scanned },
         scanFaces = { text, at ->
-            val started = now()
-            answer(scan.onFrame(FaceCodec.decode(text).faces, at.toLong()), started)
+            scanOne(FaceCodec.decode(text).faces, at.toLong(), now())
         },
         command = { text ->
             when {
                 text == "reset" -> {
                     scan = VideoScan()
+                    pictures = 0
                     resets++
                     resets.toString()
                 }
                 text.startsWith("adopt:") -> {
                     scan = VideoScan()
+                    pictures = 0
                     resets = text.removePrefix("adopt:").toInt()
                     resets.toString()
                 }
@@ -69,5 +75,5 @@ fun main() {
     )
 }
 
-/** Between the parts of the scan's answer: state, centre line, scan ms, resets so far. */
+/** Between the parts of the scan's answer: state, centre line, scan ms, resets so far, the picture's scan time, pictures in this scan. */
 const val SEPARATOR = "\u0001"

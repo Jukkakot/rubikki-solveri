@@ -51,6 +51,9 @@ class BrowserStoresTest {
         val again = StoredSettings(map)
         assertEquals(ThemeMode.DARK, again.themeMode.value)
         assertEquals(true, again.showNotation.value)
+        assertEquals(false, again.hideScanMarks.value, "marks shown by default")
+        again.setHideScanMarks(true)
+        assertEquals(true, StoredSettings(map).hideScanMarks.value)
         assertEquals(AppLanguage.ENGLISH, again.language)
         assertEquals("en", map.get(StoreKeys.LANGUAGE), "index.html reads this key before the app starts")
     }
@@ -84,6 +87,30 @@ class BrowserStoresTest {
         val kept = StoredScanPictures(map, { _, _ -> "" }, { 0 }).list()
         assertEquals(names.takeLast(12), kept.map { it.name })
         assertEquals("png4x2", kept.first().pngBase64)
+    }
+
+    @Test
+    fun onlyTheNewestThreeRecordingsAreKept() {
+        val recordings = StoredScanRecordings(map)
+        for (i in 1..4) recordings.write("scan-$i.txt", "text $i")
+        assertEquals(listOf("scan-4.txt", "scan-3.txt", "scan-2.txt"), StoredScanRecordings(map).names(), "newest first, the oldest dropped")
+        recordings.write("scan-4.txt", "text 4 again")
+        assertEquals(3, recordings.list().size, "the same name is replaced")
+        assertEquals("text 4 again", recordings.list().last().text)
+        recordings.clear()
+        assertEquals(emptyList(), recordings.names())
+    }
+
+    @Test
+    fun aFullStorageDropsTheRecordingQuietly() {
+        val full = object : KeyValueStore {
+            override fun get(key: String): String? = null
+            override fun set(key: String, value: String) = throw IllegalStateException("QuotaExceededError")
+            override fun remove(key: String) = Unit
+        }
+        val failures = mutableListOf<Throwable>()
+        StoredScanRecordings(full) { failures += it }.write("scan-1.txt", "text")
+        assertEquals(1, failures.size)
     }
 
     @Test

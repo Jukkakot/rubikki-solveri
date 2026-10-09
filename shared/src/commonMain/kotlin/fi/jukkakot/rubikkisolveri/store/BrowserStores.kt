@@ -2,6 +2,7 @@ package fi.jukkakot.rubikkisolveri.store
 
 import fi.jukkakot.rubikkisolveri.log.LogStore
 import fi.jukkakot.rubikkisolveri.log.ScanPictureStore
+import fi.jukkakot.rubikkisolveri.log.ScanRecordingStore
 import fi.jukkakot.rubikkisolveri.settings.AppLanguage
 import fi.jukkakot.rubikkisolveri.settings.ThemeMode
 import fi.jukkakot.rubikkisolveri.ui.guide.HandsfreeSpeed
@@ -12,13 +13,14 @@ import kotlinx.serialization.json.Json
 
 private val JSON = Json { ignoreUnknownKeys = true }
 
-/** Theme, notation and handsfree speed as JSON under [StoreKeys.SETTINGS]; the language under its own key (read before the app starts). */
+/** Theme, notation, handsfree speed and hidden scan marks as JSON under [StoreKeys.SETTINGS]; the language under its own key (read before the app starts). */
 class StoredSettings(private val store: KeyValueStore) {
     @Serializable
     private data class Data(
         val theme: ThemeMode = ThemeMode.SYSTEM,
         val notation: Boolean = false,
         val handsfreeSpeed: HandsfreeSpeed = HandsfreeSpeed.NORMAL,
+        val hideScanMarks: Boolean = false,
     )
 
     private val data = MutableStateFlow(
@@ -27,14 +29,17 @@ class StoredSettings(private val store: KeyValueStore) {
     private val theme = MutableStateFlow(data.value.theme)
     private val notation = MutableStateFlow(data.value.notation)
     private val speed = MutableStateFlow(data.value.handsfreeSpeed)
+    private val hideMarks = MutableStateFlow(data.value.hideScanMarks)
 
     val themeMode: StateFlow<ThemeMode> = theme
     val showNotation: StateFlow<Boolean> = notation
     val handsfreeSpeed: StateFlow<HandsfreeSpeed> = speed
+    val hideScanMarks: StateFlow<Boolean> = hideMarks
 
     fun setThemeMode(mode: ThemeMode) = save(data.value.copy(theme = mode))
     fun setShowNotation(show: Boolean) = save(data.value.copy(notation = show))
     fun setHandsfreeSpeed(next: HandsfreeSpeed) = save(data.value.copy(handsfreeSpeed = next))
+    fun setHideScanMarks(hide: Boolean) = save(data.value.copy(hideScanMarks = hide))
 
     val language: AppLanguage get() = AppLanguage.fromTag(store.get(StoreKeys.LANGUAGE))
     fun setLanguage(language: AppLanguage) = store.set(StoreKeys.LANGUAGE, language.tag)
@@ -44,6 +49,7 @@ class StoredSettings(private val store: KeyValueStore) {
         theme.value = next.theme
         notation.value = next.notation
         speed.value = next.handsfreeSpeed
+        hideMarks.value = next.hideScanMarks
         store.set(StoreKeys.SETTINGS, JSON.encodeToString(Data.serializer(), next))
     }
 }
@@ -95,5 +101,47 @@ class StoredScanPictures(
 
     private companion object {
         val LIST = kotlinx.serialization.builtins.ListSerializer(StoredPicture.serializer())
+    }
+}
+
+/** A stored scan recording: its file name and text. */
+@Serializable
+data class StoredRecording(val name: String, val text: String)
+
+/**
+ * The newest [ScanRecordingStore.KEEP] scan recordings as JSON under [StoreKeys.SCAN_RECORDINGS]
+ * (about 1.4 MB at most). [store] should be the browser's own storage, not the memory fallback: a
+ * failing write (the quota) is told to [onFail] and the recording dropped, while the rest of the app
+ * keeps its storage.
+ */
+class StoredScanRecordings(private val store: KeyValueStore, private val onFail: (Throwable) -> Unit = {}) : ScanRecordingStore {
+    override fun write(name: String, text: String) {
+        try {
+            val kept = (list().filter { it.name != name } + StoredRecording(name, text)).sortedBy { it.name }.takeLast(ScanRecordingStore.KEEP)
+            store.set(StoreKeys.SCAN_RECORDINGS, JSON.encodeToString(RECORDINGS, kept))
+        } catch (e: Throwable) {
+            onFail(e)
+        }
+    }
+
+    /** The recordings, oldest first. */
+    fun list(): List<StoredRecording> = try {
+        store.get(StoreKeys.SCAN_RECORDINGS)?.let { runCatching { JSON.decodeFromString(RECORDINGS, it) }.getOrNull() }.orEmpty()
+    } catch (e: Throwable) {
+        emptyList()
+    }
+
+    override fun names(): List<String> = list().map { it.name }.reversed()
+
+    override fun clear() {
+        try {
+            store.remove(StoreKeys.SCAN_RECORDINGS)
+        } catch (e: Throwable) {
+            onFail(e)
+        }
+    }
+
+    private companion object {
+        val RECORDINGS = kotlinx.serialization.builtins.ListSerializer(StoredRecording.serializer())
     }
 }

@@ -85,4 +85,14 @@ class LogTest {
         assertTrue(CrashHandler.consumeCrashMarker(marker))
         assertFalse(CrashHandler.consumeCrashMarker(marker), "the notice is shown only once")
     }
+
+    @Test
+    fun phoneKeepsTheNewestThreeRecordings() {
+        val recordings = ScanRecordings(File(tmp.root, "recordings")) { it.run() }
+        for (i in 1..4) recordings.write(ScanRecordingStore.nameOf("2026-10-09T11:5$i:00.5Z"), "text $i")
+        assertEquals(listOf("scan-2026-10-09T11-54-00-500.txt", "scan-2026-10-09T11-53-00-500.txt", "scan-2026-10-09T11-52-00-500.txt"), recordings.names())
+        assertEquals("text 4", recordings.files().last().readText())
+        recordings.clear()
+        assertTrue(recordings.files().isEmpty())
+    }
 }

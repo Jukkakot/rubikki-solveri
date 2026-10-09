@@ -23,6 +23,15 @@ class SettingsTest {
     }
 
     @Test
+    fun scanMarksShownByDefaultAndHidingPersists() = runTest {
+        val file = File(tmp.root, "marks.preferences_pb")
+        val settings = SettingsRepository(PreferenceDataStoreFactory.create(scope = backgroundScope) { file })
+        assertEquals(false, settings.hideScanMarks.first())
+        settings.setHideScanMarks(true)
+        assertEquals(true, settings.hideScanMarks.first())
+    }
+
+    @Test
     fun languageTagsMapToLanguagesWithFinnishAsDefault() {
         assertEquals(AppLanguage.FINNISH, AppLanguage.fromTag(null))
         assertEquals(AppLanguage.FINNISH, AppLanguage.fromTag("sv"))

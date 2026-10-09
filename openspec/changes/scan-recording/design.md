@@ -83,3 +83,28 @@ browser key-value store). The browser shares at most ten files, otherwise it dow
   Should the quota bite on some browser, the failure is logged and the newest recording is dropped.
 - **Privacy.** Recordings hold only numbers about the cube, no picture. They leave the device only
   on share, like the log.
+
+## Implementation notes
+
+- **`t0` in the header.** The scan's decisions use some absolute times (timers starting at 0), so a
+  recording keeps the scan clock of its first picture (`t0=`); lines stay ms from that picture and a
+  replay gives the scan `t0 + ms`.
+- **The scan gets the recorded faces.** Coordinates are kept to 1/1000 px (`FaceCodec`). The phone
+  and the browser's finder worker now give the scan the faces read back from that text, so the
+  replay sees exactly the same numbers (a change below a thousandth of a pixel).
+- **A restart ends a recording** (`# end restart`) and the next pictures start a new one, so a failed
+  scan is not pushed out of its 90 s by the retry. `reset` lines mark a fresh scan the page did not
+  start: in the browser the scan worker's answer now also carries the time it gave the scan and how
+  many pictures its scan has had; a 1 after earlier pictures (the pipeline taking over) is a reset.
+- **Background / hidden tab:** `ON_STOP` of the screen's lifecycle (Compose Multiplatform maps the
+  tab's visibility to it) writes the recording ending `left` but keeps it open; a later end writes it
+  again under the same name, which replaces it.
+- **Where the files go:** phone `files/logs/recordings/scan-<time>.txt` (under `logs/` so the log's
+  FileProvider shares them), written on a background thread. Browser: straight in localStorage, not
+  through the memory fallback, so a full quota drops the recording without switching the whole app
+  to memory.
+- **Browser share:** the log, the recordings, then the newest pictures that still fit in ten files;
+  the zip has everything.
+- **Hidden marks:** the paint layer is left out; in the browser an empty canvas still puts the read
+  picture on screen. The spinner shown before the first sticker stays (a status sign, not a mark).
+- **Settings:** a new section "Skannaus" / "Scanning" holds the switch.

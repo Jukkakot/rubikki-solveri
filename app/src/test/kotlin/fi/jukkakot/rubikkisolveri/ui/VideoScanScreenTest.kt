@@ -8,6 +8,14 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
 import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_DEMO_TAG
+import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_PAINT_TAG
+import fi.jukkakot.rubikkisolveri.ui.scan.ScanRecordingSetup
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanRecording
+import fi.jukkakot.rubikkisolveri.store.MapKeyValueStore
+import fi.jukkakot.rubikkisolveri.store.StoredScanRecordings
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import fi.jukkakot.rubikkisolveri.ui.scan.holdPicture
 import androidx.compose.ui.graphics.asImageBitmap
 import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_RING_TAG
@@ -274,5 +282,49 @@ class VideoScanScreenTest {
         // Something new read: it goes.
         show(face(Face.L), times = 4)
         compose.onNodeWithTag(VIDEO_DEMO_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun leavingWritesOneRecordingEndingLeft() {
+        val store = StoredScanRecordings(MapKeyValueStore())
+        var shown by mutableStateOf(true)
+        compose.setContent {
+            RubikkiTheme(dynamicColor = false) {
+                if (shown) {
+                    VideoScanContent(
+                        found, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {}, clock = { now }, preview = {},
+                        recording = ScanRecordingSetup(store, "android", "1.0", now = { "2026-10-09T12:00:00Z" }),
+                    )
+                }
+            }
+        }
+        show(face(Face.U), times = 5)
+        compose.runOnIdle { shown = false }
+        compose.waitForIdle()
+        val kept = store.list()
+        assertEquals(1, kept.size)
+        val recording = ScanRecording.read(kept.single().text)
+        assertEquals(ScanRecording.End.Left, recording.end)
+        assertEquals(5, recording.entries.size)
+        assertEquals(listOf(0L, 100L, 200L, 300L, 400L), recording.entries.map { it.ms })
+    }
+
+    @Test
+    fun hiddenMarksDrawNoPaintButTheRingStays() {
+        compose.setContent {
+            RubikkiTheme(dynamicColor = false) {
+                VideoScanContent(found, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {}, clock = { now }, preview = {}, hideMarks = true)
+            }
+        }
+        show(face(Face.U), times = 9)
+        compose.onNodeWithTag(VIDEO_PAINT_TAG).assertDoesNotExist()
+        compose.onNodeWithTag(VIDEO_RING_TAG).assertIsDisplayed()
+    }
+
+    @Test
+    fun marksShownByDefault() {
+        scan()
+        show(face(Face.U), times = 9)
+        compose.onNodeWithTag(VIDEO_PAINT_TAG).assertExists()
     }
 }

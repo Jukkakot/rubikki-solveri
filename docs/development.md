@@ -50,8 +50,21 @@ Run before every commit (CI runs the same):
 
 ### Scan test recordings
 
-Phone recordings become committed stills and a fixture; the video itself stays local (or dies with
-a cloud session). The same flow works locally and in a cloud session:
+**A failed scan's own recording first** (`scan-recording`): every video scan keeps what the scan
+was given (faces and colours per picture, with times; format in `cube/.../scan/ScanRecording.kt`),
+the newest three, each the last 90 s. They go out with the log share (`scan-*.txt` beside the log).
+
+1. The user shares the log (Settings → Log → share), e.g. as a Quick Share link (`quickshare` skill).
+2. Put the `scan-*.txt` of the failing scan into `cube/src/jvmTest/resources/recordings/<name>.txt`.
+3. `RECORDING=<name> ./gradlew :cube:jvmTest --tests '*RecordingReplay*' -i` replays it exactly
+   (real times and resets) and prints the timeline (`TIMELINE_EVERY`, `TIMELINE_TRUTH` as in
+   `RulesTimeline`) and the end recorded beside the replay's. Once fixed, a test pins the outcome
+   (`VideoFixtures.loadRecording`, `VideoFixtures.replay`).
+
+**Camera videos, for finder work** (what the finder sees, not only what the scan got). For a
+clean screen recording turn on Settings → Scanning → hide scan marks. Phone videos become
+committed stills and a fixture; the video itself stays local (or dies with a cloud session). The
+same flow works locally and in a cloud session:
 
 1. The user shares the video as a Quick Share link → global `quickshare` skill into
    `testdata/video/<date>/` (cloud: the environment's network must allow

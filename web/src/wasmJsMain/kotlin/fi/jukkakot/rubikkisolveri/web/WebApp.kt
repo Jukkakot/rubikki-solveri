@@ -52,6 +52,7 @@ fun WebApp(services: WebServices) {
     val settings = services.settings
     val themeMode by settings.themeMode.collectAsState()
     val showNotation by settings.showNotation.collectAsState()
+    val hideScanMarks by settings.hideScanMarks.collectAsState()
     val handsfreeSpeed by settings.handsfreeSpeed.collectAsState()
     val navController = rememberNavController()
     val language = currentLanguage()
@@ -118,6 +119,7 @@ fun WebApp(services: WebServices) {
                             clearLog = {
                                 services.logStore.clear()
                                 services.scanPictures.clear()
+                                services.scanRecordings.clear()
                                 logger.info(Evt.LOG_CLEARED)
                             },
                             shareLog = {
@@ -141,6 +143,12 @@ fun WebApp(services: WebServices) {
                             },
                             progress = services.progress,
                             scanPictures = services.scanPictures,
+                            scanRecordings = services.scanRecordings,
+                            hideScanMarks = hideScanMarks,
+                            onHideScanMarks = { hide ->
+                                logger.info(Evt.SETTINGS_CHANGED, null, "hideScanMarks" to hide)
+                                settings.setHideScanMarks(hide)
+                            },
                             platform = Platform.WEB,
                         ),
                     )

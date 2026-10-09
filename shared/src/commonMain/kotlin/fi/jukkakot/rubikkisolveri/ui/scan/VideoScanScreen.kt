@@ -76,6 +76,9 @@ import fi.jukkakot.rubikkisolveri.cube.scan.FaceFinder
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanRecording
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import fi.jukkakot.rubikkisolveri.cube.scan.Stall
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
@@ -136,7 +139,17 @@ class FoundFaces(
  * [state] after this picture, its centre line for the log, its time, and how many restarts it has had
  * ([resets]: an answer from before the last restart is left out).
  */
-class Scanned(val state: VideoScanState, val centreLog: String, val scanMs: Double, val resets: Int, val remote: RemoteScan)
+class Scanned(
+    val state: VideoScanState,
+    val centreLog: String,
+    val scanMs: Double,
+    val resets: Int,
+    val remote: RemoteScan,
+    /** The time the worker's scan was given for this picture (its own clock; -1: not told). */
+    val at: Long = -1,
+    /** Pictures its scan has had since it started (1: this picture began a fresh scan; 0: not told). */
+    val pictures: Int = 0,
+)
 
 /** The scan where it runs elsewhere (the browser's worker): started again, its outcome asked for. */
 interface RemoteScan {
@@ -153,7 +166,14 @@ interface RemoteScan {
  * thread). The finder's time per frame goes into the log's snapshots.
  */
 @Composable
-fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOutcome) -> Unit, onSwitch: (() -> Unit)? = null) {
+fun VideoScanScreen(
+    onBack: () -> Unit,
+    onManual: () -> Unit,
+    onResult: (ScanOutcome) -> Unit,
+    onSwitch: (() -> Unit)? = null,
+    recording: ScanRecordingSetup = ScanRecordingSetup(),
+    hideMarks: Boolean = false,
+) {
     CameraPermissionGate(alternative = stringResource(Res.string.scan_manual) to onManual) {
         val images = remember { MutableSharedFlow<ScanImage>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST) }
         val found = remember { MutableSharedFlow<FoundFaces>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST) }
@@ -191,6 +211,8 @@ fun VideoScanScreen(onBack: () -> Unit, onManual: () -> Unit, onResult: (ScanOut
             maxDarker = maxDarker,
             onExposure = { exposure = it },
             scanContext = remember { Dispatchers.Default.limitedParallelism(1) },
+            recording = recording,
+            hideMarks = hideMarks,
         ) { modifier ->
             CameraPreview(
                 torch = torch,
@@ -239,9 +261,13 @@ fun VideoScanContent(
     clock: () -> Long = ::elapsedMillis,
     onSwitch: (() -> Unit)? = null,
     scanContext: CoroutineContext = EmptyCoroutineContext,
+    recording: ScanRecordingSetup = ScanRecordingSetup(),
+    hideMarks: Boolean = false,
     preview: @Composable (Modifier) -> Unit,
 ) {
     val scan = remember { VideoScan() }
+    // What the scan is given, kept for the log (`scan-recording`).
+    val recorder = remember { ScanRecordingKeeper(recording) }
     // The scan runs one picture at a time in [scanContext] (the phone: off the drawing thread,
     // `scan-speed-up-2`); a check or a restart waits for the picture in hand.
     val scanLock = remember { Mutex() }
@@ -278,6 +304,7 @@ fun VideoScanContent(
             "cube" to outcome.editor.encode(),
             "rotations" to Face.entries.joinToString("") { "${it.name}${outcome.rotations[it] ?: 0}" },
         )
+        recorder.end(ScanRecording.End.Finished(outcome.editor.encode()))
         onResult(outcome)
     }
 
@@ -297,12 +324,14 @@ fun VideoScanContent(
             if (scanned != null) {
                 // An answer from before the last restart is left out.
                 if (scanned.resets < remoteResets) return@collect
+                recorder.remote(f, scanned, now)
                 state = scanned.state
                 remoteCentres = scanned.centreLog
                 log.scanTime(scanned.scanMs)
             } else {
                 val scanStart = TimeSource.Monotonic.markNow()
-                state = scanLock.withLock { withContext(scanContext) { scan.onFrame(f.faces, now) } }
+                val faces = recorder.picture(f, now)
+                state = scanLock.withLock { withContext(scanContext) { scan.onFrame(faces, now) } }
                 log.scanTime(scanStart.elapsedNow().inWholeMicroseconds / 1000.0)
             }
             picture = f
@@ -326,10 +355,18 @@ fun VideoScanContent(
         exposure.onTorch(torch, clock())
         onExposure(exposure.settings)
     }
-    DisposableEffect(Unit) { onDispose { if (!done) log.leave(state, clock(), torch, exposure.settings.darker) } }
+    DisposableEffect(Unit) {
+        onDispose {
+            if (!done) log.leave(state, clock(), torch, exposure.settings.darker)
+            recorder.end(ScanRecording.End.Left)
+        }
+    }
+    // To the background (the browser: the tab hidden): kept now, in case the app is not come back to.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { recorder.end(ScanRecording.End.Left, close = false) }
 
     fun restart() = scope.launch {
         log.restart(state)
+        recorder.end(ScanRecording.End.Restart)
         scanLock.withLock { scan.reset() }
         remote?.let { remoteResets = it.reset() }
         state = scan.state
@@ -347,7 +384,14 @@ fun VideoScanContent(
         }
         // The phone: the picture read, over the live preview, with its marks below (`scan-read-picture-android`).
         painted?.second?.image?.let { Image(it, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds) }
-        painted?.let { (s, p) -> PaintLayer(s, p, Modifier.fillMaxSize(), onPainted = log::paintTime) }
+        painted?.let { (s, p) ->
+            if (hideMarks) {
+                // No marks (`scan-recording`): the browser's read picture is still put on screen.
+                p.show?.let { show -> Canvas(Modifier.fillMaxSize()) { show() } }
+            } else {
+                PaintLayer(s, p, Modifier.fillMaxSize().testTag(VIDEO_PAINT_TAG), onPainted = log::paintTime)
+            }
+        }
         // A face is in view but nothing read yet: a small sign that the scan is working.
         if (!done && picture?.faces?.isNotEmpty() == true && state.recognised == 0) {
             CircularProgressIndicator(
@@ -408,6 +452,9 @@ fun VideoScanContent(
         }
     }
 }
+
+/** Test tag of the paint on the cube (veils, dots, outlines, ticks). */
+const val VIDEO_PAINT_TAG = "video-paint"
 
 /** Test tag of the spinner shown while a face is found and no sticker is read yet. */
 const val VIDEO_SPINNER_TAG = "video-spinner"

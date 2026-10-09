@@ -8,7 +8,7 @@ import fi.jukkakot.rubikkisolveri.R
 import java.io.File
 
 /**
- * The share-sheet intent for the log [file] and the scan [pictures], readable by the receiving app
+ * The share-sheet intent for the log [file] and the scan [pictures] and recordings, readable by the receiving app
  * through our FileProvider.
  */
 fun shareLogIntent(context: Context, file: File, pictures: List<File> = emptyList()): Intent {

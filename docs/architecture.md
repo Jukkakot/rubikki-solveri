@@ -31,7 +31,7 @@ Common code calls `expect` declarations; each platform supplies the `actual` (An
 | `animationScale` | same | `ANIMATOR_DURATION_SCALE` | reduced-motion query |
 | `elapsedMillis`, `argbToImageBitmap`, `LocalFormats`, `currentLanguage` | same | `SystemClock`, `Bitmap`, `java.time`/`DateFormat` | browser APIs |
 
-Services that differ per platform come in through `AppActions` (`progress`, `scanPictures`,
+Services that differ per platform come in through `AppActions` (`progress`, `scanPictures`, `scanRecordings`,
 `readLog`/`shareLog`, `platform`, …): `MainActivity` builds the Android set. `AppLog` is common;
 `AppLog.init(context)` (app) installs the phone's `Logger` over a `LogFile`.
 
@@ -302,7 +302,9 @@ yellow cross, yellow edges, yellow corners into place, yellow corners turned.
 - `settings`: theme in DataStore Preferences; language through AppCompat per-app locales (stored
   by the system on Android 13+, by AppCompat on 12). Finnish is set on the first start.
 - `log`: `Logger` over a `LogStore` (common; on the phone Logcat + capped `LogFile` on a background
-  thread), `LogLine` (line format), `Evt` (event catalogue), `ScanPictureStore`, `CrashHandler` (writes `app.crash` synchronously and leaves a marker
+  thread), `LogLine` (line format), `Evt` (event catalogue), `ScanPictureStore`, `ScanRecordingStore` (video scan recordings: phone
+  `logs/recordings/`, browser `rubikki.scanrecordings.v1`; written by `ui/scan/ScanRecordingKeeper`
+  when a scan ends, shared and cleared with the log), `CrashHandler` (writes `app.crash` synchronously and leaves a marker
   for the next start).
 
 ## 3D cube view — Implemented

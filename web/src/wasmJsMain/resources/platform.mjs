@@ -797,17 +797,25 @@ export function formatDateTime(epochMillis, language, timeOnly) {
  * [report]
  * gets the outcome (shared, downloaded, cancelled) and the refusal ("" when none).
  */
-export function shareOrDownload(logName, logText, pictureNames, pictureData, report) {
-  const logBytes = new TextEncoder().encode(logText);
+export function shareOrDownload(logName, logText, pictureNames, pictureData, recordingNames, recordingTexts, report) {
+  const encoder = new TextEncoder();
+  const logBytes = encoder.encode(logText);
   const names = pictureNames ? pictureNames.split('\n') : [];
   const data = pictureData ? pictureData.split('\n') : [];
   const pictures = names.map((name, i) => [name, Uint8Array.from(atob(data[i]), (c) => c.charCodeAt(0))]);
-  // Chromium shares at most 10 files at once (more is refused, which also uses up the tap): the log
-  // and the newest 9 pictures (oldest first in the list). The zip fallback has them all.
+  // The scan recordings (`scan-recording`): texts apart by \u0001.
+  const recNames = recordingNames ? recordingNames.split('\n') : [];
+  const recTexts = recordingTexts ? recordingTexts.split('\u0001') : [];
+  const recordings = recNames.map((name, i) => [name, encoder.encode(recTexts[i] || '')]);
+  // Chromium shares at most 10 files at once (more is refused, which also uses up the tap): the log,
+  // the recordings (at most 3) and the newest pictures that still fit (oldest first in the list). The
+  // zip fallback has them all.
   const files = [new File([logBytes], logName, { type: 'text/plain' })]
-    .concat(pictures.slice(-9).map(([name, bytes]) => new File([bytes], name, { type: 'image/png' })));
+    .concat(recordings.map(([name, bytes]) => new File([bytes], name, { type: 'text/plain' })))
+    .concat(pictures.slice(-(9 - recordings.length)).map(([name, bytes]) => new File([bytes], name, { type: 'image/png' })));
   const fallback = (error) => {
     const entries = { [logName]: [logBytes, { level: 0 }] };
+    recordings.forEach(([name, bytes]) => { entries[name] = [bytes, { level: 0 }]; });
     pictures.forEach(([name, bytes]) => { entries[name] = [bytes, { level: 0 }]; });
     const zipName = logName.replace(/\.txt$/, '') + '.zip';
     download(new Blob([zipSync(entries)], { type: 'application/zip' }), zipName);
