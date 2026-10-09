@@ -1,6 +1,5 @@
 package fi.jukkakot.rubikkisolveri.store
 
-import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.log.LogStore
 import fi.jukkakot.rubikkisolveri.log.ScanPictureStore
 import fi.jukkakot.rubikkisolveri.settings.AppLanguage
@@ -13,14 +12,13 @@ import kotlinx.serialization.json.Json
 
 private val JSON = Json { ignoreUnknownKeys = true }
 
-/** Theme, notation, handsfree speed and the video scanner as JSON under [StoreKeys.SETTINGS]; the language under its own key (read before the app starts). */
+/** Theme, notation and handsfree speed as JSON under [StoreKeys.SETTINGS]; the language under its own key (read before the app starts). */
 class StoredSettings(private val store: KeyValueStore) {
     @Serializable
     private data class Data(
         val theme: ThemeMode = ThemeMode.SYSTEM,
         val notation: Boolean = false,
         val handsfreeSpeed: HandsfreeSpeed = HandsfreeSpeed.NORMAL,
-        val scanEngine: String = ScanEngine.RULES.logName,
     )
 
     private val data = MutableStateFlow(
@@ -29,19 +27,14 @@ class StoredSettings(private val store: KeyValueStore) {
     private val theme = MutableStateFlow(data.value.theme)
     private val notation = MutableStateFlow(data.value.notation)
     private val speed = MutableStateFlow(data.value.handsfreeSpeed)
-    private val engine = MutableStateFlow(engineOf(data.value.scanEngine))
 
     val themeMode: StateFlow<ThemeMode> = theme
     val showNotation: StateFlow<Boolean> = notation
     val handsfreeSpeed: StateFlow<HandsfreeSpeed> = speed
-    val scanEngine: StateFlow<ScanEngine> = engine
 
     fun setThemeMode(mode: ThemeMode) = save(data.value.copy(theme = mode))
     fun setShowNotation(show: Boolean) = save(data.value.copy(notation = show))
     fun setHandsfreeSpeed(next: HandsfreeSpeed) = save(data.value.copy(handsfreeSpeed = next))
-    fun setScanEngine(next: ScanEngine) = save(data.value.copy(scanEngine = next.logName))
-
-    private fun engineOf(name: String): ScanEngine = ScanEngine.entries.firstOrNull { it.logName == name } ?: ScanEngine.RULES
 
     val language: AppLanguage get() = AppLanguage.fromTag(store.get(StoreKeys.LANGUAGE))
     fun setLanguage(language: AppLanguage) = store.set(StoreKeys.LANGUAGE, language.tag)
@@ -51,7 +44,6 @@ class StoredSettings(private val store: KeyValueStore) {
         theme.value = next.theme
         notation.value = next.notation
         speed.value = next.handsfreeSpeed
-        engine.value = engineOf(next.scanEngine)
         store.set(StoreKeys.SETTINGS, JSON.encodeToString(Data.serializer(), next))
     }
 }

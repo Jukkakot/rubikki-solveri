@@ -4,7 +4,6 @@ import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceTracks
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
-import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.Tracker
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import kotlin.test.Test
@@ -20,7 +19,7 @@ class RulesScanTest {
     fun aScanFinishedWithoutTheOrangeFaceKnowsItsRedAndOrangeStickers() {
         // Phone test 2026-10-08 07:43: the orange face never shown, the cube finished from the rules, yet red and
         // orange were still held as if not known, and the finished cube lacked them.
-        val scan = VideoScan(engine = ScanEngine.RULES)
+        val scan = VideoScan()
         val views = listOf(Edge.UF, Edge.UR, Edge.UB, Edge.DF, Edge.DR, Edge.DB, Edge.FR, Edge.BR).mapIndexed { k, e ->
             SyntheticViews.edge(cube, e, roll = 0.3, at = Point(200.0 + 300 * k, 300.0))
         } + listOf(Corner.URF, Corner.UBR, Corner.DFR, Corner.DRB).mapIndexed { k, c -> SyntheticViews.corner(cube, c, roll = 0.5, at = Point(200.0 + 300 * k, 900.0)) }
@@ -41,7 +40,7 @@ class RulesScanTest {
         // The front face's centre pale yellow (as a white centre can look in warm light): by its look white or yellow.
         val y = p.getValue(CubeColor.YELLOW)
         val pale = Rgb((y.r + 255) / 2, (y.g + 255) / 2, (y.b + 255) / 2)
-        val scan = VideoScan(engine = ScanEngine.RULES)
+        val scan = VideoScan()
         repeat(20) { k ->
             val s = scan.onFrame(SyntheticViews.edge(cube, Edge.UF, roll = 0.2, centre = mapOf(Face.F to pale)), k * 100L)
             val named = s.found.mapNotNull { it.names[4] }.toSet()
@@ -79,7 +78,7 @@ class RulesScanTest {
      */
     private fun scanStriped(colors: (CubeColor) -> Rgb, edges: List<Edge>): VideoScan {
         val striped = Cube.fromColorString(VideoFixtures.STRIPED_TRUTH)
-        val scan = VideoScan(engine = ScanEngine.RULES)
+        val scan = VideoScan()
         var t = 0L
         var finished = false
         val corners = listOf(Corner.URF, Corner.UFL, Corner.ULB, Corner.UBR)
@@ -108,7 +107,7 @@ class RulesScanTest {
         // was guessed in and revoked the finish before its half second came. Here the phone scan played until
         // clear, then its frames again with the faces somewhere new at once and every third frame (new tracks).
         val frames = VideoFixtures.load(VideoFixtures.PHONE_SCAN_1)
-        val scan = VideoScan(engine = ScanEngine.RULES)
+        val scan = VideoScan()
         var t = 0L
         val clearAt = frames.indexOfFirst { f -> scan.onFrame(f.faces, t).also { t += 100 }.complete }
         assertTrue(clearAt >= 0, "the scan becomes clear")
@@ -135,11 +134,11 @@ class RulesScanTest {
         val scale = if (System.getenv("CI") != null) 3.0 else 1.0
         val videos = listOf("web_121505", VideoFixtures.PHONE_SCAN_2)
         // Warmed up on the same recordings: the JIT reaches every path the timing goes through.
-        for (video in listOf(VideoFixtures.STRIPED) + videos) VideoScan(engine = ScanEngine.RULES).let { warm -> VideoFixtures.load(video).forEachIndexed { i, f -> warm.onFrame(f.faces, i * 100L) } }
+        for (video in listOf(VideoFixtures.STRIPED) + videos) VideoScan().let { warm -> VideoFixtures.load(video).forEachIndexed { i, f -> warm.onFrame(f.faces, i * 100L) } }
         val tracks = VideoScan::class.java.getDeclaredField("tracks").also { it.isAccessible = true }
         for (video in videos) {
             val frames = VideoFixtures.load(video)
-            val scan = VideoScan(engine = ScanEngine.RULES)
+            val scan = VideoScan()
             // The windows by the thread's CPU time, not the clock: a parallel build (lint, the app's tests) made the
             // clock time four times longer. It ticks coarsely (15.6 ms on Windows), which a window's average evens out.
             val cpu = java.lang.management.ManagementFactory.getThreadMXBean()
@@ -209,7 +208,7 @@ class RulesScanTest {
         val red = p.getValue(CubeColor.RED)
         val orange = p.getValue(CubeColor.ORANGE)
         val between = Rgb((red.r + orange.r) / 2, (red.g + orange.g) / 2, (red.b + orange.b) / 2)
-        val scan = VideoScan(engine = ScanEngine.RULES)
+        val scan = VideoScan()
         val face = SyntheticViews.straight(cube, Face.R, at = Point(100.0, 100.0)).let { r -> r.copy(colors = r.colors.toMutableList().also { it[4] = between }) }
         var t = 0L
         while (t <= 2 * FaceTracks.HINT_MILLIS) {
@@ -231,7 +230,7 @@ class RulesScanTest {
         var withReadings = 0
         for (video in FLIP_FIXTURES) {
             val frames = if (video == "blueFirst") VideoFixtures.blueFirst(30) else VideoFixtures.load(video)
-            val scan = VideoScan(engine = ScanEngine.RULES)
+            val scan = VideoScan()
             val history = HashMap<Int, ArrayDeque<Pair<Int, FaceTracks.TrackInfo>>>()
             frames.forEachIndexed { i, f ->
                 scan.onFrame(f.faces, i * 100L)

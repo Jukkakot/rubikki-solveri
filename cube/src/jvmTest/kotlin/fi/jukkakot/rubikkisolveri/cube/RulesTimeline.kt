@@ -3,7 +3,6 @@ package fi.jukkakot.rubikkisolveri.cube
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceOption
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceTracks
 import fi.jukkakot.rubikkisolveri.cube.scan.RotationSearch
-import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import org.junit.Assume.assumeTrue
 import kotlin.test.Test
@@ -22,7 +21,7 @@ class RulesTimeline {
         val every = System.getenv("TIMELINE_EVERY")?.toInt() ?: 10
         val truth = System.getenv("TIMELINE_TRUTH")
         val frames = VideoFixtures.load(video!!)
-        val scan = VideoScan(engine = ScanEngine.RULES)
+        val scan = VideoScan()
         val tracks = VideoScan::class.java.getDeclaredField("tracks").apply { isAccessible = true }
         frames.forEachIndexed { i, f ->
             val faces = if (System.getenv("TIMELINE_HARD") == "1") f.faces.map { ScanAcceptanceHarness.hardened(it) } else f.faces

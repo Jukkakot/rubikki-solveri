@@ -183,14 +183,14 @@ Video scan pipeline (`video-scan`):
    analysis frame (640×480) upright into a `Bitmap` (`ScanImage.picture`), it comes back in
    `FoundFaces.image`, and `VideoScanContent` draws it over the `PreviewView` (still bound: CameraX
    crops the analysis to its viewport) in the same Compose frame as its marks.
-3. **Two scanners** (`scan-rules`, 2026-10-07): `VideoScan(engine)` with `ScanEngine.RULES` (the
-   default) or `ScanEngine.LOOK` (the earlier one, below). The choice is in Settings ("Videoskanneri";
-   Android `SettingsRepository.scanEngine`, browser `StoredSettings.scanEngine`), passed through
-   `AppActions.scanEngine` to `VideoScanScreen`; every scan log line carries `engine=rules|look`.
-   The rules scanner: `Tracks.kt` follows each face from picture to picture, `PairRules.kt` turns one
+3. **One scanner** (`scan-rules`, 2026-10-07; the earlier one, which told faces apart by how their
+   centres look, was removed in `scan-rules-only`, 2026-10-09): `cube/scan/VideoScan`.
+   `Tracks.kt` follows each face from picture to picture, `PairRules.kt` turns one
    picture into hard rules (neighbours, sides, corner handedness), `FaceTracks.kt` assigns the tracks'
    faces and turns together (costs, branch and bound, settling, the evidence for `BestCube`),
-   `VideoScan.rulesFrame` builds the same `VideoScanState` (plus `undecided` → "Käännä kuutiota").
+   `VideoScan.onFrame` builds the `VideoScanState` (plus `undecided` → "Käännä kuutiota"). A face found
+   gets `FoundFace.followed` once its track had a reading before this picture; only followed faces
+   get marks (`scan-rules-only`: lattices in single blurred pictures showed grey veils beside the cube).
    Per-picture cost (`scan-speed-up-3`): `FaceTracks.onFrame` skips the work when nothing was read, no
    time limit (`LIMITS`) was crossed and the last work changed nothing (`steady`); pair cost tables are
    kept by track version (`pairTables`), best-cube costs by the evidence's votes (`costs`, `bestKey`).
@@ -200,9 +200,10 @@ Video scan pipeline (`video-scan`):
    making them judge alike was tried and dropped, see that design). Guarded by
    `RulesScanTest.aTrackDoesNotSwitchBackAndForthWithoutNewReadings`.
    Why each rule exists and the known limits: `scan-rules` design (decision 8). Acceptance:
-   `ScanAcceptanceHarness` (ACCEPTANCE=1) replays every fixture through both; `RulesTimeline`
+   `ScanAcceptanceHarness` (ACCEPTANCE=1) replays every fixture and holds each finish within 1.2 times
+   the frame stored in its `FINISHED` (the finishes when the earlier scanner went); `RulesTimeline`
    (TIMELINE=<video>) prints the tracks frame by frame for tuning.
-   The earlier scanner, `cube/scan/VideoScan` (LOOK): votes per sticker (partial faces vote, never anchor), pose, orientation
+   Shared by the scan around the tracks (`VideoScan.finish`): pose, orientation
    (`Orientation`, weak perspective from one face's steps), stall reasons and `reset()`. The
    projection is held over frames without a settled face for up to `HOLD_MILLIS`, moved (not
    turned) onto the largest face found, with its age in `projectionAge` (`scan-paint`); built only from a sure tilt (`Orientation.chosen`: straight on, a cue from another face, or following a sure one; `scan-paint-steady`: a guessed mirror tilt put the veils on the table), now used for the pose and the turn demo only, not painted. The votes are evidence for `BestCube` (`video-scan-progress`): the possible cube that
@@ -212,11 +213,7 @@ Video scan pipeline (`video-scan`):
    correction is used); a sticker's colour leaves out a lamp's glare (`FaceFinder`). A sticker is known when its
    place's margin clears `CLEAR_MARGIN` (chosen by `ScanSimulation`, findings in the `video-scan-light` archive) or by
    its votes alone, and the scan finishes when the whole cube is clear, unseen stickers included.
-   Face rotations come from the same cost. `CubeProjection` puts every sticker into the picture.
-   Faces are piled by their own stickers and centres, not the palette, and the piles named together;
-   a pile that could be either of two colours waits (`pileFaces`, `nameJointly`, `scan-centre-naming`,
-   whose design has the measured thresholds). Two full faces of one picture never share a pile; a face
-   keeps its latest `MAX_READINGS`, the oldest dropped, so wrong readings age out (`scan-centre-clash`).
+   `CubeProjection` puts every sticker into the picture.
    Earlier decisions in the `video-scan` and `video-scan-live` archives. Regression data: the test
    videos' finder output in `cube/src/jvmTest/resources/video/` (`VideoScanTest`, the true cubes in
    `VideoFixtures`; regenerate with `VideoScanHarness.writeFixtures` from the committed JPEG stills

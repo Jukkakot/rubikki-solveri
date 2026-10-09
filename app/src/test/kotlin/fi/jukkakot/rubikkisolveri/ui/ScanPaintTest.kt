@@ -6,7 +6,6 @@ import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
-import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
 import fi.jukkakot.rubikkisolveri.ui.scan.Glide
@@ -20,10 +19,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/** The scan paint, run for both scanners ([RulesScanPaintTest] runs it with [ScanEngine.RULES]). */
-open class ScanPaintTest {
-    protected open val engine: ScanEngine = ScanEngine.LOOK
-
+/** The scan paint. */
+class ScanPaintTest {
     private val cube = Cube.solved().apply("R U F' D2 L B")
 
     private fun reading(face: Face, centre: Point) = FaceReading(
@@ -36,7 +33,7 @@ open class ScanPaintTest {
      * seen first elsewhere, so that red and orange stickers are known (the rules scanner holds them until then).
      */
     private fun cornerView(): VideoScanState {
-        val scan = VideoScan(engine = engine)
+        val scan = VideoScan()
         var s = VideoScanState.EMPTY
         var t = 0L
         for ((k, warm) in listOf(Face.R, Face.L).withIndex()) repeat(4) { scan.onFrame(listOf(reading(warm, Point(700.0 + 300 * k, 600.0))), t); t += 100 }
@@ -100,6 +97,18 @@ open class ScanPaintTest {
         assertEquals(2, ScanPaint.of(state).found.size)
         val stray = state.copy(found = listOf(state.found.first().copy(read = null)) + state.found.drop(1))
         assertEquals(1, ScanPaint.of(stray).found.size, "a lattice not read steadily gets no outline")
+    }
+
+    @Test
+    fun aLatticeInOnePictureAloneGetsNoMarksAndAFollowedOneIsVeiled() {
+        // scan-rules-only: a face found in one blurred picture of a quickly turned cube showed grey veils beside it.
+        val scan = VideoScan()
+        val once = scan.onFrame(listOf(reading(Face.U, Point(100.0, 100.0))), 0)
+        assertFalse(once.found.single().followed)
+        assertEquals(ScanPaint.EMPTY, ScanPaint.of(once), "found in one picture: nothing")
+        val again = scan.onFrame(listOf(reading(Face.U, Point(102.0, 100.0))), 100)
+        assertTrue(again.found.single().followed)
+        assertEquals(9, ScanPaint.of(again).tiles.size, "followed from the picture before: veiled")
     }
 
     @Test

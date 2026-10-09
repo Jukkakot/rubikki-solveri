@@ -2,7 +2,6 @@ package fi.jukkakot.rubikkisolveri.cube
 
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceFinder
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
-import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import org.junit.Assume.assumeTrue
 import java.awt.RenderingHints
@@ -51,7 +50,7 @@ class FinderSizeHarness {
                 files.take(5).forEach { find(scaled(ImageIO.read(it), size)) }
                 var ms = 0.0
                 var full = 0
-                val scan = VideoScan(engine = ScanEngine.RULES)
+                val scan = VideoScan()
                 var clearAt = -1
                 for ((i, file) in files.withIndex()) {
                     val p = scaled(ImageIO.read(file), size)

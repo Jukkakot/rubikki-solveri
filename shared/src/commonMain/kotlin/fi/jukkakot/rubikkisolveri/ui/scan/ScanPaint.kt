@@ -47,7 +47,8 @@ data class ScanPaint(
          * The paint for [state]: the faces found in this frame only (`scan-paint-found-only`: the
          * projection's guessed sides floated beside the cube in the hand). A side the rest of the cube
          * confirms gets an outline and a tick; a face read steadily ([FoundFace.read]) otherwise a dim
-         * outline, a lattice found for one picture none.
+         * outline. A face not followed from an earlier picture ([FoundFace.followed]) gets nothing
+         * (`scan-rules-only`: a lattice in one blurred picture of a quickly turned cube showed grey veils beside it).
          */
         fun of(state: VideoScanState): ScanPaint {
             val tiles = ArrayList<PaintTile>()
@@ -56,6 +57,7 @@ data class ScanPaint(
             val ticks = ArrayList<PaintTick>()
             val found = ArrayList<List<Point>>()
             state.found.forEachIndexed { f, face ->
+                if (!face.followed) return@forEachIndexed
                 val r = face.reading
                 // The side this face is, once its centre is named: the centre's colour tells it.
                 val side = face.names[4]?.let { c -> Face.entries.firstOrNull { ColorScheme.STANDARD[it] == c } }

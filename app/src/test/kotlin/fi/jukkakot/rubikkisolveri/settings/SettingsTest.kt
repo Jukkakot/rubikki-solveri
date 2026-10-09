@@ -1,7 +1,6 @@
 package fi.jukkakot.rubikkisolveri.settings
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -21,15 +20,6 @@ class SettingsTest {
         assertEquals(ThemeMode.SYSTEM, first.themeMode.first())
         first.setThemeMode(ThemeMode.LIGHT)
         assertEquals(ThemeMode.LIGHT, first.themeMode.first())
-    }
-
-    @Test
-    fun theScannerChoiceIsTheNewOneByDefaultAndSurvivesARestart() = runTest {
-        val file = File(tmp.root, "scanner.preferences_pb")
-        val first = SettingsRepository(PreferenceDataStoreFactory.create(scope = backgroundScope) { file })
-        assertEquals(ScanEngine.RULES, first.scanEngine.first())
-        first.setScanEngine(ScanEngine.LOOK)
-        assertEquals(ScanEngine.LOOK, first.scanEngine.first())
     }
 
     @Test

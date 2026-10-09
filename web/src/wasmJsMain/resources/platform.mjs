@@ -459,7 +459,7 @@ export function cameraAbilities() {
 
 const scan = {
   worker: null, ready: false, busy: false, pending: null, onFaces: null, onFail: null, timer: 0, inFlight: 0, replies: new Map(), nextReply: 1,
-  pipe: null, pipeline: false, lastReset: { count: 0, engine: 'RULES' },
+  pipe: null, pipeline: false, lastReset: 0,
 };
 const WORKER_START_MS = 15000;
 
@@ -526,8 +526,7 @@ function pipeOn() {
   const pipe = scan.pipe;
   if (scan.pipeline || !pipe || !pipe.ready || !scan.ready || scan.replies.size > 0) return;
   scan.pipeline = true;
-  const r = scan.lastReset;
-  pipe.worker.postMessage({ cmd: `adopt:${r.count}:${r.engine}`, id: 0 });
+  pipe.worker.postMessage({ cmd: `adopt:${scan.lastReset}`, id: 0 });
   scan.worker.postMessage({ cmd: 'role:find', id: 0 });
 }
 
@@ -629,7 +628,7 @@ export function scanWorkerStart(onFaces, onFail) {
 }
 
 /**
- * Sends the worker's scan a command (`reset:<engine>`, `outcome`; `scan-speed-up-2`); [onReply] gets its
+ * Sends the worker's scan a command (`reset`, `outcome`; `scan-speed-up-2`); [onReply] gets its
  * answer, or '' when there is no worker.
  */
 export function scanWorkerCommand(cmd, onReply) {
@@ -639,9 +638,8 @@ export function scanWorkerCommand(cmd, onReply) {
   }
   const id = scan.nextReply++;
   // The scan worker gets the scan's commands once it runs the scan; a reset is kept for its taking over.
-  const engine = cmd.startsWith('reset:') ? cmd.slice('reset:'.length) : null;
   scan.replies.set(id, (text) => {
-    if (engine) scan.lastReset = { count: parseInt(text, 10) || 0, engine };
+    if (cmd === 'reset') scan.lastReset = parseInt(text, 10) || 0;
     onReply(text);
   });
   (scan.pipeline ? scan.pipe.worker : scan.worker).postMessage({ cmd, id });
@@ -721,7 +719,7 @@ export function scanWorkerStop() {
   scan.pipeline = false;
   for (const done of scan.replies.values()) done('');
   scan.replies.clear();
-  scan.lastReset = { count: 0, engine: 'RULES' };
+  scan.lastReset = 0;
 }
 
 // --- Page ----------------------------------------------------------------------------------------

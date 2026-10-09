@@ -3,7 +3,6 @@ package fi.jukkakot.rubikkisolveri.worker
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceCodec
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceFinder
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
-import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanStateCodec
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
@@ -12,11 +11,11 @@ import org.khronos.webgl.toByteArray
 /**
  * The scan worker: each picture's faces ([FaceFinder], full and partial) back to the page as numbers
  * ([FaceCodec]), and the video scan itself run on them here, off the page's thread (`scan-speed-up-2`
- * design 5): its state goes back as text ([ScanStateCodec]). Commands: `reset:<engine>` starts the
+ * design 5): its state goes back as text ([ScanStateCodec]). Commands: `reset` starts the
  * scan again, `outcome` answers the scan's outcome.
  *
  * The page may run two of them as a pipeline (`scan-speed-up-4`): `role:find` makes one only find faces, and
- * the other gets the faces as text ([scanFaces]) and only scans; `adopt:<resets>:<engine>` starts its scan as
+ * the other gets the faces as text ([scanFaces]) and only scans; `adopt:<resets>` starts its scan as
  * the finder's last reset left it.
  */
 fun main() {
@@ -49,15 +48,14 @@ fun main() {
         },
         command = { text ->
             when {
-                text.startsWith("reset:") -> {
-                    scan = VideoScan(engine = ScanEngine.entries.first { it.name == text.removePrefix("reset:") })
+                text == "reset" -> {
+                    scan = VideoScan()
                     resets++
                     resets.toString()
                 }
                 text.startsWith("adopt:") -> {
-                    val (count, engine) = text.removePrefix("adopt:").split(":")
-                    scan = VideoScan(engine = ScanEngine.entries.first { it.name == engine })
-                    resets = count.toInt()
+                    scan = VideoScan()
+                    resets = text.removePrefix("adopt:").toInt()
                     resets.toString()
                 }
                 text == "role:find" -> {

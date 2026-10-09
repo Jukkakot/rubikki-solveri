@@ -21,7 +21,6 @@ import fi.jukkakot.rubikkisolveri.cube.scan.CameraSettings
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
-import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.log.AppLog
 import fi.jukkakot.rubikkisolveri.log.LogStore
@@ -68,7 +67,7 @@ class VideoScanScreenTest {
     }
 
     @Test
-    fun theScanLogSaysWhichScannerRan() {
+    fun theScanLogNamesNoScanner() {
         val lines = ArrayList<String>()
         AppLog.install(Logger(object : LogStore {
             override fun append(line: String) {}
@@ -77,13 +76,14 @@ class VideoScanScreenTest {
         }, sink = { _, line -> lines += line }, post = { it() }))
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
-                VideoScanContent(found, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {}, clock = { now }, engine = ScanEngine.LOOK, preview = {})
+                VideoScanContent(found, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {}, clock = { now }, preview = {})
             }
         }
         show(face(Face.U), times = 30)
-        val scanLines = lines.filter { "scan" in it.lowercase() && "engine=" in it }
+        // scan-rules-only: one scanner, so its lines no longer say which.
+        val scanLines = lines.filter { "scan" in it.lowercase() }
         assertTrue(scanLines.isNotEmpty(), "$lines")
-        assertTrue(scanLines.all { "engine=look" in it }, "$scanLines")
+        assertTrue(scanLines.none { "engine=" in it }, "$scanLines")
     }
 
     private fun face(face: Face) = FaceReading(

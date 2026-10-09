@@ -49,7 +49,6 @@ import fi.jukkakot.rubikkisolveri.ui.scan.FoundFaces
 import fi.jukkakot.rubikkisolveri.ui.scan.ScanImage
 import fi.jukkakot.rubikkisolveri.ui.scan.RemoteScan
 import fi.jukkakot.rubikkisolveri.ui.scan.Scanned
-import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanStateCodec
 import kotlin.coroutines.resume
@@ -308,7 +307,7 @@ private fun scannedOf(text: String): Scanned? {
 private object WorkerScan : RemoteScan {
     private suspend fun ask(cmd: String): String = suspendCoroutine { c -> scanWorkerCommand(cmd) { c.resume(it) } }
 
-    override suspend fun reset(engine: ScanEngine): Int = ask("reset:${engine.name}").toIntOrNull() ?: 0
+    override suspend fun reset(): Int = ask("reset").toIntOrNull() ?: 0
 
     override suspend fun outcome(): ScanOutcome = ScanStateCodec.decodeOutcome(ask("outcome"))
 }

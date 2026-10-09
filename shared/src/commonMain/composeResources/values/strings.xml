@@ -350,9 +350,6 @@
     <string name="solve_to_start">Aloitusruutuun</string>
     <string name="video_status_grey">Näytä harmaat kohdat</string>
     <string name="video_status_turn">Käännä kuutiota</string>
-    <string name="settings_scanner">Videoskanneri</string>
-    <string name="scanner_rules">Uusi: kuution säännöt</string>
-    <string name="scanner_look">Aiempi: keskipalojen värit</string>
     <string name="video_progress">Lukematta: %1$s</string>
     <string name="video_progress_all">Kaikki sivut luettu</string>
     <string name="video_turn_demo">Näin kuutiota käännetään</string>

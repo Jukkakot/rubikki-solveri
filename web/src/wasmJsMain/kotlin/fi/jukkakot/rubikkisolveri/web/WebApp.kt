@@ -28,7 +28,6 @@ import androidx.navigation.compose.rememberNavController
 import fi.jukkakot.rubikkisolveri.ui.nav.HomeRoute
 import kotlinx.browser.window
 import fi.jukkakot.rubikkisolveri.Platform
-import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.solve.TwoPhaseSolver
 import fi.jukkakot.rubikkisolveri.log.Evt
 import fi.jukkakot.rubikkisolveri.res.Res
@@ -54,7 +53,6 @@ fun WebApp(services: WebServices) {
     val themeMode by settings.themeMode.collectAsState()
     val showNotation by settings.showNotation.collectAsState()
     val handsfreeSpeed by settings.handsfreeSpeed.collectAsState()
-    val scanEngine by settings.scanEngine.collectAsState()
     val navController = rememberNavController()
     val language = currentLanguage()
     val built = LocalFormats.shortDateTime(BuildInfo.BUILT_AT, language)
@@ -140,11 +138,6 @@ fun WebApp(services: WebServices) {
                             onHandsfreeSpeed = { speed ->
                                 logger.info(Evt.SETTINGS_CHANGED, null, "handsfreeSpeed" to speed.name)
                                 settings.setHandsfreeSpeed(speed)
-                            },
-                            scanEngine = scanEngine,
-                            onScanEngine = { engine ->
-                                logger.info(Evt.SETTINGS_CHANGED, null, "scanEngine" to engine.logName)
-                                settings.setScanEngine(engine)
                             },
                             progress = services.progress,
                             scanPictures = services.scanPictures,

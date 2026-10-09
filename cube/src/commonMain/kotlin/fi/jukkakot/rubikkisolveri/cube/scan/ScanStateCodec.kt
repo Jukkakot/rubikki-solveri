@@ -21,6 +21,7 @@ object ScanStateCodec {
         val recognised: String,
         val known: String,
         val read: String? = null,
+        val followed: Boolean = false,
     )
 
     @Serializable
@@ -69,6 +70,7 @@ object ScanStateCodec {
                     f.recognised.joinToString("") { if (it) "1" else "0" },
                     colors(f.known),
                     f.read?.let(::colors),
+                    f.followed,
                 )
             },
             pose = state.pose?.let { "${it.front.name}${it.up.name}" },
@@ -99,6 +101,7 @@ object ScanStateCodec {
                     f.recognised.map { it == '1' },
                     colorsOf(f.known),
                     f.read?.let(::colorsOf),
+                    f.followed,
                 )
             },
             pose = s.pose?.let { Pose(Face.valueOf(it.substring(0, 1)), Face.valueOf(it.substring(1, 2))) },

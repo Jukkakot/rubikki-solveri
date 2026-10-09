@@ -62,3 +62,14 @@ is fully veiled. These are the ghost tiles in the 2026-10-09 recording.
   of what is shared (`finish`, `holdProjection`, `stall`, `Held`, `Tone`, `neighbourAt`,
   `MIN_VOTES`, `MARGIN`, `WASHED_*`) is the checklist. The fixture tests must give the same
   finishes before and after.
+
+## Implementation notes
+
+- **Not-followed share measured** (design Risks): on six recordings 8–20 % of the full faces found
+  are not followed (`VideoScanTest.mostFacesFoundAreFollowedFromAnEarlierPicture`, which fails
+  above 25 %). The fixtures are 10 pictures a second; the phone and the browser give 17–30, so a
+  face moves less between pictures and is followed more often live. Not large: the rule stays.
+- **A not-followed face gets nothing**, outline and tick included (the spec: "no marks at all").
+- **Acceptance bar** (`ScanAcceptanceHarness.FINISHED`): the 13 fixtures that finished as recorded
+  before the change; the finishes were the same after it on every fixture, robustness included.
+- `SCAN_DONE` lost its `engine` field too (it is a scan log line).

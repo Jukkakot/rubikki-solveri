@@ -1,6 +1,5 @@
 package fi.jukkakot.rubikkisolveri.store
 
-import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.progress.Penalty
 import fi.jukkakot.rubikkisolveri.settings.AppLanguage
 import fi.jukkakot.rubikkisolveri.settings.ThemeMode
@@ -57,11 +56,12 @@ class BrowserStoresTest {
     }
 
     @Test
-    fun theScannerChoiceSurvivesARestartAndIsTheNewOneByDefault() {
+    fun settingsStoredWithTheEarlierScannerChoiceStillLoad() {
+        // scan-rules-only: the scanner choice is gone; a stored one is ignored.
+        map.set(StoreKeys.SETTINGS, """{"theme":"DARK","notation":true,"scanEngine":"look"}""")
         val settings = StoredSettings(map)
-        assertEquals(ScanEngine.RULES, settings.scanEngine.value)
-        settings.setScanEngine(ScanEngine.LOOK)
-        assertEquals(ScanEngine.LOOK, StoredSettings(map).scanEngine.value)
+        assertEquals(ThemeMode.DARK, settings.themeMode.value)
+        assertEquals(true, settings.showNotation.value)
     }
 
     @Test

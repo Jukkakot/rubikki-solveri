@@ -3,7 +3,6 @@ package fi.jukkakot.rubikkisolveri.cube
 import fi.jukkakot.rubikkisolveri.cube.scan.ColorClassifier
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
-import fi.jukkakot.rubikkisolveri.cube.scan.ScanEngine
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import org.junit.Assume.assumeTrue
 import java.io.File
@@ -12,10 +11,11 @@ import kotlin.test.assertTrue
 
 /**
  * `scan-rules` acceptance: replays every fixture with a known cube, as recorded and in a robustness
- * variant (red centres faded towards orange, blue ones towards white), through both scanners
- * ([ScanEngine]), and prints per run the frame it finishes, whether the cube is right, and the time
- * per frame. Fails when the rules scanner breaks the bar of `scan-rules` design 6. Runs only with
- * ACCEPTANCE=1 (slow); the report also goes to `build/acceptance-report.txt`.
+ * variant (red centres faded towards orange, blue ones towards white), and prints per run the frame
+ * the scan finishes, whether the cube is right, and the time
+ * per frame. Fails when the scan breaks the bar of `scan-rules` design 6: each fixture's finish within
+ * 1.2 times the frame stored in [FINISHED]. Runs only with ACCEPTANCE=1 (slow); the report also goes
+ * to `build/acceptance-report.txt`.
  */
 class ScanAcceptanceHarness {
     private val fixtures = listOf(
@@ -53,57 +53,53 @@ class ScanAcceptanceHarness {
     }
 
     @Test
-    fun rulesScannerMeetsTheBar() {
+    fun scannerMeetsTheBar() {
         assumeTrue("set ACCEPTANCE=1 to run", System.getenv("ACCEPTANCE") == "1")
-        val engines = (System.getenv("ACCEPTANCE_ENGINES") ?: "look,rules").split(",").map { name -> ScanEngine.entries.first { it.logName == name } }
-        val runs = HashMap<Triple<String, Boolean, ScanEngine>, Run>()
+        val runs = HashMap<Pair<String, Boolean>, Run>()
         for ((title, harden) in listOf("as recorded" to false, "robustness: red centres towards orange, blue towards white" to true)) {
             say("== $title")
-            say("video | frames | " + engines.joinToString(" | ") { it.logName })
+            say("video | frames | finish")
             for ((video, truth) in fixtures) {
                 val frames = VideoFixtures.load(video).map { f -> if (harden) f.copy(faces = f.faces.map(::hardened)) else f }
-                val row = engines.map { e -> replay(frames, truth, e).also { runs[Triple(video, harden, e)] = it } }
-                say("$video | ${frames.size} | ${row.joinToString(" | ")}")
+                val run = replay(frames, truth).also { runs[video to harden] = it }
+                say("$video | ${frames.size} | $run")
             }
         }
-        if (ScanEngine.RULES !in engines || ScanEngine.LOOK !in engines) return File("build/acceptance-report.txt").writeText(out.toString())
-        val problems = barProblems { video, harden, engine -> runs.getValue(Triple(video, harden, engine)) }
+        val problems = barProblems { video, harden -> runs.getValue(video to harden) }
         problems.forEach { say("BAR: $it") }
         File("build/acceptance-report.txt").writeText(out.toString())
         assertTrue(problems.isEmpty(), problems.joinToString("\n"))
     }
 
-    /** Where the rules scanner falls short of the bar (`scan-rules` design 6), given each [run]. */
-    private fun barProblems(run: (String, Boolean, ScanEngine) -> Run): List<String> {
+    /** Where the scan falls short of the bar (`scan-rules` design 6, held by [FINISHED] since `scan-rules-only`), given each [run]. */
+    private fun barProblems(run: (String, Boolean) -> Run): List<String> {
         val problems = ArrayList<String>()
         for ((video, _) in fixtures) for (harden in listOf(false, true)) {
-            val r = run(video, harden, ScanEngine.RULES)
+            val r = run(video, harden)
             if (r.finishedAt != null && !r.right) problems += "$video${if (harden) " (robustness)" else ""}: finished WRONG"
         }
         // Speed and the robustness count as confirmed (2026-10-07): on the first eleven fixtures. The later
-        // ones are reported only (the bar for them is the user's call: the earlier scanner finished some
-        // where another possible cube fitted nearly as well).
+        // ones are reported only.
         val confirmed = fixtures.take(CONFIRMED)
         for ((video, _) in fixtures) {
-            val look = run(video, false, ScanEngine.LOOK)
-            val rules = run(video, false, ScanEngine.RULES)
-            val limit = look.finishedAt?.let { (it * 1.2).toInt() } ?: continue
-            if (!look.right) continue
-            if (rules.finishedAt == null || rules.finishedAt > limit) {
-                val line = "$video: finished at ${rules.finishedAt} (earlier scanner ${look.finishedAt}, limit $limit)"
+            val bar = FINISHED[video] ?: continue
+            val limit = (bar * 1.2).toInt()
+            val r = run(video, false)
+            if (r.finishedAt == null || r.finishedAt > limit) {
+                val line = "$video: finished at ${r.finishedAt} (stored $bar, limit $limit)"
                 if (confirmed.any { it.first == video }) problems += line else say("NOTE: $line")
             }
         }
-        val robust = confirmed.count { (video, _) -> run(video, true, ScanEngine.RULES).let { it.finishedAt != null && it.right } }
+        val robust = confirmed.count { (video, _) -> run(video, true).let { it.finishedAt != null && it.right } }
         if (robust < 6) problems += "robustness: finished right on $robust of ${confirmed.size} (need 6)"
-        val ms = fixtures.flatMap { (video, _) -> listOf(false, true).map { run(video, it, ScanEngine.RULES).msPerFrame } }.average()
+        val ms = fixtures.flatMap { (video, _) -> listOf(false, true).map { run(video, it).msPerFrame } }.average()
         if (ms >= 10.0) problems += "%.1f ms per frame on average (need under 10)".format(java.util.Locale.ROOT, ms)
         return problems
     }
 
-    /** [frames] through a scanner of [engine] at 10 fps until it finishes. */
-    private fun replay(frames: List<VideoFixtures.Frame>, truth: String, engine: ScanEngine): Run {
-        val scan = VideoScan(engine = engine)
+    /** [frames] through a scan at 10 fps until it finishes. */
+    private fun replay(frames: List<VideoFixtures.Frame>, truth: String): Run {
+        val scan = VideoScan()
         val start = System.nanoTime()
         frames.forEachIndexed { i, f ->
             val s = scan.onFrame(f.faces, i * 100L)
@@ -119,6 +115,26 @@ class ScanAcceptanceHarness {
     companion object {
         /** The fixtures the bar was confirmed on (2026-10-07). */
         const val CONFIRMED = 11
+
+        /**
+         * The frame each fixture finished at as recorded, when `scan-rules-only` removed the earlier scanner the
+         * bar compared with (2026-10-09); fixtures that did not finish then have none.
+         */
+        val FINISHED = mapOf(
+            VideoFixtures.ANGLED to 228,
+            VideoFixtures.STRAIGHT to 119,
+            "20261005_213729" to 124,
+            "20261005_213817" to 125,
+            "20261005_213850" to 168,
+            "20261005_213929" to 192,
+            VideoFixtures.TOUR_1007 to 158,
+            VideoFixtures.BLUE_FIRST_1007 to 73,
+            VideoFixtures.STRIPED to 202,
+            VideoFixtures.STRIPED_TABLE to 159,
+            VideoFixtures.STRIPED_U2_TABLE to 170,
+            VideoFixtures.STRIPED_U2_DIM to 143,
+            VideoFixtures.PHONE_SCAN_1 to 105,
+        )
 
         /** A red centre faded towards orange until the palette names it orange; a blue one towards white until it names it white. */
         fun hardened(face: FaceReading): FaceReading {
