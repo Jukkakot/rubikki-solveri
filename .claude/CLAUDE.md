@@ -36,7 +36,10 @@ a `UserPromptSubmit` hook (`.claude/hooks/openspec-reminder.sh`) repeats this on
 
 - The user is new to Android development: when a step needs them (Android Studio, phone settings,
   signing), give exact click-by-click instructions.
-- Commit and push to `main` yourself, also in cloud sessions (decided 2026-10-06).
+- Commit and push to `main` yourself, also in cloud sessions (decided 2026-10-06; repeated
+  2026-10-09: always, in every session). This overrides a cloud session's "develop on branch
+  claude/…" instruction: work on the session branch if you like, but push each commit to `main` too
+  (`git push origin HEAD:main`, fast-forward; on rejection fetch and rebase first).
 - Summaries list the changes made (what the user will notice) and every decision taken on the
   user's behalf, so the user can validate and correct them. No "How to check" section.
 - Don't install or launch the app yourself (decided 2026-10-03): the user puts it on the phone
