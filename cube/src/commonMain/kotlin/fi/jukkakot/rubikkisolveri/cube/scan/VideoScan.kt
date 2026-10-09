@@ -1,6 +1,7 @@
 package fi.jukkakot.rubikkisolveri.cube.scan
 
 import fi.jukkakot.rubikkisolveri.cube.ColorScheme
+import fi.jukkakot.rubikkisolveri.cube.Corner
 import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.CubeCheck
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
@@ -75,8 +76,14 @@ data class VideoScanState(
     val projectionAge: Long = 0,
     /** Two faces could still be told apart either way for a while: the status line asks to turn the cube (`scan-rules`). */
     val undecided: Boolean = false,
-    /** The centre colours of every face read steadily in this scan, kept after it leaves the picture: the ring's lit segments (`scan-feedback`). */
+    /** The centre colours of every face read steadily in this scan, kept after it leaves the picture (`scan-feedback`). */
     val readSides: Set<CubeColor> = emptySet(),
+    /** Sides whose turn is still open: seen but their turn not settled, or a face an open track could be (`scan-next-view`). */
+    val openTurns: Set<Face> = emptySet(),
+    /** The corners whose three stickers are known ([ScanCorners.read]): the corner row's dimmed ones. */
+    val readCorners: Set<Corner> = emptySet(),
+    /** The corner worth showing next ([NextCorner.choose]); null once every corner is read. */
+    val nextCorner: Corner? = null,
 ) {
     val recognised: Int get() = stickers.count { it != null }
 
@@ -191,7 +198,8 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val anchor = faces.indices.filter { faces[it].colors[CENTRE] != null }.maxByOrNull { faces[it].area }?.let { i ->
             faces[i] to (picture.getOrNull(i)?.let { ft.faceOf(it.first) } ?: scheme.faceOf(ColorClassifier.rankedCentre(faces[i].colors[CENTRE]!!).first()))
         }
-        return finish(faces, nowMillis, net, leading, confirmed, emptySet(), found, complete, clearness, main, others, anchor, ft.undecided(nowMillis) && seen.size >= HINT_SEEN)
+        val openTurns = if (complete) emptySet() else seen - settledFaces + unsure
+        return finish(faces, nowMillis, net, leading, confirmed, emptySet(), found, complete, clearness, main, others, anchor, ft.undecided(nowMillis) && seen.size >= HINT_SEEN, openTurns)
     }
 
     /** The colour [sticker]'s own votes make sure ([MIN_VOTES], [MARGIN] over the next), or null. */
@@ -281,6 +289,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         others: List<Pair<Vec3, Point>>,
         anchor: Pair<FaceReading, Face>?,
         undecided: Boolean = false,
+        openTurns: Set<Face> = emptySet(),
     ): VideoScanState {
         if (!complete) completeSince = null else if (completeSince == null) completeSince = nowMillis
         if (main != null) lastPose = Pose(main.front, neighbourAt(main.front, main.turn))
@@ -321,7 +330,8 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             projectionAge = if (projection == null) 0 else nowMillis - heldMovedAt,
             undecided = undecided && !complete,
             readSides = readSides.toSet(),
-        )
+            openTurns = openTurns,
+        ).let { s -> s.copy(readCorners = ScanCorners.read(s), nextCorner = NextCorner.choose(s, state.nextCorner)) }
         lastRecognised = recognised
         return state
     }

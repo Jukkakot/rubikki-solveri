@@ -61,3 +61,24 @@ ones dimmed with a tick), the ring removed, the small cube kept, and no arrows.
   prompt.
 - **Eight pictures take room.** About 260 dp wide on a dark pill, which fits a 360 dp screen. The
   ring's space at the top is freed.
+
+## Implementation notes
+
+- **Open turns** in the score are the sides seen but not settled plus the faces an open track could
+  be (`VideoScanState.openTurns`, empty once complete). `FaceTracks.turnsClear`'s close turns are not
+  used: it runs only at the edge of finishing, so its last answer is often stale.
+- **Ties** go to the earlier corner in the row, so the very first pick is the white–red–green corner.
+  The choice starts with the first picture; before that (empty state) nothing pulses.
+- **The tick stays full white** (with a dark outline) on a read corner, while the corner's colours
+  are at 25 %: at 25 % the mockup's tick was hard to see on the camera picture.
+- **Reduced motion:** the next corner is shown steadily at the pulse's full size (1.22) instead of
+  not at all, so it stays marked; the demo's needed stickers keep a steady outline.
+- **Blinking** on the small cube is the app's marked-sticker outline (red), on and off every 450 ms,
+  on the unknown non-centre stickers of the corner's three sides. Unknown centres show their scheme
+  colour, as before.
+- **Every corner read but not clear** (only edges or doubts left): the status line says "show the
+  grey parts" instead of "0 corners left".
+- **The row also stays above the stall notice**, and its description (TalkBack) says "Kulmia luettu
+  N/8. Seuraavaksi <colours> kulma".
+- The ring's strings (`video_progress*`) and `video_status_turn` are removed; `RING_ORDER` lives on
+  as `SIDE_ORDER` for the side demo.

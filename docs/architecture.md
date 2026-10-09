@@ -232,12 +232,15 @@ Video scan pipeline (`video-scan`):
    colours once it counts, before it is placed, so a face visibly takes at once), a filled dot once
    known, a white outline and a tick
    on a side the best cube confirms, a dim outline round other faces read steadily; `Glide` moves the veils
-   at the display's rate and `MotionFade` hides the marks only on clearly fast moves, where the live picture shows), back / ring of six side segments (`ringSegments`:
-   faint unread, lit read = `VideoScanState.readSides`, full confirmed) / torch / ⋮ menu (one picture at a time, by hand,
-   "Korjaa värit") on the picture, one status line at the bottom; no turn arrow on the real cube, no done-sides row
-   (`scan-paint`); after 2 s without progress a small grey `Cube3D` with coloured centres by the
-   status line loops the turn to make (`TurnDemo`: the first unread side towards the camera, else a
-   tilt to a corner view). A notice at the bottom of the picture per stall reason (scanning goes on; tap outside closes it; restart, fix
+   at the display's rate and `MotionFade` hides the marks only on clearly fast moves, where the live picture shows), back / torch / ⋮ menu (one picture at a time, by hand,
+   "Korjaa värit") on the picture; at the bottom the corner row (`CornerRow`, `scan-next-view`: the
+   eight corners in `ScanCorners.ROW` order in their centres' colours, read ones dimmed with a tick =
+   `VideoScanState.readCorners`, the next one pulsing = `nextCorner` from `NextCorner.choose` in
+   `cube`) above one status line ("Vielä N kulmaa" once every side is read); no turn arrow on the real cube
+   (`scan-paint`); after 2 s without progress a small `Cube3D` by the
+   status line loops the turn to make (`TurnDemo`: grey with coloured centres, the first unread side
+   towards the camera; once every side is read the known stickers in colour, the next corner towards
+   the camera, its unknown stickers blinking). A notice at the bottom of the picture per stall reason (scanning goes on; tap outside closes it; restart, fix
    colours, torch); log lines from `VideoScanLog`. The result goes through `afterScan` like the guided scan's
    (stickers known only from the rest of the cube are marked in the check; no face pictures).
 
@@ -385,7 +388,7 @@ Camera mode of the solution screen (top-bar camera toggle), sharing `StepperStat
 | `PracticeRoute(stage, seed)` | Practice | the solution screen limited to one stage |
 | `TimerRoute`, `HistoryRoute`, `ScrambleGuideRoute(moves)` | Timer, history, guided scramble | the timer area explains hold-and-release only until the first timed solve is saved |
 | `ScanRoute(face?, target?)` | Scan (with `face`: that face only, back to the check) | camera permission, grid, live dots, auto-capture; full-screen camera with the video scan's top row (`ScanOverlayBar`: back, six face marks, torch, ⋮ Videolla / Syötä käsin; a one-face rescan has no menu), no title and no "n/6"; at the bottom the "any face" request (until the first face), one status line, the hold bar, the round shutter and a ↶ redo icon; result → solve or check |
-| `VideoScanRoute(target?)` | Video scan (the default scan) | full-screen camera with the real cube painted (grey veil = not read, hollow ring in the read colour = read, small dot = known, white outline and tick = side confirmed; marks hide while the cube moves fast), a ring of six side segments (faint/lit/full), a small turn cube when stuck, back / torch / ⋮ (Kuva kerrallaan, Syötä käsin, Korjaa värit), one status line; a notice at the bottom of the picture when stuck (scanning goes on); result → solve or check, on top of the scan |
+| `VideoScanRoute(target?)` | Video scan (the default scan) | full-screen camera with the real cube painted (grey veil = not read, hollow ring in the read colour = read, small dot = known, white outline and tick = side confirmed; marks hide while the cube moves fast), a row of the eight corners (read ones dimmed with a tick, the next one pulsing), a small turn cube when stuck, back / torch / ⋮ (Kuva kerrallaan, Syötä käsin, Korjaa värit), one status line; a notice at the bottom of the picture when stuck (scanning goes on); result → solve or check, on top of the scan |
 | `ManualInputRoute(cube?, marked?, fromScan, confident, target?)` | Manual input / check a scan | one screen (palette, ‹ › icons and a ✓ main button in the bottom bar); face-by-face painting with `CubeEditor`, check with `CubeCheck`; valid → solution. From a scan: the face-by-face check (`ScanCheck`): its one-line instruction until the first paint, "looks right" or "scan again", checked faces ticked in the face map, the face's camera picture beside the grid (`LastScan`), "Kuvaa uudelleen" (one-face scan) and "Näyttää oikealta" in place of ‹ › and check, the verdict line, "scan the whole cube again" in the menu |
 | `FreeCubeRoute(cube?)` | Free cube | layer buttons as small cubes (`Cube3D(compact = true)`: that layer lit and its arrow), a ↻/↺ toggle, scramble / undo / back-to-start icons, solve; the drag hint until the first drag |
 | `SolveRoute(cube, target?, fromScan)` | Solution | background solve, then a start screen (`SolveScreen(startScreen = true)`: moves, target row "Kohde … Vaihda", method Nopein/Opettele, hold picture, "Aloita", "Handsfree" + pace), then the guide as a media player (⏮ previous, ▶/⏸ handsfree, ⏭ done, ↻ show again beside the words) with a ⋮ menu (camera follow, "Tarkista värit", back to the start screen); back in the guide returns to the start screen. A pattern or painted target hides the method choice (shortest only), a stage target uses the learn method. Practice and the guided scramble open the guide directly |

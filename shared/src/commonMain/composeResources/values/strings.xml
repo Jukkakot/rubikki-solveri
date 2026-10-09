@@ -352,8 +352,11 @@
     <string name="solve_menu">Valikko</string>
     <string name="solve_to_start">Aloitusruutuun</string>
     <string name="video_status_grey">Näytä harmaat kohdat</string>
-    <string name="video_status_turn">Käännä kuutiota</string>
-    <string name="video_progress">Lukematta: %1$s</string>
-    <string name="video_progress_all">Kaikki sivut luettu</string>
+    <plurals name="video_status_corners">
+        <item quantity="one">Vielä %1$d kulma</item>
+        <item quantity="other">Vielä %1$d kulmaa</item>
+    </plurals>
+    <string name="video_corners">Kulmia luettu %1$d/%2$d</string>
+    <string name="video_corner_next">Seuraavaksi %1$s kulma</string>
     <string name="video_turn_demo">Näin kuutiota käännetään</string>
 </resources>

@@ -42,6 +42,9 @@ object ScanStateCodec {
         val undecided: Boolean = false,
         val readSides: String = "",
         val contradictions: List<Int> = emptyList(),
+        val openTurns: String = "",
+        val corners: Int = 0,
+        val next: Int = -1,
     )
 
     @Serializable
@@ -86,6 +89,9 @@ object ScanStateCodec {
             undecided = state.undecided,
             readSides = colors(state.readSides.toList()),
             contradictions = state.contradictions.toList(),
+            openTurns = state.openTurns.joinToString("") { it.name },
+            corners = ScanCorners.mask(state.readCorners),
+            next = state.nextCorner?.let { ScanCorners.ROW.indexOf(it) } ?: -1,
         ),
     )
 
@@ -117,6 +123,9 @@ object ScanStateCodec {
             confirmed = s.confirmed.map { Face.valueOf(it.toString()) }.toSet(),
             undecided = s.undecided,
             readSides = colorsOf(s.readSides).filterNotNull().toSet(),
+            openTurns = s.openTurns.map { Face.valueOf(it.toString()) }.toSet(),
+            readCorners = ScanCorners.ofMask(s.corners),
+            nextCorner = ScanCorners.ROW.getOrNull(s.next),
         )
     }
 

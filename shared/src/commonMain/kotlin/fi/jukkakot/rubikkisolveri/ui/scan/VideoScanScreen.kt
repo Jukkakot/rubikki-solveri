@@ -75,6 +75,7 @@ import fi.jukkakot.rubikkisolveri.cube.scan.ExposureControl
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceFinder
 import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.Point
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanCorners
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanOutcome
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanRecording
 import androidx.lifecycle.Lifecycle
@@ -92,6 +93,7 @@ import fi.jukkakot.rubikkisolveri.ui.cube3d.Cube3D
 import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeViewState
 import fi.jukkakot.rubikkisolveri.ui.cube3d.StickerColors
 import kotlinx.coroutines.delay
+import fi.jukkakot.rubikkisolveri.ui.animationScale
 import fi.jukkakot.rubikkisolveri.ui.elapsedMillis
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
@@ -106,6 +108,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 import kotlin.time.TimeSource
@@ -413,7 +416,7 @@ fun VideoScanContent(
                     },
             )
         }
-        // Back, torch and menu on the picture; the progress ring between them.
+        // Back, torch and menu on the picture.
         ScanOverlayBar(
             onBack = onBack,
             torch = torch,
@@ -427,27 +430,30 @@ fun VideoScanContent(
                     onCheck = { scope.launch { finish(outcomeNow()) }; Unit }.takeIf { state.recognised > 0 },
                 )
             },
-        ) { ProgressRing(ringSegments(state, done)) }
+        ) {}
         if (state.dim && stall == null) DimNotice(Modifier.align(Alignment.TopStart).statusBarsPadding().padding(start = 12.dp, top = 72.dp))
-        val bottom = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
-        if (stall != null) {
-            StallNotice(
-                stall,
-                torch = torch.takeIf { torchAvailable && stall != Stall.NO_CUBE },
-                onTorch = onTorch,
-                onRestart = { restart() },
-                onFix = { scope.launch { finish(outcomeNow()) } },
-                modifier = bottom,
-            )
-        } else {
-            Row(bottom.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                demo?.takeIf { !done }?.let { TurnDemoCube(it) }
-                Text(
-                    statusText(state),
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(50)).padding(horizontal = 16.dp, vertical = 8.dp),
+        // The corner row above the status line (or the stall notice), the whole scan (`scan-next-view`).
+        Column(Modifier.align(Alignment.BottomCenter).navigationBarsPadding(), horizontalAlignment = Alignment.CenterHorizontally) {
+            CornerRow(cornerLooks(state, done), Modifier.padding(horizontal = 16.dp))
+            if (stall != null) {
+                StallNotice(
+                    stall,
+                    torch = torch.takeIf { torchAvailable && stall != Stall.NO_CUBE },
+                    onTorch = onTorch,
+                    onRestart = { restart() },
+                    onFix = { scope.launch { finish(outcomeNow()) } },
+                    modifier = Modifier,
                 )
+            } else {
+                Row(Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    demo?.takeIf { !done }?.let { TurnDemoCube(it) }
+                    Text(
+                        statusText(state),
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(50)).padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
             }
         }
     }
@@ -530,40 +536,44 @@ private class ScanLogger(private val centres: () -> String) {
     private fun event(kind: String, vararg fields: Pair<String, Any?>) = AppLog.info(Evt.SCAN_VIDEO, null, "kind" to kind, *fields)
 }
 
-/** The one status line: show the cube, turn the cube (two faces could still be told apart either way), show the grey parts, or ready. */
+/** The one status line: show the cube, show the grey parts, how many corners are left, or ready. */
 @Composable
-private fun statusText(state: VideoScanState): String = stringResource(videoStatus(state))
-
-/** The status line's text for [state]: done, no cube, turn (undecided, or every side read but not clear), grey. */
-fun videoStatus(state: VideoScanState): StringResource = when {
-    state.complete -> Res.string.video_status_done
-    state.found.isEmpty() -> Res.string.video_status_find
-    state.undecided || state.readSides.size == CubeColor.entries.size -> Res.string.video_status_turn
-    else -> Res.string.video_status_grey
+private fun statusText(state: VideoScanState): String = when (val s = videoStatus(state)) {
+    is VideoStatus.Line -> stringResource(s.text)
+    is VideoStatus.CornersLeft -> pluralStringResource(Res.plurals.video_status_corners, s.count, s.count)
 }
 
-/** A progress ring segment: no face of its colour read, one read, or its side confirmed. */
-enum class RingSegment { FAINT, LIT, FULL }
+/** What the status line says: a fixed [Line], or how many corners are left. */
+sealed interface VideoStatus {
+    data class Line(val text: StringResource) : VideoStatus
+    data class CornersLeft(val count: Int) : VideoStatus
+}
 
-/** The ring's segment order: opposite sides across the ring. */
-val RING_ORDER = listOf(CubeColor.WHITE, CubeColor.RED, CubeColor.GREEN, CubeColor.YELLOW, CubeColor.ORANGE, CubeColor.BLUE)
-
-/** Each side's segment for [state] in [RING_ORDER]; every one full once [done] or complete (`scan-feedback` design 2). */
-fun ringSegments(state: VideoScanState, done: Boolean = false): List<Pair<CubeColor, RingSegment>> = RING_ORDER.map { c ->
-    c to when {
-        done || state.complete || ColorScheme.STANDARD.faceOf(c) in state.confirmed -> RingSegment.FULL
-        c in state.readSides -> RingSegment.LIT
-        else -> RingSegment.FAINT
+/**
+ * The status line for [state]: done, no cube, the corners left once every side is read
+ * (`scan-next-view` design 4), else the grey parts (also when every corner is read and only edges
+ * are left).
+ */
+fun videoStatus(state: VideoScanState): VideoStatus {
+    val left = ScanCorners.ROW.size - state.readCorners.size
+    return when {
+        state.complete -> VideoStatus.Line(Res.string.video_status_done)
+        state.found.isEmpty() -> VideoStatus.Line(Res.string.video_status_find)
+        state.readSides.size == CubeColor.entries.size && left > 0 -> VideoStatus.CornersLeft(left)
+        else -> VideoStatus.Line(Res.string.video_status_grey)
     }
 }
 
 /**
- * The small cube by the status line showing how to turn the real one ([TurnDemo]): grey with coloured
- * centres, not draggable, turning from [demo]'s start to its end again and again.
+ * The small cube by the status line showing how to turn the real one ([TurnDemo]): in [TurnDemo.colors]
+ * (grey where unknown), not draggable, turning from [demo]'s start to its end again and again; its
+ * needed stickers blink with an outline (steady under reduced motion).
  */
 @Composable
 private fun TurnDemoCube(demo: TurnDemo) {
     val view = remember { CubeViewState(demo.from) }
+    val still = animationScale() == 0f
+    var blinkOn by remember { mutableStateOf(true) }
     LaunchedEffect(demo) {
         while (true) {
             view.rotation = demo.from
@@ -572,8 +582,17 @@ private fun TurnDemoCube(demo: TurnDemo) {
             delay(DEMO_HOLD_END_MILLIS)
         }
     }
+    LaunchedEffect(demo, still) {
+        blinkOn = true
+        if (still || demo.needed.isEmpty()) return@LaunchedEffect
+        while (true) {
+            delay(DEMO_BLINK_MILLIS)
+            blinkOn = !blinkOn
+        }
+    }
     Cube3D(
-        colors = DEMO_COLORS.map(StickerColors::of),
+        colors = demo.colors.map(StickerColors::of),
+        marked = if (blinkOn) demo.needed else emptySet(),
         modifier = Modifier.size(64.dp).testTag(VIDEO_DEMO_TAG),
         viewState = view,
         description = stringResource(Res.string.video_turn_demo),
@@ -585,6 +604,9 @@ private fun TurnDemoCube(demo: TurnDemo) {
 private const val DEMO_HOLD_START_MILLIS = 400L
 private const val DEMO_TURN_MILLIS = 1_200
 private const val DEMO_HOLD_END_MILLIS = 900L
+
+/** The needed stickers' outline blinks on and off this often. */
+private const val DEMO_BLINK_MILLIS = 450L
 
 /** Test tag of the small turn demo cube. */
 const val VIDEO_DEMO_TAG = "video-turn-demo"
@@ -723,39 +745,6 @@ private const val RING_SHARE = 0.28f
 
 /** How strongly a needed sticker's grey veil covers it. */
 private const val VEIL_ALPHA = 0.55f
-
-/**
- * A small ring of six segments, one per side in its centre's colour (`scan-feedback`): faint while
- * unread, lit once read, solid once confirmed. Its description names the sides still unread.
- */
-@Composable
-private fun ProgressRing(segments: List<Pair<CubeColor, RingSegment>>) {
-    val unread = segments.filter { it.second == RingSegment.FAINT }.map { stringResource(colorName(it.first)) }
-    val description = if (unread.isEmpty()) stringResource(Res.string.video_progress_all) else stringResource(Res.string.video_progress, unread.joinToString(", "))
-    Canvas(Modifier.size(40.dp).semantics { contentDescription = description }.testTag(VIDEO_RING_TAG)) {
-        val stroke = 5.dp.toPx()
-        drawCircle(Color.Black.copy(alpha = 0.55f))
-        val inset = stroke / 2 + 3.5.dp.toPx()
-        val box = Size(size.width - 2 * inset, size.height - 2 * inset)
-        val sweep = 360f / segments.size
-        segments.forEachIndexed { i, (color, seg) ->
-            val start = -90f - sweep / 2 + i * sweep + RING_GAP_DEGREES / 2
-            val c = StickerColors.of(color)
-            val (alpha, width) = when (seg) {
-                RingSegment.FAINT -> 0.3f to stroke * 0.35f
-                RingSegment.LIT -> 0.75f to stroke * 0.55f
-                RingSegment.FULL -> 1f to stroke
-            }
-            drawArc(c.copy(alpha = alpha), start, sweep - RING_GAP_DEGREES, false, Offset(inset, inset), box, style = Stroke(width))
-        }
-    }
-}
-
-/** The gap between two ring segments. */
-private const val RING_GAP_DEGREES = 8f
-
-/** Test tag of the progress ring. */
-const val VIDEO_RING_TAG = "video-ring"
 
 /** The ⋮ menu's items: one picture at a time, by hand, and the colour check with what is known ([onCheck] null until a sticker is). */
 @Composable

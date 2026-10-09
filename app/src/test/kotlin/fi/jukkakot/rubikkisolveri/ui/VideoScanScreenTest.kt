@@ -18,7 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import fi.jukkakot.rubikkisolveri.ui.scan.holdPicture
 import androidx.compose.ui.graphics.asImageBitmap
-import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_RING_TAG
+import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_CORNERS_TAG
 import fi.jukkakot.rubikkisolveri.ui.scan.VIDEO_SPINNER_TAG
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
@@ -107,8 +107,8 @@ class VideoScanScreenTest {
         }
     }
 
-    /** The progress ring's description: the sides not read yet. */
-    private fun ring(): String = compose.onNodeWithTag(VIDEO_RING_TAG).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].joinToString()
+    /** The corner row's description: how many corners are read, and the next one. */
+    private fun corners(): String = compose.onNodeWithTag(VIDEO_CORNERS_TAG).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].joinToString()
 
     /** Whether the menu's colour check can be used now (the menu is closed again through "by hand", a no-op here). */
     private fun checkEnabled(): Boolean {
@@ -154,14 +154,13 @@ class VideoScanScreenTest {
     @Test
     fun stickersFillInAndTheCameraMetersOnTheFaceThenLocks() {
         scan()
-        assertTrue("valkoinen" in ring(), "nothing read yet")
+        assertTrue("0/8" in corners(), "nothing read yet")
         assertFalse(checkEnabled())
         // The first face: the camera meters and focuses at it, and its frames are read meanwhile.
         show(face(Face.U), times = 3)
         assertEquals(listOf(CameraSettings(meter = Point(0.5, 0.5), focus = Point(0.5, 0.5))), settings)
         // The face in view, read three times: its stickers are known before the camera locks (red and orange
         // only once both those faces are seen).
-        assertFalse("valkoinen" in ring(), "the white side read")
         assertTrue(checkEnabled())
         show(face(Face.U), times = 4)
         assertEquals(CameraSettings(meter = Point(0.5, 0.5), focus = Point(0.5, 0.5), lock = true), settings.last())
@@ -174,7 +173,6 @@ class VideoScanScreenTest {
         val partial = face(Face.U).let { it.copy(colors = it.colors.toMutableList().also { c -> c[1] = null }) }
         show(face(Face.U), times = 4)
         show(partial, times = 4)
-        assertFalse("valkoinen" in ring(), "the white side read")
         assertTrue(checkEnabled())
     }
 
@@ -212,7 +210,7 @@ class VideoScanScreenTest {
         compose.onNodeWithText("Aloita alusta").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Aloita alusta").assertDoesNotExist()
-        assertTrue("valkoinen" in ring(), "progress cleared")
+        assertTrue("0/8" in corners(), "progress cleared")
         assertFalse(checkEnabled())
         assertNull(outcome)
     }
@@ -270,11 +268,12 @@ class VideoScanScreenTest {
     }
 
     @Test
-    fun theRingNamesTheUnreadSideAndTheTurnCubeComesWhenStuck() {
+    fun theCornerRowShowsFromTheStartAndTheTurnCubeComesWhenStuck() {
         scan()
+        compose.onNodeWithTag(VIDEO_CORNERS_TAG).assertIsDisplayed()
         for (f in listOf(Face.U, Face.R, Face.F, Face.D, Face.B)) show(face(f), times = 6)
-        compose.onNodeWithTag(VIDEO_RING_TAG).assertExists()
-        compose.onNodeWithContentDescription("Lukematta: oranssi").assertExists()
+        assertTrue("Seuraavaksi" in corners(), "a next corner: ${corners()}")
+        compose.onNodeWithText("Näytä harmaat kohdat").assertExists()
         compose.onNodeWithTag(VIDEO_DEMO_TAG).assertDoesNotExist()
         // Nothing new for more than two seconds: the small cube shows how to turn.
         show(face(Face.B), times = 30)
@@ -310,7 +309,7 @@ class VideoScanScreenTest {
     }
 
     @Test
-    fun hiddenMarksDrawNoPaintButTheRingStays() {
+    fun hiddenMarksDrawNoPaintButTheCornerRowStays() {
         compose.setContent {
             RubikkiTheme(dynamicColor = false) {
                 VideoScanContent(found, torch = false, onTorch = {}, onBack = {}, onManual = {}, onResult = {}, clock = { now }, preview = {}, hideMarks = true)
@@ -318,7 +317,7 @@ class VideoScanScreenTest {
         }
         show(face(Face.U), times = 9)
         compose.onNodeWithTag(VIDEO_PAINT_TAG).assertDoesNotExist()
-        compose.onNodeWithTag(VIDEO_RING_TAG).assertIsDisplayed()
+        compose.onNodeWithTag(VIDEO_CORNERS_TAG).assertIsDisplayed()
     }
 
     @Test
