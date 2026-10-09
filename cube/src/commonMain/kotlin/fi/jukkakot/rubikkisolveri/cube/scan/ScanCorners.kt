@@ -3,6 +3,7 @@ package fi.jukkakot.rubikkisolveri.cube.scan
 import fi.jukkakot.rubikkisolveri.cube.ColorScheme
 import fi.jukkakot.rubikkisolveri.cube.Corner
 import fi.jukkakot.rubikkisolveri.cube.CubeColor
+import fi.jukkakot.rubikkisolveri.cube.Edge
 
 /**
  * The video scan's corner row (`scan-next-view`): the cube's eight corner positions, named by the
@@ -22,9 +23,32 @@ object ScanCorners {
      */
     fun colors(corner: Corner, scheme: ColorScheme = ColorScheme.STANDARD): List<CubeColor> = corner.faces.map { scheme[it] }
 
-    /** The corners whose three stickers are known in [state]; all of them once the scan is complete. */
-    fun read(state: VideoScanState): Set<Corner> =
-        if (state.complete || state.finished) ROW.toSet() else ROW.filter { c -> c.stickers.all { state.stickers.getOrNull(it) != null } }.toSet()
+    /** [corner]'s stickers and those of the three edges that meet at it: what a read corner stands for. */
+    fun stickersOf(corner: Corner): List<Int> =
+        corner.stickers + Edge.entries.filter { e -> corner.faces.containsAll(e.faces) }.flatMap { it.stickers }
+
+    /**
+     * The corners read in [state] (`scan-corner-ticks`): those whose [stickersOf] are all part of the
+     * clear cube ([VideoScanState.clear]); all of them once the scan is complete, never all eight
+     * before. When every corner would count but the cube is not complete yet, the one touching the
+     * open doubt stays unread ([held]).
+     */
+    fun read(state: VideoScanState, previous: Corner? = null): Set<Corner> {
+        if (state.complete || state.finished) return ROW.toSet()
+        val read = ROW.filter { c -> stickersOf(c).all { it in state.clear } }.toSet()
+        return if (read.size < ROW.size) read else read - held(state, previous)
+    }
+
+    /**
+     * The corner kept unread while only the complete flag is missing: the one whose sides hold the
+     * most doubt ([NextCorner.score]: unclear stickers, open turns), [previous] on a tie (so the
+     * pulse does not jump), else the earlier one in the row.
+     */
+    private fun held(state: VideoScanState, previous: Corner?): Corner {
+        val scores = ROW.associateWith { NextCorner.score(state, it) }
+        val top = scores.values.max()
+        return previous?.takeIf { scores[it] == top } ?: ROW.first { scores[it] == top }
+    }
 
     /** [corners] as an 8-bit mask in [ROW] order (the browser's state text). */
     fun mask(corners: Set<Corner>): Int = ROW.indices.filter { ROW[it] in corners }.sumOf { 1 shl it }
@@ -49,7 +73,7 @@ object NextCorner {
      * [SWITCH] times more; null once every corner is read. Ties go to the earlier corner in the row.
      */
     fun choose(state: VideoScanState, previous: Corner?): Corner? {
-        val read = ScanCorners.read(state)
+        val read = ScanCorners.read(state, previous)
         val unread = ScanCorners.ROW.filter { it !in read }
         if (unread.isEmpty()) return null
         val scores = unread.associateWith { score(state, it) }

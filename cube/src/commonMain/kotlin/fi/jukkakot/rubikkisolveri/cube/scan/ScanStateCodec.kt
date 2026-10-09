@@ -45,6 +45,7 @@ object ScanStateCodec {
         val openTurns: String = "",
         val corners: Int = 0,
         val next: Int = -1,
+        val clear: List<Int> = emptyList(),
     )
 
     @Serializable
@@ -92,6 +93,7 @@ object ScanStateCodec {
             openTurns = state.openTurns.joinToString("") { it.name },
             corners = ScanCorners.mask(state.readCorners),
             next = state.nextCorner?.let { ScanCorners.ROW.indexOf(it) } ?: -1,
+            clear = state.clear.sorted(),
         ),
     )
 
@@ -126,6 +128,7 @@ object ScanStateCodec {
             openTurns = s.openTurns.map { Face.valueOf(it.toString()) }.toSet(),
             readCorners = ScanCorners.ofMask(s.corners),
             nextCorner = ScanCorners.ROW.getOrNull(s.next),
+            clear = s.clear.toSet(),
         )
     }
 

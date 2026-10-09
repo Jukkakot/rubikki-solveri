@@ -12,7 +12,7 @@ import fi.jukkakot.rubikkisolveri.ui.scan.videoStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** The video scan's one status line (`scan-next-view`: the corners left once every side is read). */
+/** The video scan's one status line (`scan-next-view`, `scan-corner-ticks`: the corners left once every side is read). */
 class VideoStatusTest {
     private val inView = VideoScanState.EMPTY.copy(found = listOf(FoundFace(FaceReading(List(9) { null }, Point(0.0, 0.0), Point(1.0, 0.0), Point(0.0, 1.0)), List(9) { null }, List(9) { false })))
 
@@ -24,7 +24,7 @@ class VideoStatusTest {
         assertEquals(VideoStatus.Line(Res.string.video_status_find), videoStatus(VideoScanState.EMPTY.copy(undecided = true)))
         val read = inView.copy(readSides = all, readCorners = setOf(Corner.URF, Corner.UFL, Corner.ULB, Corner.UBR, Corner.DFR))
         assertEquals(VideoStatus.CornersLeft(3), videoStatus(read))
-        assertEquals(VideoStatus.Line(Res.string.video_status_grey), videoStatus(read.copy(readCorners = Corner.entries.toSet())), "only edges left")
+        assertEquals(VideoStatus.CornersLeft(1), videoStatus(read.copy(readCorners = Corner.entries.toSet() - Corner.DRB)), "the last held corner")
         assertEquals(VideoStatus.Line(Res.string.video_status_done), videoStatus(read.copy(complete = true)))
     }
 }

@@ -551,15 +551,15 @@ sealed interface VideoStatus {
 
 /**
  * The status line for [state]: done, no cube, the corners left once every side is read
- * (`scan-next-view` design 4), else the grey parts (also when every corner is read and only edges
- * are left).
+ * (`scan-next-view` design 4; the honest count of `scan-corner-ticks`, never zero before complete),
+ * else the grey parts.
  */
 fun videoStatus(state: VideoScanState): VideoStatus {
     val left = ScanCorners.ROW.size - state.readCorners.size
     return when {
         state.complete -> VideoStatus.Line(Res.string.video_status_done)
         state.found.isEmpty() -> VideoStatus.Line(Res.string.video_status_find)
-        state.readSides.size == CubeColor.entries.size && left > 0 -> VideoStatus.CornersLeft(left)
+        state.readSides.size == CubeColor.entries.size -> VideoStatus.CornersLeft(left)
         else -> VideoStatus.Line(Res.string.video_status_grey)
     }
 }

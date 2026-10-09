@@ -82,7 +82,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 72 | `scan-recording` | done | Every video scan records what the scan was given (faces and colours per picture, with times), the newest three kept and shared with the log, replayed exactly in tests; a setting hides the scan marks for clean screen recordings (user 2026-10-09: a failed scan must become test material) |
 | 73 | `scan-never-locked` | done | Recording 2026-10-09 10:08: every face's colours right but turns settled wrong together, never recovered. Nothing locked: when not clear, all faces' turns rechecked together and a clearly better whole wins, also over ticked sides (silently). The recording now finishes right; one more robustness fixture finishes, no other change. Down-weighting disagreeing readings not needed yet (no case). Phone check pending |
 | 74 | `scan-next-view` | done | A row of the cube's eight corners (in their centre colours) during the whole video scan: read ones dim with a tick, the one worth showing next pulses; the six-side ring removed; "Vielä N kulmaa" once every side is read; the small cube turns the next corner forward with the needed stickers blinking; no arrows (user, mockups 2026-10-09). Phone check pending: does the pulsing corner help finish faster |
-| 75 | `scan-corner-ticks` | specced | Phone test: all corners ticked but the scan not done. A corner ticks only when its corner and edge stickers are part of the clear cube; all eight ticked only when the scan is complete |
+| 75 | `scan-corner-ticks` | done | Phone test: all corners ticked but the scan not done. A corner ticks only when its corner and edge stickers are part of the clear cube; all eight ticked only when the scan is complete |
 
 ## Backlog
 

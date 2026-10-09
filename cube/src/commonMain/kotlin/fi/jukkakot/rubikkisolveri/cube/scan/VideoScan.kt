@@ -80,10 +80,12 @@ data class VideoScanState(
     val readSides: Set<CubeColor> = emptySet(),
     /** Sides whose turn is still open: seen but their turn not settled, or a face an open track could be (`scan-next-view`). */
     val openTurns: Set<Face> = emptySet(),
-    /** The corners whose three stickers are known ([ScanCorners.read]): the corner row's dimmed ones. */
+    /** The corners read ([ScanCorners.read]): the corner row's dimmed ones; all eight only once [complete]. */
     val readCorners: Set<Corner> = emptySet(),
     /** The corner worth showing next ([NextCorner.choose]); null once every corner is read. */
     val nextCorner: Corner? = null,
+    /** The stickers that are part of the clear cube (not known from their own votes alone): what a read corner needs. */
+    val clear: Set<Int> = emptySet(),
 ) {
     val recognised: Int get() = stickers.count { it != null }
 
@@ -199,7 +201,8 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             faces[i] to (picture.getOrNull(i)?.let { ft.faceOf(it.first) } ?: scheme.faceOf(ColorClassifier.rankedCentre(faces[i].colors[CENTRE]!!).first()))
         }
         val openTurns = if (complete) emptySet() else seen - settledFaces + unsure
-        return finish(faces, nowMillis, net, leading, confirmed, emptySet(), found, complete, clearness, main, others, anchor, ft.undecided(nowMillis) && seen.size >= HINT_SEEN, openTurns)
+        val clear = clearAt.indices.filter { clearAt[it] }.toSet()
+        return finish(faces, nowMillis, net, leading, confirmed, emptySet(), found, complete, clearness, main, others, anchor, ft.undecided(nowMillis) && seen.size >= HINT_SEEN, openTurns, clear)
     }
 
     /** The colour [sticker]'s own votes make sure ([MIN_VOTES], [MARGIN] over the next), or null. */
@@ -290,6 +293,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         anchor: Pair<FaceReading, Face>?,
         undecided: Boolean = false,
         openTurns: Set<Face> = emptySet(),
+        clear: Set<Int> = emptySet(),
     ): VideoScanState {
         if (!complete) completeSince = null else if (completeSince == null) completeSince = nowMillis
         if (main != null) lastPose = Pose(main.front, neighbourAt(main.front, main.turn))
@@ -331,7 +335,8 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             undecided = undecided && !complete,
             readSides = readSides.toSet(),
             openTurns = openTurns,
-        ).let { s -> s.copy(readCorners = ScanCorners.read(s), nextCorner = NextCorner.choose(s, state.nextCorner)) }
+            clear = clear,
+        ).let { s -> s.copy(readCorners = ScanCorners.read(s, state.nextCorner), nextCorner = NextCorner.choose(s, state.nextCorner)) }
         lastRecognised = recognised
         return state
     }

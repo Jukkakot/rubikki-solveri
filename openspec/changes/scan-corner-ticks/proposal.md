@@ -28,3 +28,15 @@ honest: all corners ticked means the cube is done.
 - `cube`: `readCorners` from clear stickers (the corner and its three edges) and the complete
   flag, with tests.
 - `shared`: the status line's count. Nothing else changes visually.
+
+## Implementation notes
+
+- The scan state carries `clear` (the stickers that are part of the clear cube, from `clearAt`,
+  including the red/orange hold) so `ScanCorners.read` needs nothing else; the browser state text
+  carries it too.
+- The corner held back when only the complete flag is missing is the one with the highest
+  `NextCorner.score` (unclear stickers and open turns on its three sides); on a tie the corner
+  already pulsing, else the first in the row, so the pulse does not jump. The next-corner choice
+  then lands on it, as it is the only unread one.
+- The status line shows "Vielä N kulmaa" whenever every side is read and the scan is not complete;
+  the count is never zero there, so the grey-parts fallback for zero corners is gone.
