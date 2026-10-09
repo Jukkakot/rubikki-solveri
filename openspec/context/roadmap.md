@@ -95,9 +95,8 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
 - `cloud-setup` (all projects): **global part done 2026-10-09**: public repo
   `Jukkakot/claude-config` (CLAUDE.md, hooks, skills `ui` and `quickshare`, `install.sh`; setup
   script line in its README), installed locally the same way. Still open: verify in the first cloud
-  session that `~/.claude/CLAUDE.md` is read and Quick Share downloads work (network allowlist);
-  test material for the harnesses in the cloud (`testdata/video/` is local only, 1.8 GB: stills
-  and videos as GitHub Release zips with a fetch script was proposed; the user is still thinking).
+  session that `~/.claude/CLAUDE.md` is read and Quick Share downloads work (network allowlist).
+  Test material done in `cloud-testdata` (all stills in git, videos local, `tools/make-stills.sh`).
 
 - camera follow: notice when the cube is held differently, or keep helping in any orientation
   (after the user has tried camera follow; from `steady-cube`). Proposal `camera-follow-any-way`

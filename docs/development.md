@@ -48,6 +48,20 @@ Run before every commit (CI runs the same):
 | Screens | Compose UI tests on Robolectric: key interactions only | Implemented |
 | On the phone | Manual, listed under "How to check" in each change summary | — |
 
+### Scan test recordings
+
+Phone recordings become committed stills and a fixture; the video itself stays local (or dies with
+a cloud session). The same flow works locally and in a cloud session:
+
+1. The user shares the video as a Quick Share link → global `quickshare` skill into
+   `testdata/video/<date>/` (cloud: the environment's network must allow
+   `quickshare.samsungcloud.com`).
+2. `tools/make-stills.sh <video> testdata/video/<date>/stills/<name> [crop]` (crop = the camera
+   part of a screen recording; without ffmpeg it fetches one with pip).
+3. Fixture: a line in `VideoScanHarness.writeFixtures` and `VideoFixtures` (true cube), run it with
+   `VIDEO_HARNESS=1`; the output lands in `cube/src/jvmTest/resources/video/`.
+4. Commit the stills and the fixture (`.gitignore` lets only `*/stills/` through).
+
 ## Screenshots without a phone — Implemented
 
 `./gradlew :app:testDebugUnitTest --tests '*ScreenshotTest*'` renders every screen with

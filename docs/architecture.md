@@ -220,9 +220,8 @@ Video scan pipeline (`video-scan`):
    Earlier decisions in the `video-scan` and `video-scan-live` archives. Regression data: the test
    videos' finder output in `cube/src/jvmTest/resources/video/` (`VideoScanTest`, the true cubes in
    `VideoFixtures`; regenerate with `VideoScanHarness.writeFixtures` from the committed JPEG stills
-   in `testdata/video/<date>/stills/`; the videos themselves stay local only, and so do the stills of
-   the four 2026-10-07 20:20 recordings, 33 MB, made again from the videos with ffmpeg at 10 fps,
-   360 px wide). Phone recordings come in by Quick Share links: the global `quickshare` skill.
+   in `testdata/video/<date>/stills/`; the videos themselves stay local only; new recordings:
+   `docs/development.md` → Scan test recordings).
 4. `ui/scan/VideoScanScreen`: the camera fills the screen with the progress painted on the real
    cube (`ScanPaint`, `scan-paint-calm`, `scan-steady-progress`, `scan-feedback`: a grey veil over
    each sticker not read yet on the faces found in the picture (only those: `scan-paint-found-only`,

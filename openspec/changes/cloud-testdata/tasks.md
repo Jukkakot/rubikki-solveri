@@ -7,9 +7,9 @@
 
 ## 2. Making stills anywhere
 
-- [ ] 2.1 `tools/make-stills.sh <video> <out dir> [crop]`: ffmpeg at 10 fps, 360 px wide, JPEG `f%04d.jpg`; without `ffmpeg` on the path, `pip install imageio-ffmpeg` and use its binary. Verify: run on a local video, frame count and size match the committed stills of that video.
+- [x] 2.1 `tools/make-stills.sh <video> <out dir> [crop]`: ffmpeg at 10 fps, 360 px wide, JPEG `f%04d.jpg`; without `ffmpeg` on the path, `pip install imageio-ffmpeg` and use its binary. Verify: run on a local video, frame count and size match the committed stills of that video.
 
 ## 3. Docs and roadmap
 
-- [ ] 3.1 `docs/development.md`: new-recording flow (local and cloud): Quick Share → `testdata/video/<date>/` → `make-stills.sh` → `VideoScanHarness.writeFixtures` → commit stills and fixture. `docs/architecture.md`: drop "the stills of the four 2026-10-07 20:20 recordings stay local".
-- [ ] 3.2 Roadmap: `cloud-setup` backlog item's test-material part done.
+- [x] 3.1 `docs/development.md`: new-recording flow (local and cloud): Quick Share → `testdata/video/<date>/` → `make-stills.sh` → `VideoScanHarness.writeFixtures` → commit stills and fixture. `docs/architecture.md`: drop "the stills of the four 2026-10-07 20:20 recordings stay local".
+- [x] 3.2 Roadmap: `cloud-setup` backlog item's test-material part done.
