@@ -79,6 +79,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 69 | `scan-track-settle` | done | Rules scan: a track never goes back to the face and turn it just left without a new reading of its own (flips without readings 493 → 0 on the fixtures, same finishes); the shown stickers stop switching back and forth in long scans. Phone check: marks calm while the cube is held |
 | 70 | `scan-speed-up-4` | done | Browser: finding faces and the scan logic side by side in two workers (desktop Chromium 29–36 → 33–51 answers a second); the best cube's margins only as far as the scan looks (same decisions, little time saved; log `margin` at most 2.5). Phone check: fps with two faces in view near 1000 / `finderMs` |
 | 71 | `scan-rules-only` | done | Browser phone test 2026-10-09: rules scan finished right in 4–7 s, the earlier scanner stalled once → earlier scanner and its Settings choice removed; grey veils only on faces followed from an earlier picture (no ghost tiles beside a fast-turned cube) |
+| 72 | `scan-recording` | specced | Every video scan records what the scan was given (faces and colours per picture, with times), the newest three kept and shared with the log, replayed exactly in tests; a setting hides the scan marks for clean screen recordings (user 2026-10-09: a failed scan must become test material) |
 
 ## Backlog
 
