@@ -73,6 +73,10 @@ ready. A stall notice SHALL take its place while shown.
 - **WHEN** no face is found in the picture
 - **THEN** the line asks to show the cube to the camera
 
+#### Scenario: Turn the cube
+- **WHEN** the readings fit two cubes about equally because two faces could be told apart either way
+- **THEN** the line names the view that settles it with its colour dots, and goes back as soon as a view settles it
+
 ### Requirement: Turn shown on a small cube
 When nothing new has been read for about two seconds while the scan is not finished, a small 3D
 cube SHALL appear by the status line and show, as a short repeating movement, how to turn the real
@@ -89,7 +93,7 @@ read. No arrow SHALL be drawn on the real cube.
 - **WHEN** the orange side has not been read, the scan knows how the cube is held, and nothing new has been read for two seconds
 - **THEN** a small cube with grey stickers and coloured centres appears by the status line, starting as the cube is held and turning its orange centre towards the camera, again and again
 
-#### Scenario: Corner shown
+#### Scenario: Corners shown
 - **WHEN** every side has been read, the next view is the white, red and blue corner and nothing new has been read for two seconds
 - **THEN** the small cube shows the known stickers in colour, turns the white, red and blue corner towards the camera, and the stickers still needed there blink
 
