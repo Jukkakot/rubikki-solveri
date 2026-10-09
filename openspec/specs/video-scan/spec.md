@@ -210,13 +210,16 @@ of the cube it is.
 ### Requirement: Progress on the real cube
 The screen SHALL show the progress on the real cube in the camera picture, not on a separate cube.
 Marks SHALL be drawn only on the faces found in the picture, never on sides of the cube the camera
-has not found, so no mark lands beside or above the cube. On a face found, every sticker not yet
-read SHALL be veiled in grey; read stickers SHALL show only their small mark. A face read steadily
-(over a few pictures) SHALL get a thin outline; a face found in one picture only gets none. A face
-SHALL get a white outline and a small tick at its centre only when the rest of the cube confirms
-all its stickers, not on its own readings alone. Which sides are still to show is told by the
-progress ring and the turn demo, not by marks on the cube. A small vibration SHALL tell when new
-stickers become known and when a new side is read (a segment of the progress ring lights).
+has not found, so no mark lands beside or above the cube. A face SHALL get marks only once it has
+been followed from an earlier picture; a lattice found in one picture alone (for example in a
+blurred picture while the cube moves quickly) SHALL get no marks at all. On a face that gets marks,
+every sticker not yet read SHALL be veiled in grey; read stickers SHALL show only their small mark.
+A face read steadily (over a few pictures) SHALL get a thin outline; a face found in one picture
+only gets none. A face SHALL get a white outline and a small tick at its centre only when the rest
+of the cube confirms all its stickers, not on its own readings alone. Which sides are still to show
+is told by the progress ring and the turn demo, not by marks on the cube. A small vibration SHALL
+tell when new stickers become known and when a new side is read (a segment of the progress ring
+lights).
 
 #### Scenario: Filling in
 - **WHEN** a side is shown to the camera and its stickers are read
@@ -240,7 +243,11 @@ stickers become known and when a new side is read (a segment of the progress rin
 
 #### Scenario: A stray lattice
 - **WHEN** for one picture a lattice is found across the edge of the cube or beside it
-- **THEN** it gets no outline, and its marks go with the next picture
+- **THEN** it gets no veils, marks or outline
+
+#### Scenario: Turned quickly
+- **WHEN** the cube is turned quickly so that faces are found in blurred pictures at places no earlier picture had them
+- **THEN** no grey veils appear beside or above the cube, and the marks come back on faces followed again
 
 #### Scenario: New side read
 - **WHEN** a face with the blue centre is read for the first time in the scan
@@ -448,20 +455,6 @@ end. A stall notice SHALL take its place while shown.
 #### Scenario: Turn the cube
 - **WHEN** the readings fit two cubes about equally for about two seconds, because two faces could be told apart either way
 - **THEN** the line asks to turn the cube, and it goes back as soon as a view settles it
-
-### Requirement: Two scanners to compare
-The app SHALL keep two video scanners: the new one that knows faces by the rules of a real cube and
-the earlier one that tells faces by their centres' look. Settings SHALL offer the choice between
-them, remembered across starts; the new one SHALL be the default. Every scan's log SHALL record which
-scanner ran, so the two can be compared from real use.
-
-#### Scenario: Choosing the earlier scanner
-- **WHEN** the user picks the earlier scanner in Settings and starts a scan
-- **THEN** the video scan runs with the earlier scanner, and the choice is still there after the app is restarted
-
-#### Scenario: Which scanner in the log
-- **WHEN** a video scan runs
-- **THEN** its log lines say which scanner it used
 
 ### Requirement: Turn shown on a small cube
 When nothing new has been read for about two seconds while the scan is not finished, a small 3D
