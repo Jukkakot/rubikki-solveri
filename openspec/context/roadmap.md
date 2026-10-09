@@ -95,8 +95,7 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
 - `cloud-setup` (all projects): **global part done 2026-10-09**: public repo
   `Jukkakot/claude-config` (CLAUDE.md, hooks, skills `ui` and `quickshare`, `install.sh`; setup
   script line in its README), installed locally the same way. First cloud session (2026-10-09):
-  `~/.claude/CLAUDE.md`, hooks and skills are loaded. Still open: a Quick Share download in a cloud
-  session (network allowlist), next time the user shares a link there.
+  `~/.claude/CLAUDE.md`, hooks, skills and a Quick Share download all work. Done.
   Test material done in `cloud-testdata` (all stills in git, videos local, `tools/make-stills.sh`).
 
 - camera follow: notice when the cube is held differently, or keep helping in any orientation
