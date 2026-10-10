@@ -84,6 +84,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 74 | `scan-next-view` | done | A row of the cube's eight corners (in their centre colours) during the whole video scan: read ones dim with a tick, the one worth showing next pulses; the six-side ring removed; "Vielä N kulmaa" once every side is read; the small cube turns the next corner forward with the needed stickers blinking; no arrows (user, mockups 2026-10-09). Phone check pending: does the pulsing corner help finish faster |
 | 75 | `scan-corner-ticks` | done | Phone test: all corners ticked but the scan not done. A corner ticks only when its corner and edge stickers are part of the clear cube; all eight ticked only when the scan is complete |
 | 76 | `scan-side-balls` | done | Colours instead of corners: six coloured balls, a side ticked when its nine stickers are part of the clear cube (all six only when complete, ticks taken back when the scan changes its mind), the next side pulses and the line says "Näytä sininen puoli" (user 2026-10-09) |
+| 77 | `scan-finish-unblock` | specced | Browser scan 2026-10-10 10:25: the cube clear (margin 2.5) for 33 s but never finished; old white tracks with an open turn or two misread stickers held it. A track that fits the clear cube in some turn, or is outvoted 3:1 by the side's fitting tracks, no longer holds the finish |
 
 ## Backlog
 
