@@ -119,27 +119,41 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     val allSettled: Boolean get() = holding().all { it.state().option != null }
 
     /**
-     * Every counting track is settled, or is short (fewer than [KEEP_READINGS]) with its face settled
-     * and reads like [cube] where it is assigned (at most one sticker otherwise): it cannot change the
-     * cube, only which turn it was seen in.
-     */
-    fun settledFor(cube: Cube): Boolean = holding().all { t ->
-        val s = t.state()
-        s.option != null || (t.size < KEEP_READINGS && s.face != null && s.assigned != FaceOption.NONE && fits(t, s.assigned, cube))
-    }
-
-    /**
-     * Once [cube] is clear: every counting track is settled, short (fewer than [KEEP_READINGS]), or reads
+     * While [cube] is clear: every counting track is settled, short (fewer than [KEEP_READINGS]), reads
      * like [cube] (at most one sticker otherwise) in some turn of a face it could be (its face, else its
-     * assignment or the next best face). A face newly in view, its face or turn not told yet, then does not
-     * hold the finish back (the third phone test, 2026-10-08 09:11: each new track revoked it for a frame,
-     * so its half second never came), nor does a stray lattice for a moment; one read against the cube for
-     * longer does. Whether the cube stays clear is the evidence's to say.
+     * assignment or the next best face), or is [outvoted]. A face newly in view, its face or turn not told
+     * yet, then does not hold the finish back (the third phone test, 2026-10-08 09:11: each new track
+     * revoked it for a frame, so its half second never came), nor does an old face whose turn was never
+     * told, nor a stray lattice for a moment (browser, 2026-10-10 10:25: the cube clear for 33 s, held by
+     * such faces); one read against the cube by about as many readings as agree with it does. Whether the
+     * cube stays clear is the evidence's to say.
      */
     fun quietFor(cube: Cube): Boolean = holding().all { t ->
+        t.state().option != null || t.size < KEEP_READINGS || fitsSome(t, cube) || outvoted(t, cube)
+    }
+
+    /** The faces [t] could be: its settled face, else its assignment and the next best face. */
+    private fun facesOf(t: Track): List<Face> {
         val s = t.state()
-        val faces = s.face?.let { listOf(it) } ?: listOfNotNull(s.assigned.takeIf { it != FaceOption.NONE }?.let(FaceOption::face), s.otherFace)
-        s.option != null || t.size < KEEP_READINGS || faces.any { f -> (0 until 4).any { k -> fits(t, FaceOption.of(f, k), cube) } }
+        return s.face?.let { listOf(it) } ?: listOfNotNull(s.assigned.takeIf { it != FaceOption.NONE }?.let(FaceOption::face), s.otherFace)
+    }
+
+    /** [t] reads like [cube] in some turn of a face it could be. */
+    private fun fitsSome(t: Track, cube: Cube): Boolean = facesOf(t).any { f -> (0 until 4).any { k -> fits(t, FaceOption.of(f, k), cube) } }
+
+    /**
+     * An outvoted misread (`scan-finish-unblock`): [t] reads against [cube] (two or more stickers in every turn
+     * of every face it could be), and on each of those faces the other counting tracks known to be that face
+     * that read like [cube] have at least [OUTVOTE] times its readings. It neither holds the finish nor, against the
+     * last clear cube, is evidence ([updateVoting]).
+     */
+    fun outvoted(t: Track, cube: Cube): Boolean {
+        val faces = facesOf(t)
+        if (faces.isEmpty() || fitsSome(t, cube)) return false
+        return faces.all { f ->
+            counting().filter { u -> u !== t && u.state().face == f && (0 until 4).any { k -> fits(u, FaceOption.of(f, k), cube) } }
+                .sumOf { it.size } >= OUTVOTE * t.size
+        }
     }
 
     private fun fits(t: Track, o: Int, cube: Cube): Boolean {
@@ -257,6 +271,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         // Before this picture's work: the last best cube was clear, and a counting track got a reading now ([wholeRecheck]).
         val wasClear = best?.let { it.clearness(evidence) >= VideoScan.CLEAR_MARGIN } == true
         val read = picture.any { it != null && counts(it.first) }
+        clearCube = if (wasClear) best?.cube else null
         lastCosts = costs
         costs = HashMap()
         rules.observe(picture.filterNotNull())
@@ -1096,6 +1111,9 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         fun leading(face: Face, k: Int): List<Int> = votes(face.ordinal, k).map { v -> if (v.sum() <= 0.0) -1 else v.indices.maxBy { v[it] } }
     }
 
+    /** The last best cube when it was clear before this picture's work, else null ([updateVoting]). */
+    private var clearCube: Cube? = null
+
     /** The tracks whose readings are evidence: per face, those agreeing with its most supported track. */
     private var voting: Set<Track> = emptySet()
 
@@ -1124,6 +1142,8 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             val anchor = list.maxWith(compareBy<Track> { a -> list.filter { agree(a, it) }.sumOf { weight(it) } }.thenBy { it.lastAt })
             out += list.filter { agree(anchor, it) }
         }
+        // An outvoted misread of the last clear cube is no evidence either (`scan-finish-unblock`).
+        clearCube?.let { cube -> out.removeAll { outvoted(it, cube) } }
         voting = out
     }
 
@@ -1271,6 +1291,9 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
         /** Two tracks of one face agree when at most this many stickers read otherwise (red for orange not counted). */
         const val MAX_DISAGREE = 2
+
+        /** How many times a track's readings the same face's tracks that fit a clear cube need to outvote it ([outvoted]). */
+        const val OUTVOTE = 3
 
         /** A track seen this recently is in view (its readings count double for its face's anchor). */
         const val LIVE_MILLIS = 1_000L

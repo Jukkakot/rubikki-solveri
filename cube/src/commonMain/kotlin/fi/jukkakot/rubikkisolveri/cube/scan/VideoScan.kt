@@ -136,7 +136,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
      * Handles the faces found in one frame taken at [nowMillis] (a partial face, stickers missing,
      * only continues a face already followed): known stickers from the best possible cube where it is
      * clear and its faces are settled, else from their own agreeing votes; nothing on a face an open
-     * track could be; complete when every counting track is settled and the cube is clear.
+     * track could be; complete when the cube is clear and no counting track reads against it ([FaceTracks.quietFor]).
      */
     fun onFrame(faces: List<FaceReading>, nowMillis: Long): VideoScanState {
         val ft = tracks
@@ -147,8 +147,9 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val settledFaces = ft.settledFaces
         val unsure = ft.unsureFaces
         val clearness = best?.clearness(evidence) ?: 0.0
-        // Once clear, a face newly in view holds it back only by reading against the cube.
-        val quiet = best != null && if (completeSince != null) ft.quietFor(best.cube) else ft.settledFor(best.cube) && unsure.isEmpty()
+        // A face whose face or turn is open holds a clear cube back only by reading against it, an outvoted misread not at all,
+        // before the first completion as after it (`scan-finish-unblock`).
+        val quiet = best != null && ft.quietFor(best.cube)
         val complete = best != null && seen.isNotEmpty() && quiet && clearness >= CLEAR_MARGIN && ft.turnsClear()
         val clearAt = BooleanArray(Stickers.COUNT)
         val net = List(Stickers.COUNT) { i ->
