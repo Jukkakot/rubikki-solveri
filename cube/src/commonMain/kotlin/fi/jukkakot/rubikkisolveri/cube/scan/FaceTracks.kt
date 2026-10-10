@@ -121,15 +121,17 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     /**
      * While [cube] is clear: every counting track is settled, short (fewer than [KEEP_READINGS]), reads
      * like [cube] (at most one sticker otherwise) in some turn of a face it could be (its face, else its
-     * assignment or the next best face), or is [outvoted]. A face newly in view, its face or turn not told
+     * assignment or the next best face), is evidence, or is [outvoted]. A face newly in view, its face or turn not told
      * yet, then does not hold the finish back (the third phone test, 2026-10-08 09:11: each new track
      * revoked it for a frame, so its half second never came), nor does an old face whose turn was never
      * told, nor a stray lattice for a moment (browser, 2026-10-10 10:25: the cube clear for 33 s, held by
-     * such faces); one read against the cube by about as many readings as agree with it does. Whether the
+     * such faces); one read against the cube by more readings than agree with it does, unless its readings are
+     * evidence ([voting]): the cube is clear with them counted, so the rest of the cube outweighs them
+     * (`scan-finish-fast`, browser 2026-10-10 10:25: two misread white faces held a clear cube 10 s). Whether the
      * cube stays clear is the evidence's to say.
      */
     fun quietFor(cube: Cube): Boolean = holding().all { t ->
-        t.state().option != null || t.size < KEEP_READINGS || fitsSome(t, cube) || outvoted(t, cube)
+        t.state().option != null || t.size < KEEP_READINGS || t in voting || fitsSome(t, cube) || outvoted(t, cube)
     }
 
     /** The faces [t] could be: its settled face, else its assignment and the next best face. */
@@ -144,7 +146,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     /**
      * An outvoted misread (`scan-finish-unblock`): [t] reads against [cube] (two or more stickers in every turn
      * of every face it could be), and on each of those faces the other counting tracks known to be that face
-     * that read like [cube] have at least [OUTVOTE] times its readings. It neither holds the finish nor, against the
+     * that read like [cube] have at least [OUTVOTE] times its readings (a track holds at most [Tracker.MAX_READINGS]). It neither holds the finish nor, against the
      * last clear cube, is evidence ([updateVoting]).
      */
     fun outvoted(t: Track, cube: Cube): Boolean {
@@ -1044,7 +1046,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         // The way that was too close last frame first: while the turns stay unclear it usually still is (one
         // cube cost instead of dozens a frame, `scan-rules-finish`).
         lastClose?.let { w -> if (ways.remove(w)) ways.add(0, w) }
-        val close = ways.firstOrNull { w -> bestCost(turned.of(w.toIntArray())) - base < TURN_MARGIN }
+        val close = ways.firstOrNull { w -> bestCost(turned.of(w.toIntArray())) - base < FINISH_TURN_MARGIN }
         lastClose = close
         return close == null
     }
@@ -1266,6 +1268,14 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         /** A face's turn settles by the best cube when every other turn makes it this much costlier ([VideoScan.CLEAR_MARGIN], as the earlier scanner). */
         const val TURN_MARGIN = 2.0
 
+        /**
+         * The finish's check that the settled turns stay clear ([turnsClear]): every other way of turning them makes
+         * the best cube this much costlier. Lower than [TURN_MARGIN] (`scan-finish-fast`: 1.5 finished `202403`
+         * 1.6 s sooner; the wrong cubes of the fixtures came within 0.5 to 1.0, and settling turns at 1.5 finished one
+         * wrong).
+         */
+        const val FINISH_TURN_MARGIN = 1.5
+
         /** What leaving a settled face costs a track in the joint assignment. */
         const val FACE_KEEP = 2.0
 
@@ -1292,8 +1302,12 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         /** Two tracks of one face agree when at most this many stickers read otherwise (red for orange not counted). */
         const val MAX_DISAGREE = 2
 
-        /** How many times a track's readings the same face's tracks that fit a clear cube need to outvote it ([outvoted]). */
-        const val OUTVOTE = 3
+        /**
+         * How many times a track's readings the same face's tracks that fit a clear cube need to outvote it ([outvoted]):
+         * as many (`scan-finish-fast`; 3 kept a misread of 14 readings from ever being outvoted by one track of at most
+         * 40, and 2 still held `web_181940` 9 s).
+         */
+        const val OUTVOTE = 1
 
         /** A track seen this recently is in view (its readings count double for its face's anchor). */
         const val LIVE_MILLIS = 1_000L

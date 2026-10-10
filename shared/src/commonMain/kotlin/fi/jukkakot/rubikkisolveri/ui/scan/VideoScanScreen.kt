@@ -244,7 +244,7 @@ fun VideoScanScreen(
  * picture outside it closes it for that reason (until a restart). The camera is set through
  * [onExposure] by [ExposureControl]: metered and focused on the cube once a face is found, made
  * darker (up to [maxDarker] steps) while the stickers wash out, then locked; the torch turned on or
- * off meters again. Every frame is read, also while the camera adjusts. Clear for half a second →
+ * off meters again. Every frame is read, also while the camera adjusts. Clear for [VideoScan.FINISH_MILLIS] →
  * [onResult]. [clock] is the time in milliseconds (tests pass their own).
  */
 @OptIn(ExperimentalMaterial3Api::class)

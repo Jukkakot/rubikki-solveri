@@ -85,7 +85,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 75 | `scan-corner-ticks` | done | Phone test: all corners ticked but the scan not done. A corner ticks only when its corner and edge stickers are part of the clear cube; all eight ticked only when the scan is complete |
 | 76 | `scan-side-balls` | done | Colours instead of corners: six coloured balls, a side ticked when its nine stickers are part of the clear cube (all six only when complete, ticks taken back when the scan changes its mind), the next side pulses and the line says "Näytä sininen puoli" (user 2026-10-09) |
 | 77 | `scan-finish-unblock` | done | Browser scan 2026-10-10 10:25: the cube clear (margin 2.5) for 33 s but never finished; old white tracks with an open turn or two misread stickers held it. A track that fits the clear cube in some turn, or is outvoted 3:1 by the side's fitting tracks, no longer holds the finish |
-| 78 | `scan-finish-fast` | specced | Finish as soon after the cube is clear as safety allows (recording 10:25: clear at 5.5 s, finish at 15.6 s); tuning with zero wrong finishes on every fixture, recording and synthetic scramble (user 2026-10-10: as fast as possible) |
+| 78 | `scan-finish-fast` | done | Finish soon after the cube is clear: recording 10:25 clear at 5.0 s now finishes at 5.3 s (was 15.6), striped `web_181940` 20.2 → 11.5 s, every other run 0.2 s sooner; zero wrong finishes on fixtures, robustness, recordings and 60 synthetic scrambles. Counted tracks never hold a clear cube, outvote 1:1, turn check 1.5, finish after 300 ms |
 
 ## Backlog
 

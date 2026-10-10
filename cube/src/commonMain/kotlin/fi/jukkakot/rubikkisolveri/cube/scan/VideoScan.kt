@@ -451,8 +451,11 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         /** A projection is held at most this long after it was built from a settled face. */
         const val HOLD_MILLIS = 1_500L
 
-        /** How long the whole cube must stay recognised before the scan finishes. */
-        const val FINISH_MILLIS = 500L
+        /**
+         * How long the whole cube must stay recognised before the scan finishes (`scan-finish-fast`: 300 instead of 500;
+         * the longest a wrong cube stayed complete in the fixtures and recordings was 130 ms, before this change).
+         */
+        const val FINISH_MILLIS = 300L
 
         /** The best cube is clear when every place's margin reaches this ([BestCube.clearness]; chosen by simulation with soft votes, `video-scan-light` findings). */
         const val CLEAR_MARGIN = 2.0

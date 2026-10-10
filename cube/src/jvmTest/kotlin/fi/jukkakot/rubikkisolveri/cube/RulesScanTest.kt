@@ -123,7 +123,7 @@ class RulesScanTest {
             }
         }
         val after = finishedAt?.minus(clearFrom)
-        assertTrue(after != null && after <= VideoScan.FINISH_MILLIS + 100, "finishes half a second after the cube is clear (clear at frame $clearAt, finished after $after ms)")
+        assertTrue(after != null && after <= VideoScan.FINISH_MILLIS + 100, "finishes FINISH_MILLIS after the cube is clear (clear at frame $clearAt, finished after $after ms)")
     }
 
     @Test

@@ -207,7 +207,9 @@ Video scan pipeline (`video-scan`):
    Why each rule exists and the known limits: `scan-rules` design (decision 8). Acceptance:
    `ScanAcceptanceHarness` (ACCEPTANCE=1) replays every fixture and holds each finish within 1.2 times
    the frame stored in its `FINISHED` (the finishes when the earlier scanner went); `RulesTimeline`
-   (TIMELINE=<video>) prints the tracks frame by frame for tuning.
+   (TIMELINE=<video>) prints the tracks frame by frame for tuning; `FinishDelayHarness` (FINISH_DELAY=1)
+   tables clear → finish per fixture, recording and synthetic scramble, with wrong finishes and how long a
+   wrong cube was ever complete (`scan-finish-fast`).
    Shared by the scan around the tracks (`VideoScan.finish`): pose, orientation
    (`Orientation`, weak perspective from one face's steps), stall reasons and `reset()`. The
    projection is held over frames without a settled face for up to `HOLD_MILLIS`, moved (not
