@@ -2,7 +2,7 @@
 
 ## 1. Counters (cube, commonMain)
 
-- [ ] 1.1 Add internal work counters to `FaceTracks`, exposed through `VideoScan`: sticker namings (every call that names a reading's colour against references), assignment search nodes, best-cube solves, tracks worked through in a picture; running totals that a caller samples per picture; JVM test: a short fixture's counts are the same in two runs and grow with each picture that has faces, and a picture without faces after a steady state adds no namings; verify `./gradlew :cube:jvmTest --tests "*ScanWork*"` passes.
+- [x] 1.1 Add internal work counters to `FaceTracks`, exposed through `VideoScan`: sticker namings (every call that names a reading's colour against references), assignment search nodes, best-cube solves, tracks worked through in a picture; running totals that a caller samples per picture; JVM test: a short fixture's counts are the same in two runs and grow with each picture that has faces, and a picture without faces after a steady state adds no namings; verify `./gradlew :cube:jvmTest --tests "*ScanWork*"` passes.
 
 ## 2. Budget test
 
