@@ -11,7 +11,7 @@
 
 ## 3. Comparison
 
-- [ ] 3.1 Extend `ColourSpikeHarness` (`COLOUR_SPIKE=1`) with the three modes on every source plus `scanMs`; run it; write the table and chosen mode into design.md Findings; set the default mode by the go rules (design 5–6), or stop and report if no mode passes; verify the table covers every source and the go rules are stated as met or not.
+- [x] 3.1 Extend `ColourSpikeHarness` (`COLOUR_SPIKE=1`) with the three modes on every source plus `scanMs`; run it; write the table and chosen mode into design.md Findings; set the default mode by the go rules (design 5–6), or stop and report if no mode passes; verify the table covers every source and the go rules are stated as met or not.
 - [ ] 3.2 Make the stuck recordings fixtures if the chosen mode finishes them (finish with the true cube, as other recording fixtures); verify `./gradlew :cube:jvmTest` passes.
 
 ## 4. Docs

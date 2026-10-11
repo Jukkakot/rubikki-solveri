@@ -106,4 +106,33 @@ None: scan logic only, nothing stored. Rolling back means setting the mode back 
   is a very dark `8e0104` and the orange a bright `ff9b55`: the two faces were seen in different light.
   This is the case for decision 2.
 - The scan budget test (`aLongScanStaysWithinItsBudgetPerPicture`) fails on this cloud machine without the change
-  too (a window at 5.0–5.2 ms); with the fix reading the track's kept centre it passes.
+  too (a window at 5.0–5.2 ms) and passes or fails from run to run with it (5.0–6.7 ms); CI triples the budget.
+
+**Decision 2 as built:** first split by Lab hue (as `WARM_HUE_STEP`): in the 10:16 room red and orange lie only
+3–4° apart there, and washed-out or greyish readings (a dim green, white) joined the warm ones and took the
+largest gap. Now: HSV hue (red −13..4°, orange 6..18° on both stuck recordings), washed-out readings and
+chroma under `MIN_COLOUR_CHROMA` left out, hues −30..45°, gap `FACE_WARM_GAP` 6°, orange side's mean hue
+above 0°. With that every split in the two replays matched the true colours.
+
+**Comparison** (`ColourSpikeHarness`, finish time in s; W = wrong cube; CENTRES = centres with the decision 1 fix):
+
+| Source | before | CENTRES | CUBE | FACE | FACE_ONLY |
+|---|---|---|---|---|---|
+| 213729 (evening) | 12.2 | 12.2 | 9.1 | 9.1 | 12.2 |
+| 202058 (striped, dim) | never | never | never | never | 26.4 W |
+| 202156 (striped, table) | 18.0 W | 18.0 W | 20.5 | 20.5 | 20.5 W |
+| 202403 (striped U2, dim) | never | never | 13.3 | 14.1 | 12.3 |
+| web_121505:66 | never | never | 19.9 W | never | never |
+| rec 100814 | 6.2 | 6.2 | 5.2 | 5.2 | 5.2 |
+| rec 100824 | 9.2 | 9.2 | 20.0 | 13.3 | 13.3 |
+| rec 102548 | 7.8 | 7.8 | 17.1 | 17.1 | 17.1 |
+| rec 100403 (stuck) | never | 15.3 | 11.1 | never | never |
+| rec 101618 (stuck) | never | never | 12.4 | 12.4 | never |
+
+Every other source finishes the same in all modes. FACE_ONLY: face references without the whole-cube ones.
+Scan time a picture stays within about ±1 ms of CENTRES in every mode.
+
+**Outcome: no split mode passes the go rules.** CUBE finishes both stuck recordings and two striped videos but
+makes `web_121505:66` finish wrong and two good recordings about twice as slow; FACE and FACE_ONLY keep the
+slowdowns and lose `100403`. The default stays CENTRES (with the decision 1 fix: `100403` finishes, nothing
+worse). Reported to the user (design 5) before going on.

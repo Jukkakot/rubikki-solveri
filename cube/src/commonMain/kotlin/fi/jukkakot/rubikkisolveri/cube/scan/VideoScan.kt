@@ -104,7 +104,9 @@ enum class Stall { DARK, NO_CUBE, STUCK }
  * sticker that fits no real piece is corrected by the rest. Pure Kotlin, one code base for the phone
  * and the browser.
  */
-class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
+class VideoScan internal constructor(private val scheme: ColorScheme, private val warmMode: WarmRefs) {
+    constructor(scheme: ColorScheme = ColorScheme.STANDARD) : this(scheme, WarmRefs.DEFAULT)
+
     private var lastPose: Pose? = null
     private var lastOrientation: Orientation? = null
     private var lastOrientationAt = 0L
@@ -127,7 +129,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         private set
 
     /** The faces followed from picture to picture. */
-    private var tracks = FaceTracks(scheme)
+    private var tracks = FaceTracks(scheme, warmMode)
 
     /** The face centres as read ([FaceTracks.centreLog]), for the scan log. */
     val centreLog: String get() = tracks.centreLog
@@ -394,7 +396,7 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
     /** Starts the scan again from nothing (the camera keeps running). */
     fun reset() {
-        tracks = FaceTracks(scheme)
+        tracks = FaceTracks(scheme, warmMode)
         lastPose = null
         lastOrientation = null
         lastSure = false

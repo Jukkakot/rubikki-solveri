@@ -6,6 +6,7 @@ import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
 import fi.jukkakot.rubikkisolveri.cube.scan.Lab
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanRecording
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
+import fi.jukkakot.rubikkisolveri.cube.scan.WarmRefs
 import org.junit.Assume.assumeTrue
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
@@ -14,9 +15,9 @@ import javax.imageio.ImageIO
 import kotlin.test.Test
 
 /**
- * `scan-colour-spike` design 3: today's colours against idea A (re-read from the full still) and idea
- * B (red and orange split by the scan's own warm readings) on every stills source and recording with a
- * known cube. Runs only with COLOUR_SPIKE=1 (a few minutes); prints the tables for `findings.md`.
+ * Every stills source and recording with a known cube through the scan, once per way of referencing red and
+ * orange (`scan-warm-references` design 5; built for `scan-colour-spike`, whose variants A and B its findings
+ * dropped). Runs only with COLOUR_SPIKE=1 (a few minutes); prints the table for the change's findings.
  */
 class ColourSpikeHarness {
     private class Source(val dir: String, val range: IntRange?, val truth: String)
@@ -47,39 +48,19 @@ class ColourSpikeHarness {
     /** One picture: when it was taken and the faces found in it. */
     private class Picture(val ms: Long, val faces: List<FaceReading>, val reset: Boolean = false)
 
-    private class Row(val right: Double, val warmWrong: Double, val finishedMs: Long?, val wrongCube: Boolean)
-
     @Test
     fun printTables() {
         assumeTrue("set COLOUR_SPIKE=1 to run", System.getenv("COLOUR_SPIKE") == "1")
-        println("source | variant | stickers right | red<->orange wrong (of warm) | finished at | wrong cube")
-        var rereadNanos = 0L
-        var rereadPictures = 0
+        val sources = ArrayList<Triple<String, List<Picture>, String>>()
         for (source in stills) {
             val files = File("../testdata/video/${source.dir}").listFiles { f -> f.name.endsWith(".jpg") }!!.sortedBy { it.name }
                 .let { l -> if (source.range == null) l else l.subList(source.range.first, minOf(source.range.last, l.size)) }
-            val today = ArrayList<Picture>()
-            val a = ArrayList<Picture>()
-            for ((i, file) in files.withIndex()) {
-                val image = ImageIO.read(file)
-                val small = scaled(image, FrameSampler.FINDER_LONG_SIDE)
-                val faces = FaceFinder.find(argb(small), small.width, small.height).let { it.faces + it.partial }.map(FaceReading::of)
-                val full = argb(image)
-                val start = System.nanoTime()
-                val again = faces.map { ColourSpike.reread(it, full, image.width, image.height, image.width.toDouble() / small.width) }
-                rereadNanos += System.nanoTime() - start
-                rereadPictures++
-                today += Picture(i * 100L, faces)
-                a += Picture(i * 100L, again)
+            val pictures = files.mapIndexed { i, file ->
+                val small = scaled(ImageIO.read(file), FrameSampler.FINDER_LONG_SIDE)
+                Picture(i * 100L, FaceFinder.find(argb(small), small.width, small.height).let { it.faces + it.partial }.map(FaceReading::of))
             }
-            val name = source.dir.substringAfterLast('/') + (source.range?.let { ":${it.first}" } ?: "")
-            report(name, "today", today, today, source.truth)
-            report(name, "A", today, a, source.truth)
-            report(name, "B", today, split(today), source.truth)
-            report(name, "A+B", today, split(a), source.truth)
-            report(name, "B2", today, split(today, 0.25), source.truth)
+            sources += Triple(source.dir.substringAfterLast('/') + (source.range?.let { ":${it.first}" } ?: ""), pictures, source.truth)
         }
-        println("A: re-read %.2f ms a picture (JVM, 360×640 stills)".format(rereadNanos / 1e6 / rereadPictures))
         for ((name, truth) in recordings) {
             val pictures = VideoFixtures.loadRecording(name).entries.map { e ->
                 when (e) {
@@ -87,60 +68,58 @@ class ColourSpikeHarness {
                     is ScanRecording.Picture -> Picture(e.ms, e.found.faces)
                 }
             }
-            report(name, "today", pictures, pictures, truth)
-            report(name, "B", pictures, split(pictures), truth)
-            report(name, "B2", pictures, split(pictures, 0.25), truth)
+            sources += Triple("rec $name", pictures, truth)
         }
+        // Warmed up first: the JIT reaches every path the timing goes through.
+        for ((_, pictures, _) in sources.take(3)) for (mode in WarmRefs.entries) scan(pictures, mode)
+        println("source | mode | stickers right | red<->orange wrong (of warm) | finished at | wrong cube | scan ms a picture")
+        for ((name, pictures, truth) in sources) for (mode in WarmRefs.entries) report(name, mode, pictures, truth)
     }
 
-    /** Idea B over [pictures] (B2: only readings clear of the split by [margin]), a fresh split at each reset. */
-    private fun split(pictures: List<Picture>, margin: Double = 0.0): List<Picture> {
-        var warm = ColourSpike.WarmSplit(margin)
-        return pictures.map { p ->
+    /** The scan over [pictures] with [mode]: the first finish after the last reset before it (time from that segment's start, cube), and the mean scan time a picture. */
+    private fun scan(pictures: List<Picture>, mode: WarmRefs): Pair<Pair<Long, String>?, Double> {
+        var scan = VideoScan(fi.jukkakot.rubikkisolveri.cube.ColorScheme.STANDARD, mode)
+        var t0: Long? = null
+        var finished: Pair<Long, String>? = null
+        var nanos = 0L
+        var count = 0
+        for (p in pictures) {
             if (p.reset) {
-                warm = ColourSpike.WarmSplit(margin)
-                p
-            } else {
-                Picture(p.ms, warm.apply(p.faces))
+                scan = VideoScan(fi.jukkakot.rubikkisolveri.cube.ColorScheme.STANDARD, mode)
+                t0 = null
+                continue
+            }
+            if (t0 == null) t0 = p.ms
+            val start = System.nanoTime()
+            val s = scan.onFrame(p.faces, p.ms)
+            nanos += System.nanoTime() - start
+            count++
+            if (s.finished) {
+                finished = (p.ms - t0) to s.stickers.joinToString("") { it?.letter?.toString() ?: "?" }
+                break
             }
         }
+        return finished to nanos / 1e6 / maxOf(1, count)
     }
 
-    private fun report(source: String, variant: String, base: List<Picture>, pictures: List<Picture>, truth: String) {
-        // Stickers: matched to the true cube on today's reading, named by the source's true centres (as ReadingMeasure).
+    private fun report(source: String, mode: WarmRefs, pictures: List<Picture>, truth: String) {
+        // Stickers: matched to the true cube, named by the source's true centres (as ReadingMeasure).
         class Sample(val truth: CubeColor, val lab: Lab, val centre: Boolean)
         val samples = ArrayList<Sample>()
-        for ((b, p) in base.zip(pictures)) for ((face, read) in b.faces.zip(p.faces)) {
+        for (p in pictures) for (face in p.faces) {
             val colors = ReadingMeasure.trueColors(face, truth) ?: continue
-            for (n in 0 until 9) samples += Sample(colors[n], read.colors[n]!!.toLab(), n == 4)
+            for (n in 0 until 9) samples += Sample(colors[n], face.colors[n]!!.toLab(), n == 4)
         }
         val refs = CubeColor.entries.mapNotNull { c -> samples.filter { it.centre && it.truth == c }.map { it.lab }.takeIf { it.isNotEmpty() }?.let { c to Lab.mean(it) } }.toMap()
         val named = samples.filter { !it.centre }.map { s -> s.truth to refs.minBy { it.value.distance(s.lab) }.key }
         val right = named.count { it.first == it.second }.toDouble() / maxOf(1, named.size)
         val warm = named.filter { it.first == CubeColor.RED || it.first == CubeColor.ORANGE }
         val warmWrong = warm.count { (t, n) -> (t == CubeColor.RED && n == CubeColor.ORANGE) || (t == CubeColor.ORANGE && n == CubeColor.RED) }.toDouble() / maxOf(1, warm.size)
-        // The scan: the first finished picture after the last reset before it, its time from that segment's start.
-        var scan = VideoScan()
-        var t0: Long? = null
-        var finished: Pair<Long, String>? = null
-        for (p in pictures) {
-            if (p.reset) {
-                scan = VideoScan()
-                t0 = null
-                continue
-            }
-            if (t0 == null) t0 = p.ms
-            val s = scan.onFrame(p.faces, p.ms)
-            if (s.finished) {
-                finished = (p.ms - t0) to s.stickers.joinToString("") { it?.letter?.toString() ?: "?" }
-                break
-            }
-        }
-        val row = Row(right, warmWrong, finished?.first, finished != null && finished.second != truth)
+        val (finished, ms) = scan(pictures, mode)
         println(
-            "$source | $variant | %.1f %% | %.1f %% | %s | %s".format(
-                row.right * 100, row.warmWrong * 100, row.finishedMs?.let { "%.1f s".format(it / 1000.0) } ?: "never",
-                if (row.wrongCube) "WRONG ${finished!!.second}" else "-",
+            "$source | $mode | %.1f %% | %.1f %% | %s | %s | %.2f".format(
+                right * 100, warmWrong * 100, finished?.first?.let { "%.1f s".format(it / 1000.0) } ?: "never",
+                if (finished != null && finished.second != truth) "WRONG ${finished.second}" else "-", ms,
             ),
         )
     }

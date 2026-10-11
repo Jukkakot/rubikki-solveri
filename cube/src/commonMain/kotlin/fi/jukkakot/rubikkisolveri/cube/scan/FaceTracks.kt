@@ -22,7 +22,9 @@ import kotlin.time.TimeSource
  * other way costs [ASSIGN_MARGIN] more, first its face, then also its turn, and re-opens when another
  * way becomes cheaper. The assigned tracks' newest readings are the evidence for [BestCube].
  */
-class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
+class FaceTracks internal constructor(private val scheme: ColorScheme, private val warmMode: WarmRefs) {
+    constructor(scheme: ColorScheme = ColorScheme.STANDARD) : this(scheme, WarmRefs.DEFAULT)
+
     private val tracker = Tracker()
     private val rules = PairRules()
     private var refs: Map<CubeColor, Tone> = defaultRefs()
@@ -41,7 +43,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     internal val warmRefLog: String get() = WARM.joinToString(" ") { c ->
         val from = tracker.tracks.filter { t -> t.state().face?.let { scheme[it] } == c }.joinToString(",") { "t${it.id}/${it.size}" }
         "${c.letter}=${known[c]?.toHex() ?: "-"}[$from${if (c in archivedCentres) ",arch" else ""}]"
-    }
+    } + (cubeWarm?.let { w -> " split ${splits.size}+${archivedSplits.size} faces: R=${w.red.toHex()} O=${w.orange.toHex()}" } ?: "")
 
     private class State {
         var votes: List<DoubleArray> = List(9) { DoubleArray(6) }
@@ -260,7 +262,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     private fun decisions(): List<Any?> = tracker.tracks.map { t ->
         val s = t.state()
         listOf(t, s.face, s.option, s.assigned, s.otherFace, s.openSince, s.byCube)
-    } + listOf(voting, known)
+    } + listOf(voting, known, splits)
 
     fun onFrame(faces: List<FaceReading>, now: Long) {
         lastNow = now
@@ -285,7 +287,10 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         rules.observe(picture.filterNotNull())
         updateRefs()
         for ((track, reading) in picture.filterNotNull()) {
-            shareReading(reading)
+            // The tracker named it against the whole cube's references; a face with its own red and orange names it again.
+            val own = refsOf(track)
+            if (own !== refs) reading.names = reading.face.colors.map { it?.let { c -> nameSticker(c, own) } }
+            shareReading(reading, own)
             track.updateLeading()
         }
         for (t in tracker.tracks) if (now - t.lastAt <= Tracker.GAP_MILLIS) votesOf(t)
@@ -382,6 +387,8 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
                     sum[3]++
                 }
             }
+            if (o != null && o != FaceOption.NONE) splits[t.id]?.let { archivedSplits += it }
+            splitCache.remove(t.id)
             states.remove(t)
         }
         val gone = out.toHashSet()
@@ -395,13 +402,143 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
 
     private fun defaultRefs(): Map<CubeColor, Tone> = CubeColor.entries.associateWith { Tone(ColorClassifier.DEFAULT_PALETTE.getValue(it)) }
 
-    private fun nameSticker(rgb: Rgb): CubeColor = Tone(rgb).let { t -> refs.minBy { it.value.distance(t) }.key }
+    private fun nameSticker(rgb: Rgb, refs: Map<CubeColor, Tone> = this.refs): CubeColor = Tone(rgb).let { t -> refs.minBy { it.value.distance(t) }.key }
 
     /**
      * The cube's own centres as references: the centres of the tracks whose face is settled, the
      * default palette for colours not seen yet. When they change, every reading is named again.
      */
     private fun updateRefs() {
+        val centresChanged = updateKnown()
+        val newSplits = if (warmMode == WarmRefs.CENTRES) emptyMap() else tracker.tracks.mapNotNull { t -> warmSplit(t, centresChanged)?.let { t.id to it } }.toMap()
+        val moved = (newSplits.keys + splits.keys).filterTo(HashSet()) { !near(newSplits[it], splits[it]) }
+        if (!centresChanged && moved.isEmpty()) return
+        splits = newSplits
+        val all = splits.values + archivedSplits
+        val cubeWarm = if (all.isEmpty() || warmMode == WarmRefs.FACE_ONLY) null else WarmSplit(mean(all.map { it.red }), mean(all.map { it.orange }))
+        val globalChanged = centresChanged || !near(cubeWarm, this.cubeWarm)
+        this.cubeWarm = cubeWarm
+        refs = cubeWarm?.let { centreRefs + it.tones() } ?: centreRefs
+        faceRefs = if (warmMode == WarmRefs.FACE || warmMode == WarmRefs.FACE_ONLY) splits.mapValues { (_, s) -> refs + s.tones() } else emptyMap()
+        if (globalChanged) generation++
+        for (t in tracker.tracks) {
+            if (!globalChanged && t.id !in moved) continue
+            if (!globalChanged) renamed[t.id] = (renamed[t.id] ?: 0) + 1
+            val own = refsOf(t)
+            for (r in t.readings) {
+                r.names = r.face.colors.map { it?.let { c -> nameSticker(c, own) } }
+                shareReading(r, own)
+            }
+            t.updateLeading()
+            votesOf(t)
+        }
+    }
+
+    /** The references for [t]'s stickers: its face's own red and orange where it has them ([WarmRefs.FACE]). */
+    private fun refsOf(t: Track): Map<CubeColor, Tone> = faceRefs[t.id] ?: refs
+
+    /** One face's red and orange in its own light (`scan-warm-references` design 2). */
+    private class WarmSplit(val red: Rgb, val orange: Rgb) {
+        fun tones(): Map<CubeColor, Tone> = mapOf(CubeColor.RED to Tone(red), CubeColor.ORANGE to Tone(orange))
+    }
+
+    /** Per track id, its last split and what it was worked out from (newest reading, centre references' generation). */
+    private class SplitCache(val seq: Long, val result: WarmSplit?)
+
+    private var splits: Map<Int, WarmSplit> = emptyMap()
+    private val archivedSplits = ArrayList<WarmSplit>()
+    private val splitCache = HashMap<Int, SplitCache>()
+    private var cubeWarm: WarmSplit? = null
+    private var faceRefs: Map<Int, Map<CubeColor, Tone>> = emptyMap()
+    private var centreRefs: Map<CubeColor, Tone> = defaultRefs()
+
+    private fun near(a: WarmSplit?, b: WarmSplit?): Boolean =
+        if (a == null || b == null) a == null && b == null else near(a.red, b.red) && near(a.orange, b.orange)
+
+    private fun near(a: Rgb, b: Rgb): Boolean = kotlin.math.abs(a.r - b.r) + kotlin.math.abs(a.g - b.g) + kotlin.math.abs(a.b - b.b) <= REF_STEP
+
+    private fun mean(l: List<Rgb>): Rgb = Rgb(l.sumOf { it.r } / l.size, l.sumOf { it.g } / l.size, l.sumOf { it.b } / l.size)
+
+    /**
+     * [t]'s red and orange in its own light (design 2): its positions whose mean reading the centre references name red
+     * or orange, split by hue at the largest gap when it is at least [WARM_HUE_STEP]; the lower side red. A red or
+     * orange face's centre must fall on its own colour's side. Null while the face is open or has no such split.
+     */
+    private fun warmSplit(t: Track, centresChanged: Boolean): WarmSplit? {
+        if (t.state().face == null) return null
+        val seq = t.readings.lastOrNull()?.seq ?: return null
+        splitCache[t.id]?.let { if (!centresChanged && it.seq == seq) return it.result }
+        return splitOf(t).also { splitCache[t.id] = SplitCache(seq, it) }
+    }
+
+    /** Track [id]'s warm positions as `position@hue` by hue, and its split, for diagnosis. */
+    internal fun warmDetail(id: Int): String {
+        val t = tracker.tracks.firstOrNull { it.id == id } ?: return ""
+        val l = warmPositions(t).sortedBy { it.third }.joinToString(" ") { "${it.first}@%.0f:${it.second.toHex()}".format(it.third) }
+        return "$l ${splits[id]?.let { "split R=${it.red.toHex()} O=${it.orange.toHex()}" } ?: ""}"
+    }
+
+    private fun splitOf(t: Track): WarmSplit? {
+        val warm = warmPositions(t)
+        if (warm.size < 2) return null
+        warm.sortBy { it.third }
+        val at = (0 until warm.size - 1).maxBy { warm[it + 1].third - warm[it].third }
+        if (warm[at + 1].third - warm[at].third < FACE_WARM_GAP) return null
+        val red = warm.subList(0, at + 1)
+        val orange = warm.subList(at + 1, warm.size)
+        // Orange is yellower than pure red in any light: a pinkish red beside a dark one is no split.
+        if (orange.sumOf { it.third } / orange.size <= 0.0) return null
+        when (scheme[t.state().face!!]) {
+            CubeColor.RED -> if (orange.any { it.first == CENTRE }) return null
+            CubeColor.ORANGE -> if (red.any { it.first == CENTRE }) return null
+            else -> {}
+        }
+        return WarmSplit(mean(red.map { it.second }), mean(orange.map { it.second }))
+    }
+
+    /** [t]'s positions whose mean (not washed-out) reading the centre references name red or orange: position, mean, hue. */
+    private fun warmPositions(t: Track): ArrayList<Triple<Int, Rgb, Double>> {
+        val warm = ArrayList<Triple<Int, Rgb, Double>>()
+        for (m in 0 until 9) {
+            var r = 0
+            var g = 0
+            var b = 0
+            var n = 0
+            // Washed-out readings left out: their hue spreads (three oranges in too much light split 60°..70°, 2026-10-11 10:04).
+            for (x in t.readings) x.face.colors[x.at(m)]?.takeIf { VideoScan.weight(it) == 1.0 }?.let {
+                r += it.r
+                g += it.g
+                b += it.b
+                n++
+            }
+            if (n == 0) continue
+            val c = Rgb(r / n, g / n, b / n)
+            if (nameSticker(c, centreRefs) !in WARM) continue
+            // Clearly coloured and of a warm hue: greyish browns (a dim green or white named orange) left out.
+            val lab = c.toLab()
+            val hue = hsvHue(c)
+            if (kotlin.math.hypot(lab.a, lab.b) < FrameSampler.MIN_COLOUR_CHROMA || hue !in WARM_HUES) continue
+            warm += Triple(m, c, hue)
+        }
+        return warm
+    }
+
+    /** Hue in degrees as HSV has it, −180..180 with red at 0: it spreads red and orange wider than Lab's hue. */
+    private fun hsvHue(c: Rgb): Double {
+        val max = maxOf(c.r, c.g, c.b)
+        val min = minOf(c.r, c.g, c.b)
+        if (max == min) return 0.0
+        val d = (max - min).toDouble()
+        val h = when (max) {
+            c.r -> 60 * ((c.g - c.b) / d)
+            c.g -> 60 * ((c.b - c.r) / d + 2)
+            else -> 60 * ((c.r - c.g) / d + 4)
+        }
+        return if (h > 180) h - 360 else h
+    }
+
+    /** The centre references ([known], [centreRefs]) worked out again; whether they moved. */
+    private fun updateKnown(): Boolean {
         val byColor = HashMap<CubeColor, MutableList<Rgb>>()
         for (t in tracker.tracks) {
             val face = t.state().face ?: continue
@@ -415,18 +552,10 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             Rgb((l.sumOf { it.r } + a[0]) / n, (l.sumOf { it.g } + a[1]) / n, (l.sumOf { it.b } + a[2]) / n)
         }
         val changed = newKnown.keys != known.keys || newKnown.any { (c, rgb) -> known[c]?.let { o -> kotlin.math.abs(o.r - rgb.r) + kotlin.math.abs(o.g - rgb.g) + kotlin.math.abs(o.b - rgb.b) > REF_STEP } != false }
-        if (!changed) return
+        if (!changed) return false
         known = newKnown
-        refs = balancedRefs(known)
-        generation++
-        for (t in tracker.tracks) {
-            for (r in t.readings) {
-                r.names = r.face.colors.map { it?.let(::nameSticker) }
-                shareReading(r)
-            }
-            t.updateLeading()
-            votesOf(t)
-        }
+        centreRefs = balancedRefs(known)
+        return true
     }
 
     /**
@@ -462,7 +591,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         }
     }
 
-    private fun shareReading(r: TrackReading) {
+    private fun shareReading(r: TrackReading, refs: Map<CubeColor, Tone>) {
         r.shares = r.tones.mapIndexed { n, tone ->
             tone?.let { t -> ColorClassifier.sharesOf(DoubleArray(6) { c -> refs.getValue(CubeColor.entries[c]).distance(t) }).also { s -> VideoScan.weight(r.face.colors[n]!!).let { w -> for (c in s.indices) s[c] *= w } } }
         }
@@ -708,7 +837,10 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
      * What a track's votes, totals and leading colours are worked out from: its readings (only ever added to, the
      * oldest dropped, so the newest's number tells them) and the references' [generation].
      */
-    private fun version(t: Track): Long = t.readings.last().seq * 1_000_003 + generation
+    private fun version(t: Track): Long = (t.readings.last().seq * 1_000_003 + generation) * 1_009 + (renamed[t.id] ?: 0)
+
+    /** Per track id, how many times its face's own red and orange alone named its readings again ([updateRefs]). */
+    private val renamed = HashMap<Int, Int>()
 
     private class PairEntry(val a: Long, val b: Long, val rules: Int, val table: Array<DoubleArray>)
 
@@ -1309,6 +1441,14 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         const val WARM_HUE_STEP = 6.0
         const val WARM_ORDER_COST = 1000.0
 
+        /**
+         * A face's warm stickers split into red and orange at their largest HSV hue gap when it is at least this
+         * (`scan-warm-references` design 2; 2026-10-11: red −6..3°, orange 9..18° in the room's light), and the hues
+         * taken as warm.
+         */
+        const val FACE_WARM_GAP = 6.0
+        val WARM_HUES = -30.0..45.0
+
         /** Cost per sticker beyond [MAX_DISAGREE] that two tracks taken for one face read otherwise. */
         const val CLASH_COST = 4.0
 
@@ -1412,5 +1552,21 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
                 put(a to b, list)
             }
         }
+    }
+}
+
+/**
+ * How red and orange are referenced (`scan-warm-references` design 5): the centres only (as before), the faces'
+ * own warm groups for the whole cube, or also each face's own for its stickers.
+ */
+internal enum class WarmRefs {
+    CENTRES,
+    CUBE,
+    FACE,
+    FACE_ONLY,
+    ;
+
+    companion object {
+        val DEFAULT = CENTRES
     }
 }

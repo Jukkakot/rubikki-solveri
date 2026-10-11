@@ -23,6 +23,12 @@ object ScanTimeline {
             val flag = if (fit != null && o != FaceOption.NONE && fit.first != o) " !" else ""
             if (System.getenv("TIMELINE_COSTS") == "1") println("      " + ft.costsOf(t.id))
             println("   #${t.id}x${t.size}${if (t.live) "*" else ""} $state$mine $read" + (fit?.let { " true ${FaceOption.face(it.first)}${FaceOption.turn(it.first)} (${it.second}/8)$flag" } ?: ""))
+            if (System.getenv("TIMELINE_WARM") == "1") {
+                // Each warm position with its true letter (by the best-fitting true face and turn).
+                val trueAt = fit?.let { (o, _) -> (0 until 9).associateBy { n -> RotationSearch.turnIndex(n, FaceOption.turn(o)) }.mapValues { (_, n) -> truth[FaceOption.face(o).ordinal * 9 + n] } }
+                val detail = ft.warmDetail(t.id).replace(Regex("(\\d)@")) { m -> "${m.groupValues[1]}${trueAt?.get(m.groupValues[1].toInt()) ?: ""}@" }
+                if (detail.isNotBlank()) println("      warm $detail")
+            }
         }
     }
 
