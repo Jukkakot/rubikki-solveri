@@ -93,6 +93,10 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 
 Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
 
+- video scan: phone browser 2026-10-11 10:04:03 (recording `web_20261011_100403`): every sticker read
+  but the cube never clear in 30 s (margin 0, F/L/B read with red and orange mixed), left by the user;
+  the same cube finished in the next two scans. The replay does not finish either. Take up as a fixture.
+
 - video scan: the striped cube (`web_181940` stills as a fake camera in Chromium) finished as its
   mirror image in 3 of 16 runs, before and after `scan-send-ahead` alike, and twice the page fallback
   stayed on that cube without finishing; which pictures are read decides it (`scan-send-ahead` design
