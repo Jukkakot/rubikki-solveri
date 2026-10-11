@@ -10,11 +10,11 @@
 
 ## 3. Harness
 
-- [ ] 3.1 Add work per picture (namings, nodes, solves) to `ColourSpikeHarness`'s table beside ms; run it; verify every row prints the columns and the CENTRES rows match the table in `scan-warm-references` design Findings.
+- [x] 3.1 Add work per picture (namings, nodes, solves) to `ColourSpikeHarness`'s table beside ms; run it; verify every row prints the columns and the CENTRES rows match the table in `scan-warm-references` design Findings.
 
 ## 4. Docs
 
-- [ ] 4.1 Note in `docs/development.md` (where the scan's tests and harnesses are described) that the budget test counts work and that ms are only a loose ceiling; add the roadmap row (done); verify the roadmap lists `scan-work-counters` before `scan-warm-references` resumes.
+- [x] 4.1 Note in `docs/development.md` (where the scan's tests and harnesses are described) that the budget test counts work and that ms are only a loose ceiling; add the roadmap row (done); verify the roadmap lists `scan-work-counters` before `scan-warm-references` resumes.
 
 ## Workflow follow-up
 

@@ -75,6 +75,13 @@ same flow works locally and in a cloud session:
    `VIDEO_HARNESS=1`; the output lands in `cube/src/jvmTest/resources/video/`.
 4. Commit the stills and the fixture (`.gitignore` lets only `*/stills/` through).
 
+**Scan speed.** The scan counts its work (`VideoScan.work`: sticker namings, assignment search
+nodes, best-cube solves, tracks; `scan-work-counters`). The budget test
+(`RulesScanTest.aLongScanStaysWithinItsBudgetPerPicture`) asserts on those counts per 100 pictures,
+the same on every machine; its milliseconds are only a loose ceiling for gross slowdowns.
+`COLOUR_SPIKE=1 ./gradlew :cube:jvmTest --tests '*ColourSpikeHarness*' -i` prints every source per
+reference mode with ms and work a picture.
+
 ## Screenshots without a phone — Implemented
 
 `./gradlew :app:testDebugUnitTest --tests '*ScreenshotTest*'` renders every screen with

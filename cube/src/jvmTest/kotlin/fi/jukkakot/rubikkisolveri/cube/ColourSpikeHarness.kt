@@ -5,6 +5,7 @@ import fi.jukkakot.rubikkisolveri.cube.scan.FaceReading
 import fi.jukkakot.rubikkisolveri.cube.scan.FrameSampler
 import fi.jukkakot.rubikkisolveri.cube.scan.Lab
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanRecording
+import fi.jukkakot.rubikkisolveri.cube.scan.ScanWork
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
 import fi.jukkakot.rubikkisolveri.cube.scan.WarmRefs
 import org.junit.Assume.assumeTrue
@@ -72,19 +73,30 @@ class ColourSpikeHarness {
         }
         // Warmed up first: the JIT reaches every path the timing goes through.
         for ((_, pictures, _) in sources.take(3)) for (mode in WarmRefs.entries) scan(pictures, mode)
-        println("source | mode | stickers right | red<->orange wrong (of warm) | finished at | wrong cube | scan ms a picture")
+        println("source | mode | stickers right | red<->orange wrong (of warm) | finished at | wrong cube | scan ms a picture | namings / nodes / solves a picture")
         for ((name, pictures, truth) in sources) for (mode in WarmRefs.entries) report(name, mode, pictures, truth)
     }
 
-    /** The scan over [pictures] with [mode]: the first finish after the last reset before it (time from that segment's start, cube), and the mean scan time a picture. */
-    private fun scan(pictures: List<Picture>, mode: WarmRefs): Pair<Pair<Long, String>?, Double> {
+    /** The first finish after the last reset before it (time from that segment's start, cube), the mean scan time and work a picture. */
+    private class Run(val finished: Pair<Long, String>?, val ms: Double, val work: String)
+
+    /** The scan over [pictures] with [mode]. */
+    private fun scan(pictures: List<Picture>, mode: WarmRefs): Run {
         var scan = VideoScan(fi.jukkakot.rubikkisolveri.cube.ColorScheme.STANDARD, mode)
         var t0: Long? = null
         var finished: Pair<Long, String>? = null
         var nanos = 0L
         var count = 0
+        // The work of the scans before the last reset.
+        val done = LongArray(3)
+        fun add(w: ScanWork) {
+            done[0] += w.namings
+            done[1] += w.nodes
+            done[2] += w.solves
+        }
         for (p in pictures) {
             if (p.reset) {
+                add(scan.work)
                 scan = VideoScan(fi.jukkakot.rubikkisolveri.cube.ColorScheme.STANDARD, mode)
                 t0 = null
                 continue
@@ -99,7 +111,9 @@ class ColourSpikeHarness {
                 break
             }
         }
-        return finished to nanos / 1e6 / maxOf(1, count)
+        add(scan.work)
+        val n = maxOf(1, count).toDouble()
+        return Run(finished, nanos / 1e6 / n, done.joinToString(" / ") { "%.0f".format(it / n) })
     }
 
     private fun report(source: String, mode: WarmRefs, pictures: List<Picture>, truth: String) {
@@ -115,11 +129,12 @@ class ColourSpikeHarness {
         val right = named.count { it.first == it.second }.toDouble() / maxOf(1, named.size)
         val warm = named.filter { it.first == CubeColor.RED || it.first == CubeColor.ORANGE }
         val warmWrong = warm.count { (t, n) -> (t == CubeColor.RED && n == CubeColor.ORANGE) || (t == CubeColor.ORANGE && n == CubeColor.RED) }.toDouble() / maxOf(1, warm.size)
-        val (finished, ms) = scan(pictures, mode)
+        val run = scan(pictures, mode)
+        val finished = run.finished
         println(
-            "$source | $mode | %.1f %% | %.1f %% | %s | %s | %.2f".format(
+            "$source | $mode | %.1f %% | %.1f %% | %s | %s | %.2f | %s".format(
                 right * 100, warmWrong * 100, finished?.first?.let { "%.1f s".format(it / 1000.0) } ?: "never",
-                if (finished != null && finished.second != truth) "WRONG ${finished.second}" else "-", ms,
+                if (finished != null && finished.second != truth) "WRONG ${finished.second}" else "-", run.ms, run.work,
             ),
         )
     }
