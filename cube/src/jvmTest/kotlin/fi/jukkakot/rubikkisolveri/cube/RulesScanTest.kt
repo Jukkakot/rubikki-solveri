@@ -132,15 +132,19 @@ class RulesScanTest {
         // On the long phone recordings (neither finishes) the work is counted (`scan-work-counters`), the same on every
         // machine: every 100 pictures stay within the busiest window measured plus 50 %, and late windows (after the first
         // 200 pictures) do at most twice the busiest early one (the 1.5 planned failed on what the camera saw: up to 1.68 in
-        // web_121505 without growth; the slowdown this guards grew fourfold). Busiest windows measured 2026-10-11, namings /
-        // nodes / solves: web_121505 31471 / 11550 / 366 (early 19590 / 11373 / 218), PHONE_SCAN_2 25972 / 6848 / 589.
+        // web_121505 without growth; the slowdown this guards grew fourfold). Busiest windows measured 2026-10-11 with the
+        // faces' own warm lights (`scan-warm-references`), namings / nodes / solves: web_121505 30945 / 267883 / 579 (early
+        // 22302 / 11147 / 331), PHONE_SCAN_2 35557 / 1288 / 555 (early 20953 / 1288 / 527). Exception, user 2026-10-11:
+        // web_121505's search leaves about eight striped faces open from picture 200 on (24 times the early nodes; CPU
+        // 5.5 ms a picture at worst against 3.8 before), so its nodes are held by the limit only, not by the growth rule.
         // A loose CPU-time ceiling still catches a gross slowdown the counters miss, and a picture without faces late in
         // the scan costs almost nothing. Tripled on CI (slower, shared runners).
         val scale = if (System.getenv("CI") != null) 3.0 else 1.0
         val limits = mapOf(
-            "web_121505" to longArrayOf(47_300, 17_400, 550),
-            VideoFixtures.PHONE_SCAN_2 to longArrayOf(39_000, 10_300, 890),
+            "web_121505" to longArrayOf(46_500, 402_000, 870),
+            VideoFixtures.PHONE_SCAN_2 to longArrayOf(53_400, 1_950, 840),
         )
+        val noGrowthRule = setOf("web_121505" to "nodes")
         // Warmed up on the same recordings: the JIT reaches every path the timing goes through.
         for (video in listOf(VideoFixtures.STRIPED) + limits.keys) VideoScan().let { warm -> VideoFixtures.load(video).forEachIndexed { i, f -> warm.onFrame(f.faces, i * 100L) } }
         val tracks = VideoScan::class.java.getDeclaredField("tracks").also { it.isAccessible = true }
@@ -171,6 +175,7 @@ class RulesScanTest {
             val shown = windows.joinToString { w -> w.joinToString("/") }
             for ((k, name) in listOf("namings", "nodes", "solves").withIndex()) {
                 assertTrue(windows.all { it[k] <= limit[k] }, "$video: every 100 pictures at most ${limit[k]} $name: $shown")
+                if (video to name in noGrowthRule) continue
                 val early = windows.take(2).maxOf { it[k] }
                 assertTrue(windows.drop(2).all { it[k] <= early * 2 }, "$video: late windows at most twice the busiest early one ($early $name): $shown")
             }

@@ -222,7 +222,9 @@ Video scan pipeline (`video-scan`):
    fits them best, piece by piece, with a margin per piece place. Each reading gives every colour a
    share by its distance to the cube's own centres, 70 % of it brightness-free (`Tone`; soft votes;
    washed-out readings count little; `video-scan-light`, whose findings explain why no light-colour
-   correction is used); a sticker's colour leaves out a lamp's glare (`FaceFinder`). A sticker is known when its
+   correction is used); red and orange also by each face's own red and orange where the centres name
+   them wrong, the nearest light counting (`FaceTracks.updateRefs`, `scan-warm-references`; `ColourSpikeHarness`
+   compares with centres only); a sticker's colour leaves out a lamp's glare (`FaceFinder`). A sticker is known when its
    place's margin clears `CLEAR_MARGIN` (chosen by `ScanSimulation`, findings in the `video-scan-light` archive) or by
    its votes alone, and the scan finishes when the whole cube is clear, unseen stickers included.
    `CubeProjection` puts every sticker into the picture.

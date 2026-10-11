@@ -90,7 +90,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 80 | `scan-send-ahead-android` | planned | The same for the phone app once the browser phone check shows the gain (user 2026-10-11): log its picture preparation (upright + bitmap on the camera thread) and the finder's wait, then overlap them |
 | 81 | `scan-colour-spike` | done | Offline, colours from the full still (A) and one red/orange hue split over the scan's warm readings (B) against today. A: no gain on 640 px stills, no-go. B: finishes the stuck `web_20261011_101618` but one wrong cube and good recordings 20–40 % slower, no-go as built. The stuck scans' readings separate with the right references; the scan's centre-based red/orange references are what fail (`findings.md`) |
 | 82 | `scan-work-counters` | done | The scan counts its work (sticker namings, assignment search nodes, best-cube solves, tracks): the budget test checks each 100 pictures' counts (busiest measured + 50 %, late windows at most twice the early ones), the same on every machine, with a loose 15 ms ceiling kept; the comparison harness prints work per picture (user, 2026-10-11) |
-| 83 | `scan-warm-references` | planned | (in progress; paused for 82)  Red and orange references inside the scan from each settled face's own warm stickers beside its centre (a shaded face judged against its shade); `ColourSpikeHarness` with the spike's go rules: stuck recordings finish, no wrong cube, no source over 10 % slower |
+| 83 | `scan-warm-references` | done | Red and orange also judged by each face's own red and orange where the centres name them wrong (the nearest light counts): both stuck 2026-10-11 scans finish right (10:04 15.3 → 11.7 s, 10:16 never → 12.5 s), the evening video 12.2 → 9.1 s, a striped video no longer finishes wrong, nothing slower. Cost: the long striped recording's search grows (CPU 3.8 → 5.5 ms a picture at worst; budget test exception, user 2026-10-11). Phone check pending: a scan under the 2026-10-11 room light |
 
 ## Backlog
 
@@ -103,7 +103,8 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
   read red the whole time (F `BRGRGRRWY`, B `YRRYBRBBW`) while the L centre read orange; the replay stops
   at known 52 without finishing. Truth `WBBRWGWWYORRYRRGYOBRGOGOOWYYGRWYGGYWGBRWOGRBBYOOYBOBBW`.
   `scan-colour-spike`: the readings separate with the true centres as references (2 % and 15 % of
-  warm stickers wrong); the scan's own references fail. Taken up in `scan-warm-references` (83).
+  warm stickers wrong); the scan's own references fail. Fixed in `scan-warm-references` (83): both finish
+  right, pinned by `ScanWarmReferencesTest`.
 
 - video scan: the striped cube (`web_181940` stills as a fake camera in Chromium) finished as its
   mirror image in 3 of 16 runs, before and after `scan-send-ahead` alike, and twice the page fallback

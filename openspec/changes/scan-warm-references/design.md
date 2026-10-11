@@ -163,4 +163,8 @@ striped sources finish wrong); also with 10 readings (102548 17 s, one wrong cub
 about eight faces open where CENTRES leaves three, and the assignment search grows from 54 k to 863 k nodes over the
 recording: late 100-picture windows reach 268 k nodes, 24 times the busiest early one (the budget test allows twice).
 CPU time grows less (worst window 5.5 ms a picture against 3.8 ms here; namings about the same), and that recording
-never finishes in any mode. The default stays CENTRES; reported to the user.
+never finishes in any mode. Reported to the user.
+
+**Decision (user, 2026-10-11): NEAREST is the default.** The budget test's limits were measured again with it, and
+`web_121505`'s nodes are held by the limit only, not by the growth rule. CUBE, FACE and FACE_ONLY were removed (design 5);
+CENTRES stays as the harness's comparison. Phone check: a scan under the 2026-10-11 room light feels no slower.

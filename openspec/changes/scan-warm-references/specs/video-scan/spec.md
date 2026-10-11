@@ -8,8 +8,9 @@ sure one, so that the rest of the cube decides. A sticker SHALL be named by its 
 its brightness, so that a colour seen in dimmer or brighter light than its face's centre is still
 named right, and a centre that in its light looks like another colour SHALL NOT be the reference for
 its own colour. Red and orange SHALL be told apart in each face's own light: once a face is known
-and shows stickers of both, its own red and orange stickers decide how the two look on that face,
-so that a face in shade is not judged against a centre seen in brighter or other light. Turning the
+and shows stickers of both that the centres would name wrong, its own red and orange stickers also
+count as how the two look, so that a sticker in shade is judged against the light it is in, not
+against a centre seen in brighter or other light. Turning the
 torch on or off SHALL make the camera adjust to the new light while reading goes on. A cube read in
 poor light SHALL still never finish as a wrong cube.
 

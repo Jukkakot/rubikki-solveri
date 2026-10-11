@@ -19,4 +19,16 @@ class ScanWarmReferencesTest {
         println("web_20261011_100403 finished at picture ${end.first}")
         assertEquals(ColourSpikeHarness.TRUTH_1011, end.second)
     }
+
+    /**
+     * Browser, 2026-10-11 10:16: red and orange centres seen in different light (a dark red, a bright orange), the shaded
+     * faces' oranges read red; never finished. Each face's own red and orange as further references finish it right.
+     */
+    @Test
+    fun orangeOnAFaceInShadeIsReadOrange() {
+        val end = finish("web_20261011_101618")
+        assertNotNull(end, "the scan never finished")
+        println("web_20261011_101618 finished at picture ${end.first}")
+        assertEquals(ColourSpikeHarness.TRUTH_1011, end.second)
+    }
 }

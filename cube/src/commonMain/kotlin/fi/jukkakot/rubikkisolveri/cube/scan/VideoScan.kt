@@ -531,7 +531,7 @@ internal open class Tone(val plain: Lab, val bare: Lab) {
     fun distance(o: Tone): Double = plain.distance(o.plain) * (1 - VideoScan.BARE_WEIGHT) + bare.distance(o.bare) * VideoScan.BARE_WEIGHT
 }
 
-/** A colour as seen in several lights, the first its centre's ([WarmRefs.NEAREST]); red's and orange's lights pair up by index. */
+/** A colour as seen in several lights, the first its centre's ([WarmRefs.NEAREST]); a reading's distance is to the nearest. */
 internal class NearestTone(val all: List<Tone>) : Tone(all.first().plain, all.first().bare)
 
 internal fun faceWithNormal(n: Vec3): Face = Face.entries.first { it.normal == n }
