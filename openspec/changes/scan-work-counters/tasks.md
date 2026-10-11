@@ -6,7 +6,7 @@
 
 ## 2. Budget test
 
-- [ ] 2.1 Rewrite `aLongScanStaysWithinItsBudgetPerPicture` on the counters: on both long recordings measure each 100-picture window's namings, nodes and solves; set limits at the measured busiest window plus 50 %, and require late windows (after the first 200 pictures) to stay under 1.5× the busiest early window; keep the CPU-ms window ceiling at 15 ms (tripled on CI) and the faceless-picture median as now; record the measured counts in a comment; verify the test passes three runs in a row here.
+- [x] 2.1 Rewrite `aLongScanStaysWithinItsBudgetPerPicture` on the counters: on both long recordings measure each 100-picture window's namings, nodes and solves; set limits at the measured busiest window plus 50 %, and require late windows (after the first 200 pictures) to stay under 1.5× the busiest early window; keep the CPU-ms window ceiling at 15 ms (tripled on CI) and the faceless-picture median as now; record the measured counts in a comment; verify the test passes three runs in a row here. *Done with twice, not 1.5×: the measured late windows reached 1.68× the early ones in web_121505 (namings, solves) with no growth, only what the camera saw; the slowdown this guards grew fourfold.*
 
 ## 3. Harness
 

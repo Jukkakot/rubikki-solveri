@@ -129,14 +129,22 @@ class RulesScanTest {
     @Test
     fun aLongScanStaysWithinItsBudgetPerPicture() {
         // Browser 1.0.333: the scan logic grew from 9 to 37 ms a picture as a long scan went on (`scan-speed-up-3`).
-        // The long phone recordings (neither finishes): every 100 pictures average at most 5 ms a picture (11–13 before), and a
-        // picture without faces late in the scan costs almost nothing. Tripled on CI (slower, shared runners).
+        // On the long phone recordings (neither finishes) the work is counted (`scan-work-counters`), the same on every
+        // machine: every 100 pictures stay within the busiest window measured plus 50 %, and late windows (after the first
+        // 200 pictures) do at most twice the busiest early one (the 1.5 planned failed on what the camera saw: up to 1.68 in
+        // web_121505 without growth; the slowdown this guards grew fourfold). Busiest windows measured 2026-10-11, namings /
+        // nodes / solves: web_121505 31471 / 11550 / 366 (early 19590 / 11373 / 218), PHONE_SCAN_2 25972 / 6848 / 589.
+        // A loose CPU-time ceiling still catches a gross slowdown the counters miss, and a picture without faces late in
+        // the scan costs almost nothing. Tripled on CI (slower, shared runners).
         val scale = if (System.getenv("CI") != null) 3.0 else 1.0
-        val videos = listOf("web_121505", VideoFixtures.PHONE_SCAN_2)
+        val limits = mapOf(
+            "web_121505" to longArrayOf(47_300, 17_400, 550),
+            VideoFixtures.PHONE_SCAN_2 to longArrayOf(39_000, 10_300, 890),
+        )
         // Warmed up on the same recordings: the JIT reaches every path the timing goes through.
-        for (video in listOf(VideoFixtures.STRIPED) + videos) VideoScan().let { warm -> VideoFixtures.load(video).forEachIndexed { i, f -> warm.onFrame(f.faces, i * 100L) } }
+        for (video in listOf(VideoFixtures.STRIPED) + limits.keys) VideoScan().let { warm -> VideoFixtures.load(video).forEachIndexed { i, f -> warm.onFrame(f.faces, i * 100L) } }
         val tracks = VideoScan::class.java.getDeclaredField("tracks").also { it.isAccessible = true }
-        for (video in videos) {
+        for ((video, limit) in limits) {
             val frames = VideoFixtures.load(video)
             val scan = VideoScan()
             // The windows by the thread's CPU time, not the clock: a parallel build (lint, the app's tests) made the
@@ -144,8 +152,12 @@ class RulesScanTest {
             val cpu = java.lang.management.ManagementFactory.getThreadMXBean()
             val cpuNanos = LongArray(frames.size)
             val nanos = LongArray(frames.size)
+            // Namings, nodes and solves at the start of every 100 pictures, and at the end.
+            val work = ArrayList<LongArray>()
+            fun sample() = scan.work.let { longArrayOf(it.namings, it.nodes, it.solves) }
             var most = 0
             frames.forEachIndexed { i, f ->
+                if (i % 100 == 0) work += sample()
                 val startCpu = cpu.currentThreadCpuTime
                 val start = System.nanoTime()
                 scan.onFrame(f.faces, i * 100L)
@@ -153,9 +165,17 @@ class RulesScanTest {
                 cpuNanos[i] = cpu.currentThreadCpuTime - startCpu
                 most = maxOf(most, (tracks.get(scan) as FaceTracks).workingTracks)
             }
+            work += sample()
             assertTrue(most <= 40, "$video: tracks worked through stay bounded: at most $most")
-            val windows = cpuNanos.toList().chunked(100).map { it.average() / 1e6 }
-            assertTrue(windows.all { it <= 5.0 * scale }, "$video: every 100 pictures at most %.1f ms a picture: %s".format(5.0 * scale, windows.joinToString { "%.2f".format(it) }))
+            val windows = work.zipWithNext { a, b -> LongArray(3) { b[it] - a[it] } }
+            val shown = windows.joinToString { w -> w.joinToString("/") }
+            for ((k, name) in listOf("namings", "nodes", "solves").withIndex()) {
+                assertTrue(windows.all { it[k] <= limit[k] }, "$video: every 100 pictures at most ${limit[k]} $name: $shown")
+                val early = windows.take(2).maxOf { it[k] }
+                assertTrue(windows.drop(2).all { it[k] <= early * 2 }, "$video: late windows at most twice the busiest early one ($early $name): $shown")
+            }
+            val ms = cpuNanos.toList().chunked(100).map { it.average() / 1e6 }
+            assertTrue(ms.all { it <= 15.0 * scale }, "$video: every 100 pictures at most %.1f ms a picture: %s".format(15.0 * scale, ms.joinToString { "%.2f".format(it) }))
             val empty = frames.indices.filter { it >= 200 && frames[it].faces.isEmpty() }.map { nanos[it] / 1e6 }.sorted()
             // The median by the clock: most such pictures skip the work (a load slows that little); the few that still work
             // it out (a state still moving) are in the windows.

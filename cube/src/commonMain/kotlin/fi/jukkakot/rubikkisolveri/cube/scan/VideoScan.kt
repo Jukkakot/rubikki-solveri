@@ -128,8 +128,11 @@ class VideoScan internal constructor(private val scheme: ColorScheme, private va
     var state: VideoScanState = VideoScanState.EMPTY
         private set
 
+    /** The scan's work so far, kept over [reset] (`scan-work-counters`): a caller samples it per picture. */
+    internal val work = ScanWork()
+
     /** The faces followed from picture to picture. */
-    private var tracks = FaceTracks(scheme, warmMode)
+    private var tracks = FaceTracks(scheme, warmMode, work)
 
     /** The face centres as read ([FaceTracks.centreLog]), for the scan log. */
     val centreLog: String get() = tracks.centreLog
@@ -396,7 +399,7 @@ class VideoScan internal constructor(private val scheme: ColorScheme, private va
 
     /** Starts the scan again from nothing (the camera keeps running). */
     fun reset() {
-        tracks = FaceTracks(scheme, warmMode)
+        tracks = FaceTracks(scheme, warmMode, work)
         lastPose = null
         lastOrientation = null
         lastSure = false

@@ -22,7 +22,12 @@ import kotlin.time.TimeSource
  * other way costs [ASSIGN_MARGIN] more, first its face, then also its turn, and re-opens when another
  * way becomes cheaper. The assigned tracks' newest readings are the evidence for [BestCube].
  */
-class FaceTracks internal constructor(private val scheme: ColorScheme, private val warmMode: WarmRefs) {
+class FaceTracks internal constructor(
+    private val scheme: ColorScheme,
+    private val warmMode: WarmRefs,
+    /** The work done so far, for tests and harnesses (`scan-work-counters`). */
+    internal val work: ScanWork = ScanWork(),
+) {
     constructor(scheme: ColorScheme = ColorScheme.STANDARD) : this(scheme, WarmRefs.DEFAULT)
 
     private val tracker = Tracker()
@@ -278,6 +283,7 @@ class FaceTracks internal constructor(private val scheme: ColorScheme, private v
     }
 
     private fun work(now: Long) {
+        work.tracks += tracker.tracks.size
         // Before this picture's work: the last best cube was clear, and a counting track got a reading now ([wholeRecheck]).
         val wasClear = best?.let { it.clearness(evidence) >= VideoScan.CLEAR_MARGIN } == true
         val read = picture.any { it != null && counts(it.first) }
@@ -308,6 +314,7 @@ class FaceTracks internal constructor(private val scheme: ColorScheme, private v
         val key = EvidenceKey(evidence)
         if (key != bestKey) {
             best = BestCube.solve(evidence, scheme, VideoScan.MARGIN_LOOK)
+            work.solves++
             bestKey = key
         }
         retire(now)
@@ -402,7 +409,10 @@ class FaceTracks internal constructor(private val scheme: ColorScheme, private v
 
     private fun defaultRefs(): Map<CubeColor, Tone> = CubeColor.entries.associateWith { Tone(ColorClassifier.DEFAULT_PALETTE.getValue(it)) }
 
-    private fun nameSticker(rgb: Rgb, refs: Map<CubeColor, Tone> = this.refs): CubeColor = Tone(rgb).let { t -> refs.minBy { it.value.distance(t) }.key }
+    private fun nameSticker(rgb: Rgb, refs: Map<CubeColor, Tone> = this.refs): CubeColor {
+        work.namings++
+        return Tone(rgb).let { t -> refs.minBy { it.value.distance(t) }.key }
+    }
 
     /**
      * The cube's own centres as references: the centres of the tracks whose face is settled, the
@@ -965,7 +975,7 @@ class FaceTracks internal constructor(private val scheme: ColorScheme, private v
             }
         }
         val pairs = Array(open.size) { i -> Array(open.size) { j -> if (j <= i) null else pairTable(open[i], open[j]) } }
-        val search = Search(unary, pairs)
+        val search = Search(unary, pairs, work)
         val (cost, pick) = search.best() ?: return
         for ((i, t) in open.withIndex()) {
             val s = t.state()
@@ -1218,7 +1228,7 @@ class FaceTracks internal constructor(private val scheme: ColorScheme, private v
     private fun bestCost(e: StickerEvidence): Double {
         val key = EvidenceKey(e)
         costs[key]?.let { return it }
-        return (lastCosts[key] ?: BestCube.cost(e, scheme)).also { costs[key] = it }
+        return (lastCosts[key] ?: BestCube.cost(e, scheme).also { work.solves++ }).also { costs[key] = it }
     }
 
     /** The other turns [turnsClear] last found too close to the best (per face, the extra quarter turns). */
@@ -1348,7 +1358,7 @@ class FaceTracks internal constructor(private val scheme: ColorScheme, private v
      * (i < j) and option pair. The cheapest assignment and its cost, at most [cap], with [ban] taking
      * options out of one track's domain; null when none is found under the cap.
      */
-    private class Search(val unary: List<DoubleArray>, val pairs: Array<Array<Array<DoubleArray>?>>) {
+    private class Search(val unary: List<DoubleArray>, val pairs: Array<Array<Array<DoubleArray>?>>, val work: ScanWork) {
         private val n = unary.size
         private val minPair = Array(n) { i -> DoubleArray(n) { j -> if (j <= i) 0.0 else pairs[i][j]!!.minOf { row -> row.min() }.coerceAtMost(0.0) } }
 
@@ -1393,6 +1403,7 @@ class FaceTracks internal constructor(private val scheme: ColorScheme, private v
                 }
             }
             go(0, 0.0)
+            work.nodes += minOf(nodes, MAX_NODES + 1)
             return bestPick?.let { bestCost to it }
         }
     }
