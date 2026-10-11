@@ -95,4 +95,15 @@ None: scan logic only, nothing stored. Rolling back means setting the mode back 
 
 ## Findings
 
-(Filled in during apply: decision 1's diagnosis, the comparison table, the chosen mode.)
+**Decision 1 (replays with the references in the timeline, `ScanTimeline` prints `warmRefLog`):**
+
+- `100403`: the orange reference came from a wrong face. From about -7.4 s on it was `c19d6f` (beige), the
+  centre of a 3-reading track settled as L that is really the yellow D face. Against it every orange
+  sticker lay nearer red. Fixed: a red or orange reference only from a centre that looks red or orange
+  itself (`FaceTracks.mayBeReference`). The replay now finishes with the true cube (test
+  `ScanWarmReferencesTest`), the orange reference `dd4211` from three real orange tracks.
+- `101618`: the sources are right (after two short wrong red tracks early on), but the red reference
+  is a very dark `8e0104` and the orange a bright `ff9b55`: the two faces were seen in different light.
+  This is the case for decision 2.
+- The scan budget test (`aLongScanStaysWithinItsBudgetPerPicture`) fails on this cloud machine without the change
+  too (a window at 5.0–5.2 ms); with the fix reading the track's kept centre it passes.

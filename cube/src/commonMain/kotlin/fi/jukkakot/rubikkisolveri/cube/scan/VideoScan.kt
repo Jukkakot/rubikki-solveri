@@ -132,6 +132,8 @@ class VideoScan(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     /** The face centres as read ([FaceTracks.centreLog]), for the scan log. */
     val centreLog: String get() = tracks.centreLog
 
+    internal val warmRefLog: String get() = tracks.warmRefLog
+
     /**
      * Handles the faces found in one frame taken at [nowMillis] (a partial face, stickers missing,
      * only continues a face already followed): known stickers from the best possible cube where it is

@@ -13,7 +13,7 @@ object ScanTimeline {
     /** [label] (frame or time), the [faces] found, [s] and the tracks of [scan]; [truth] (URFDLB) marks a track whose best true fit differs (`!`). */
     fun print(label: String, scan: VideoScan, faces: Int, s: VideoScanState, truth: String?) {
         val ft = tracks.get(scan) as FaceTracks
-        println("$label faces=$faces known=${s.recognised} clear=%.2f complete=${s.complete} undecided=${s.undecided}".format(s.clearness))
+        println("$label faces=$faces known=${s.recognised} clear=%.2f complete=${s.complete} undecided=${s.undecided} ${scan.warmRefLog}".format(s.clearness))
         for (t in ft.snapshot()) {
             val o = t.option ?: t.assigned
             val mine = if (o == FaceOption.NONE) "none" else "${FaceOption.face(o)}${FaceOption.turn(o)}"

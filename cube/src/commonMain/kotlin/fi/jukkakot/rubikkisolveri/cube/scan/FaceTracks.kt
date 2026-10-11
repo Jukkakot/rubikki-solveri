@@ -37,6 +37,12 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
     /** Each counting track's face (`?` while open) and centre as read, for the scan log: the camera's own colours. */
     val centreLog: String get() = counting().mapNotNull { t -> t.state().centre?.let { c -> "${t.state().face?.name ?: "?"}${c.toHex()}" } }.joinToString(" ")
 
+    /** The red and orange references and the tracks they come from, for diagnosis (`scan-warm-references` design 1). */
+    internal val warmRefLog: String get() = WARM.joinToString(" ") { c ->
+        val from = tracker.tracks.filter { t -> t.state().face?.let { scheme[it] } == c }.joinToString(",") { "t${it.id}/${it.size}" }
+        "${c.letter}=${known[c]?.toHex() ?: "-"}[$from${if (c in archivedCentres) ",arch" else ""}]"
+    }
+
     private class State {
         var votes: List<DoubleArray> = List(9) { DoubleArray(6) }
         var totals = DoubleArray(9)
@@ -367,6 +373,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             val o = t.state().option
             if (o != null && o != FaceOption.NONE) {
                 if (t in voting) add(archived, t, o, 1.0)
+                if (!mayBeReference(t, scheme[FaceOption.face(o)])) continue
                 val sum = archivedCentres.getOrPut(scheme[FaceOption.face(o)]) { IntArray(4) }
                 for (r in t.readings) r.face.colors[CENTRE]?.let {
                     sum[0] += it.r
@@ -398,6 +405,7 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
         val byColor = HashMap<CubeColor, MutableList<Rgb>>()
         for (t in tracker.tracks) {
             val face = t.state().face ?: continue
+            if (!mayBeReference(t, scheme[face])) continue
             for (r in t.readings) r.face.colors[CENTRE]?.let { byColor.getOrPut(scheme[face]) { ArrayList() } += it }
         }
         val newKnown = (byColor.keys + archivedCentres.keys).associateWith { c ->
@@ -420,6 +428,14 @@ class FaceTracks(private val scheme: ColorScheme = ColorScheme.STANDARD) {
             votesOf(t)
         }
     }
+
+    /**
+     * Whether [t]'s centre may be the reference for [color]: a red or orange reference only from a centre that
+     * looks red or orange itself (`scan-warm-references` design 1: a yellow face taken for the orange one on three
+     * readings gave a beige orange reference, and every orange sticker was named red).
+     */
+    private fun mayBeReference(t: Track, color: CubeColor): Boolean =
+        color !in WARM || t.state().centre?.let { ColorClassifier.rankedCentre(it).first() in WARM } == true
 
     /**
      * The references: the cube's own centres where known, the default palette for the others. With

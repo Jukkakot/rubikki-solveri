@@ -2,7 +2,7 @@
 
 ## 1. Diagnosis
 
-- [ ] 1.1 Replay `web_20261011_100403` and `101618` with the scan's red/orange references logged over time (source tracks, cast fallback, distance to the true-centre references; design 1); write the outcome into design.md Findings; fix a wrong reference source if found, with a JVM test for it; verify `./gradlew :cube:jvmTest` passes.
+- [x] 1.1 Replay `web_20261011_100403` and `101618` with the scan's red/orange references logged over time (source tracks, cast fallback, distance to the true-centre references; design 1); write the outcome into design.md Findings; fix a wrong reference source if found, with a JVM test for it; verify `./gradlew :cube:jvmTest` passes.
 
 ## 2. Warm references (cube, commonMain)
 
