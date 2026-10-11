@@ -16,6 +16,12 @@ metadata:
    olla").** Don't repeat it. Workaround if it bites: a USB cable, or keep the screen awake with
    Wireless debugging on.
 
+4. **Maven Central answers 429 in cloud sessions (2026-10-11) — OPEN.** Gradle builds and
+   Robolectric's android-all download failed until a `~/.gradle/init.d/central-mirror.gradle` swapped
+   Maven Central for Google's mirror (`maven-central.storage-download.googleapis.com/maven2/`) and the
+   Robolectric jar was fetched into `~/.m2` by hand. Proposed: `install.sh` in `claude-config` writes
+   that init script (and Robolectric's `robolectric.dependency.repo.url`) in cloud sessions.
+
 Also learned: GitHub Pages can be enabled without the user (`gh api -X POST
 repos/<owner>/<repo>/pages -f build_type=workflow`), so don't list it as a manual step.
 
