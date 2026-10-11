@@ -88,6 +88,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 78 | `scan-finish-fast` | done | Finish soon after the cube is clear: recording 10:25 clear at 5.0 s now finishes at 5.3 s (was 15.6), striped `web_181940` 20.2 → 11.5 s, every other run 0.2 s sooner; zero wrong finishes on fixtures, robustness, recordings and 60 synthetic scrambles. Counted tracks never hold a clear cube, outvote 1:1, turn check 1.5, finish after 300 ms |
 | 79 | `scan-send-ahead` | done | Browser: the next picture made while the finder reads (on each new camera picture, not the next animation frame), one waiting at most, a camera picture read once; snapshot adds `prepMs` and `idleMs`. Desktop Chromium: 30 fps camera exactly 30 a second (was 34 with double reads), 60 fps camera 30 → 45–55 a second. Phone check pending: fps near 30, `idleMs` small, what `prepMs` shows |
 | 80 | `scan-send-ahead-android` | planned | The same for the phone app once the browser phone check shows the gain (user 2026-10-11): log its picture preparation (upright + bitmap on the camera thread) and the finder's wait, then overlap them |
+| 81 | `scan-colour-spike` | specced | Offline: sticker colours from the full picture (A) and red/orange split by the scan's own warm readings (B), against today on the stills and the browser recordings incl. the stuck `web_20261011_100403`/`101618` (user 2026-10-11: colour accuracy before speed); go / no-go per idea |
 
 ## Backlog
 
