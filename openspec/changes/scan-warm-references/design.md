@@ -136,3 +136,31 @@ Scan time a picture stays within about ±1 ms of CENTRES in every mode.
 makes `web_121505:66` finish wrong and two good recordings about twice as slow; FACE and FACE_ONLY keep the
 slowdowns and lose `100403`. The default stays CENTRES (with the decision 1 fix: `100403` finishes, nothing
 worse). Reported to the user (design 5) before going on.
+
+**Why CUBE was slower (2026-10-11, replays with `WARM_MODE`):** on `102548` the cube-wide mean of the faces' red
+sides (`8a1419`) is brighter than the dim B face's red, so B's dark oranges (`862c1f`, `9d2813`) came out red; one
+mean cannot fit every face's light.
+
+**NEAREST mode (decision 3 changed):** red and orange keep the centre references and gain each face's own red and
+orange as further references, but only from faces whose red or orange side the centre references name wrong; a
+reading's distance to red (orange) is to the nearest of red's (orange's) lights. Renaming happens only when that set
+of lights changes. A retired face keeps only its newest split (a long scan does not pile them up).
+
+| Source | CENTRES | NEAREST |
+|---|---|---|
+| 213729 (evening) | 12.2 | 9.1 |
+| 202156 (striped, table) | 18.0 W | 20.5 |
+| rec 100814 | 6.2 | 5.2 |
+| rec 100403 (stuck) | 15.3 | 11.7 |
+| rec 101618 (stuck) | never | 12.5 |
+
+Every other source finishes as with CENTRES (100824 9.2, 102548 7.8, `web_121505:66` never). **The go rules hold.**
+
+Tried and dropped: red and orange both from the one nearest light (101618 35 s); lights only from settled faces (two
+striped sources finish wrong); also with 10 readings (102548 17 s, one wrong cube).
+
+**What blocks it: the work counters (`scan-work-counters`).** On the long striped recording `web_121505` NEAREST leaves
+about eight faces open where CENTRES leaves three, and the assignment search grows from 54 k to 863 k nodes over the
+recording: late 100-picture windows reach 268 k nodes, 24 times the busiest early one (the budget test allows twice).
+CPU time grows less (worst window 5.5 ms a picture against 3.8 ms here; namings about the same), and that recording
+never finishes in any mode. The default stays CENTRES; reported to the user.

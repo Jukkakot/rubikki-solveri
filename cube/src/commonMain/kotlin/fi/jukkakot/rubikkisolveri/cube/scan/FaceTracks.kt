@@ -394,7 +394,8 @@ class FaceTracks internal constructor(
                     sum[3]++
                 }
             }
-            if (o != null && o != FaceOption.NONE) splits[t.id]?.let { archivedSplits += it }
+            // A face keeps its newest retired split only: a long scan does not pile up references.
+            if (o != null && o != FaceOption.NONE) splits[t.id]?.let { archivedSplits[FaceOption.face(o)] = it }
             splitCache.remove(t.id)
             states.remove(t)
         }
@@ -411,8 +412,22 @@ class FaceTracks internal constructor(
 
     private fun nameSticker(rgb: Rgb, refs: Map<CubeColor, Tone> = this.refs): CubeColor {
         work.namings++
-        return Tone(rgb).let { t -> refs.minBy { it.value.distance(t) }.key }
+        val d = distances(Tone(rgb), refs)
+        return CubeColor.entries[d.indices.minBy { d[it] }]
     }
+
+    /**
+     * [t]'s distance to each colour's reference; a colour seen in several lights ([NearestTone], [WarmRefs.NEAREST]) by
+     * the nearest of them (red and orange judged each by its own nearest light: taking both from one light left the
+     * 10:16 scan unfinished for 35 s).
+     */
+    private fun distances(t: Tone, refs: Map<CubeColor, Tone>): DoubleArray =
+        DoubleArray(6) { c ->
+            when (val ref = refs.getValue(CubeColor.entries[c])) {
+                is NearestTone -> ref.all.minOf { it.distance(t) }
+                else -> ref.distance(t)
+            }
+        }
 
     /**
      * The cube's own centres as references: the centres of the tracks whose face is settled, the
@@ -420,15 +435,25 @@ class FaceTracks internal constructor(
      */
     private fun updateRefs() {
         val centresChanged = updateKnown()
+        val nearest = warmMode == WarmRefs.NEAREST
         val newSplits = if (warmMode == WarmRefs.CENTRES) emptyMap() else tracker.tracks.mapNotNull { t -> warmSplit(t, centresChanged)?.let { t.id to it } }.toMap()
         val moved = (newSplits.keys + splits.keys).filterTo(HashSet()) { !near(newSplits[it], splits[it]) }
         if (!centresChanged && moved.isEmpty()) return
         splits = newSplits
-        val all = splits.values + archivedSplits
+        val all = splits.values + archivedSplits.values
         val cubeWarm = if (all.isEmpty() || warmMode == WarmRefs.FACE_ONLY) null else WarmSplit(mean(all.map { it.red }), mean(all.map { it.orange }))
-        val globalChanged = centresChanged || !near(cubeWarm, this.cubeWarm)
+        // Red and orange in every light they were seen in: the centres' and each face's own where the centres name that
+        // face's red or orange wrong (where they name it right, nothing changes); a reading is judged in the nearest.
+        val lights = if (nearest) all.filter { misnamed(it) } else emptyList()
+        val lightsChanged = lights.size != this.lights.size || lights.zip(this.lights).any { (a, b) -> !near(a, b) }
+        val globalChanged = centresChanged || if (nearest) lightsChanged else !near(cubeWarm, this.cubeWarm)
+        if (nearest && !globalChanged) return
         this.cubeWarm = cubeWarm
-        refs = cubeWarm?.let { centreRefs + it.tones() } ?: centreRefs
+        this.lights = lights
+        refs = when {
+            nearest -> if (lights.isEmpty()) centreRefs else centreRefs + WARM.associateWith { c -> NearestTone(listOf(centreRefs.getValue(c)) + lights.map { it.tones().getValue(c) }) }
+            else -> cubeWarm?.let { centreRefs + it.tones() } ?: centreRefs
+        }
         faceRefs = if (warmMode == WarmRefs.FACE || warmMode == WarmRefs.FACE_ONLY) splits.mapValues { (_, s) -> refs + s.tones() } else emptyMap()
         if (globalChanged) generation++
         for (t in tracker.tracks) {
@@ -444,6 +469,9 @@ class FaceTracks internal constructor(
         }
     }
 
+    /** The centre references name [w]'s red side orange or its orange side red ([WarmRefs.NEAREST]). */
+    private fun misnamed(w: WarmSplit): Boolean = nameSticker(w.red, centreRefs) != CubeColor.RED || nameSticker(w.orange, centreRefs) != CubeColor.ORANGE
+
     /** The references for [t]'s stickers: its face's own red and orange where it has them ([WarmRefs.FACE]). */
     private fun refsOf(t: Track): Map<CubeColor, Tone> = faceRefs[t.id] ?: refs
 
@@ -456,9 +484,12 @@ class FaceTracks internal constructor(
     private class SplitCache(val seq: Long, val result: WarmSplit?)
 
     private var splits: Map<Int, WarmSplit> = emptyMap()
-    private val archivedSplits = ArrayList<WarmSplit>()
+    private val archivedSplits = HashMap<Face, WarmSplit>()
     private val splitCache = HashMap<Int, SplitCache>()
     private var cubeWarm: WarmSplit? = null
+
+    /** The faces' own red and orange that [WarmRefs.NEAREST] names in beside the centres'. */
+    private var lights: List<WarmSplit> = emptyList()
     private var faceRefs: Map<Int, Map<CubeColor, Tone>> = emptyMap()
     private var centreRefs: Map<CubeColor, Tone> = defaultRefs()
 
@@ -603,7 +634,7 @@ class FaceTracks internal constructor(
 
     private fun shareReading(r: TrackReading, refs: Map<CubeColor, Tone>) {
         r.shares = r.tones.mapIndexed { n, tone ->
-            tone?.let { t -> ColorClassifier.sharesOf(DoubleArray(6) { c -> refs.getValue(CubeColor.entries[c]).distance(t) }).also { s -> VideoScan.weight(r.face.colors[n]!!).let { w -> for (c in s.indices) s[c] *= w } } }
+            tone?.let { t -> ColorClassifier.sharesOf(distances(t, refs)).also { s -> VideoScan.weight(r.face.colors[n]!!).let { w -> for (c in s.indices) s[c] *= w } } }
         }
     }
 
@@ -1575,6 +1606,7 @@ internal enum class WarmRefs {
     CUBE,
     FACE,
     FACE_ONLY,
+    NEAREST,
     ;
 
     companion object {

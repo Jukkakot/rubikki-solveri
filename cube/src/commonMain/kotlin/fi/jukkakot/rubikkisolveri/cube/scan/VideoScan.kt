@@ -525,10 +525,13 @@ class VideoScan internal constructor(private val scheme: ColorScheme, private va
  * A sticker's colour for naming it: as read ([plain]) and without its brightness ([bare],
  * [ColorClassifier.scaled]). Their distances are blended by [VideoScan.BARE_WEIGHT].
  */
-internal class Tone(val plain: Lab, val bare: Lab) {
+internal open class Tone(val plain: Lab, val bare: Lab) {
     constructor(rgb: Rgb) : this(rgb.toLab(), ColorClassifier.scaled(rgb).toLab())
 
     fun distance(o: Tone): Double = plain.distance(o.plain) * (1 - VideoScan.BARE_WEIGHT) + bare.distance(o.bare) * VideoScan.BARE_WEIGHT
 }
+
+/** A colour as seen in several lights, the first its centre's ([WarmRefs.NEAREST]); red's and orange's lights pair up by index. */
+internal class NearestTone(val all: List<Tone>) : Tone(all.first().plain, all.first().bare)
 
 internal fun faceWithNormal(n: Vec3): Face = Face.entries.first { it.normal == n }

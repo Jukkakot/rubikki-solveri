@@ -1,6 +1,8 @@
 package fi.jukkakot.rubikkisolveri.cube
 
 import fi.jukkakot.rubikkisolveri.cube.scan.ScanRecording
+import fi.jukkakot.rubikkisolveri.cube.scan.VideoScan
+import fi.jukkakot.rubikkisolveri.cube.scan.WarmRefs
 import org.junit.Assume.assumeTrue
 import kotlin.test.Test
 
@@ -20,7 +22,9 @@ class RecordingReplay {
         val recording = VideoFixtures.loadRecording(name!!)
         println("${recording.platform} ${recording.version} started ${recording.started}" + (recording.cut?.let { ", start cut at $it ms" } ?: ""))
         var i = 0
-        val replay = VideoFixtures.replay(recording) { entry, scan, s ->
+        // WARM_MODE=<WarmRefs> replays with another way of referencing red and orange (`scan-warm-references`).
+        val mode = System.getenv("WARM_MODE")?.let { WarmRefs.valueOf(it) } ?: WarmRefs.DEFAULT
+        val replay = VideoFixtures.replay(recording, { VideoScan(ColorScheme.STANDARD, mode) }) { entry, scan, s ->
             if (entry is ScanRecording.Reset) println("${entry.ms} ms reset")
             if (entry is ScanRecording.Picture && s != null) {
                 if (i % every == 0 || s.finished) ScanTimeline.print("${entry.ms} ms #$i", scan, entry.found.faces.size, s, truth)

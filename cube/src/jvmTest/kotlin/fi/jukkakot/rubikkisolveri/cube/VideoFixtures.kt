@@ -87,14 +87,18 @@ object VideoFixtures {
      * Replays [recording] as the device ran it: each picture at its scan time (`t0 + ms`), a fresh
      * scan at each reset; [each] gets every entry with the scan and (for a picture) its state.
      */
-    fun replay(recording: ScanRecording.Recording, each: (ScanRecording.Entry, VideoScan, VideoScanState?) -> Unit = { _, _, _ -> }): Replay {
-        var scan = VideoScan()
+    fun replay(
+        recording: ScanRecording.Recording,
+        newScan: () -> VideoScan = { VideoScan() },
+        each: (ScanRecording.Entry, VideoScan, VideoScanState?) -> Unit = { _, _, _ -> },
+    ): Replay {
+        var scan = newScan()
         val states = ArrayList<VideoScanState>()
         var finished = false
         for (entry in recording.entries) {
             when (entry) {
                 is ScanRecording.Reset -> {
-                    scan = VideoScan()
+                    scan = newScan()
                     each(entry, scan, null)
                 }
                 is ScanRecording.Picture -> {

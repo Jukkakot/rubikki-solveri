@@ -72,9 +72,11 @@ class ColourSpikeHarness {
             sources += Triple("rec $name", pictures, truth)
         }
         // Warmed up first: the JIT reaches every path the timing goes through.
-        for ((_, pictures, _) in sources.take(3)) for (mode in WarmRefs.entries) scan(pictures, mode)
+        // WARM_MODES=CENTRES,NEAREST runs only those modes.
+        val modes = System.getenv("WARM_MODES")?.split(",")?.map { WarmRefs.valueOf(it.trim()) } ?: WarmRefs.entries
+        for ((_, pictures, _) in sources.take(3)) for (mode in modes) scan(pictures, mode)
         println("source | mode | stickers right | red<->orange wrong (of warm) | finished at | wrong cube | scan ms a picture | namings / nodes / solves a picture")
-        for ((name, pictures, truth) in sources) for (mode in WarmRefs.entries) report(name, mode, pictures, truth)
+        for ((name, pictures, truth) in sources) for (mode in modes) report(name, mode, pictures, truth)
     }
 
     /** The first finish after the last reset before it (time from that segment's start, cube), the mean scan time and work a picture. */
