@@ -96,6 +96,9 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
 - video scan: phone browser 2026-10-11 10:04:03 (recording `web_20261011_100403`): every sticker read
   but the cube never clear in 30 s (margin 0, F/L/B read with red and orange mixed), left by the user;
   the same cube finished in the next two scans. The replay does not finish either. Take up as a fixture.
+  Again at 10:16:18 (`web_20261011_101618`, 53 s, camera darkened 2 steps): oranges on F, R and B
+  read red the whole time (F `BRGRGRRWY`, B `YRRYBRBBW`) while the L centre read orange; the replay stops
+  at known 52 without finishing. Truth `WBBRWGWWYORRYRRGYOBRGOGOOWYYGRWYGGYWGBRWOGRBBYOOYBOBBW`.
 
 - video scan: the striped cube (`web_181940` stills as a fake camera in Chromium) finished as its
   mirror image in 3 of 16 runs, before and after `scan-send-ahead` alike, and twice the page fallback
