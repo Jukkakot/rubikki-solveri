@@ -89,7 +89,8 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 79 | `scan-send-ahead` | done | Browser: the next picture made while the finder reads (on each new camera picture, not the next animation frame), one waiting at most, a camera picture read once; snapshot adds `prepMs` and `idleMs`. Desktop Chromium: 30 fps camera exactly 30 a second (was 34 with double reads), 60 fps camera 30 → 45–55 a second. Phone check pending: fps near 30, `idleMs` small, what `prepMs` shows |
 | 80 | `scan-send-ahead-android` | planned | The same for the phone app once the browser phone check shows the gain (user 2026-10-11): log its picture preparation (upright + bitmap on the camera thread) and the finder's wait, then overlap them |
 | 81 | `scan-colour-spike` | done | Offline, colours from the full still (A) and one red/orange hue split over the scan's warm readings (B) against today. A: no gain on 640 px stills, no-go. B: finishes the stuck `web_20261011_101618` but one wrong cube and good recordings 20–40 % slower, no-go as built. The stuck scans' readings separate with the right references; the scan's centre-based red/orange references are what fail (`findings.md`) |
-| 82 | `scan-warm-references` | planned | Red and orange references inside the scan from each settled face's own warm stickers beside its centre (a shaded face judged against its shade); `ColourSpikeHarness` with the spike's go rules: stuck recordings finish, no wrong cube, no source over 10 % slower |
+| 82 | `scan-work-counters` | planned | The scan counts its work (sticker namings, assignment search nodes, best-cube solves, tracks): the budget test checks the counts, the same on every machine, with a loose 15 ms ceiling kept; the comparison harness prints work per picture (user, 2026-10-11) |
+| 83 | `scan-warm-references` | planned | (in progress; paused for 82)  Red and orange references inside the scan from each settled face's own warm stickers beside its centre (a shaded face judged against its shade); `ColourSpikeHarness` with the spike's go rules: stuck recordings finish, no wrong cube, no source over 10 % slower |
 
 ## Backlog
 
@@ -102,7 +103,7 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
   read red the whole time (F `BRGRGRRWY`, B `YRRYBRBBW`) while the L centre read orange; the replay stops
   at known 52 without finishing. Truth `WBBRWGWWYORRYRRGYOBRGOGOOWYYGRWYGGYWGBRWOGRBBYOOYBOBBW`.
   `scan-colour-spike`: the readings separate with the true centres as references (2 % and 15 % of
-  warm stickers wrong); the scan's own references fail. Taken up in `scan-warm-references` (82).
+  warm stickers wrong); the scan's own references fail. Taken up in `scan-warm-references` (83).
 
 - video scan: the striped cube (`web_181940` stills as a fake camera in Chromium) finished as its
   mirror image in 3 of 16 runs, before and after `scan-send-ahead` alike, and twice the page fallback
