@@ -131,6 +131,9 @@ class FoundFaces(
     val image: ImageBitmap? = null,
     /** The scan's answer where it ran with the finder (the browser's worker). */
     val scanned: Scanned? = null,
+    /** The browser's worker: making the picture ready for the finder took this long, and the finder waited this long before it (`scan-send-ahead`); null elsewhere. */
+    val prepMs: Double? = null,
+    val idleMs: Double? = null,
 ) {
     /** The picture shown is this very one ([show] or [image]): its marks snap and do not fade for movement. */
     val readPicture: Boolean get() = show != null || image != null
@@ -473,6 +476,9 @@ private class ScanLogger(private val centres: () -> String) {
     private var scanMs = 0.0
     private var paintMs = 0.0
     private var showMs = 0.0
+    private var prepMs = 0.0
+    private var idleMs = 0.0
+    private var timed = 0
     private var worker: Boolean? = null
 
     /** Every picture the finder read. */
@@ -482,6 +488,11 @@ private class ScanLogger(private val centres: () -> String) {
         faces += f.faces.size
         finderMs += f.finderMs
         showMs += f.showMs
+        if (f.prepMs != null && f.idleMs != null) {
+            prepMs += f.prepMs
+            idleMs += f.idleMs
+            timed++
+        }
         worker = f.worker
     }
 
@@ -521,7 +532,8 @@ private class ScanLogger(private val centres: () -> String) {
         val fps = if (seconds > 0) frames / seconds else 0.0
         AppLog.info(
             Evt.SCAN_VIDEO, null,
-            *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n, fps, torch, darker, worker, centres(), scanMs / n, paintMs / n, showMs / n),
+            *VideoScanLog.snapshot(state, faces.toDouble() / n, finderMs.toDouble() / n, fps, torch, darker, worker, centres(), scanMs / n, paintMs / n, showMs / n,
+                prepMs = if (timed > 0) prepMs / timed else null, idleMs = if (timed > 0) idleMs / timed else null),
         )
         lastSnapshot = at
         frames = 0
@@ -530,6 +542,9 @@ private class ScanLogger(private val centres: () -> String) {
         scanMs = 0.0
         paintMs = 0.0
         showMs = 0.0
+        prepMs = 0.0
+        idleMs = 0.0
+        timed = 0
     }
 
     private fun event(kind: String, vararg fields: Pair<String, Any?>) = AppLog.info(Evt.SCAN_VIDEO, null, "kind" to kind, *fields)

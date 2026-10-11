@@ -160,17 +160,22 @@ Video scan pipeline (`video-scan`):
    Web Worker (`webworker` module, `scan-worker.js`): the page makes an `ImageBitmap` of the visible
    part at 240 px (`createImageBitmap`, or canvas A's pixels where that fails), transfers it, the
    worker reads its pixels in an `OffscreenCanvas` and sends the faces back as numbers
-   (`FaceCodec`); one picture at a time, only the newest waits. The worker also runs the
+   (`FaceCodec`). Send ahead (`scan-send-ahead`): the next picture is made while the finder reads, on each
+   new camera picture (`requestVideoFrameCallback`; else the animation frame with the video's time) and on
+   the finder's answer; at most one is being made or waits, and a camera picture goes once
+   (`scanWorkerCrop` from Kotlin's loop sets the crop). Snapshots carry `prepMs` (making the picture) and
+   `idleMs` (the finder's wait); desktop Chromium with a 60 fps fake camera: 30 → 45–55 pictures a second,
+   finder wait 16 → 1–4 ms. The worker also runs the
    `VideoScan` on them and sends its state as text (`ScanStateCodec`, `FoundFaces.scanned`; restart and
    outcome are messages, `RemoteScan`), so the page only draws (`scan-speed-up-2`; the scan cost the
    page 8–28 ms a picture). Pipeline (`scan-speed-up-4`): `platform.mjs` starts the same script twice; once
    both are ready the first only finds faces (`role:find`) and the second scans them (`scanFaces`, `adopt:`
    takes over the last reset), so finder and scan work side by side; until then, or if the second fails to
-   start, the first does both (`scan.worker ... pipeline=true` in the log). Five read-picture canvases. On the phone the scan runs on its own background thread
+   start, the first does both (`scan.worker ... pipeline=true` in the log). Six read-picture canvases. On the phone the scan runs on its own background thread
    (`VideoScanContent(scanContext)`). If the worker cannot start or
    throws, the page reads on its own thread as before (`scan.worker` line with the reason;
    snapshots carry `worker=true/false`). `web/smoke/video.mjs` runs the video scan in Chromium
-   with a fake camera (`--no-worker` blocks the worker). **Read picture** (`scan-feedback`): with the
+   with a fake camera (`--no-worker` removes `Worker` from the page). **Read picture** (`scan-feedback`): with the
    worker, `platform.mjs` also draws each picture sent onto one of three box-sized canvases (numbered;
    one `drawImage`, `scan-read-picture-android`: `createImageBitmap` with a resize cost 15–22 ms on the
    phone); when its faces come back, `FoundFaces.show` → `cameraShowFrame` makes that canvas the

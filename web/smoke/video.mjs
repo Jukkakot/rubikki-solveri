@@ -3,7 +3,7 @@
 //   node web/smoke/video.mjs web/build/dist/wasmJs/productionExecutable [video.y4m] [--no-worker]
 // Opens the video scan like a phone, runs it for a while and fails on any page error or when the
 // log has no `scan.camera` line or no snapshot. Prints the scan's log lines. With --no-worker the
-// worker's script is blocked, so the scan must fall back to the page's own thread.
+// page has no Worker, so the scan must fall back to the page's own thread.
 import { chromium } from 'playwright';
 import { serve } from './serve.mjs';
 
@@ -26,7 +26,8 @@ const browser = await chromium.launch({ args: flags, executablePath: process.env
 try {
   const context = await browser.newContext({ viewport: { width: 412, height: 915 }, locale: 'fi-FI', deviceScaleFactor: 1 });
   await context.grantPermissions(['camera']);
-  if (noWorker) await context.route('**/scan-worker*', (route) => route.abort());
+  // A blocked route no longer stops a worker's script (Playwright 1.56), so the page loses Worker itself.
+  if (noWorker) await context.addInitScript(() => { delete window.Worker; });
   const page = await context.newPage();
   const errors = [];
   const lines = [];

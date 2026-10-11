@@ -31,5 +31,15 @@ class VideoScanLogTest {
         assertEquals("stuck", fields["stall"])
         // R is known but not confirmed by the rest of the cube: no tick.
         assertEquals(setOf(Face.U), VideoScanLog.doneSides(state))
+        // The phone has no worker: no picture preparation or finder wait.
+        assertEquals(null, fields["prepMs"])
+        assertEquals(null, fields["idleMs"])
+    }
+
+    @Test
+    fun browserSnapshotTellsWhereTheFinderLosesTime() {
+        val fields = VideoScanLog.snapshot(VideoScanState.EMPTY, facesPerFrame = 1.0, finderMs = 17.0, worker = true, prepMs = 15.26, idleMs = 0.04).toMap()
+        assertEquals(15.3, fields["prepMs"])
+        assertEquals(0.0, fields["idleMs"])
     }
 }

@@ -17,7 +17,8 @@ object VideoScanLog {
      * with `?` where not known, the smallest margin, brightness, faces per frame and finder time
      * (both averaged since the last snapshot), pictures read per second, the torch, how many steps
      * darker the camera is set, whether the browser's worker found the faces (null on the phone), the
-     * stall if any.
+     * stall if any; in the browser's worker also the time to make a picture ready for the finder and
+     * the finder's wait between pictures ([prepMs], [idleMs], `scan-send-ahead`; null elsewhere).
      */
     fun snapshot(
         state: VideoScanState,
@@ -31,6 +32,8 @@ object VideoScanLog {
         scanMs: Double = 0.0,
         paintMs: Double = 0.0,
         showMs: Double = 0.0,
+        prepMs: Double? = null,
+        idleMs: Double? = null,
     ): Array<Pair<String, Any?>> = arrayOf(
         "kind" to "snapshot",
         "known" to Face.entries.joinToString(" ") { f -> "${f.name}${(0 until 9).count { state.stickers[f.ordinal * 9 + it] != null }}" },
@@ -45,6 +48,9 @@ object VideoScanLog {
         "paintMs" to tenths(paintMs),
         // The browser's copy of each picture read, shown in the camera's place (`scan-feedback`).
         "showMs" to tenths(showMs),
+        // Where the browser's finder loses time (`scan-send-ahead`): making the picture ready, and waiting for it.
+        "prepMs" to prepMs?.let(::tenths),
+        "idleMs" to idleMs?.let(::tenths),
         "fps" to tenths(fps),
         "torch" to torch,
         "darker" to darker,

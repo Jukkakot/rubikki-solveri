@@ -73,3 +73,32 @@ Browser-only; ships with the next Pages deploy. Rollback = revert the commit.
 ## Open Questions
 
 - Phone numbers after the change (fps, `prepMs`, `idleMs`) come from the user's next browser scan.
+
+## Findings (implementation, 2026-10-11)
+
+Desktop Chromium in the cloud container, fake camera from the stills of `web_181940`, scan of the
+striped cube; numbers are medians unless said.
+
+| Build | Camera | Pictures a second | Finder wait (`idleMs`) | Picture → scan answer |
+|---|---|---|---|---|
+| before (timings only) | 30 fps | 29–36 (34 with double reads) | 13–16 ms | 30 ms |
+| after | 30 fps | 29.7–30.4 (the camera's rate) | 18–22 ms (the finder is faster than the camera) | 23 ms |
+| before (timings only) | 60 fps | 27–32 | 16 ms | 44 ms |
+| after | 60 fps | 44–55 | 1–5 ms | 44 ms |
+
+`prepMs` on the desktop 2–5 ms before, 0.4–1.5 ms after (no longer waits behind the page's frame).
+Page animation-frame work unchanged (1.4 → 1.5 ms). Without `requestVideoFrameCallback` (removed in
+an init script) the scan runs at 30 a second and finishes; without `Worker` the page fallback runs
+as before. The phone's own numbers come from the user's next browser scan.
+
+Deviation from decision 1: Kotlin calls `scanWorkerCrop` on every animation frame (not only when the
+box changes); it is a cheap call and doubles as the trigger where there is no frame callback.
+
+`web/smoke/video.mjs --no-worker` no longer blocked the worker (a blocked route does not stop a
+worker's script with Playwright 1.56; it failed the same on `main`); it now removes `Worker` from the
+page instead.
+
+Seen while measuring, not caused by this change: the striped cube finished as its mirror image
+(`GRB…` instead of `BRG…`) in 3 of 16 fake-camera runs, before and after the change alike (1 of 9
+before, 2 of 7 after); twice more the page fallback stayed on that cube without finishing. Which
+pictures are read decides it. Kept in the roadmap backlog.

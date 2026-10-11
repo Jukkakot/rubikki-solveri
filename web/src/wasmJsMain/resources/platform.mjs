@@ -29,7 +29,7 @@ export function persistStorage() {
 // is drawn twice: the visible part scaled down for the preview (canvas A) and the grid's square at
 // a fixed size for the colour reading (canvas B). Kotlin passes the visible part (cover crop).
 
-const cam = { stream: null, starting: null, users: 0, video: null, lastTime: -1, fresh: false, info: '' };
+const cam = { stream: null, starting: null, users: 0, video: null, lastTime: -1, fresh: false, frames: 0, info: '' };
 const canvasA = document.createElement('canvas');
 const canvasB = document.createElement('canvas');
 const ctxA = canvasA.getContext('2d', { willReadFrequently: true });
@@ -54,7 +54,10 @@ function watchFrames(video) {
   const tick = () => {
     if (cam.video !== video) return;
     cam.fresh = true;
+    cam.frames++;
     video.requestVideoFrameCallback(tick);
+    // A new camera picture: the finder's next one is made now (`scan-send-ahead`).
+    sendAhead();
   };
   video.requestVideoFrameCallback(tick);
 }
@@ -234,7 +237,7 @@ export function cameraHide() {
 
 const shown = { box: null, on: false, pool: [], seq: 0, frames: new Map(), times: new Map() };
 const SHOW_LONG_MAX = 720; // `scan-paint-steady`: at the full pixel ratio the copy took 20–27 ms a picture on the phone
-const POOL_SIZE = 5; // shown; in the finder and waiting for it; in the scan worker and waiting for it (`scan-speed-up-4`)
+const POOL_SIZE = 6; // shown; in the finder, made ahead and waiting for it (`scan-send-ahead`); in the scan worker and waiting for it (`scan-speed-up-4`)
 
 /** Puts the video, or the shown read picture's canvas while one is on, where the box is; hides the rest. */
 function placePicture() {
@@ -458,8 +461,10 @@ export function cameraAbilities() {
 // is ready, or if it cannot start, the finder scans as before.
 
 const scan = {
-  worker: null, ready: false, busy: false, pending: null, onFaces: null, onFail: null, timer: 0, inFlight: 0, replies: new Map(), nextReply: 1,
+  worker: null, ready: false, busy: false, pending: null, onFaces: null, onFail: null, timer: 0, inFlight: { seq: 0 }, replies: new Map(), nextReply: 1,
   pipe: null, pipeline: false, lastReset: 0,
+  // `scan-send-ahead`: when the finder last answered, for its wait before the next picture (`idleMs`).
+  lastAnswer: 0,
 };
 const WORKER_START_MS = 15000;
 
@@ -517,7 +522,7 @@ function pipeStart() {
     }
     for (const k of [...shown.frames.keys()]) if (k < done.seq) dropFrame(k);
     const seq = shown.frames.has(done.seq) ? done.seq : 0;
-    if (scan.onFaces) scan.onFaces(done.faces, seq, shown.times.get(seq) || 0, m.scan || '');
+    if (scan.onFaces) scan.onFaces(done.faces, seq, shown.times.get(seq) || 0, m.scan || '', done.prep || 0, done.idle || 0);
   };
 }
 
@@ -562,15 +567,18 @@ export function scanWorkerPipeline() {
 
 function workerPost(msg) {
   scan.busy = true;
-  scan.inFlight = msg.seq || 0;
-  const { seq, ...body } = msg;
+  // The finder's wait since its last answer (0 when this picture was already waiting for it).
+  const idle = scan.lastAnswer ? Math.max(0, performance.now() - scan.lastAnswer) : 0;
+  scan.inFlight = { seq: msg.seq || 0, prep: msg.prep || 0, idle };
+  const { seq, prep, ...body } = msg;
   scan.worker.postMessage(body, msg.bitmap ? [msg.bitmap] : [msg.data]);
 }
 
 /**
  * Starts the worker; [onFaces] gets each picture's faces as numbers, its number (0: no read picture
- * kept), the ms its read picture's copy took and the worker's scan answer for it, [onFail] the reason
- * it cannot be used.
+ * kept), the ms its read picture's copy took, the worker's scan answer for it, the ms making the
+ * picture ready for the finder took and the finder's wait before it (`scan-send-ahead`), [onFail]
+ * the reason it cannot be used.
  */
 export function scanWorkerStart(onFaces, onFail) {
   scanWorkerStop();
@@ -610,20 +618,23 @@ export function scanWorkerStart(onFaces, onFail) {
       return;
     }
     scan.busy = false;
+    scan.lastAnswer = performance.now();
     const answered = scan.inFlight;
     if (scan.pending) {
       const next = scan.pending;
       scan.pending = null;
       workerPost(next);
     }
+    // A camera picture that came while the finder read: made now (`scan-send-ahead`).
+    sendAhead();
     if (scan.pipeline) {
-      pipeQueue({ faces: m.faces, at: m.at, seq: answered });
+      pipeQueue({ faces: m.faces, at: m.at, seq: answered.seq, prep: answered.prep, idle: answered.idle });
       return;
     }
     // Copies of earlier answers never shown go: the newest answer is the one to show.
-    for (const k of [...shown.frames.keys()]) if (k < answered) dropFrame(k);
-    const seq = shown.frames.has(answered) ? answered : 0;
-    if (scan.onFaces) scan.onFaces(m.faces, seq, shown.times.get(seq) || 0, m.scan || '');
+    for (const k of [...shown.frames.keys()]) if (k < answered.seq) dropFrame(k);
+    const seq = shown.frames.has(answered.seq) ? answered.seq : 0;
+    if (scan.onFaces) scan.onFaces(m.faces, seq, shown.times.get(seq) || 0, m.scan || '', answered.prep, answered.idle);
   };
 }
 
@@ -650,9 +661,37 @@ export function scanWorkerReady() {
   return !!(scan.worker && scan.ready);
 }
 
-/** Whether the worker is ready and has nothing to read: the next picture goes to it at once. */
-export function scanWorkerIdle() {
-  return scanWorkerReady() && !scan.busy && !scan.pending;
+// Send ahead (`scan-send-ahead`): the finder's next picture is made while it reads the current one, so it
+// never waits for the page. A picture is made when the camera gives a new one (the frame watcher), when the
+// finder answers, and on each animation frame (Kotlin's loop, [scanWorkerCrop]; the only trigger where the
+// browser has no requestVideoFrameCallback). At most one is being made or waits for the finder, and a camera
+// picture goes to it once.
+const ahead = { crop: null, making: false, sent: null };
+
+/** The camera picture now on the video: its number from the frame watcher, else its time. */
+function frameId(v) {
+  return v.requestVideoFrameCallback ? cam.frames : v.currentTime;
+}
+
+/** Makes the finder's next picture when there is a new camera picture and no picture is made or waiting. */
+function sendAhead() {
+  const v = cam.video;
+  const c = ahead.crop;
+  if (!c || !v || v.readyState < 2 || !scanWorkerReady() || ahead.making || scan.pending) return;
+  const id = frameId(v);
+  if (id === ahead.sent) return;
+  ahead.sent = id;
+  ahead.making = true;
+  sendPicture(v, c.x, c.y, c.w, c.h, c.long, () => { ahead.making = false; });
+}
+
+/**
+ * The video's visible part [x,y,w,h], scaled so its long side is [previewLong], is what the finder reads;
+ * called on each animation frame, it also sends the next picture when one is due ([sendAhead]).
+ */
+export function scanWorkerCrop(x, y, w, h, previewLong) {
+  ahead.crop = { x, y, w, h, long: previewLong };
+  sendAhead();
 }
 
 function workerQueue(msg) {
@@ -673,13 +712,11 @@ function workerQueue(msg) {
 }
 
 /**
- * Sends the newest frame's visible part [x,y,w,h] to the worker scaled so its long side is
+ * Sends the video [v]'s visible part [x,y,w,h] to the worker scaled so its long side is
  * [previewLong]: as an ImageBitmap made by the browser, or where it cannot make one, as canvas A's
- * pixels (drawn by the last cameraGrab).
+ * pixels (drawn by the last cameraGrab). [queued] is called once the picture is with the worker.
  */
-export function scanWorkerSend(x, y, w, h, previewLong) {
-  const v = cam.video;
-  if (!scanWorkerReady() || !v) return;
+function sendPicture(v, x, y, w, h, previewLong, queued) {
   const scale = previewLong / Math.max(w, h);
   const pw = Math.max(1, Math.round(w * scale));
   const ph = Math.max(1, Math.round(h * scale));
@@ -687,17 +724,20 @@ export function scanWorkerSend(x, y, w, h, previewLong) {
     // The read picture's copy of the same video frame, drawn now (`scan-feedback`, `scan-read-picture-android`).
     const seq = ++shown.seq;
     const copied = copyFrame(v, x, y, w, h, seq);
+    const started = performance.now();
     createImageBitmap(v, x, y, w, h, { resizeWidth: pw, resizeHeight: ph, resizeQuality: 'low' })
-      .then((bitmap) => workerQueue({ bitmap, seq: copied ? seq : 0 }))
-      .catch(() => { dropFrame(seq); sendCanvas(); });
+      .then((bitmap) => { queued(); workerQueue({ bitmap, seq: copied ? seq : 0, prep: performance.now() - started }); })
+      .catch(() => { dropFrame(seq); queued(); sendCanvas(); });
   } else {
+    queued();
     sendCanvas();
   }
 }
 
 function sendCanvas() {
+  const started = performance.now();
   const data = ctxA.getImageData(0, 0, canvasA.width, canvasA.height).data;
-  workerQueue({ width: canvasA.width, height: canvasA.height, data: data.buffer });
+  workerQueue({ width: canvasA.width, height: canvasA.height, data: data.buffer, prep: performance.now() - started });
 }
 
 export function scanWorkerStop() {
@@ -709,6 +749,10 @@ export function scanWorkerStop() {
   scan.ready = false;
   scan.busy = false;
   scan.pending = null;
+  scan.lastAnswer = 0;
+  ahead.crop = null;
+  ahead.making = false;
+  ahead.sent = null;
   scan.onFaces = null;
   scan.onFail = null;
   if (scan.pipe) {

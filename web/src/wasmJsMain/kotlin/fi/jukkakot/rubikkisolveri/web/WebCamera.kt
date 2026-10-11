@@ -170,7 +170,7 @@ private fun WebCameraPreview(args: CameraArgs) {
             val started = elapsedMillis()
             var pipeline = false
             scanWorkerStart(
-                { text, seq, showMs, scanText ->
+                { text, seq, showMs, scanText, prepMs, idleMs ->
                     try {
                         val f = FaceCodec.decode(text)
                         if (worker != true) {
@@ -185,7 +185,7 @@ private fun WebCameraPreview(args: CameraArgs) {
                         }
                         // The picture these faces were read from is shown when their marks are first drawn (`scan-feedback`).
                         val show = if (seq > 0) ({ cameraShowFrame(seq); Unit }) else null
-                        current.onFaces?.invoke(FoundFaces(f.faces, f.width, f.height, f.finderMs, worker = true, showMs = showMs, show = show, scanned = scannedOf(scanText)))
+                        current.onFaces?.invoke(FoundFaces(f.faces, f.width, f.height, f.finderMs, worker = true, showMs = showMs, show = show, scanned = scannedOf(scanText), prepMs = prepMs, idleMs = idleMs))
                     } catch (e: Throwable) {
                         AppLog.logger.error(Evt.SCAN_ERROR, e, "worker faces")
                     }
@@ -241,11 +241,12 @@ private fun WebCameraPreview(args: CameraArgs) {
             val vw = cameraVideoWidth()
             val vh = cameraVideoHeight()
             if (vw == 0 || vh == 0) continue
-            // The video scan's worker gets the newest picture whenever it is free (at most every
-            // animation frame); the grid readings and the page's own fallback stay at FRAME_MILLIS.
-            if (current.onImage != null && worker != false && scanWorkerIdle()) {
+            // The video scan's worker gets each new camera picture, made while it reads the one before
+            // (`scan-send-ahead`, in platform.mjs); here only where it reads (also the trigger where the
+            // browser has no frame callback). The grid readings and the page's own fallback stay at FRAME_MILLIS.
+            if (current.onImage != null && worker != false && scanWorkerReady()) {
                 val c = coverCrop(vw, vh, box.width, box.height)
-                scanWorkerSend(c.x, c.y, c.width, c.height, PREVIEW_LONG_SIDE)
+                scanWorkerCrop(c.x, c.y, c.width, c.height, PREVIEW_LONG_SIDE)
             }
             if (now - lastRead < FRAME_MILLIS) continue
             if (!logged) {
