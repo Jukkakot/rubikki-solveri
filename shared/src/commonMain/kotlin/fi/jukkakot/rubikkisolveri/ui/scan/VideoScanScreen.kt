@@ -113,6 +113,20 @@ import kotlin.math.roundToInt
 import kotlin.time.TimeSource
 
 /**
+ * The finder's wait between pictures (`scan-send-ahead-android`): from its previous answer to taking
+ * the next picture ([taken], 0 for the first); times in milliseconds of one clock.
+ */
+class FinderWait {
+    private var answeredAt: Double? = null
+
+    fun taken(nowMs: Double): Double = answeredAt?.let { (nowMs - it).coerceAtLeast(0.0) } ?: 0.0
+
+    fun answered(nowMs: Double) {
+        answeredAt = nowMs
+    }
+}
+
+/**
  * The faces (full and partial) [FaceFinder] found in one camera picture of [width]×[height] pixels, in
  * [finderMs]; [worker] whether the browser's worker found them (null where there is none: the phone).
  * [show], where given (the browser's worker), puts that very picture on screen in the camera's place
@@ -131,7 +145,7 @@ class FoundFaces(
     val image: ImageBitmap? = null,
     /** The scan's answer where it ran with the finder (the browser's worker). */
     val scanned: Scanned? = null,
-    /** The browser's worker: making the picture ready for the finder took this long, and the finder waited this long before it (`scan-send-ahead`); null elsewhere. */
+    /** Making the picture ready for the finder took this long, and the finder waited this long before it (the browser's worker, `scan-send-ahead`; the phone, `scan-send-ahead-android`); null elsewhere. */
     val prepMs: Double? = null,
     val idleMs: Double? = null,
 ) {
@@ -190,7 +204,11 @@ fun VideoScanScreen(
         var worker by remember { mutableStateOf<Boolean?>(null) }
         LaunchedEffect(images) {
             withContext(Dispatchers.Default) {
+                val clock = TimeSource.Monotonic.markNow()
+                fun nowMs() = clock.elapsedNow().inWholeMicroseconds / 1000.0
+                val wait = FinderWait()
                 images.collect { scanImage ->
+                    val idleMs = wait.taken(nowMs())
                     val image = scanImage.image
                     val start = elapsedMillis()
                     val faces = FaceFinder.find(image.argb, image.width, image.height).let { it.faces + it.partial }.map(FaceReading::of)
@@ -198,8 +216,10 @@ fun VideoScanScreen(
                         FoundFaces(
                             faces, image.width, image.height, elapsedMillis() - start, worker?.let { false },
                             showMs = scanImage.pictureMs, image = scanImage.picture,
+                            prepMs = scanImage.prepMs, idleMs = scanImage.prepMs?.let { idleMs },
                         ),
                     )
+                    wait.answered(nowMs())
                 }
             }
         }
@@ -221,7 +241,7 @@ fun VideoScanScreen(
         ) { modifier ->
             CameraPreview(
                 torch = torch,
-                onSamples = {},
+                onSamples = null,
                 onError = { cameraFailed = true },
                 modifier = modifier,
                 exposure = exposure,

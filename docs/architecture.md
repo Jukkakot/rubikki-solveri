@@ -156,7 +156,11 @@ Video scan pipeline (`video-scan`):
    lists it; the point converted through the cover crop), the `exposureMode` lock. Camera steps per
    controller step: `ExposureSteps`. When the camera opens a `scan.camera` line says what it can do.
 2. `cube/scan/FaceFinder`: full 3×3 lattices (and partial ones with 7–8 stickers) anywhere in the picture (spike `video-scan-spike`,
-   findings in its archive); run on `Dispatchers.Default` on Android. In the browser it runs in a
+   findings in its archive); run on `Dispatchers.Default` on Android, which already sends ahead
+   (`scan-send-ahead-android`): the camera thread copies the frame and makes the upright picture and
+   its bitmap while the finder reads the previous one; one waits at most (newest wins), a frame goes
+   once, and the video scan skips the guided scan's grid sampling (`onSamples = null`). Snapshots carry
+   `prepMs` (camera thread, `ScanImage.prepMs`) and `idleMs` (`FinderWait`) as in the browser. In the browser it runs in a
    Web Worker (`webworker` module, `scan-worker.js`): the page makes an `ImageBitmap` of the visible
    part at 240 px (`createImageBitmap`, or canvas A's pixels where that fails), transfers it, the
    worker reads its pixels in an `OffscreenCanvas` and sends the faces back as numbers

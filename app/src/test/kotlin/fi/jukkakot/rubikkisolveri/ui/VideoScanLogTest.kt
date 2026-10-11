@@ -4,6 +4,7 @@ import fi.jukkakot.rubikkisolveri.cube.Cube
 import fi.jukkakot.rubikkisolveri.cube.Face
 import fi.jukkakot.rubikkisolveri.cube.scan.Stall
 import fi.jukkakot.rubikkisolveri.cube.scan.VideoScanState
+import fi.jukkakot.rubikkisolveri.ui.scan.FinderWait
 import fi.jukkakot.rubikkisolveri.ui.scan.VideoScanLog
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -31,7 +32,7 @@ class VideoScanLogTest {
         assertEquals("stuck", fields["stall"])
         // R is known but not confirmed by the rest of the cube: no tick.
         assertEquals(setOf(Face.U), VideoScanLog.doneSides(state))
-        // The phone has no worker: no picture preparation or finder wait.
+        // Not measured: no picture preparation or finder wait.
         assertEquals(null, fields["prepMs"])
         assertEquals(null, fields["idleMs"])
     }
@@ -41,5 +42,23 @@ class VideoScanLogTest {
         val fields = VideoScanLog.snapshot(VideoScanState.EMPTY, facesPerFrame = 1.0, finderMs = 17.0, worker = true, prepMs = 15.26, idleMs = 0.04).toMap()
         assertEquals(15.3, fields["prepMs"])
         assertEquals(0.0, fields["idleMs"])
+    }
+
+    @Test
+    fun phoneSnapshotTellsWhereTheFinderLosesTime() {
+        val fields = VideoScanLog.snapshot(VideoScanState.EMPTY, facesPerFrame = 1.0, finderMs = 12.0, fps = 29.8, prepMs = 6.04, idleMs = 21.36).toMap()
+        assertEquals(6.0, fields["prepMs"])
+        assertEquals(21.4, fields["idleMs"])
+        assertEquals(29.8, fields["fps"])
+    }
+
+    @Test
+    fun finderWaitRunsFromAnswerToNextPicture() {
+        val wait = FinderWait()
+        assertEquals(0.0, wait.taken(100.0))
+        wait.answered(112.5)
+        assertEquals(20.0, wait.taken(132.5))
+        wait.answered(140.0)
+        assertEquals(0.0, wait.taken(140.0))
     }
 }

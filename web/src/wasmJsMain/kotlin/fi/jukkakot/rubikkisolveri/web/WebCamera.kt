@@ -264,7 +264,7 @@ private fun WebCameraPreview(args: CameraArgs) {
                 val frame = RgbaFrame(ANALYSIS_SIZE, ANALYSIS_SIZE, ANALYSIS_SIZE * 4, cameraAnalysisData().toByteArray(), 0)
                 // The picture first, so it belongs to the same frame as the readings.
                 current.onPicture?.invoke(FrameSampler.picture(frame))
-                current.onSamples(FrameSampler.sample(frame))
+                current.onSamples?.invoke(FrameSampler.sample(frame))
                 // Without the worker the video scan looks for faces on the page (the worker takes its pictures above).
                 current.onImage?.let { onImage ->
                     if (!(worker != false && scanWorkerReady()) && now - lastImage >= IMAGE_MILLIS) {

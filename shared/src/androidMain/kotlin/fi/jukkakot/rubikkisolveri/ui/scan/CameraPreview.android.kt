@@ -169,7 +169,7 @@ private fun uprightBitmap(rgba: ByteArray, width: Int, height: Int, rowStride: I
 @Composable
 actual fun CameraPreview(
     torch: Boolean,
-    onSamples: (List<Rgb>) -> Unit,
+    onSamples: ((List<Rgb>) -> Unit)?,
     onError: (Throwable) -> Unit,
     modifier: Modifier,
     exposure: CameraSettings,
@@ -210,6 +210,8 @@ actual fun CameraPreview(
                     AppLog.info(Evt.SCAN_STALL, null, "where" to "camera", "ms" to now - lastFrame)
                 }
                 lastFrame = now
+                // Preparing the video scan's picture (`scan-send-ahead-android`): copy, upright picture and bitmap.
+                val prepStart = System.nanoTime()
                 val plane = image.planes[0]
                 val bytes = plane.buffer
                 if (buffer.size != bytes.remaining()) buffer = ByteArray(bytes.remaining())
@@ -228,13 +230,15 @@ actual fun CameraPreview(
                 )
                 // The picture first, so it belongs to the same frame as the readings.
                 onPicture?.invoke(FrameSampler.picture(frame))
-                onSamples(FrameSampler.sample(frame))
+                onSamples?.invoke(FrameSampler.sample(frame))
                 // Every camera picture goes to the video scan; its finder keeps only the newest it can take.
                 if (onImage != null) {
                     val start = System.nanoTime()
                     val picture = uprightBitmap(buffer, image.width, image.height, plane.rowStride, crop, rotation)
                     val pictureMs = (System.nanoTime() - start) / 1e6
-                    onImage(ScanImage(FrameSampler.upright(frame), picture.asImageBitmap(), pictureMs))
+                    val upright = FrameSampler.upright(frame)
+                    val prepMs = (System.nanoTime() - prepStart) / 1e6
+                    onImage(ScanImage(upright, picture.asImageBitmap(), pictureMs, prepMs))
                 }
             } catch (e: Exception) {
                 AppLog.logger.error(Evt.SCAN_ERROR, e)

@@ -33,7 +33,7 @@ object BrowserHooks {
 /** The arguments of `CameraPreview`, passed on to the browser camera. */
 class CameraArgs(
     val torch: Boolean,
-    val onSamples: (List<Rgb>) -> Unit,
+    val onSamples: ((List<Rgb>) -> Unit)?,
     val onError: (Throwable) -> Unit,
     val modifier: Modifier,
     val exposure: CameraSettings,

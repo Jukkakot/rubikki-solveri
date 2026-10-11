@@ -10,7 +10,7 @@ import fi.jukkakot.rubikkisolveri.ui.CameraArgs
 @Composable
 actual fun CameraPreview(
     torch: Boolean,
-    onSamples: (List<Rgb>) -> Unit,
+    onSamples: ((List<Rgb>) -> Unit)?,
     onError: (Throwable) -> Unit,
     modifier: Modifier,
     exposure: CameraSettings,

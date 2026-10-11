@@ -9,7 +9,7 @@ import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 
 /**
  * The back camera's preview. Every analysed frame is read through the grid and its nine readings
- * passed to [onSamples] (possibly on a background thread); [onPicture] gets the grid picture of the
+ * passed to [onSamples] (possibly on a background thread; null = not read through the grid); [onPicture] gets the grid picture of the
  * same frame. [exposure] says where the camera measures light and focuses (shares of [onImage]'s
  * upright picture), how many steps darker it is set and whether exposure and white balance are held,
  * each where the camera can. [onTorchAvailable] says whether the camera has a torch the app can
@@ -23,7 +23,7 @@ import fi.jukkakot.rubikkisolveri.cube.scan.Rgb
 @Composable
 expect fun CameraPreview(
     torch: Boolean,
-    onSamples: (List<Rgb>) -> Unit,
+    onSamples: ((List<Rgb>) -> Unit)?,
     onError: (Throwable) -> Unit,
     modifier: Modifier = Modifier,
     exposure: CameraSettings = CameraSettings.FREE,
@@ -38,8 +38,10 @@ expect fun CameraPreview(
 /**
  * One picture for the video scan: [image] to find faces in, and where the platform makes it, the same
  * picture upright to show in the camera's place ([picture], filling the box; made in [pictureMs]).
+ * [prepMs]: the whole preparation of this picture where the platform measures it (the phone's camera
+ * thread: copy, upright picture and bitmap; `scan-send-ahead-android`).
  */
-class ScanImage(val image: ArgbImage, val picture: ImageBitmap? = null, val pictureMs: Double = 0.0)
+class ScanImage(val image: ArgbImage, val picture: ImageBitmap? = null, val pictureMs: Double = 0.0, val prepMs: Double? = null)
 
 /**
  * Shows [content] once the camera may be used. Otherwise asks for the permission (once
