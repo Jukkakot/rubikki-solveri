@@ -94,13 +94,13 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 
 ## Backlog
 
+Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
+
 - video scan: decisions taken on a sticker's single leading colour (a face's turn settled, the whole-cube
   recheck, two tracks agreeing, the finish check, which centres may be references) could use the colour
   shares instead, as the votes and the best cube already do (user 2026-10-12: keep every colour's
   likelihood). Being explored: how often the leading colour decides differently from the shares on the
   recordings, and what it costs the search.
-
-Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
 
 - video scan: the striped cube (`web_181940` stills as a fake camera in Chromium) finished as its
   mirror image in 3 of 16 runs, before and after `scan-send-ahead` alike, and twice the page fallback
