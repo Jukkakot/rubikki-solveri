@@ -91,16 +91,15 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 81 | `scan-colour-spike` | done | Offline, colours from the full still (A) and one red/orange hue split over the scan's warm readings (B) against today. A: no gain on 640 px stills, no-go. B: finishes the stuck `web_20261011_101618` but one wrong cube and good recordings 20–40 % slower, no-go as built. The stuck scans' readings separate with the right references; the scan's centre-based red/orange references are what fail (`findings.md`) |
 | 82 | `scan-work-counters` | done | The scan counts its work (sticker namings, assignment search nodes, best-cube solves, tracks): the budget test checks each 100 pictures' counts (busiest measured + 50 %, late windows at most twice the early ones), the same on every machine, with a loose 15 ms ceiling kept; the comparison harness prints work per picture (user, 2026-10-11) |
 | 83 | `scan-warm-references` | done | Red and orange also judged by each face's own red and orange where the centres name them wrong (the nearest light counts): both stuck 2026-10-11 scans finish right (10:04 15.3 → 11.7 s, 10:16 never → 12.5 s), the evening video 12.2 → 9.1 s, a striped video no longer finishes wrong, nothing slower. Cost: the long striped recording's search grows (CPU 3.8 → 5.5 ms a picture at worst; budget test exception, user 2026-10-11). Phone check done 2026-10-11 19:24 (browser 1.0.402, evening room light): eight scans all finished right in 3–8 s, the user found it working well |
+| 84 | `scan-colour-shares-spike` | done | Offline: a sticker's leading colour (plurality of hard names) against its colour shares on every recording and video fixture. They disagree on at most 1 % of sticker-pictures, and there the shares are not more often right (424 against 720); flips the same. No-go for moving the scan's side decisions onto the shares (`findings.md`) |
 
 ## Backlog
 
 Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
 
-- video scan: decisions taken on a sticker's single leading colour (a face's turn settled, the whole-cube
-  recheck, two tracks agreeing, the finish check, which centres may be references) could use the colour
-  shares instead, as the votes and the best cube already do (user 2026-10-12: keep every colour's
-  likelihood). Being explored: how often the leading colour decides differently from the shares on the
-  recordings, and what it costs the search.
+- video scan: the side decisions on a sticker's leading colour instead of its shares: measured in
+  `scan-colour-shares-spike` (84), no gain (under 1 % differ, shares not more often right). Take up only with a
+  recording that stalls on a sticker whose leading colour and shares disagree.
 
 - video scan: the striped cube (`web_181940` stills as a fake camera in Chromium) finished as its
   mirror image in 3 of 16 runs, before and after `scan-send-ahead` alike, and twice the page fallback
