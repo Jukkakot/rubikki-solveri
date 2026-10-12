@@ -44,6 +44,7 @@ class ColourSpikeHarness {
     private val recordings = FinishDelayHarness.RECORDINGS + listOf(
         "web_20261011_100403" to TRUTH_1011,
         "web_20261011_101618" to TRUTH_1011,
+        "web_20261012_100233" to VideoFixtures.STRIPED_TRUTH,
     )
 
     /** One picture: when it was taken and the faces found in it. */

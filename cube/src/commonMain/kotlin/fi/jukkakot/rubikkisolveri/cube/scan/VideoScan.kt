@@ -139,6 +139,8 @@ class VideoScan internal constructor(private val scheme: ColorScheme, private va
 
     internal val warmRefLog: String get() = tracks.warmRefLog
 
+    internal val finishDetail: String get() = tracks.finishDetail()
+
     /**
      * Handles the faces found in one frame taken at [nowMillis] (a partial face, stickers missing,
      * only continues a face already followed): known stickers from the best possible cube where it is

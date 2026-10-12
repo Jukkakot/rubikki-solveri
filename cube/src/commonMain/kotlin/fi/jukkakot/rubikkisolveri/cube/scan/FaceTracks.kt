@@ -489,6 +489,30 @@ class FaceTracks internal constructor(
         return splitOf(t).also { splitCache[t.id] = SplitCache(seq, it) }
     }
 
+    /**
+     * For diagnosing a finish (`scan-false-faces-finish` 3.1): per face, its counting tracks as
+     * `id:size:how` (`cube` turn settled by the best cube, `pic` by a picture, `open`), and the best cube's
+     * cost with every face's tracks as they are, all turned half round, and only the open-turn ones half round.
+     */
+    internal fun finishDetail(): String {
+        val sb = StringBuilder()
+        for (f in Face.entries) {
+            val list = counting().filter { t -> assignment(t)?.let { FaceOption.face(it) == f } == true }
+            sb.append(f.name).append(": ").append(
+                list.joinToString(" ") { t ->
+                    val s = t.state()
+                    "${t.id}:${t.size}:${when { s.option == null -> "open"; s.byCube -> "cube"; else -> "pic" }}${if (t in voting) "" else "-"}"
+                },
+            ).append('\n')
+        }
+        val all = TurnedEvidence(all = true)
+        val open = TurnedEvidence()
+        val half = IntArray(6) { 2 }
+        fun r(x: Double) = kotlin.math.round(x * 100) / 100
+        sb.append("cost ${r(bestCost(all.of(IntArray(6))))}, every face half round ${r(bestCost(all.of(half)))}, open turns half round ${r(bestCost(open.of(half)))}")
+        return sb.toString()
+    }
+
     /** Track [id]'s warm positions as `position@hue` by hue, and its split, for diagnosis. */
     internal fun warmDetail(id: Int): String {
         val t = tracker.tracks.firstOrNull { it.id == id } ?: return ""
@@ -1050,9 +1074,20 @@ class FaceTracks internal constructor(
         }
         extra.fill(0)
         turned = TurnedEvidence()
+        // Faces that three or more turned half round together read nearly as well (the mirror, `scan-false-faces-finish`):
+        // each one's own other turns cost a lot, yet none is settled until a picture tells.
+        val faces = openOn.keys.toList()
+        val joint = HashSet<Face>()
+        for (mask in 1 until (1 shl faces.size)) {
+            val set = faces.filterIndexed { i, _ -> mask and (1 shl i) != 0 }
+            if (set.size < 3 || set.all { f -> turned.leading(f, 2) == turned.leading(f, 0) } || joint.containsAll(set)) continue
+            for (f in set) extra[f.ordinal] = 2
+            if (cost() - base < TURN_MARGIN) joint += set
+            extra.fill(0)
+        }
         for ((face, list) in openOn) {
             val leading = turned.leading(face, 0)
-            val settled = (1 until 4).filter { k -> turned.leading(face, k) != leading }.all { k ->
+            val settled = face !in joint && (1 until 4).filter { k -> turned.leading(face, k) != leading }.all { k ->
                 extra[face.ordinal] = k
                 val c = cost()
                 extra[face.ordinal] = 0
@@ -1185,10 +1220,15 @@ class FaceTracks internal constructor(
      * such pair of other turns that reads them differently makes the best cube at least [TURN_MARGIN]
      * costlier (the striped cube with its front and back both half round is another possible cube,
      * 2026-10-07 20:24), and also when three or more of them all turn half round (the striped cube with
-     * every side half round is its mirror, `202058`, 2026-10-08). Checked for the finish only.
+     * every side half round is its mirror, `202058`, 2026-10-08). Checked for the finish only. Every face
+     * whose turn no picture fixed takes part, also one whose turn is still open: `202156` finished with
+     * three sides settled by the cube and the fourth open, its mirror costing the same
+     * (`scan-false-faces-finish`).
      */
     fun turnsClear(): Boolean {
-        val faces = Face.entries.filter { f -> counting().any { t -> t.state().byCube && t.state().option?.let { it != FaceOption.NONE && FaceOption.face(it) == f } == true } }
+        val faces = Face.entries.filter { f ->
+            counting().any { t -> t.state().let { s -> s.face == f && (s.option == null || s.byCube) && (s.option ?: s.assigned) != FaceOption.NONE } }
+        }
         if (faces.size < 2) return true
         val turned = TurnedEvidence()
         val base = bestCost(turned.of(IntArray(6)))
