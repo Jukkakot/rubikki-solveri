@@ -120,7 +120,9 @@ face it could be. A followed face that reads against the clear cube SHALL hold i
 readings are not counted in what was read and outweigh the same side's readings that agree; when the
 same side's readings that fit the cube are at least as many, it counts as a misread and does not hold
 the finish, and a face whose readings are counted does not hold it either (the cube is clear with them
-counted). It SHALL never finish with a cube that breaks a rule of a real cube. The solution's start
+counted). It SHALL never finish with a cube that breaks a rule of a real cube, nor while another real cube
+that differs only in how some faces are turned fits what was read nearly as well; then it SHALL wait for a view
+that tells them apart. The solution's start
 screen SHALL then open with a new scan behind it, as for a sure guided scan; stickers known only from
 the others are marked in the colour check reached from the guide's menu. The user SHALL be able to stop
 earlier and open the check with what is known. The scan SHALL never stay with everything read and
@@ -157,6 +159,10 @@ nothing happening.
 #### Scenario: Stop early
 - **WHEN** the user stops the video scan with stickers still unknown
 - **THEN** the check opens with the known colours and the unknown stickers marked
+
+#### Scenario: Every side half round
+- **WHEN** the readings fit a cube and the same cube with every side turned half round about equally, because the sides were mostly seen one at a time
+- **THEN** the scan does not finish with either until two faces seen together tell them apart, and then finishes with the true cube
 
 ### Requirement: Reading stays quick in a long scan
 The scan's work per picture SHALL not grow with how long the scan has run: faces seen long ago SHALL
