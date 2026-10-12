@@ -1,0 +1,78 @@
+## MODIFIED Requirements
+
+### Requirement: Scan from video
+The video scan SHALL read the cube from the camera's live picture without a grid, without holding
+still and without separate captures. It SHALL find the cube's faces anywhere in the picture,
+straight on or at an angle, several at a time, and outline each found face on the camera picture
+with a dim line. A face with one or two stickers hidden (for example under a finger) SHALL still count for the
+stickers it shows. A lattice that bends over the cube's edge, with a row or column from the next face, SHALL NOT
+be taken for a face, also when that row looks like a row of the face.
+
+#### Scenario: Turning the cube
+- **WHEN** the user turns a cube slowly in front of the camera so that every face is seen
+- **THEN** the stickers are recognised without any tap
+
+#### Scenario: Corner view
+- **WHEN** the cube is held so that three faces are seen at once
+- **THEN** all three faces are outlined and read
+
+#### Scenario: Finger over a sticker
+- **WHEN** a face is seen with a finger over one of its edge stickers
+- **THEN** its other eight stickers count towards recognition and the hidden one does not
+
+#### Scenario: Lattice over the cube's edge
+- **WHEN** the cube is held at an angle and the stickers of a side's top two rows and the row of the top face above them could form a 3x3 lattice
+- **THEN** that lattice is not taken for a face, and the side is read with its own three rows
+
+### Requirement: Finish the video scan
+The scan SHALL finish when one possible cube fits what has been read clearly better than every other
+possible cube, including every other way of telling which reading showed which face, and this holds
+for about a third of a second; not every sticker needs to have been seen. A followed face whose face or
+turn is not told yet SHALL not hold the finish back while it reads like that cube in some turn of a
+face it could be. A followed face that reads against the clear cube SHALL hold it back only while its
+readings are not counted in what was read and outweigh the same side's readings that agree; when the
+same side's readings that fit the cube are at least as many, it counts as a misread and does not hold
+the finish, and a face whose readings are counted does not hold it either (the cube is clear with them
+counted). It SHALL never finish with a cube that breaks a rule of a real cube, nor while another real cube
+that differs only in how some faces are turned fits what was read nearly as well; then it SHALL wait for a view
+that tells them apart. The solution's start
+screen SHALL then open with a new scan behind it, as for a sure guided scan; stickers known only from
+the others are marked in the colour check reached from the guide's menu. The user SHALL be able to stop
+earlier and open the check with what is known. The scan SHALL never stay with everything read and
+nothing happening.
+
+#### Scenario: Whole cube seen
+- **WHEN** the cube that fits the readings is clear for about a third of a second
+- **THEN** the start screen opens, and going back starts a new scan
+
+#### Scenario: Cube still turning when it is clear
+- **WHEN** the cube is clear and the user keeps turning it, so new faces come into view every moment
+- **THEN** the scan finishes about a third of a second after the cube became clear
+
+#### Scenario: Orange read as red
+- **WHEN** one orange sticker has been read as red, so no real piece fits it
+- **THEN** the scan takes the piece that fits the rest and finishes
+
+#### Scenario: Two ways to tell the faces
+- **WHEN** the readings fit two cubes about equally, because two faces could be told apart either way
+- **THEN** the scan does not finish until a view settles it, and meanwhile the status line names a side that settles it
+
+#### Scenario: Old face with an open turn
+- **WHEN** the cube has been clear for a while and an early followed face of the white side, whose turn was never told, reads like the white side of that cube in one of its turns
+- **THEN** it does not hold the finish back, and the scan finishes
+
+#### Scenario: Outvoted misread
+- **WHEN** the cube is clear and one short followed face of the white side reads two stickers against it, while the white side's other followed faces fit it with at least as many readings
+- **THEN** that face counts as a misread and the scan finishes
+
+#### Scenario: Misread side clear from the rest
+- **WHEN** the cube is clear from the other five sides and the only followed faces of the white side, counted in what was read, each misread two or more stickers
+- **THEN** they do not hold the finish, and the scan finishes about a third of a second after the cube became clear
+
+#### Scenario: Stop early
+- **WHEN** the user stops the video scan with stickers still unknown
+- **THEN** the check opens with the known colours and the unknown stickers marked
+
+#### Scenario: Every side half round
+- **WHEN** the readings fit a cube and the same cube with every side turned half round about equally, because the sides were mostly seen one at a time
+- **THEN** the scan does not finish with either until two faces seen together tell them apart, and then finishes with the true cube
