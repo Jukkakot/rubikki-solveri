@@ -230,7 +230,10 @@ Video scan pipeline (`video-scan`):
    them wrong, the nearest light counting (`FaceTracks.updateRefs`, `scan-warm-references`; `ColourSpikeHarness`
    compares with centres only); a sticker's colour leaves out a lamp's glare (`FaceFinder`). A sticker is known when its
    place's margin clears `CLEAR_MARGIN` (chosen by `ScanSimulation`, findings in the `video-scan-light` archive) or by
-   its votes alone, and the scan finishes when the whole cube is clear, unseen stickers included.
+   its votes alone, and the scan finishes when the whole cube is clear, unseen stickers included, and no other
+   way of turning the faces fits nearly as well: faces turned together (e.g. every side half round, the mirror of a
+   symmetric cube) are tried when turns are settled and before the finish (`FaceTracks.settleTurns`, `turnsClear`;
+   `scan-false-faces-finish`).
    `CubeProjection` puts every sticker into the picture.
    Earlier decisions in the `video-scan` and `video-scan-live` archives. Regression data: the test
    videos' finder output in `cube/src/jvmTest/resources/video/` (`VideoScanTest`, the true cubes in

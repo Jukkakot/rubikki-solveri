@@ -92,7 +92,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 82 | `scan-work-counters` | done | The scan counts its work (sticker namings, assignment search nodes, best-cube solves, tracks): the budget test checks each 100 pictures' counts (busiest measured + 50 %, late windows at most twice the early ones), the same on every machine, with a loose 15 ms ceiling kept; the comparison harness prints work per picture (user, 2026-10-11) |
 | 83 | `scan-warm-references` | done | Red and orange also judged by each face's own red and orange where the centres name them wrong (the nearest light counts): both stuck 2026-10-11 scans finish right (10:04 15.3 → 11.7 s, 10:16 never → 12.5 s), the evening video 12.2 → 9.1 s, a striped video no longer finishes wrong, nothing slower. Cost: the long striped recording's search grows (CPU 3.8 → 5.5 ms a picture at worst; budget test exception, user 2026-10-11). Phone check done 2026-10-11 19:24 (browser 1.0.402, evening room light): eight scans all finished right in 3–8 s, the user found it working well |
 | 84 | `scan-colour-shares-spike` | done | Offline: a sticker's leading colour (plurality of hard names) against its colour shares on every recording and video fixture. They disagree on at most 1 % of sticker-pictures, and there the shares are not more often right (424 against 720); flips the same. No-go for moving the scan's side decisions onto the shares (`findings.md`) |
-| 85 | `scan-false-faces-finish` | planned | Striped-cube scans 2026-10-12: a 3x3 lattice over the cube's edge taken for a face (scan stuck 43 s) and a finish with every side half round (wrong cube). General fixes: the finder rejects a lattice whose steps or sticker sizes jump between its rows (a face is flat); no finish while a differently turned cube fits nearly as well, after reproducing the mirror finish offline |
+| 85 | `scan-false-faces-finish` | done | Striped-cube scans 2026-10-12. The finish with every side half round (wrong cube) reproduced offline (`202156`) and fixed for every cube: faces turned together are tried both when settling turns and before the finish, open turns too; `202156` and `202403` now finish right, nothing later or wrong. A lattice over the cube's edge is as flat as a true face at the finder's size, so the finder is unchanged (backlog). Phone check pending: scans of the striped cube |
 
 ## Backlog
 
@@ -102,10 +102,11 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
   `scan-colour-shares-spike` (84), no gain (under 1 % differ, shares not more often right). Take up only with a
   recording that stalls on a sticker whose leading colour and shares disagree.
 
-- video scan: the striped cube (`web_181940` stills as a fake camera in Chromium) finished as its
-  mirror image in 3 of 16 runs, before and after `scan-send-ahead` alike, and twice the page fallback
-  stayed on that cube without finishing; which pictures are read decides it (`scan-send-ahead` design
-  Findings). Take up with a recording of such a run (capture the faces given to the scan in the trace).
+- video scan: a 3x3 lattice over the cube's edge (a row of the next face) taken for a face; the striped
+  cube shows it most (recording `web_20261012_100233`: 119 such readings, never finished). Not a flatness
+  test: at 240 px such lattices are as even as true faces (`scan-false-faces-finish` Findings 1.1). Ideas: the
+  whole picture's lattices chosen together (true faces tile the stickers, a lattice over an edge overlaps two),
+  or the finder at a higher resolution for the lattice check. Take up when it stalls on an ordinary cube.
 
 - video scan: a disagreement score per followed face against the best cube; while no whole is
   clear, a face reading above 3/8 against it counts half (dropped from `scan-never-locked`: the

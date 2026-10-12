@@ -20,7 +20,7 @@ did so in 3 of 16 runs (`scan-send-ahead` Findings).
 
 ## What Changes
 
-- **Face finder:** a lattice that bends over the cube's edge is not a face. The nine stickers of a face lie on
+- **Face finder (not built, design Findings 1.1):** a lattice that bends over the cube's edge is not a face. The nine stickers of a face lie on
   one plane, so their steps change only gently across the lattice; a lattice whose row or column steps or sticker
   shapes jump between its inner and outer row is rejected. Today's `minSpan` check (a row of the next face seen
   flatter) stays.
@@ -38,8 +38,9 @@ None.
 
 ### Modified Capabilities
 
-- `video-scan`: *Scan from video* says a lattice across a cube's edge is not a face; *Finish the video scan* adds
-  a scenario: two cubes alike but for every side's half turn do not finish until a view tells them apart.
+- `video-scan`: *Finish the video scan* adds a scenario: two cubes alike but for every side's half turn do not
+  finish until a view tells them apart. (*Scan from video* was to say a lattice across a cube's edge is not a face;
+  dropped with the finder part.)
 
 ## Impact
 

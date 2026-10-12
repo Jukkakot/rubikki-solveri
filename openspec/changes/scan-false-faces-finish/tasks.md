@@ -6,7 +6,7 @@
 
 ## 2. Finder (cube, commonMain)
 
-- [ ] 2.1 `FaceFinder`: reject a lattice whose half-step or outer-row size ratio is beyond the limits measured in 1.1; JVM test: a lattice over the cube's edge from a committed still is rejected and that still's true faces are still found; verify `./gradlew :cube:jvmTest` passes and the harness shows no true face lost.
+- [x] 2.1 *Not built (design Findings 1.1: lattices over an edge are as flat as true faces; the spec part dropped, backlog item added).* `FaceFinder`: reject a lattice whose half-step or outer-row size ratio is beyond the limits measured in 1.1; JVM test: a lattice over the cube's edge from a committed still is rejected and that still's true faces are still found; verify `./gradlew :cube:jvmTest` passes and the harness shows no true face lost.
 
 ## 3. Mirror finish
 
@@ -19,4 +19,4 @@
 
 ## 5. Docs
 
-- [ ] 5.1 `docs/architecture.md` (finder flatness check, finish rule), roadmap row, backlog item on the striped mirror closed; list the phone check (scans of the striped cube); verify the roadmap row matches the outcome.
+- [x] 5.1 `docs/architecture.md` (finder flatness check, finish rule), roadmap row, backlog item on the striped mirror closed; list the phone check (scans of the striped cube); verify the roadmap row matches the outcome.
