@@ -1,2 +1,3 @@
 - [Open inconveniences](open-inconveniences.md) — recurring friction raised with the user, repeat open ones until they react
 - [Ask the user about colours](ask-user-about-colours.md) — unsure what a picture really shows: send it and ask
+- [General fixes only](general-fixes-only.md) — no pattern-specific (striped cube) fixes; fix the general weakness
