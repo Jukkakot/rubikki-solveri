@@ -94,17 +94,13 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 
 ## Backlog
 
-Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
+- video scan: decisions taken on a sticker's single leading colour (a face's turn settled, the whole-cube
+  recheck, two tracks agreeing, the finish check, which centres may be references) could use the colour
+  shares instead, as the votes and the best cube already do (user 2026-10-12: keep every colour's
+  likelihood). Being explored: how often the leading colour decides differently from the shares on the
+  recordings, and what it costs the search.
 
-- video scan: phone browser 2026-10-11 10:04:03 (recording `web_20261011_100403`): every sticker read
-  but the cube never clear in 30 s (margin 0, F/L/B read with red and orange mixed), left by the user;
-  the same cube finished in the next two scans. The replay does not finish either. Take up as a fixture.
-  Again at 10:16:18 (`web_20261011_101618`, 53 s, camera darkened 2 steps): oranges on F, R and B
-  read red the whole time (F `BRGRGRRWY`, B `YRRYBRBBW`) while the L centre read orange; the replay stops
-  at known 52 without finishing. Truth `WBBRWGWWYORRYRRGYOBRGOGOOWYYGRWYGGYWGBRWOGRBBYOOYBOBBW`.
-  `scan-colour-spike`: the readings separate with the true centres as references (2 % and 15 % of
-  warm stickers wrong); the scan's own references fail. Fixed in `scan-warm-references` (83): both finish
-  right, pinned by `ScanWarmReferencesTest`.
+Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home screen matter more).
 
 - video scan: the striped cube (`web_181940` stills as a fake camera in Chromium) finished as its
   mirror image in 3 of 16 runs, before and after `scan-send-ahead` alike, and twice the page fallback
@@ -116,29 +112,15 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
   whole-cube recheck fixed its recording and no fixture needed it). Take up with a recording of one
   face misread that holds the others back.
 
-- video scan: straight-on readings weigh more (user, 2026-10-07). Tried in `scan-centre-clash`
-  and dropped: no gain on the test videos, and a face misread straight on beat earlier right angled
-  readings (design "Findings" in that archive). Worth another look only with a case it would fix.
-
-- video scan: show a sticker still in doubt as "x or y" (e.g. half red, half orange) instead of
-  only veiled or one leading colour, refined as surer readings come (user, 2026-10-07). The
-  `scan-rules` scanner already keeps every possible colour internally; this is only how it is
-  shown. Look again after the phone test of `scan-rules`, if the user then still misses it.
-
-- `cloud-setup` (all projects): **global part done 2026-10-09**: public repo
-  `Jukkakot/claude-config` (CLAUDE.md, hooks, skills `ui` and `quickshare`, `install.sh`; setup
-  script line in its README), installed locally the same way. First cloud session (2026-10-09):
-  `~/.claude/CLAUDE.md`, hooks, skills and a Quick Share download all work. Done.
-  Test material done in `cloud-testdata` (all stills in git, videos local, `tools/make-stills.sh`).
-
 - camera follow: notice when the cube is held differently, or keep helping in any orientation
   (after the user has tried camera follow; from `steady-cube`). Proposal `camera-follow-any-way`
   drafted 2026-10-06 (commit 9a0a469) and parked: hard to film the cube while turning it.
-
-- ~~`web-solver-worker`~~ dropped 2026-10-06: `?selftest` on the user's phone (Samsung Internet)
-  gave warmup 126–141 ms and solve 148–196 ms, far under the 4 s / 2 s limits.
 
 - More ways to pick a target (after `solve-to-target`, 2026-10-06): type or paste a move sequence,
   scan the target from another cube, a partial target ("only this side matters").
 
 - `solve-challenge`: learning mode on the solve screen: show the position to reach next, the user tries it themselves, a "hint" button reveals the moves step by step; the target shown as the turnable 3D cube
+
+Dropped 2026-10-12 (user): the stuck 2026-10-11 scans (fixed in 83), `cloud-setup` (done), `web-solver-worker`
+(not needed), straight-on readings weigh more (tried, no gain), a sticker shown as "x or y" (the marks suffice and
+red/orange mixing is fixed; the idea behind it continues as colour shares in decisions).
