@@ -93,7 +93,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 83 | `scan-warm-references` | done | Red and orange also judged by each face's own red and orange where the centres name them wrong (the nearest light counts): both stuck 2026-10-11 scans finish right (10:04 15.3 → 11.7 s, 10:16 never → 12.5 s), the evening video 12.2 → 9.1 s, a striped video no longer finishes wrong, nothing slower. Cost: the long striped recording's search grows (CPU 3.8 → 5.5 ms a picture at worst; budget test exception, user 2026-10-11). Phone check done 2026-10-11 19:24 (browser 1.0.402, evening room light): eight scans all finished right in 3–8 s, the user found it working well |
 | 84 | `scan-colour-shares-spike` | done | Offline: a sticker's leading colour (plurality of hard names) against its colour shares on every recording and video fixture. They disagree on at most 1 % of sticker-pictures, and there the shares are not more often right (424 against 720); flips the same. No-go for moving the scan's side decisions onto the shares (`findings.md`) |
 | 85 | `scan-false-faces-finish` | done | Striped-cube scans 2026-10-12. The finish with every side half round (wrong cube) reproduced offline (`202156`) and fixed for every cube: faces turned together are tried both when settling turns and before the finish, open turns too; `202156` and `202403` now finish right, nothing later or wrong. A lattice over the cube's edge is as flat as a true face at the finder's size, so the finder is unchanged (backlog). Phone check pending: scans of the striped cube |
-| 86 | `solve-challenge` | specced | Try it yourself: a third way on the start screen; per beginner stage the goal on a turnable 3D cube (the user's own pieces, the rest grey), a counted one-move hint, and a check by video scan that starts the next stage from the read cube (open questions with the user) |
+| 86 | `learn-combos` | specced | Learn the combinations (user 2026-10-13, replaces `solve-challenge`): a third way on the start screen; the own cube solved in the beginner stages, each step a card "this piece there with this combination × n", the piece outlined and its place marked; a hold change is its own instruction, the combination animates layer turns only |
 
 ## Backlog
 
@@ -121,7 +121,7 @@ Ideas kept for later, not ordered (moved here 2026-10-03: the look and the home 
 - More ways to pick a target (after `solve-to-target`, 2026-10-06): type or paste a move sequence,
   scan the target from another cube, a partial target ("only this side matters").
 
-- `solve-challenge`: taken up as roadmap 86.
+- `solve-challenge` (try each stage alone, hints, check by scan): replaced 2026-10-13 by `learn-combos` (86).
 
 Dropped 2026-10-12 (user): the stuck 2026-10-11 scans (fixed in 83), `cloud-setup` (done), `web-solver-worker`
 (not needed), straight-on readings weigh more (tried, no gain), a sticker shown as "x or y" (the marks suffice and
