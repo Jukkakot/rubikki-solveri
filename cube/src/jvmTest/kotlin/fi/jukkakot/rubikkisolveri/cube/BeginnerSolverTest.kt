@@ -4,6 +4,7 @@ import fi.jukkakot.rubikkisolveri.cube.beginner.BeginnerSolver
 import fi.jukkakot.rubikkisolveri.cube.beginner.Checks
 import fi.jukkakot.rubikkisolveri.cube.beginner.Stage
 import fi.jukkakot.rubikkisolveri.cube.beginner.StepNote
+import fi.jukkakot.rubikkisolveri.cube.beginner.StepPart
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -77,6 +78,30 @@ class BeginnerSolverTest {
             for (step in solution.steps.filter { it.note is StepNote.MiddleEdge }) {
                 val tail = step.moves.takeLast(8)
                 assertTrue(tail == BeginnerSolver.MIDDLE_RIGHT || tail == BeginnerSolver.MIDDLE_LEFT, "seed $seed: $tail")
+            }
+        }
+    }
+
+    @Test
+    fun stepsTellTheirParts() {
+        repeat(200) { seed ->
+            val solution = BeginnerSolver.solve(Cube.solved().apply(Scramble.random(25, Random(2000 + seed))))
+            for (step in solution.steps) {
+                assertTrue(step.parts.isNotEmpty(), "seed $seed: empty step")
+                assertEquals(step.moves, step.parts.flatMap { it.moves }, "seed $seed")
+                for (part in step.parts) {
+                    when (part) {
+                        is StepPart.Hold -> assertTrue(part.moves.all { it.isRotation }, "seed $seed: hold $part")
+                        is StepPart.Combo -> {
+                            assertTrue(part.times >= 1)
+                            assertTrue(part.moves.none { it.isRotation }, "seed $seed: turn inside ${part.algorithm}")
+                        }
+                        is StepPart.Setup -> assertTrue(part.moves.none { it.isRotation }, "seed $seed: setup $part")
+                        is StepPart.Free -> assertTrue(part.moves.none { it.isRotation }, "seed $seed: free $part")
+                    }
+                }
+                if (step.note is StepNote.CrossEdge) assertTrue(step.parts.none { it is StepPart.Combo }, "seed $seed: cross combo")
+                if (step.note is StepNote.WhiteCorner) assertTrue(step.parts.any { it is StepPart.Combo }, "seed $seed: corner combo")
             }
         }
     }

@@ -58,6 +58,7 @@ fun GuideCube(
     viewState: CubeViewState = remember { CubeViewState(CubeScene.DEFAULT_VIEW) },
     onTap: (() -> Unit)? = null,
     hint: String? = null,
+    marked: Set<Int> = emptySet(),
 ) {
     val animator = state.animator
     val presented = state.current
@@ -107,6 +108,7 @@ fun GuideCube(
             viewState = viewState,
             highlight = highlight,
             arrow = arrow,
+            marked = marked,
             description = description,
             mirror = mirror,
             modifier = Modifier.fillMaxSize().testTag(GUIDE_CUBE_TAG),

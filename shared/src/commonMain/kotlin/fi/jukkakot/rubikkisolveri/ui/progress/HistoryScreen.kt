@@ -68,7 +68,13 @@ fun HistoryScreen(progress: ProgressRepository, onBack: () -> Unit) {
             items(timed, key = { "t${it.id}" }) { solve -> TimedRow(solve, dates(solve.finishedAt), progress) }
             item { Section(Res.string.history_guided, guided.isEmpty()) }
             items(guided, key = { "g${it.id}" }) { g ->
-                val method = stringResource(if (g.method == "LEARN") Res.string.method_learn else Res.string.method_fast)
+                val method = stringResource(
+                    when (g.method) {
+                        "LEARN" -> Res.string.method_learn
+                        "COMBOS" -> Res.string.start_method_combos
+                        else -> Res.string.method_fast
+                    },
+                )
                 ListItem(
                     headlineContent = { Text(stringResource(Res.string.history_guided_row, method, pluralStringResource(Res.plurals.history_moves, g.moves, g.moves), SolveStats.format(g.durationMillis))) },
                     supportingContent = { Text(dates(g.finishedAt)) },

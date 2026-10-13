@@ -78,6 +78,13 @@ object LessonCatalog {
     /** The name of a stage algorithm, for "name ×n" under a case. */
     fun algorithmName(moves: List<Move>): StringResource? = lessons.flatMap { it.algorithms }.firstOrNull { it.moves == moves }?.name
 
+    /** The lesson (index in [lessons]) and page that demo the algorithm [moves] of [stage]. */
+    fun algorithmPage(stage: Stage, moves: List<Move>): Pair<Int, Int>? {
+        val index = lessons.indexOfFirst { it.stage == stage }.takeIf { it >= 0 } ?: return null
+        val page = lessons[index].pages.indexOfFirst { it is LessonPage.AlgorithmDemo && it.algorithm.moves == moves }
+        return index to page.coerceAtLeast(0)
+    }
+
     fun caseCaption(id: CaseId): StringResource = when (id) {
         CaseId.EDGE_DOWN -> Res.string.case_edge_down
         CaseId.EDGE_MIDDLE -> Res.string.case_edge_middle

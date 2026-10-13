@@ -115,7 +115,8 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.withContext
 
-enum class SolveMethod { FAST, LEARN }
+/** Shortest solution, learning step by step, or learning the combinations (the beginner method's steps as combinations). */
+enum class SolveMethod { FAST, LEARN, COMBOS }
 
 /** What the solution screen steps through. */
 sealed interface SolvePlan {
@@ -141,7 +142,7 @@ fun plan(cube: Cube, method: SolveMethod): SolvePlan {
             is SolveResult.Invalid -> SolvePlan.Invalid(r.reason)
             is SolveResult.Failed -> SolvePlan.Failed(r.message)
         }
-        SolveMethod.LEARN -> BeginnerSolver.solve(cube).let { SolvePlan.Ready(it.moves, it.steps) }
+        SolveMethod.LEARN, SolveMethod.COMBOS -> BeginnerSolver.solve(cube).let { SolvePlan.Ready(it.moves, it.steps) }
     }.also {
         if (it is SolvePlan.Ready) {
             AppLog.info(
@@ -216,6 +217,7 @@ fun SolveScreen(
     onHandsfreeSpeed: (HandsfreeSpeed) -> Unit = {},
     startScreen: Boolean = false,
     onCheckColors: (() -> Unit)? = null,
+    onLesson: ((Stage, List<Move>) -> Unit)? = null,
 ) {
     var started by rememberSaveable { mutableStateOf(!startScreen) }
     var follow by rememberSaveable { mutableStateOf(false) }
@@ -254,7 +256,7 @@ fun SolveScreen(
                         if (started && ready != null) {
                             GuideMenu(
                                 follow = follow,
-                                onFollow = { follow = it; handsfree = false },
+                                onFollow = { f: Boolean -> follow = f; handsfree = false }.takeIf { shownMethod != SolveMethod.COMBOS },
                                 onCheckColors = onCheckColors,
                                 onToStart = toStart.takeIf { startScreen },
                             )
@@ -294,7 +296,11 @@ fun SolveScreen(
                             )
                         } else {
                             val finished = finishedText ?: if (toSolved) null else stringResource(Res.string.target_reached)
-                            key(shownMethod, target) {
+                            if (shownMethod == SolveMethod.COMBOS && r.steps != null) {
+                                ComboGuide(cube, r.steps, showNotation, onHome, onLesson, finished, homeLabel) { moves, millis ->
+                                    onFinished(shownMethod, moves, millis)
+                                }
+                            } else key(shownMethod, target) {
                                 Stepper(
                                     cube, r, showNotation, onHome, follow, { follow = false }, followPanel, finished, homeLabel,
                                     // Tap to confirm: only the shortest solution (also to a target).
@@ -331,18 +337,20 @@ const val HANDSFREE_STOP_TAG = "handsfree_stop"
 
 /** The guide's ⋮ menu: camera follow (or back to the 3D cube), the colour check, the start screen. */
 @Composable
-private fun GuideMenu(follow: Boolean, onFollow: (Boolean) -> Unit, onCheckColors: (() -> Unit)?, onToStart: (() -> Unit)?) {
+private fun GuideMenu(follow: Boolean, onFollow: ((Boolean) -> Unit)?, onCheckColors: (() -> Unit)?, onToStart: (() -> Unit)?) {
     var open by remember { mutableStateOf(false) }
     Box(Modifier.padding(horizontal = 8.dp)) {
         RoundIconButton(onClick = { open = true }) {
             Icon(painterResource(Res.drawable.ic_more), contentDescription = stringResource(Res.string.solve_menu))
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(if (follow) Res.string.follow_show_3d else Res.string.follow_camera)) },
-                leadingIcon = { Icon(painterResource(if (follow) Res.drawable.ic_cube else Res.drawable.ic_camera), contentDescription = null) },
-                onClick = { open = false; onFollow(!follow) },
-            )
+            if (onFollow != null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(if (follow) Res.string.follow_show_3d else Res.string.follow_camera)) },
+                    leadingIcon = { Icon(painterResource(if (follow) Res.drawable.ic_cube else Res.drawable.ic_camera), contentDescription = null) },
+                    onClick = { open = false; onFollow(!follow) },
+                )
+            }
             if (onCheckColors != null) {
                 DropdownMenuItem(
                     text = { Text(stringResource(Res.string.check_title)) },
@@ -443,7 +451,11 @@ private fun StartPane(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MethodChoice(method: SolveMethod, onChoose: (SolveMethod) -> Unit, modifier: Modifier) {
-    val options = listOf(SolveMethod.FAST to Res.string.start_method_fast, SolveMethod.LEARN to Res.string.start_method_learn)
+    val options = listOf(
+        SolveMethod.FAST to Res.string.start_method_fast,
+        SolveMethod.LEARN to Res.string.start_method_learn,
+        SolveMethod.COMBOS to Res.string.start_method_combos,
+    )
     SingleChoiceSegmentedButtonRow(modifier.fillMaxWidth()) {
         options.forEachIndexed { i, (value, label) ->
             SegmentedButton(

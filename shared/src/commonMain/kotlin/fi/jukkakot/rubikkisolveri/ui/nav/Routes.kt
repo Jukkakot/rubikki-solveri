@@ -60,9 +60,9 @@ data class TargetRoute(val start: String, val current: String? = null, val fromS
 @Serializable
 data object LessonsRoute
 
-/** [index] 0 = basics, 1..7 = the beginner stages. */
+/** [index] 0 = basics, 1..7 = the beginner stages; opens on [page]. */
 @Serializable
-data class LessonRoute(val index: Int)
+data class LessonRoute(val index: Int, val page: Int = 0)
 
 /** Practise beginner stage [stage] (its ordinal) on the position made from [seed]. */
 @Serializable

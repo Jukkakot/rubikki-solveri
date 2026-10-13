@@ -26,6 +26,7 @@ import fi.jukkakot.rubikkisolveri.ui.manual.ManualInputScreen
 import fi.jukkakot.rubikkisolveri.ui.solve.SolveScreen
 import fi.jukkakot.rubikkisolveri.ui.solve.SolveMethod
 import fi.jukkakot.rubikkisolveri.ui.solve.SolvePlan
+import fi.jukkakot.rubikkisolveri.ui.lessons.LessonCatalog
 import fi.jukkakot.rubikkisolveri.ui.lessons.LessonScreen
 import fi.jukkakot.rubikkisolveri.ui.lessons.LessonsScreen
 import fi.jukkakot.rubikkisolveri.ui.common.stageName
@@ -260,6 +261,9 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
                 onHandsfreeSpeed = actions.onHandsfreeSpeed,
                 onFinished = { method, moves, millis -> scope.launch { actions.progress.addGuided(method.name, moves, millis) } },
                 startScreen = true,
+                onLesson = { stage, moves ->
+                    LessonCatalog.algorithmPage(stage, moves)?.let { (index, page) -> navController.navigate(LessonRoute(index, page)) }
+                },
                 onCheckColors = {
                     // The check keeps the target now on the screen (it may have been changed here).
                     val check = LastScan.check?.takeIf { route.fromScan }?.copy(target = route.target)
@@ -318,8 +322,10 @@ fun RubikkiNavHost(navController: NavHostController, actions: AppActions) {
             )
         }
         composable<LessonRoute> { entry ->
+            val route = entry.toRoute<LessonRoute>()
             LessonScreen(
-                index = entry.toRoute<LessonRoute>().index,
+                index = route.index,
+                initialPage = route.page,
                 onBack = { navController.popBackStack() },
                 onPractice = { stage -> navController.navigate(PracticeRoute(stage.ordinal, Clock.System.now().toEpochMilliseconds())) },
                 onFreeCube = { navController.navigate(FreeCubeRoute()) },

@@ -98,6 +98,18 @@ class StepperState(
         }
     }
 
+    /**
+     * Plays moves [from] until [to] from the cube after [from] moves; the guide then stands at [to].
+     * The view does not turn: only what is in the moves turns.
+     */
+    fun play(from: Int, to: Int) {
+        demoing = false
+        val end = to.coerceIn(from, moves.size)
+        animator.snapTo(cubeAt(from))
+        index = end
+        animator.play(moves.subList(from, end))
+    }
+
     /** Waits for the cube to settle on the new step, then demos it, and again every [REPEAT_MS] at rest. */
     suspend fun autoDemo() {
         if (isFinished || animator.isInstant) return

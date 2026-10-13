@@ -354,4 +354,15 @@
     <string name="video_sides">Sides done %1$d/%2$d</string>
     <string name="video_side_next">Next the %1$s side</string>
     <string name="video_turn_demo">How to turn the cube</string>
+    <string name="start_method_combos">Combinations</string>
+    <string name="combo_step">Step %1$d/%2$d</string>
+    <string name="combo_hold_title">Turn the cube</string>
+    <string name="combo_hold">The %1$s centre facing you, %2$s on top.</string>
+    <string name="combo_setup_title">Bring the piece over its place</string>
+    <string name="combo_free_title">Moves</string>
+    <string name="combo_times">%1$s × %2$d</string>
+    <string name="combo_marked">The piece and its place are outlined on the cube.</string>
+    <string name="combo_read_more">Read more</string>
+    <string name="combo_next_move">Next move</string>
+    <string name="combo_done">I did it</string>
 </resources>

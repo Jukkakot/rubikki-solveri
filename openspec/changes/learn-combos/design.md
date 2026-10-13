@@ -38,6 +38,18 @@ learning mode or the lessons.
 6. **Name:** "Opettele liikesarjat" / "Learn the combinations"; the combination itself is "liikesarja" in Finnish
    texts.
 
+## Implementation decisions (autopilot)
+
+7. **Every part has "Näytä"**, not only the combination: hold and setup play their own turns the same way, so the
+   user can watch each part; the combination's play still holds no whole-cube turn (decision 3).
+8. **Piece and place share one outline:** the piece's stickers where it is now and its slot (between the centres of
+   its colours) are both outlined with the existing mark style; when the piece is home they coincide. Yellow-layer
+   steps outline nothing (they move a whole layer).
+9. **Start screen label "Liikesarjat" / "Combinations"** (a third segment beside Nopein/Opettele); the step counter
+   is "Askel n/m" so it does not clash with "Vaihe n/7" of the stages.
+10. **No camera follow in this mode** (the ⋮ menu hides it); history records the solve as "Liikesarjat".
+11. **"Lue lisää" opens the stage's lesson on the algorithm's page** (`LessonRoute` gained `page`).
+
 ## Risks / Trade-offs
 
 - [Two chained macros make a step long] → shown as two combination parts in one card, each with its own "Näytä".

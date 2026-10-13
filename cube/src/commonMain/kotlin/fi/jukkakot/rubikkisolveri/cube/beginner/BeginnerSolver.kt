@@ -40,7 +40,43 @@ sealed interface StepNote {
     data object FinalTurn : StepNote
 }
 
-data class Step(val stage: Stage, val note: StepNote, val moves: List<Move>)
+/** The method's named algorithms (the combinations a learner memorises). */
+enum class BeginnerAlgorithm(notation: String) {
+    TRIGGER("R' D' R D"),
+    MIDDLE_RIGHT("U R U' R' U' F' U F"),
+    MIDDLE_LEFT("U' L' U L U F U' F'"),
+    YELLOW_CROSS("F R U R' U' F'"),
+    SWAP_EDGES("R U R' U R U2 R' U"),
+    PLACE_CORNERS("U R U' L' U R' U' L");
+
+    val moves: List<Move> = Notation.parse(notation)
+}
+
+/** One part of a step: how the cube is held, the setup turns, a combination or free turns. */
+sealed interface StepPart {
+    val moves: List<Move>
+
+    /** Whole-cube turns: another side to the front or on top. */
+    data class Hold(override val moves: List<Move>) : StepPart
+
+    /** Turns of the top or bottom that bring the piece over its place before a combination. */
+    data class Setup(override val moves: List<Move>) : StepPart
+
+    /** [algorithm] done [times] times in a row. */
+    data class Combo(val algorithm: BeginnerAlgorithm, val times: Int) : StepPart {
+        override val moves: List<Move> get() = List(times) { algorithm.moves }.flatten()
+    }
+
+    /** Turns that are no named combination (the white cross, the last turn). */
+    data class Free(override val moves: List<Move>) : StepPart
+}
+
+data class Step(val stage: Stage, val note: StepNote, val parts: List<StepPart>) {
+    val moves: List<Move> get() = parts.flatMap { it.moves }
+
+    /** Index in [moves] where part [part] begins. */
+    fun partStart(part: Int): Int = parts.take(part).sumOf { it.moves.size }
+}
 
 data class BeginnerSolution(val steps: List<Step>) {
     val moves: List<Move> get() = steps.flatMap { it.moves }
@@ -51,12 +87,12 @@ data class BeginnerSolution(val steps: List<Step>) {
  * turned over and the rest is done with yellow on top, using the classic beginner algorithms.
  */
 object BeginnerSolver {
-    val TRIGGER: List<Move> = Notation.parse("R' D' R D")
-    val MIDDLE_RIGHT: List<Move> = Notation.parse("U R U' R' U' F' U F")
-    val MIDDLE_LEFT: List<Move> = Notation.parse("U' L' U L U F U' F'")
-    val YELLOW_CROSS: List<Move> = Notation.parse("F R U R' U' F'")
-    val SWAP_EDGES: List<Move> = Notation.parse("R U R' U R U2 R' U")
-    val PLACE_CORNERS: List<Move> = Notation.parse("U R U' L' U R' U' L")
+    val TRIGGER: List<Move> = BeginnerAlgorithm.TRIGGER.moves
+    val MIDDLE_RIGHT: List<Move> = BeginnerAlgorithm.MIDDLE_RIGHT.moves
+    val MIDDLE_LEFT: List<Move> = BeginnerAlgorithm.MIDDLE_LEFT.moves
+    val YELLOW_CROSS: List<Move> = BeginnerAlgorithm.YELLOW_CROSS.moves
+    val SWAP_EDGES: List<Move> = BeginnerAlgorithm.SWAP_EDGES.moves
+    val PLACE_CORNERS: List<Move> = BeginnerAlgorithm.PLACE_CORNERS.moves
 
     private val Y = listOf(emptyList(), Notation.parse("y"), Notation.parse("y2"), Notation.parse("y'"))
     private val U = listOf(emptyList(), Notation.parse("U"), Notation.parse("U2"), Notation.parse("U'"))
@@ -66,20 +102,22 @@ object BeginnerSolver {
         require(CubeCheck.validity(start).isValid) { "Only valid cubes can be solved" }
         val steps = ArrayList<Step>()
         var cube = start
-        fun add(stage: Stage, note: StepNote, moves: List<Move>) {
-            if (moves.isEmpty()) return
-            steps += Step(stage, note, moves)
-            cube = cube.apply(moves)
+        fun add(stage: Stage, note: StepNote, parts: List<StepPart>) {
+            val kept = parts.filter { it.moves.isNotEmpty() }
+            if (kept.isEmpty()) return
+            val step = Step(stage, note, kept)
+            steps += step
+            cube = cube.apply(step.moves)
         }
 
         // The method starts with white on top.
-        if (Checks.whiteFace(cube) != Face.U) add(Stage.WHITE_CROSS, StepNote.TurnOver, wholeCubeTo(cube, Face.U, CubeColor.WHITE))
+        if (Checks.whiteFace(cube) != Face.U) add(Stage.WHITE_CROSS, StepNote.TurnOver, listOf(StepPart.Hold(wholeCubeTo(cube, Face.U, CubeColor.WHITE))))
 
         // 1. White cross.
         for (color in sideColors(cube)) {
             if (Checks.crossDone(cube)) break
             val moves = CrossSearch.place(cube, color)
-            add(Stage.WHITE_CROSS, StepNote.CrossEdge(color), moves)
+            add(Stage.WHITE_CROSS, StepNote.CrossEdge(color), listOf(StepPart.Free(moves)))
         }
         check(Checks.crossDone(cube))
 
@@ -87,79 +125,78 @@ object BeginnerSolver {
         while (Checks.solvedWhiteCorners(cube) < 4) {
             val before = Checks.solvedWhiteCorners(cube)
             val macros = buildList {
-                for (y in Y) for (d in D) for (n in 1..5) add(y + d + repeat(TRIGGER, n))
+                for (y in Y) for (d in D) for (n in 1..5) add(Macro(y, d, BeginnerAlgorithm.TRIGGER, n))
             }
-            val moves = MacroSearch.find(cube, macros, maxDepth = 2) { c ->
+            val parts = MacroSearch.find(cube, macros, maxDepth = 2) { c ->
                 Checks.crossDone(c) && Checks.solvedWhiteCorners(c) > before && keepsSolvedCorners(cube, c)
             } ?: error("white corner not found")
+            val moves = parts.flatMap { it.moves }
             val newCorner = (solvedCornerColors(cube.apply(moves)) - solvedCornerColors(cube)).first().filter { it != CubeColor.WHITE }
-            add(Stage.WHITE_CORNERS, StepNote.WhiteCorner(newCorner[0], newCorner[1]), moves)
+            add(Stage.WHITE_CORNERS, StepNote.WhiteCorner(newCorner[0], newCorner[1]), parts)
         }
 
         // 3. Turn over (yellow on top, the front stays in front), then the middle layer.
-        add(Stage.MIDDLE_LAYER, StepNote.TurnOver, Notation.parse("z2"))
+        add(Stage.MIDDLE_LAYER, StepNote.TurnOver, listOf(StepPart.Hold(Notation.parse("z2"))))
         while (Checks.solvedMiddleEdges(cube) < 4) {
             val before = Checks.solvedMiddleEdges(cube)
             val macros = buildList {
                 for (y in Y) for (u in U) {
-                    add(y + u + MIDDLE_RIGHT)
-                    add(y + u + MIDDLE_LEFT)
+                    add(Macro(y, u, BeginnerAlgorithm.MIDDLE_RIGHT))
+                    add(Macro(y, u, BeginnerAlgorithm.MIDDLE_LEFT))
                 }
             }
-            val moves = MacroSearch.find(cube, macros, maxDepth = 2) { c ->
+            val parts = MacroSearch.find(cube, macros, maxDepth = 2) { c ->
                 Checks.firstLayerDone(c) && Checks.solvedMiddleEdges(c) > before
             } ?: error("middle edge not found")
-            val after = cube.apply(moves)
+            val after = cube.apply(parts.flatMap { it.moves })
             val edge = Checks.middleEdges(after).first { Checks.edgeSolved(after, it) && !wasSolvedEdge(cube, after, it) }
-            add(Stage.MIDDLE_LAYER, StepNote.MiddleEdge(after[edge.stickers[0]], after[edge.stickers[1]]), moves)
+            add(Stage.MIDDLE_LAYER, StepNote.MiddleEdge(after[edge.stickers[0]], after[edge.stickers[1]]), parts)
         }
 
         // 4. Yellow cross.
         if (Checks.yellowEdgesUp(cube) < 4) {
-            val macros = U.map { it + YELLOW_CROSS }
-            val moves = MacroSearch.find(cube, macros, maxDepth = 3) { c ->
+            val macros = U.map { Macro(setup = it, algorithm = BeginnerAlgorithm.YELLOW_CROSS) }
+            val parts = MacroSearch.find(cube, macros, maxDepth = 3) { c ->
                 Checks.twoLayersDone(c) && Checks.yellowEdgesUp(c) == 4
             } ?: error("yellow cross not found")
-            add(Stage.YELLOW_CROSS, StepNote.YellowCross(Checks.yellowEdgesUp(cube)), moves)
+            add(Stage.YELLOW_CROSS, StepNote.YellowCross(Checks.yellowEdgesUp(cube)), parts)
         }
 
         // 5. Yellow edges in place (their side colours match the centres).
         if (Checks.yellowEdgesSolved(cube) < 4) {
             val macros = buildList {
-                for (y in Y) for (u in U) add(y + u + SWAP_EDGES)
-                addAll(U.drop(1))
+                for (y in Y) for (u in U) add(Macro(y, u, BeginnerAlgorithm.SWAP_EDGES))
+                addAll(U.drop(1).map { Macro(setup = it) })
             }
-            val moves = MacroSearch.find(cube, macros, maxDepth = 3) { c -> Checks.stageDone(c, Stage.YELLOW_EDGES) }
+            val parts = MacroSearch.find(cube, macros, maxDepth = 3) { c -> Checks.stageDone(c, Stage.YELLOW_EDGES) }
                 ?: error("yellow edges not found")
-            add(Stage.YELLOW_EDGES, StepNote.PlaceEdges, moves)
+            add(Stage.YELLOW_EDGES, StepNote.PlaceEdges, parts)
         }
 
         // 6. Yellow corners into place (twist does not matter yet).
         if (Checks.yellowCornersPlaced(cube) < 4) {
-            val macros = Y.map { it + PLACE_CORNERS }
-            val moves = MacroSearch.find(cube, macros, maxDepth = 3) { c -> Checks.stageDone(c, Stage.YELLOW_CORNERS_PLACED) }
+            val macros = Y.map { Macro(hold = it, algorithm = BeginnerAlgorithm.PLACE_CORNERS) }
+            val parts = MacroSearch.find(cube, macros, maxDepth = 3) { c -> Checks.stageDone(c, Stage.YELLOW_CORNERS_PLACED) }
                 ?: error("corner placement not found")
-            add(Stage.YELLOW_CORNERS_PLACED, StepNote.PlaceCorners, moves)
+            add(Stage.YELLOW_CORNERS_PLACED, StepNote.PlaceCorners, parts)
         }
 
         // 7. Turn the yellow corners up: bring each to the front right with U, repeat the trigger.
         // The bottom looks broken in between and comes back when all four are up.
         while (Checks.yellowCornersUp(cube) < 4) {
             val before = Checks.yellowCornersUp(cube)
-            val macros = buildList { for (u in U) for (n in listOf(2, 4)) add(u + repeat(TRIGGER, n)) }
-            val moves = MacroSearch.find(cube, macros, maxDepth = 1) { c -> Checks.yellowCornersUp(c) > before }
+            val macros = buildList { for (u in U) for (n in listOf(2, 4)) add(Macro(setup = u, algorithm = BeginnerAlgorithm.TRIGGER, times = n)) }
+            val parts = MacroSearch.find(cube, macros, maxDepth = 1) { c -> Checks.yellowCornersUp(c) > before }
                 ?: error("yellow corner not found")
-            add(Stage.YELLOW_CORNERS_TURNED, StepNote.YellowCorner, moves)
+            add(Stage.YELLOW_CORNERS_TURNED, StepNote.YellowCorner, parts)
         }
         if (!cube.isSolved) {
             val fix = U.firstOrNull { cube.apply(it).isSolved } ?: error("not solved after the last stage")
-            add(Stage.YELLOW_CORNERS_TURNED, StepNote.FinalTurn, fix)
+            add(Stage.YELLOW_CORNERS_TURNED, StepNote.FinalTurn, listOf(StepPart.Free(fix)))
         }
         check(cube.isSolved)
         return BeginnerSolution(steps)
     }
-
-    private fun repeat(moves: List<Move>, n: Int): List<Move> = List(n) { moves }.flatten()
 
     /** The four side colours in the order green, red, blue, orange (as the cube is held). */
     private fun sideColors(cube: Cube): List<CubeColor> {
@@ -189,26 +226,49 @@ object BeginnerSolver {
             .map { c -> c.stickers.map { cube[it] }.toSet() }.toSet()
 }
 
-/** Breadth-first search over sequences of macros: fewest macros, then fewest moves. */
+/**
+ * One macro of the method: hold the cube ([hold], whole-cube turns), turn the top or bottom
+ * ([setup]), then do [algorithm] [times] times. Without an algorithm the setup turns are free turns.
+ */
+internal data class Macro(
+    val hold: List<Move> = emptyList(),
+    val setup: List<Move> = emptyList(),
+    val algorithm: BeginnerAlgorithm? = null,
+    val times: Int = 1,
+) {
+    val parts: List<StepPart> = listOfNotNull(
+        StepPart.Hold(hold).takeIf { hold.isNotEmpty() },
+        if (algorithm == null) StepPart.Free(setup).takeIf { setup.isNotEmpty() } else StepPart.Setup(setup).takeIf { setup.isNotEmpty() },
+        algorithm?.let { StepPart.Combo(it, times) },
+    )
+    val moves: List<Move> = parts.flatMap { it.moves }
+}
+
+/** Breadth-first search over sequences of macros: fewest macros, then fewest moves. Returns the chosen macros' parts. */
 internal object MacroSearch {
-    fun find(start: Cube, macros: List<List<Move>>, maxDepth: Int, goal: (Cube) -> Boolean): List<Move>? {
+    fun find(start: Cube, macros: List<Macro>, maxDepth: Int, goal: (Cube) -> Boolean): List<StepPart>? {
         if (goal(start)) return emptyList()
-        var frontier = listOf(start to emptyList<Move>())
+        var frontier = listOf(start to emptyList<Macro>())
         repeat(maxDepth) {
-            val next = ArrayList<Pair<Cube, List<Move>>>()
-            var best: List<Move>? = null
+            val next = ArrayList<Pair<Cube, List<Macro>>>()
+            var best: List<Macro>? = null
+            var bestSize = Int.MAX_VALUE
             for ((cube, path) in frontier) {
+                val pathSize = path.sumOf { it.moves.size }
                 for (macro in macros) {
-                    val moves = path + macro
-                    val result = cube.apply(macro)
+                    val result = cube.apply(macro.moves)
+                    val size = pathSize + macro.moves.size
                     if (goal(result)) {
-                        if (best == null || moves.size < best!!.size) best = moves
+                        if (size < bestSize) {
+                            best = path + macro
+                            bestSize = size
+                        }
                     } else {
-                        next += result to moves
+                        next += result to (path + macro)
                     }
                 }
             }
-            if (best != null) return best
+            best?.let { return it.flatMap { m -> m.parts } }
             frontier = next
         }
         return null
