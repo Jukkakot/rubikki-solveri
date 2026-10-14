@@ -86,7 +86,9 @@ SHALL tell which camera it is and what it can do (its resolution, focus modes, h
 brighter it can be set, whether it can measure light at a point, torch), on the phone and in the
 browser; in the browser it SHALL also give the camera's frame rate and, when other back cameras were
 tried, each one's focus and torch. Each step darker or lighter and each lock SHALL get a line with the
-step and the cube's brightness. A minute of scanning SHALL stay at a few dozen lines.
+step and the cube's brightness. In the browser a timing line every few seconds SHALL tell the camera's and the
+page's frames a second, the pictures sent a second, the round trip to the finder and the finder's own
+parts of it (reading the picture's pixels, its whole work) and the scan worker's round trip. A minute of scanning SHALL stay at a few dozen lines.
 
 #### Scenario: Stuck scan readable from the log
 - **WHEN** a video scan stalls and the user shares the log
@@ -107,6 +109,10 @@ step and the cube's brightness. A minute of scanning SHALL stay at a few dozen l
 #### Scenario: Exposure steps in the log
 - **WHEN** the camera is made darker, locked and later set lighter during a scan, and the user shares the log
 - **THEN** the log has a line for each step and the lock, each with the cube's brightness at that moment
+
+#### Scenario: Where a slow phone's time goes
+- **WHEN** the video scan reads fewer pictures a second than the camera gives in the phone's browser and the user shares the log
+- **THEN** the timing lines show how long a picture's round trip to the finder takes and how much of it is reading the pixels, the finder's work and passing it back and forth
 
 ### Requirement: Video scan recordings
 Every video scan SHALL record what the scan was given: for each picture read, its time from the
