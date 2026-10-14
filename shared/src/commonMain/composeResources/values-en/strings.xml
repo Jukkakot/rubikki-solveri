@@ -368,6 +368,7 @@
     <string name="hold_title">Hold the cube like this</string>
     <string name="hold_where">Centre towards you: %1$s. On top: %2$s.</string>
     <string name="hold_ready">I'm ready</string>
+    <string name="hold_centre">A side's colour is the colour of its centre piece (ringed).</string>
     <string name="hold_picture">The cube in two hands, thumbs at the front</string>
     <string name="handsfree_menu_speed">Autoplay pace</string>
 </resources>

@@ -49,6 +49,7 @@ class StartScreenTest {
         compose.onNodeWithText("Pidä kuutiota näin").assertIsDisplayed()
         compose.onNodeWithContentDescription("Kuutio kahdessa kädessä", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Keskiö sinua kohti: vihreä. Ylhäällä: valkoinen.").assertIsDisplayed()
+        compose.onNodeWithText("Sivun värin kertoo sen keskipala", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Olen valmis").performClick()
         compose.onNodeWithText("Siirto 1/2").assertIsDisplayed()
     }

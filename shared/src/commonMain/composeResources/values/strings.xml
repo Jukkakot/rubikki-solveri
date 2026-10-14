@@ -369,6 +369,7 @@
     <string name="hold_title">Pidä kuutiota näin</string>
     <string name="hold_where">Keskiö sinua kohti: %1$s. Ylhäällä: %2$s.</string>
     <string name="hold_ready">Olen valmis</string>
+    <string name="hold_centre">Sivun värin kertoo sen keskipala (renkaassa).</string>
     <string name="hold_picture">Kuutio kahdessa kädessä, peukalot edessä</string>
     <string name="handsfree_menu_speed">Automaattisen tahti</string>
 </resources>

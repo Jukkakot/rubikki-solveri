@@ -1,146 +1,186 @@
 package fi.jukkakot.rubikkisolveri.ui.guide
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import fi.jukkakot.rubikkisolveri.cube.Cube
+import fi.jukkakot.rubikkisolveri.ui.animationScale
 import fi.jukkakot.rubikkisolveri.ui.cube3d.Cube3D
 import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeScene
 import fi.jukkakot.rubikkisolveri.ui.cube3d.CubeViewState
+import fi.jukkakot.rubikkisolveri.ui.cube3d.Quat
 import fi.jukkakot.rubikkisolveri.ui.cube3d.StickerColors
 import fi.jukkakot.rubikkisolveri.ui.cube3d.V3
 import kotlin.math.PI
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 
 /** Skin and outline of the drawn hands: one warm tone that reads on light and dark backgrounds. */
-private val SKIN = Color(0xFFF1C09A)
-private val SKIN_SHADE = Color(0xFFE0A47C)
-private val NAIL = Color(0xFFFBE2CF)
-private val OUTLINE = Color(0xFF7A4A2E)
+private val SKIN = Color(0xFFF0C9A6)
+private val OUTLINE = Color(0xFF14151A)
+private val RING_INNER = Color(0xFFFFFFFF)
 
-/** The cube takes this share of the picture's width; the hands use the rest. */
-private const val CUBE_SHARE = 0.9f
+/** The cube's box takes this share of the picture's width and leaves this share of its height below for the arms. */
+private const val CUBE_SHARE = 0.86f
+private const val ARMS_BELOW = 0.2f
+
+/** The tilted pose the cube turns from, and how long the turn and the hands' fade take. */
+private val TILT: Quat = Quat.axisAngle(V3(0.6f, 1f, 0.35f).normalized(), (150 * PI / 180).toFloat())
+private const val TURN_MS = 1_200
+private const val REVEAL_MS = 300
 
 /**
- * [cube] in the guide's holding view, held by two drawn hands: the palms on the left and right
- * sides (the left one behind the cube), the thumbs on the front face. The hands are drawn in the
- * cube's own 3D space, so they sit right on it whatever the picture's size.
+ * [cube] turning into the guide's holding view, then held by two drawn hands as the user sees their own:
+ * forearms from the bottom of the picture, palms at the cube's sides (behind it), thumbs on the front.
+ * Pulsing rings mark the front and top centre pieces, the ones that name the sides. The hands and rings
+ * are drawn in the cube's own 3D projection, so they sit right on it whatever the picture's size.
+ * With animations off the cube is in the hold at once and nothing pulses.
  */
 @Composable
 fun HoldingCube(cube: Cube, modifier: Modifier = Modifier, description: String? = null) {
+    val still = animationScale() == 0f
+    val viewState = remember { CubeViewState(if (still) CubeScene.DEFAULT_VIEW else CubeScene.DEFAULT_VIEW * TILT) }
+    val reveal = remember { Animatable(if (still) 1f else 0f) }
+    LaunchedEffect(Unit) {
+        if (reveal.value < 1f) {
+            viewState.animateTo(CubeScene.DEFAULT_VIEW, TURN_MS)
+            reveal.animateTo(1f, tween(REVEAL_MS))
+        }
+    }
+    val pulse = if (still) {
+        1f
+    } else {
+        rememberInfiniteTransition().animateFloat(
+            initialValue = 1f,
+            targetValue = 0.35f,
+            animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+        ).value
+    }
     BoxWithConstraints(modifier.clipToBounds().semantics { if (description != null) contentDescription = description }) {
         val inset = maxWidth * ((1f - CUBE_SHARE) / 2f)
-        val view = CubeScene.DEFAULT_VIEW
-        // Behind the cube: the left palm.
-        Canvas(Modifier.fillMaxSize()) { inCube(inset.toPx()) { w, h -> hand(left = true, front = false, w, h) } }
-        Box(Modifier.fillMaxSize().padding(horizontal = inset)) {
+        val below = maxHeight * ARMS_BELOW
+        val a = reveal.value
+        // Behind the cube: the arms and palms.
+        Canvas(Modifier.fillMaxSize()) { inCube(inset.toPx(), below.toPx()) { w, h -> if (a > 0f) arms(w, h, a) } }
+        Box(Modifier.fillMaxSize().padding(start = inset, end = inset, bottom = below)) {
             Cube3D(
                 colors = remember(cube) { cube.toList().map(StickerColors::of) },
-                viewState = remember { CubeViewState(view) },
+                viewState = viewState,
                 draggable = false,
                 modifier = Modifier.fillMaxSize(),
             )
         }
-        // In front: the right palm and both thumbs.
+        // In front: the thumbs and the centre rings.
         Canvas(Modifier.fillMaxSize()) {
-            inCube(inset.toPx()) { w, h ->
-                hand(left = false, front = false, w, h)
-                hand(left = true, front = true, w, h)
-                hand(left = false, front = true, w, h)
+            inCube(inset.toPx(), below.toPx()) { w, h ->
+                if (a > 0f) {
+                    thumbs(w, h, a)
+                    centreRing(w, h, V3(0f, 0f, 1f), V3(1f, 0f, 0f), V3(0f, 1f, 0f), a * pulse)
+                    centreRing(w, h, V3(0f, 1f, 0f), V3(1f, 0f, 0f), V3(0f, 0f, -1f), a * pulse)
+                }
             }
         }
     }
 }
 
-/** Draws with the cube's projection: [block] gets the cube box's size, the canvas moved to it. */
-private fun DrawScope.inCube(inset: Float, block: DrawScope.(Float, Float) -> Unit) {
+/** Draws in the cube box's coordinates: [block] gets the box's size, the canvas moved to it. */
+private fun DrawScope.inCube(inset: Float, below: Float, block: DrawScope.(Float, Float) -> Unit) {
     val w = size.width - 2 * inset
-    if (w <= 0f) return
+    val h = size.height - below
+    if (w <= 0f || h <= 0f) return
     drawContext.transform.translate(inset, 0f)
-    block(w, size.height)
+    block(w, h)
     drawContext.transform.translate(-inset, 0f)
 }
 
-/**
- * One hand: with [front] false the palm and forearm on the side face (x = ±1), else the thumb on the
- * front face (z = +1). Cube coordinates: x right, y up, z towards the user, the cube from −1.5 to 1.5.
- */
-private fun DrawScope.hand(left: Boolean, front: Boolean, w: Float, h: Float) {
-    val s = if (left) -1f else 1f
-    fun at(p: V3): Pair<Float, Float> = CubeScene.projectPoint(p, CubeScene.DEFAULT_VIEW, w, h)
+private fun DrawScope.at(p: V3, w: Float, h: Float): Offset =
+    CubeScene.projectPoint(p, CubeScene.DEFAULT_VIEW, w, h).let { (x, y) -> Offset(x, y) }
+
+/** The forearms from below the picture's bottom corners up to the palms at the cube's sides. */
+private fun DrawScope.arms(w: Float, h: Float, alpha: Float) {
     val stroke = Stroke(width = w * 0.012f, join = StrokeJoin.Round)
-    if (!front) {
-        // The palm lies against the side face, a little off it.
-        val x = s * 1.62f
-        fun side(u: Float, v: Float) = V3(x, v, u)
-        val palm = roundedRect(-1.25f, -1.75f, 1.35f, 0.75f, 0.55f).map { (u, v) -> side(u, v) }
-        shape(palm.map(::at), SKIN, stroke)
-        // Fingers reach to the back: their tips show past the back edge.
-        for (i in 0 until 4) {
-            val v = 0.55f - i * 0.5f
-            val finger = capsule(-1.0f, v, -1.95f, v - 0.05f, 0.21f).map { (u, vv) -> side(u, vv) }
-            shape(finger.map(::at), SKIN, stroke)
-        }
-    } else {
-        // Below the cube's front corner the heel of the hand and the wrist, going down and out; from the
-        // heel the thumb lies on the front face towards the middle, a little below centre.
-        fun plane(z: Float) = { u: Float, v: Float -> V3(s * u, v, z) }
-        val low = plane(1.1f)
-        val forearm = listOf(low(1.1f, -1.9f), low(2.15f, -1.9f), low(2.7f, -5f), low(1.3f, -5f))
-        shape(forearm.map(::at), SKIN_SHADE, stroke)
-        shape(roundedRect(0.95f, -2.45f, 2.2f, -1.25f, 0.5f).map { (u, v) -> at(low(u, v)) }, SKIN, stroke)
-        val face = plane(1.58f)
-        val thumb = capsule(1.55f, -1.6f, 0.6f, -0.45f, 0.28f).map { (u, v) -> face(u, v) }
-        shape(thumb.map(::at), SKIN, stroke)
-        val nail = capsule(0.9f, -0.62f, 0.66f, -0.47f, 0.14f).map { (u, v) -> face(u, v) }
-        shape(nail.map(::at), NAIL, Stroke(width = w * 0.006f))
+    for (s in listOf(-1f, 1f)) {
+        val palm = at(V3(s * 1.75f, -0.7f, 0.2f), w, h)
+        val elbow = Offset(if (s < 0) -w * 0.12f else w * 1.12f, size.height + w * 0.15f)
+        // The forearm fades out towards the picture's bottom edge instead of being cut there.
+        val fade = { c: Color -> Brush.verticalGradient(0f to c, 0.75f to c, 1f to c.copy(alpha = 0f), startY = 0f, endY = size.height) }
+        val arm = path(capsule(elbow, palm, w * 0.1f))
+        drawPath(arm, fade(SKIN), alpha = alpha)
+        drawPath(arm, fade(OUTLINE), alpha = alpha, style = stroke)
+        val hand = Offset(palm.x + s * w * 0.02f, palm.y)
+        shape(capsule(hand, Offset(hand.x, hand.y - w * 0.04f), w * 0.12f), SKIN, stroke, alpha)
     }
 }
 
-private fun DrawScope.shape(points: List<Pair<Float, Float>>, fill: Color, stroke: Stroke) {
-    val path = Path().apply {
-        moveTo(points[0].first, points[0].second)
-        for (p in points.drop(1)) lineTo(p.first, p.second)
-        close()
+/** The thumbs on the front face, from the lower side edge in towards the centre. */
+private fun DrawScope.thumbs(w: Float, h: Float, alpha: Float) {
+    val stroke = Stroke(width = w * 0.012f, join = StrokeJoin.Round)
+    for (s in listOf(-1f, 1f)) {
+        val outline = capsuleUV(1.75f, -1.35f, 0.75f, -0.65f, 0.26f).map { (u, v) -> at(V3(s * u, v, 1.55f), w, h) }
+        shape(outline, SKIN, stroke, alpha)
     }
-    drawPath(path, fill)
-    drawPath(path, OUTLINE, style = stroke)
 }
 
-/** Outline of a rounded rectangle in a plane's (u, v) coordinates. */
-private fun roundedRect(u0: Float, v0: Float, u1: Float, v1: Float, r: Float): List<Pair<Float, Float>> = buildList {
-    val corners = listOf(Triple(u1 - r, v1 - r, 0.0), Triple(u0 + r, v1 - r, PI / 2), Triple(u0 + r, v0 + r, PI), Triple(u1 - r, v0 + r, 3 * PI / 2))
-    for ((cu, cv, a0) in corners) {
-        for (k in 0..6) {
-            val a = a0 + k * (PI / 2) / 6
-            add(cu + r * cos(a).toFloat() to cv + r * sin(a).toFloat())
-        }
+/** A ring on the face with [normal] around its centre piece, in the face's plane (an ellipse in perspective). */
+private fun DrawScope.centreRing(w: Float, h: Float, normal: V3, u: V3, v: V3, alpha: Float) {
+    val centre = normal * 1.53f
+    val ring = (0 until 40).map { k ->
+        val t = 2 * PI * k / 40
+        at(centre + u * (0.62f * cos(t).toFloat()) + v * (0.62f * sin(t).toFloat()), w, h)
     }
+    val path = path(ring)
+    drawPath(path, OUTLINE.copy(alpha = alpha), style = Stroke(width = w * 0.03f, join = StrokeJoin.Round))
+    drawPath(path, RING_INNER.copy(alpha = alpha), style = Stroke(width = w * 0.015f, join = StrokeJoin.Round))
 }
+
+private fun path(points: List<Offset>) = Path().apply {
+    moveTo(points[0].x, points[0].y)
+    for (p in points.drop(1)) lineTo(p.x, p.y)
+    close()
+}
+
+private fun DrawScope.shape(points: List<Offset>, fill: Color, stroke: Stroke, alpha: Float) {
+    val p = path(points)
+    drawPath(p, fill.copy(alpha = alpha))
+    drawPath(p, OUTLINE.copy(alpha = alpha), style = stroke)
+}
+
+/** Outline of a capsule from [a] to [b] with radius [r] on screen. */
+private fun capsule(a: Offset, b: Offset, r: Float): List<Offset> =
+    capsuleUV(a.x, a.y, b.x, b.y, r).map { (x, y) -> Offset(x, y) }
 
 /** Outline of a capsule from (ua, va) to (ub, vb) with radius [r], in a plane's (u, v) coordinates. */
-private fun capsule(ua: Float, va: Float, ub: Float, vb: Float, r: Float): List<Pair<Float, Float>> = buildList {
-    val dir = kotlin.math.atan2((vb - va).toDouble(), (ub - ua).toDouble())
+private fun capsuleUV(ua: Float, va: Float, ub: Float, vb: Float, r: Float): List<Pair<Float, Float>> = buildList {
+    val dir = atan2((vb - va).toDouble(), (ub - ua).toDouble())
     for (k in 0..10) {
-        val a = dir + PI / 2 + k * PI / 10
-        add(ua + r * cos(a).toFloat() to va + r * sin(a).toFloat())
+        val t = dir + PI / 2 + k * PI / 10
+        add(ua + r * cos(t).toFloat() to va + r * sin(t).toFloat())
     }
     for (k in 0..10) {
-        val a = dir - PI / 2 + k * PI / 10
-        add(ub + r * cos(a).toFloat() to vb + r * sin(a).toFloat())
+        val t = dir - PI / 2 + k * PI / 10
+        add(ub + r * cos(t).toFloat() to vb + r * sin(t).toFloat())
     }
 }

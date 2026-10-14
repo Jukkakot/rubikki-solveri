@@ -470,6 +470,13 @@ private fun HoldPane(cube: Cube, onReady: () -> Unit) {
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
+        Text(
+            stringResource(Res.string.hold_centre),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
         BigButton(onClick = onReady, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(Res.string.hold_ready))
         }
@@ -477,7 +484,7 @@ private fun HoldPane(cube: Cube, onReady: () -> Unit) {
 }
 
 /** Width to height of the hold picture: the cube with a hand on each side. */
-private const val HOLD_PICTURE_RATIO = 0.95f
+private const val HOLD_PICTURE_RATIO = 0.8f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
