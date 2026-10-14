@@ -402,15 +402,80 @@ export function cameraSetTorch(on) {
   if (t && capabilities().torch) t.applyConstraints({ advanced: [{ torch: !!on }] }).catch(() => {});
 }
 
-/** Holds exposure and white balance where the camera can: "true", "false" or "unsupported". */
+// `scan-lock-guard`: on some phones Chrome's manual exposure holds a default time, not the current one,
+// and the picture goes dark (OnePlus, 2026-10-14). The lock passes the current time and ISO where
+// reported, and is checked by the whole picture's brightness 700 ms later: below 60 % it is undone and
+// not used again on that camera.
+
+const LOCK_DARKENS_KEY = 'camera.lockDarkens.';
+const LOCK_CHECK_MS = 700;
+const LOCK_DARK_SHARE = 0.6;
+const lockCheck = { result: '', timer: 0 };
+let lightCanvas = null;
+
+/** The video's mean brightness (0–255) from a 16×16 copy, null without a picture. */
+function pictureLight() {
+  const v = cam.video;
+  if (!v || v.readyState < 2) return null;
+  if (!lightCanvas) lightCanvas = document.createElement('canvas');
+  lightCanvas.width = 16;
+  lightCanvas.height = 16;
+  const ctx = lightCanvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(v, 0, 0, 16, 16);
+  const d = ctx.getImageData(0, 0, 16, 16).data;
+  let sum = 0;
+  for (let i = 0; i < d.length; i += 4) sum += (d[i] + d[i + 1] + d[i + 2]) / 3;
+  return sum / (d.length / 4);
+}
+
+function lockDarkensKey() {
+  return LOCK_DARKENS_KEY + (deviceOf(cam.stream) || '?');
+}
+
+function lockDarkens() {
+  try { return localStorage.getItem(lockDarkensKey()) === '1'; } catch (e) { return false; }
+}
+
+/** Holds exposure and white balance where the camera can: "true", "false", "skipped" or "unsupported" (with the time held). */
 export function cameraLockExposure(lock) {
   const t = camTrack();
   const caps = capabilities();
   const can = (k) => Array.isArray(caps[k]) && caps[k].includes('manual') && caps[k].includes('continuous');
   if (!t || !can('exposureMode') || !can('whiteBalanceMode')) return 'unsupported';
-  const mode = lock ? 'manual' : 'continuous';
-  t.applyConstraints({ advanced: [{ exposureMode: mode, whiteBalanceMode: mode }] }).catch(() => {});
-  return String(!!lock);
+  clearTimeout(lockCheck.timer);
+  lockCheck.result = '';
+  if (!lock) {
+    t.applyConstraints({ advanced: [{ exposureMode: 'continuous', whiteBalanceMode: 'continuous' }] }).catch(() => {});
+    return 'false';
+  }
+  if (lockDarkens()) return 'skipped (darkens this camera)';
+  const c = { exposureMode: 'manual', whiteBalanceMode: 'manual' };
+  let held = '';
+  try {
+    const s = t.getSettings();
+    if (typeof s.exposureTime === 'number' && caps.exposureTime) { c.exposureTime = s.exposureTime; held += ` time=${s.exposureTime}`; }
+    if (typeof s.iso === 'number' && caps.iso) { c.iso = s.iso; held += ` iso=${s.iso}`; }
+  } catch (e) { /* the browser picks */ }
+  const before = pictureLight();
+  t.applyConstraints({ advanced: [c] }).catch(() => {});
+  lockCheck.timer = setTimeout(() => {
+    const after = pictureLight();
+    if (before == null || after == null) { lockCheck.result = 'unknown'; return; }
+    const r = (x) => Math.round(x);
+    if (after < before * LOCK_DARK_SHARE) {
+      t.applyConstraints({ advanced: [{ exposureMode: 'continuous', whiteBalanceMode: 'continuous' }] }).catch(() => {});
+      try { localStorage.setItem(lockDarkensKey(), '1'); } catch (e) { /* only this time */ }
+      lockCheck.result = `undone before=${r(before)} after=${r(after)}`;
+    } else {
+      lockCheck.result = `kept before=${r(before)} after=${r(after)}`;
+    }
+  }, LOCK_CHECK_MS);
+  return 'true' + held;
+}
+
+/** The last lock's check once done ("kept …", "undone …", "unknown"), else empty. */
+export function cameraLockCheck() {
+  return lockCheck.result;
 }
 
 // The video scan sets the camera for the cube (`camera-exposure` design 4): where it measures light

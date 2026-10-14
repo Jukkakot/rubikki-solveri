@@ -37,6 +37,7 @@ external fun cameraTorchSupported(): Boolean
 external fun cameraInfo(): String
 external fun cameraSetTorch(on: Boolean)
 external fun cameraLockExposure(lock: Boolean): String
+external fun cameraLockCheck(): String
 external fun cameraCompensationMin(): Double
 external fun cameraCompensationStep(): Double
 external fun cameraSetCompensation(ev: Double)

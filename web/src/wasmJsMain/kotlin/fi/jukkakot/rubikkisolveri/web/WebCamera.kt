@@ -213,8 +213,17 @@ private fun WebCameraPreview(args: CameraArgs) {
         }
     }
     LaunchedEffect(running, args.exposure.lock) {
-        if (running && args.exposure.lock) AppLog.info(Evt.SCAN_LOCK, null, "lock" to cameraLockExposure(true))
-        else if (running) cameraLockExposure(false)
+        if (running && args.exposure.lock) {
+            val lock = cameraLockExposure(true)
+            AppLog.info(Evt.SCAN_LOCK, null, "lock" to lock)
+            // `scan-lock-guard`: whether the lock darkened the picture (undone then), known 0.7 s later.
+            if (lock.startsWith("true")) {
+                kotlinx.coroutines.delay(1_000)
+                cameraLockCheck().takeIf { it.isNotEmpty() }?.let { AppLog.info(Evt.SCAN_LOCK, null, "check" to it) }
+            }
+        } else if (running) {
+            cameraLockExposure(false)
+        }
     }
     // Measure and focus at the cube: the point of the visible picture in the whole video frame (the cover crop).
     LaunchedEffect(running, box, args.exposure.meter, args.exposure.focus) {
