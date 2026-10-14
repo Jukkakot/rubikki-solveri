@@ -51,7 +51,9 @@ Settings; the scan logic itself (the unread last side is a separate change).
    needlessly. "Clearly darker" needs both conditions.
 5. **A darker step waits for the picture to change.** After a step, the control keeps the brightness
    seen at the step. The next judgement waits until the brightness has moved by at least 8 % from that
-   value, or `STEP_MAX_MILLIS` (1.2 s) has passed, and never earlier than the 600 ms settle. The metering
+   value, or the washed-out share has fallen by 0.15 (found while testing: a washed-out picture's
+   brightness sits at the top, so it cannot show a change by brightness alone), or `STEP_MAX_MILLIS`
+   (1.2 s) has passed, and never earlier than the 600 ms settle. The metering
    deadline is already held back while a step is under way, so a slow camera locks a little later
    rather than overshooting.
 6. **Events from the control for the log.** `Frame` gains an `event` (`darker`, `lighter`, `lock`) with

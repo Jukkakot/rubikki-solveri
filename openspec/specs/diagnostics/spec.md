@@ -84,7 +84,9 @@ the snapshot SHALL also tell how long making a picture ready for finding faces t
 waited between pictures, both averaged since the last snapshot. When the camera opens, one line
 SHALL tell which camera it is and what it can do (its resolution, focus modes, how much darker or
 brighter it can be set, whether it can measure light at a point, torch), on the phone and in the
-browser. A minute of scanning SHALL stay at a few dozen lines.
+browser; in the browser it SHALL also give the camera's frame rate and, when other back cameras were
+tried, each one's focus and torch. Each step darker or lighter and each lock SHALL get a line with the
+step and the cube's brightness. A minute of scanning SHALL stay at a few dozen lines.
 
 #### Scenario: Stuck scan readable from the log
 - **WHEN** a video scan stalls and the user shares the log
@@ -101,6 +103,10 @@ browser. A minute of scanning SHALL stay at a few dozen lines.
 #### Scenario: Where the phone app's time goes
 - **WHEN** the user scans in the phone app and shares the log
 - **THEN** each snapshot shows the time to make a picture ready, the finder's wait between pictures, the finder's time and the pictures a second
+
+#### Scenario: Exposure steps in the log
+- **WHEN** the camera is made darker, locked and later set lighter during a scan, and the user shares the log
+- **THEN** the log has a line for each step and the lock, each with the cube's brightness at that moment
 
 ### Requirement: Video scan recordings
 Every video scan SHALL record what the scan was given: for each picture read, its time from the

@@ -95,9 +95,12 @@ be dark.
 
 ### Requirement: Camera in the browser
 The scan and camera follow SHALL use the device's back camera when there is one, else any camera.
-When the device has several back cameras and the browser's choice has no torch, the other back
-cameras SHALL be tried once and the first with a torch used; the camera chosen SHALL be remembered
-for later scans and named in the log.
+When the device has several back cameras and the browser's choice lacks continuous focus or a torch,
+the other back cameras SHALL be tried once and the best kept: one with continuous focus and a torch,
+else one with continuous focus, else one with a torch, else the browser's choice; among equals the
+lowest-numbered. The camera chosen SHALL be remembered for later scans and named in the log, and a
+camera remembered under the earlier rule (torch only) SHALL be chosen once more. The camera SHALL be
+asked for about 30 pictures a second.
 The browser's camera permission prompt SHALL be shown when the user opens the scan; if access is
 denied, the screen SHALL explain how to allow the camera in the browser's site settings and offer
 manual input instead. The torch button SHALL be shown only when the camera supports a torch. When
@@ -120,6 +123,10 @@ scan's marks drawn on top in the right places.
 #### Scenario: Back camera with a torch
 - **WHEN** the phone has several back cameras and the browser opens one without a torch
 - **THEN** the scan switches to a back camera that has one, shows the torch button, and opens that camera directly next time
+
+#### Scenario: Main camera, not a fixed-focus lens
+- **WHEN** the phone has several back cameras and the browser opens one that has a torch but only manual focus
+- **THEN** the scan switches to a back camera with continuous focus and a torch, and opens that camera directly next time
 
 #### Scenario: Torch-lit cube in the browser
 - **WHEN** the user scans in the phone's browser in a dark room with the torch on
