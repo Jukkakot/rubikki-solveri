@@ -271,6 +271,19 @@ private fun WebCameraPreview(args: CameraArgs) {
                 AppLog.info(Evt.SCAN_CAMERA, null, "camera" to cameraInfo().ifEmpty { null }, "size" to "${vw}x$vh", "abilities" to cameraAbilities())
             }
             val crop = coverCrop(vw, vh, box.width, box.height)
+            // `scan-page-light`: nothing needs the grid picture (the video scan with its worker): only note the
+            // new camera picture, for the stall check; no copies drawn and read back on the page's thread.
+            val needsGrid = current.onSamples != null || current.onPicture != null ||
+                (current.onImage != null && !(worker != false && scanWorkerReady()))
+            if (!needsGrid) {
+                if (!cameraTake()) continue
+                lastRead = now
+                if (lastFrame > 0 && now - lastFrame >= CAMERA_STALL_MILLIS) {
+                    AppLog.info(Evt.SCAN_STALL, null, "where" to "camera", "ms" to now - lastFrame)
+                }
+                lastFrame = now
+                continue
+            }
             if (!cameraGrab(crop.x, crop.y, crop.width, crop.height, PREVIEW_LONG_SIDE, ANALYSIS_SIZE)) continue
             lastRead = now
             if (lastFrame > 0 && now - lastFrame >= CAMERA_STALL_MILLIS) {

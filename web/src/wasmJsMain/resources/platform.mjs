@@ -378,6 +378,23 @@ export function cameraGrab(x, y, w, h, previewLong, size) {
   return true;
 }
 
+/**
+ * Whether a new camera picture has come since the last call, without drawing it (`scan-page-light`:
+ * the video scan with the worker needs no grid picture, so the page no longer copies and reads one).
+ */
+export function cameraTake() {
+  const v = cam.video;
+  if (!cam.stream || !v || v.readyState < 2) return false;
+  if (v.requestVideoFrameCallback) {
+    if (!cam.fresh) return false;
+    cam.fresh = false;
+    return true;
+  }
+  if (v.currentTime === cam.lastTime) return false;
+  cam.lastTime = v.currentTime;
+  return true;
+}
+
 export function cameraPreviewWidth() { return canvasA.width; }
 export function cameraPreviewHeight() { return canvasA.height; }
 
@@ -559,7 +576,7 @@ export function cameraAbilities() {
 // is ready, or if it cannot start, the finder scans as before.
 
 const scan = {
-  worker: null, ready: false, busy: false, pending: null, onFaces: null, onFail: null, timer: 0, inFlight: { seq: 0 }, replies: new Map(), nextReply: 1,
+  worker: null, ready: false, busy: false, pending: null, onFaces: null, onFail: null, timer: 0, flight: [], replies: new Map(), nextReply: 1,
   pipe: null, pipeline: false, lastReset: 0,
   // `scan-send-ahead`: when the finder last answered, for its wait before the next picture (`idleMs`).
   lastAnswer: 0,
@@ -666,7 +683,13 @@ export function scanWorkerPipeline() {
 }
 
 // `scan-timing`: where a picture's time goes, averaged for the log's timing line ([scanTimings]).
-const timing = { since: 0, cam0: 0, page: 0, sent: 0, trips: 0, tripMs: 0, pixMs: 0, workMs: 0, pipes: 0, pipeMs: 0, raf: 0, posted: 0 };
+const timing = { since: 0, cam0: 0, page: 0, sent: 0, trips: 0, tripMs: 0, pixMs: 0, workMs: 0, pipes: 0, pipeMs: 0, raf: 0 };
+
+// Measured in a container at pixel ratio 3 (2026-10-14): the page drew 11 frames a second, at 1.5 23, at 1 38.
+const DPR_CAP = 1.5;
+const SLOW_PAGE_FPS = 18;
+const SLOW_WINDOWS = 2;
+let timingSlow = 0;
 
 function pageTick() {
   timing.page++;
@@ -697,19 +720,35 @@ export function scanTimings() {
   const r = (x) => Math.round(x * 10) / 10;
   const avg = (sum, n) => (n > 0 ? r(sum / n) : '-');
   const camFps = r(((cam.frames || 0) - timing.cam0) / s);
-  const line = `camFps=${camFps} pageFps=${r(timing.page / s)} sentFps=${r(timing.sent / s)} tripMs=${avg(timing.tripMs, timing.trips)} ` +
-    `pixMs=${avg(timing.pixMs, timing.trips)} workMs=${avg(timing.workMs, timing.trips)} pipeMs=${avg(timing.pipeMs, timing.pipes)}`;
+  const pageFps = r(timing.page / s);
+  const real = window.rubikkiRealDpr || window.devicePixelRatio || 1;
+  const dpr = window.devicePixelRatio || 1;
+  let line = `camFps=${camFps} pageFps=${pageFps} sentFps=${r(timing.sent / s)} tripMs=${avg(timing.tripMs, timing.trips)} ` +
+    `pixMs=${avg(timing.pixMs, timing.trips)} workMs=${avg(timing.workMs, timing.trips)} pipeMs=${avg(timing.pipeMs, timing.pipes)} dpr=${r(dpr)}/${r(real)}`;
+  // `scan-page-light`: drawing slowly for SLOW_WINDOWS lines in a row at a high pixel ratio caps it from the next start.
+  if (pageFps < SLOW_PAGE_FPS && real > DPR_CAP && dpr > DPR_CAP) {
+    timingSlow++;
+    if (timingSlow === SLOW_WINDOWS) {
+      try { localStorage.setItem('render.dprCap', String(DPR_CAP)); line += ` dprCap=${DPR_CAP} from next start`; } catch (e) { /* not stored */ }
+    }
+  } else {
+    timingSlow = 0;
+  }
   timingReset();
   return line;
 }
 
+// `scan-page-light`: up to two pictures are with the finder, the second waiting in its own queue, so it
+// starts the next one at once instead of waiting for the page to take its answer (OnePlus: the page drew
+// 12 frames a second and the finder, 35 ms a picture, waited for it).
+const MAX_IN_FLIGHT = 2;
+
 function workerPost(msg) {
-  scan.busy = true;
   timing.sent++;
-  timing.posted = performance.now();
   // The finder's wait since its last answer (0 when this picture was already waiting for it).
-  const idle = scan.lastAnswer ? Math.max(0, performance.now() - scan.lastAnswer) : 0;
-  scan.inFlight = { seq: msg.seq || 0, prep: msg.prep || 0, idle };
+  const idle = scan.lastAnswer && scan.flight.length === 0 ? Math.max(0, performance.now() - scan.lastAnswer) : 0;
+  scan.flight.push({ seq: msg.seq || 0, prep: msg.prep || 0, idle, posted: performance.now() });
+  scan.busy = scan.flight.length >= MAX_IN_FLIGHT;
   const { seq, prep, ...body } = msg;
   scan.worker.postMessage(body, msg.bitmap ? [msg.bitmap] : [msg.data]);
 }
@@ -758,10 +797,10 @@ export function scanWorkerStart(onFaces, onFail) {
       pipeOn();
       return;
     }
-    scan.busy = false;
     scan.lastAnswer = performance.now();
-    const answered = scan.inFlight;
-    if (timing.posted) { timing.trips++; timing.tripMs += performance.now() - timing.posted; timing.pixMs += m.pix || 0; timing.workMs += m.work || 0; timing.posted = 0; }
+    const answered = scan.flight.shift() || { seq: 0, prep: 0, idle: 0, posted: 0 };
+    scan.busy = scan.flight.length >= MAX_IN_FLIGHT;
+    if (answered.posted) { timing.trips++; timing.tripMs += performance.now() - answered.posted; timing.pixMs += m.pix || 0; timing.workMs += m.work || 0; }
     if (scan.pending) {
       const next = scan.pending;
       scan.pending = null;
@@ -891,6 +930,7 @@ export function scanWorkerStop() {
   scan.worker = null;
   scan.ready = false;
   scan.busy = false;
+  scan.flight = [];
   scan.pending = null;
   scan.lastAnswer = 0;
   ahead.crop = null;

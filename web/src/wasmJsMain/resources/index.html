@@ -36,6 +36,16 @@
       document.documentElement.lang = lang;
       window.rubikkiLanguage = lang;
     })();
+    // `scan-page-light`: a phone whose page drew too slowly during a video scan draws at a capped pixel
+    // ratio from the next start (platform.mjs stores the cap); the screen's own ratio stays for the log.
+    (function () {
+      window.rubikkiRealDpr = window.devicePixelRatio || 1;
+      var cap = 0;
+      try { cap = Number(localStorage.getItem('render.dprCap')) || 0; } catch (e) { /* storage blocked */ }
+      if (cap > 0 && window.rubikkiRealDpr > cap) {
+        try { Object.defineProperty(window, 'devicePixelRatio', { get: function () { return cap; }, configurable: true }); } catch (e) { /* read-only */ }
+      }
+    })();
   </script>
 </head>
 <body>
