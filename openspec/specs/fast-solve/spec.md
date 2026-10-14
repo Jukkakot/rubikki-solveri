@@ -123,13 +123,22 @@ screen, the screen it came from.
 - **THEN** the start screen opens
 
 ### Requirement: Hold step
-After "Aloita" and before the guide, a hold step SHALL show "Pidä kuutiota näin": a big cube in the holding
-position held by two drawn hands, the hold in words, and one primary button "Olen valmis". Only "Olen valmis"
+After "Aloita" and before the guide, a hold step SHALL show "Pidä kuutiota näin": the user's own cube in the
+holding position held by two drawn hands, rings around the front and top centre pieces, the hold in words with
+a line that the centre piece tells the side's colour, and one primary button "Olen valmis". Only "Olen valmis"
 SHALL open the guide, at the first move in the manual mode.
 
 #### Scenario: Picture of the hold
 - **WHEN** the hold step is open
-- **THEN** the cube is seen as in the guide, it does not turn when dragged, and two hands hold it from the left and right with the thumbs on the front, readable on a light and a dark background
+- **THEN** the cube is seen as in the guide, it does not turn when dragged, and two hands hold it as the user sees their own hands: forearms from the bottom of the picture, palms at the left and right sides, thumbs on the front, readable on a light and a dark background
+
+#### Scenario: Turns into the hold
+- **WHEN** the hold step opens with animations on
+- **THEN** the cube first turns from a tilted pose into the holding view, and the hands and rings appear once it is there; with animations off it is shown in the hold at once
+
+#### Scenario: Centre pieces marked
+- **WHEN** the cube is in the hold
+- **THEN** a pulsing ring surrounds the front centre piece and another the top centre piece, and the words say that the centre piece tells the side's colour
 
 #### Scenario: Ready opens the guide
 - **WHEN** the hold step is open and the user taps "Olen valmis"
