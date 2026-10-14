@@ -100,6 +100,10 @@ import fi.jukkakot.rubikkisolveri.ui.lessons.StageGoalPicture
 import fi.jukkakot.rubikkisolveri.ui.guide.GuideCube
 import fi.jukkakot.rubikkisolveri.ui.guide.MoveWordsText
 import fi.jukkakot.rubikkisolveri.ui.guide.HandsfreeSpeed
+import fi.jukkakot.rubikkisolveri.ui.guide.HoldingCube
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.RadioButton
 import fi.jukkakot.rubikkisolveri.ui.guide.StepperState
 import fi.jukkakot.rubikkisolveri.ui.KeepScreenOn
 import fi.jukkakot.rubikkisolveri.ui.guide.rememberStepperState
@@ -191,8 +195,8 @@ val BACKGROUND_TARGET_PLANNER: TargetPlanner = { cube, target ->
 
 /**
  * Finds a solution for [cube] in the background (shortest or step by step), then steps through it.
- * With [startScreen] a start screen comes first (moves, target, method, hold, "Aloita" and
- * "Handsfree"); back in the guide returns to it. The guide's menu offers camera follow, the colour
+ * With [startScreen] a start screen comes first (moves, target, method, "Aloita"), then the hold step
+ * ("Olen valmis"); back in either returns to it. The guide's menu offers camera follow, the colour
  * check ([onCheckColors]) and the start screen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -220,6 +224,8 @@ fun SolveScreen(
     onLesson: ((Stage, List<Move>) -> Unit)? = null,
 ) {
     var started by rememberSaveable { mutableStateOf(!startScreen) }
+    // The hold step between the start screen and the guide.
+    var holding by rememberSaveable { mutableStateOf(false) }
     var follow by rememberSaveable { mutableStateOf(false) }
     // Handsfree is started each time: not saved, and leaving the guide ends it.
     var handsfree by remember { mutableStateOf(false) }
@@ -243,14 +249,18 @@ fun SolveScreen(
         handsfree = false
         follow = false
         started = false
+        holding = false
     }
-    val back = if (started && startScreen) toStart else onBack
-    BackHandler(enabled = started && startScreen) { toStart() }
+    val back = if ((started || holding) && startScreen) toStart else onBack
+    BackHandler(enabled = (started || holding) && startScreen) { toStart() }
     Box(Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { (title ?: stringResource(Res.string.solve_title).takeIf { !started })?.let { Text(it) } },
+                    title = {
+                        if (holding && !started) Text(stringResource(Res.string.hold_title))
+                        else (title ?: stringResource(Res.string.solve_title).takeIf { !started })?.let { Text(it) }
+                    },
                     navigationIcon = { Box(Modifier.padding(horizontal = 8.dp)) { BackButton(back) } },
                     actions = {
                         if (started && ready != null) {
@@ -259,6 +269,8 @@ fun SolveScreen(
                                 onFollow = { f: Boolean -> follow = f; handsfree = false }.takeIf { shownMethod != SolveMethod.COMBOS },
                                 onCheckColors = onCheckColors,
                                 onToStart = toStart.takeIf { startScreen },
+                                speed = speed.takeIf { canHandsfree && !follow },
+                                onSpeed = { speed = it; onHandsfreeSpeed(it) },
                             )
                         }
                     },
@@ -281,6 +293,8 @@ fun SolveScreen(
                             } else {
                                 Message(already, stringResource(Res.string.solve_home), onHome)
                             }
+                        } else if (!started && holding) {
+                            HoldPane(cube) { holding = false; started = true }
                         } else if (!started) {
                             StartPane(
                                 cube = cube,
@@ -289,10 +303,7 @@ fun SolveScreen(
                                 onChangeTarget = onChangeTarget,
                                 method = method.takeIf { !cube.isSolved && !practice && toSolved },
                                 onMethod = { method = it },
-                                speed = speed.takeIf { canHandsfree },
-                                onSpeed = { speed = it; onHandsfreeSpeed(it) },
-                                onStart = { started = true },
-                                onHandsfree = { started = true; handsfree = true },
+                                onStart = { holding = true },
                             )
                         } else {
                             val finished = finishedText ?: if (toSolved) null else stringResource(Res.string.target_reached)
@@ -335,9 +346,19 @@ fun SolveScreen(
 /** Test tag of the layer that stops handsfree on any touch. */
 const val HANDSFREE_STOP_TAG = "handsfree_stop"
 
-/** The guide's ⋮ menu: camera follow (or back to the 3D cube), the colour check, the start screen. */
+/**
+ * The guide's ⋮ menu: camera follow (or back to the 3D cube), the colour check, the start screen and,
+ * with a [speed], the automatic mode's pace.
+ */
 @Composable
-private fun GuideMenu(follow: Boolean, onFollow: ((Boolean) -> Unit)?, onCheckColors: (() -> Unit)?, onToStart: (() -> Unit)?) {
+private fun GuideMenu(
+    follow: Boolean,
+    onFollow: ((Boolean) -> Unit)?,
+    onCheckColors: (() -> Unit)?,
+    onToStart: (() -> Unit)?,
+    speed: HandsfreeSpeed? = null,
+    onSpeed: (HandsfreeSpeed) -> Unit = {},
+) {
     var open by remember { mutableStateOf(false) }
     Box(Modifier.padding(horizontal = 8.dp)) {
         RoundIconButton(onClick = { open = true }) {
@@ -365,16 +386,37 @@ private fun GuideMenu(follow: Boolean, onFollow: ((Boolean) -> Unit)?, onCheckCo
                     onClick = { open = false; onToStart() },
                 )
             }
+            if (speed != null) {
+                HorizontalDivider()
+                Text(
+                    stringResource(Res.string.handsfree_menu_speed),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                )
+                for ((s, label) in SPEED_LABELS) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(label)) },
+                        leadingIcon = { RadioButton(selected = s == speed, onClick = null) },
+                        onClick = { open = false; onSpeed(s) },
+                    )
+                }
+            }
         }
     }
 }
 
+/** The automatic mode's speeds with their names, slowest first. */
+private val SPEED_LABELS = listOf(
+    HandsfreeSpeed.SLOW to Res.string.handsfree_slow,
+    HandsfreeSpeed.NORMAL to Res.string.handsfree_normal,
+    HandsfreeSpeed.FAST to Res.string.handsfree_fast,
+)
+
 /**
  * The start screen: how many moves, the target (with a way to change it), the method ([method] null:
- * no choice), the hold as a small cube picture with one line, "Aloita" and, with a [speed],
- * "Handsfree" with its pace.
+ * no choice) and "Aloita", which opens the hold step.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StartPane(
     cube: Cube,
@@ -383,10 +425,7 @@ private fun StartPane(
     onChangeTarget: (() -> Unit)?,
     method: SolveMethod?,
     onMethod: (SolveMethod) -> Unit,
-    speed: HandsfreeSpeed?,
-    onSpeed: (HandsfreeSpeed) -> Unit,
     onStart: () -> Unit,
-    onHandsfree: () -> Unit,
 ) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
@@ -400,53 +439,45 @@ private fun StartPane(
         )
         if (onChangeTarget != null) TargetRow(cube, target, onChangeTarget, Modifier)
         if (method != null) MethodChoice(method, onMethod, Modifier)
-        Row(
-            Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.surfaceContainer).padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Cube3D(
-                colors = remember(cube) { cube.toList().map(StickerColors::of) },
-                viewState = remember { CubeViewState(CubeScene.DEFAULT_VIEW) },
-                draggable = false,
-                modifier = Modifier.size(64.dp),
-            )
-            Text(
-                stringResource(
-                    Res.string.solve_hold_now,
-                    stringResource(colorName(cube.centre(Face.F))),
-                    stringResource(colorName(cube.centre(Face.U))),
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f),
-            )
-        }
         BigButton(onClick = onStart, modifier = Modifier.fillMaxWidth()) {
             Icon(painterResource(Res.drawable.ic_play), contentDescription = null)
             Text(stringResource(Res.string.start_go))
         }
-        if (speed != null) {
-            FilledTonalButton(onClick = onHandsfree, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
-                Icon(painterResource(Res.drawable.ic_handsfree), contentDescription = null, modifier = Modifier.size(20.dp))
-                Text(stringResource(Res.string.handsfree), modifier = Modifier.padding(start = 8.dp))
-            }
-            val labels = mapOf(
-                HandsfreeSpeed.SLOW to Res.string.handsfree_slow,
-                HandsfreeSpeed.NORMAL to Res.string.handsfree_normal,
-                HandsfreeSpeed.FAST to Res.string.handsfree_fast,
+    }
+}
+
+/**
+ * The hold step: the cube in the holding view held by two drawn hands, the hold in words and
+ * "Olen valmis", the only way on to the guide.
+ */
+@Composable
+private fun HoldPane(cube: Cube, onReady: () -> Unit) {
+    FitColumn(horizontalAlignment = Alignment.CenterHorizontally, spacing = 16.dp) {
+        Box(Modifier.fitSlot(), contentAlignment = Alignment.Center) {
+            HoldingCube(
+                cube,
+                modifier = Modifier.fillMaxWidth().aspectRatio(HOLD_PICTURE_RATIO, matchHeightConstraintsFirst = true),
+                description = stringResource(Res.string.hold_picture),
             )
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                HandsfreeSpeed.entries.forEachIndexed { i, s ->
-                    SegmentedButton(
-                        selected = s == speed,
-                        onClick = { onSpeed(s) },
-                        shape = SegmentedButtonDefaults.itemShape(i, HandsfreeSpeed.entries.size),
-                    ) { Text(stringResource(labels.getValue(s))) }
-                }
-            }
+        }
+        Text(
+            stringResource(
+                Res.string.hold_where,
+                stringResource(colorName(cube.centre(Face.F))),
+                stringResource(colorName(cube.centre(Face.U))),
+            ),
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        BigButton(onClick = onReady, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(Res.string.hold_ready))
         }
     }
 }
+
+/** Width to height of the hold picture: the cube with a hand on each side. */
+private const val HOLD_PICTURE_RATIO = 0.95f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

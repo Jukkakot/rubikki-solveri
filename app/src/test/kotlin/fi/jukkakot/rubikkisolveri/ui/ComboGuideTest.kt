@@ -38,6 +38,7 @@ class ComboGuideTest {
         compose.waitUntil(10_000) { has("Aloita") }
         compose.onNodeWithText("Liikesarjat").assertExists()
         compose.onNodeWithText("Aloita").performClick()
+        compose.onNodeWithText("Olen valmis").performClick()
         compose.waitUntil(10_000) { has("Askel 1/") }
         // The first steps are the white cross: an edge and its turns, no combination.
         assertTrue(has("Valkoinen risti"))

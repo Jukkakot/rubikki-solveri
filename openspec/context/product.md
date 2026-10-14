@@ -91,8 +91,9 @@ method stage by stage so you learn to solve it yourself.
   pieces, each piece once, the corners' colour order (handedness), faces seen together are
   neighbours, the cube does not change while it is scanned. A reading that breaks a rule counts
   for less; what is left decides the rest.
-- **Choices once, before the guide:** target, method and handsfree pace are chosen on a start
-  screen; the guide itself is a media player (previous, play/pause handsfree, next).
+- **Choices once, before the guide:** target and method are chosen on a start screen, then a hold
+  step shows the cube in two drawn hands until "Olen valmis"; the guide itself is a media player
+  (previous, play/pause autoplay, next), always manual until ▶ (pace in its menu, user 2026-10-14).
 
 ## Later ideas
 

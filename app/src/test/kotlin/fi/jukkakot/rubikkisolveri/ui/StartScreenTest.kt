@@ -41,16 +41,42 @@ class StartScreenTest {
     fun showsTheMovesTheHoldAndStarts() {
         open()
         compose.onNodeWithText("2 siirtoa").assertIsDisplayed()
-        compose.onNodeWithText("Pidä kuutiota", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Nopein").assertIsDisplayed()
+        // No automatic mode on the start screen.
+        assertTrue(compose.onAllNodesWithText("Automaattinen").fetchSemanticsNodes().isEmpty())
         compose.onNodeWithText("Aloita").performClick()
+        // The hold step: the picture with hands, the hold in words, and only "Olen valmis" goes on.
+        compose.onNodeWithText("Pidä kuutiota näin").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Kuutio kahdessa kädessä", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Keskiö sinua kohti: vihreä. Ylhäällä: valkoinen.").assertIsDisplayed()
+        compose.onNodeWithText("Olen valmis").performClick()
         compose.onNodeWithText("Siirto 1/2").assertIsDisplayed()
+    }
+
+    @Test
+    fun backFromTheHoldStepReturnsToTheStart() {
+        open()
+        compose.onNodeWithText("Aloita").performClick()
+        compose.onNodeWithContentDescription("Takaisin").performClick()
+        compose.onNodeWithText("Aloita").assertIsDisplayed()
+        assertEquals(0, backs)
+    }
+
+    @Test
+    fun theGuideOpensManual() {
+        open()
+        compose.onNodeWithText("Aloita").performClick()
+        compose.onNodeWithText("Olen valmis").performClick()
+        compose.mainClock.advanceTimeBy(20_000)
+        compose.onNodeWithText("Siirto 1/2").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Automaattinen").assertIsDisplayed()
     }
 
     @Test
     fun backFromTheGuideReturnsToTheStart() {
         open()
         compose.onNodeWithText("Aloita").performClick()
+        compose.onNodeWithText("Olen valmis").performClick()
         compose.onNodeWithContentDescription("Takaisin").performClick()
         compose.onNodeWithText("Aloita").assertIsDisplayed()
         assertEquals(0, backs)
@@ -62,6 +88,7 @@ class StartScreenTest {
     fun menuOffersTheColourCheckAndTheStart() {
         open()
         compose.onNodeWithText("Aloita").performClick()
+        compose.onNodeWithText("Olen valmis").performClick()
         compose.onNodeWithContentDescription("Valikko").performClick()
         compose.onNodeWithText("Tarkista värit").performClick()
         assertEquals(1, checks)
@@ -74,6 +101,7 @@ class StartScreenTest {
     fun holdInWordsOnlyOnTheFirstMove() {
         open()
         compose.onNodeWithText("Aloita").performClick()
+        compose.onNodeWithText("Olen valmis").performClick()
         compose.onNodeWithText("Pidä kuutiota", substring = true).assertExists()
         compose.onNodeWithContentDescription("Tein sen").performClick()
         compose.waitForIdle()

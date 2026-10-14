@@ -87,7 +87,7 @@
     <string name="solve_done_move">Done</string>
     <string name="solve_show">Show</string>
     <string name="solve_tap_hint">Tap the cube = done · drag = turn it</string>
-    <string name="handsfree">Hands-free</string>
+    <string name="handsfree">Autoplay</string>
     <string name="handsfree_speed">Pace</string>
     <string name="handsfree_slow">Slow</string>
     <string name="handsfree_normal">Normal</string>
@@ -365,4 +365,9 @@
     <string name="combo_read_more">Read more</string>
     <string name="combo_next_move">Next move</string>
     <string name="combo_done">I did it</string>
+    <string name="hold_title">Hold the cube like this</string>
+    <string name="hold_where">Centre towards you: %1$s. On top: %2$s.</string>
+    <string name="hold_ready">I'm ready</string>
+    <string name="hold_picture">The cube in two hands, thumbs at the front</string>
+    <string name="handsfree_menu_speed">Autoplay pace</string>
 </resources>

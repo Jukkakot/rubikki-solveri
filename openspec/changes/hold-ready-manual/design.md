@@ -23,11 +23,12 @@ for that); hands drawn in the guide itself; changing how the automatic mode adva
    (target, method); the hold step is one idea with one button, as the user described ("ja sit vasta kun
    käyttäjä valitsee 'olen valmis'"). Costs one more tap per solve. Shown for every method that has a
    start screen (the hold matters for all). A third value of the screen's saved stage (start, hold, guide).
-2. **Hands drawn in a Canvas over the 3D cube, not a bitmap.** Two cartoon hands in Compose paths: the
-   palm and fingers on the left and right sides of the cube, a thumb reaching onto the front face's lower
-   corner. Sized from the cube's box so they fit any size. A fixed warm skin tone with a darker outline, so
-   they read on both light and dark backgrounds; the hands stay in front of the cube (thumbs) and the
-   fingers are drawn behind its silhouette edge. Positions tuned on the screenshot test.
+2. **Hands drawn in a Canvas over the 3D cube, not a bitmap.** Two cartoon hands as paths in the cube's
+   own 3D space (projected like the cube): palm and fingers on the side faces (the left one behind the
+   cube, hidden as on a real cube), the heel of each hand and the wrist below the front corners, a thumb
+   from the heel onto the front face. A fixed warm skin tone with a darker outline, so they read on both
+   light and dark backgrounds. Positions tuned on the screenshot test (a first try with the forearms on
+   the side planes left the left hand's thumb floating).
 3. **The cube is the guide's holding view** (`CubeScene.DEFAULT_VIEW`, the cube's real colours, not
    draggable), so what the user sees here is exactly what the guide shows next.
 4. **"Automaattinen" instead of "Handsfree"** in Finnish (English "Autoplay"), the user's own word. Only the

@@ -88,7 +88,7 @@
     <string name="solve_done_move">Tein sen</string>
     <string name="solve_show">Näytä</string>
     <string name="solve_tap_hint">Napauta kuutiota = tein sen · raahaa = käännä</string>
-    <string name="handsfree">Handsfree</string>
+    <string name="handsfree">Automaattinen</string>
     <string name="handsfree_speed">Tahti</string>
     <string name="handsfree_slow">Hidas</string>
     <string name="handsfree_normal">Normaali</string>
@@ -366,4 +366,9 @@
     <string name="combo_read_more">Lue lisää</string>
     <string name="combo_next_move">Seuraava siirto</string>
     <string name="combo_done">Tein sen</string>
+    <string name="hold_title">Pidä kuutiota näin</string>
+    <string name="hold_where">Keskiö sinua kohti: %1$s. Ylhäällä: %2$s.</string>
+    <string name="hold_ready">Olen valmis</string>
+    <string name="hold_picture">Kuutio kahdessa kädessä, peukalot edessä</string>
+    <string name="handsfree_menu_speed">Automaattisen tahti</string>
 </resources>

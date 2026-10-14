@@ -170,6 +170,7 @@ class ShellTest {
         }
         compose.waitUntil(10_000) { compose.onAllNodesWithText("Aloita").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Aloita").performClick()
+        compose.onNodeWithText("Olen valmis").performClick()
         compose.onNodeWithContentDescription("Takaisin").performClick()
         compose.onNodeWithText("Aloita").assertIsDisplayed()
         compose.onNodeWithContentDescription("Takaisin").performClick()

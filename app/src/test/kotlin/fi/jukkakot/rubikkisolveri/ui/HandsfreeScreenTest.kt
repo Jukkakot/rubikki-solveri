@@ -53,7 +53,7 @@ class HandsfreeScreenTest {
         solve()
         compose.mainClock.autoAdvance = false
         // ▶ starts at once, with no ready prompt.
-        compose.onNodeWithContentDescription("Handsfree").performClick()
+        compose.onNodeWithContentDescription("Automaattinen").performClick()
         compose.onNodeWithText("Valmis").assertDoesNotExist()
         compose.mainClock.advanceTimeBy(HandsfreeSpeed.NORMAL.quarterMs + 1_500)
         compose.onNodeWithText("Siirto 2/3").assertIsDisplayed()
@@ -62,14 +62,14 @@ class HandsfreeScreenTest {
         compose.mainClock.advanceTimeBy(20_000)
         compose.onNodeWithText("Siirto 2/3").assertIsDisplayed()
         compose.onNodeWithTag(HANDSFREE_STOP_TAG).assertDoesNotExist()
-        compose.onNodeWithContentDescription("Handsfree").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Automaattinen").assertIsDisplayed()
     }
 
     @Test
     fun theTimeStartsWithTheMove() {
         solve()
         compose.mainClock.autoAdvance = false
-        compose.onNodeWithContentDescription("Handsfree").performClick()
+        compose.onNodeWithContentDescription("Automaattinen").performClick()
         // The time runs during the demo (half a second's pause and a 0.3 s turn): the move is done
         // after its own time, not after the demo plus its time (2.9 s).
         var waited = 0L
@@ -81,21 +81,17 @@ class HandsfreeScreenTest {
     }
 
     @Test
-    fun startScreenHandsfreeWithItsSpeed() {
-        compose.setContent {
-            RubikkiTheme(dynamicColor = false) {
-                SolveScreen(
-                    Cube.solved().apply("R U L"), onBack = {}, onHome = {}, planner = INLINE_PLANNER,
-                    onHandsfreeSpeed = { saved = it }, startScreen = true,
-                )
-            }
-        }
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("Aloita").fetchSemanticsNodes().isNotEmpty() }
+    fun speedFromTheMenu() {
+        solve()
+        compose.onNodeWithContentDescription("Valikko").performClick()
         compose.onNodeWithText("Nopea").performClick()
         assertEquals(HandsfreeSpeed.FAST, saved, "the chosen speed is remembered")
+        // Picking a speed does not start the automatic mode.
+        compose.mainClock.advanceTimeBy(10_000)
+        compose.onNodeWithText("Siirto 1/3").assertIsDisplayed()
         compose.mainClock.autoAdvance = false
-        compose.onNodeWithText("Handsfree").performClick()
-        compose.mainClock.advanceTimeBy(HandsfreeSpeed.FAST.quarterMs + 1_000)
+        compose.onNodeWithContentDescription("Automaattinen").performClick()
+        compose.mainClock.advanceTimeBy(HandsfreeSpeed.FAST.quarterMs + 600)
         compose.onNodeWithText("Siirto 2/3").assertExists()
     }
 }

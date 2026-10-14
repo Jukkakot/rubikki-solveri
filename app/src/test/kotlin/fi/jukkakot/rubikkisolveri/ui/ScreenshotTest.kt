@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -49,7 +51,7 @@ class ScreenshotTest {
      * Renders [content] in the light and the dark theme to `<name>-light.png` and `<name>-dark.png`
      * (one composition; the theme switches in between, so the screen keeps its state).
      */
-    private fun shot(name: String, waitForText: String? = null, content: @Composable () -> Unit) {
+    private fun shot(name: String, waitForText: String? = null, then: (() -> Unit)? = null, content: @Composable () -> Unit) {
         var dark by mutableStateOf(false)
         compose.setContent {
             RubikkiTheme(systemDark = dark, dynamicColor = false) { Surface(Modifier.fillMaxSize()) { content() } }
@@ -62,6 +64,7 @@ class ScreenshotTest {
                 compose.mainClock.advanceTimeBy(100)
             }
         }
+        then?.invoke()
         val dir = File("build/screenshots").apply { mkdirs() }
         for (theme in listOf("light", "dark")) {
             dark = theme == "dark"
@@ -138,6 +141,14 @@ class ScreenshotTest {
 
     @Test
     fun solveStart() = shot("solve-start", waitForText = "Aloita") {
+        SolveScreen(
+            Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {}, planner = INLINE_PLANNER,
+            startScreen = true, onChangeTarget = {}, onCheckColors = {},
+        )
+    }
+
+    @Test
+    fun solveHold() = shot("solve-hold", waitForText = "Aloita", then = { compose.onNodeWithText("Aloita").performClick() }) {
         SolveScreen(
             Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {}, planner = INLINE_PLANNER,
             startScreen = true, onChangeTarget = {}, onCheckColors = {},
