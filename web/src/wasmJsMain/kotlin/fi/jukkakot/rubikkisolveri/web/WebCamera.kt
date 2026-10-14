@@ -199,6 +199,14 @@ private fun WebCameraPreview(args: CameraArgs) {
         }
         onDispose { scanWorkerStop() }
     }
+    // `scan-timing`: where a picture's time goes on a slow phone, every 4 s while the scan's worker runs.
+    LaunchedEffect(running) {
+        while (running) {
+            kotlinx.coroutines.delay(4_000)
+            val line = scanTimings()
+            if (line.isNotEmpty()) AppLog.info(Evt.SCAN_TIMING, line)
+        }
+    }
     // How far below its own exposure the camera can be set (`camera-exposure` design 2).
     LaunchedEffect(running) {
         if (!running) return@LaunchedEffect

@@ -610,6 +610,7 @@ function pipeStart() {
     }
     pipe.busy = false;
     const done = pipe.inFlight;
+    if (done && done.posted) { timing.pipes++; timing.pipeMs += performance.now() - done.posted; }
     if (pipe.pending) {
       const next = pipe.pending;
       pipe.pending = null;
@@ -634,6 +635,7 @@ function pipePost(msg) {
   const pipe = scan.pipe;
   pipe.busy = true;
   pipe.inFlight = msg;
+  msg.posted = performance.now();
   pipe.worker.postMessage({ scanFaces: msg.faces, at: msg.at });
 }
 
@@ -660,8 +662,48 @@ export function scanWorkerPipeline() {
   return scan.pipeline;
 }
 
+// `scan-timing`: where a picture's time goes, averaged for the log's timing line ([scanTimings]).
+const timing = { since: 0, cam0: 0, page: 0, sent: 0, trips: 0, tripMs: 0, pixMs: 0, workMs: 0, pipes: 0, pipeMs: 0, raf: 0, posted: 0 };
+
+function pageTick() {
+  timing.page++;
+  timing.raf = requestAnimationFrame(pageTick);
+}
+
+function timingReset() {
+  Object.assign(timing, { since: performance.now(), cam0: cam.frames || 0, page: 0, sent: 0, trips: 0, tripMs: 0, pixMs: 0, workMs: 0, pipes: 0, pipeMs: 0 });
+}
+
+function timingStart() {
+  timingReset();
+  cancelAnimationFrame(timing.raf);
+  timing.raf = requestAnimationFrame(pageTick);
+}
+
+function timingStop() {
+  cancelAnimationFrame(timing.raf);
+  timing.since = 0;
+}
+
+/** Averages since the last call as "camFps=… pageFps=… sentFps=… tripMs=… pixMs=… workMs=… pipeMs=…", empty without a worker. */
+export function scanTimings() {
+  if (!scan.worker || !timing.since) return '';
+  const now = performance.now();
+  const s = (now - timing.since) / 1000;
+  if (s <= 0) return '';
+  const r = (x) => Math.round(x * 10) / 10;
+  const avg = (sum, n) => (n > 0 ? r(sum / n) : '-');
+  const camFps = r(((cam.frames || 0) - timing.cam0) / s);
+  const line = `camFps=${camFps} pageFps=${r(timing.page / s)} sentFps=${r(timing.sent / s)} tripMs=${avg(timing.tripMs, timing.trips)} ` +
+    `pixMs=${avg(timing.pixMs, timing.trips)} workMs=${avg(timing.workMs, timing.trips)} pipeMs=${avg(timing.pipeMs, timing.pipes)}`;
+  timingReset();
+  return line;
+}
+
 function workerPost(msg) {
   scan.busy = true;
+  timing.sent++;
+  timing.posted = performance.now();
   // The finder's wait since its last answer (0 when this picture was already waiting for it).
   const idle = scan.lastAnswer ? Math.max(0, performance.now() - scan.lastAnswer) : 0;
   scan.inFlight = { seq: msg.seq || 0, prep: msg.prep || 0, idle };
@@ -691,6 +733,7 @@ export function scanWorkerStart(onFaces, onFail) {
     return;
   }
   scan.worker = w;
+  timingStart();
   pipeStart();
   scan.timer = setTimeout(() => { if (scan.worker === w && !scan.ready) workerFail('no answer'); }, WORKER_START_MS);
   w.onerror = (e) => { if (scan.worker === w) workerFail('error: ' + ((e && e.message) || 'load failed')); };
@@ -715,6 +758,7 @@ export function scanWorkerStart(onFaces, onFail) {
     scan.busy = false;
     scan.lastAnswer = performance.now();
     const answered = scan.inFlight;
+    if (timing.posted) { timing.trips++; timing.tripMs += performance.now() - timing.posted; timing.pixMs += m.pix || 0; timing.workMs += m.work || 0; timing.posted = 0; }
     if (scan.pending) {
       const next = scan.pending;
       scan.pending = null;
@@ -837,6 +881,7 @@ function sendCanvas() {
 
 export function scanWorkerStop() {
   clearTimeout(scan.timer);
+  timingStop();
   if (scan.worker) scan.worker.terminate();
   if (scan.pending && scan.pending.bitmap) scan.pending.bitmap.close();
   showLive();

@@ -1,0 +1,41 @@
+## MODIFIED Requirements
+
+### Requirement: Video scan log
+While the video scan runs, the log SHALL get a snapshot every couple of seconds of what the scan
+knows (per side, the best cube so far with its unsure stickers, how sure it is, brightness, faces
+per frame, time per frame, frames read per second, whether the torch is on, how much darker the
+camera has been set) and a line for each turning point: a side done, the cube clear, a stall and its
+reason, a restart, leaving the screen, the camera's exposure locked. On the phone and in the browser
+the snapshot SHALL also tell how long making a picture ready for finding faces took and how long finding faces
+waited between pictures, both averaged since the last snapshot. When the camera opens, one line
+SHALL tell which camera it is and what it can do (its resolution, focus modes, how much darker or
+brighter it can be set, whether it can measure light at a point, torch), on the phone and in the
+browser; in the browser it SHALL also give the camera's frame rate and, when other back cameras were
+tried, each one's focus and torch. Each step darker or lighter and each lock SHALL get a line with the
+step and the cube's brightness. In the browser a timing line every few seconds SHALL tell the camera's and the
+page's frames a second, the pictures sent a second, the round trip to the finder and the finder's own
+parts of it (reading the picture's pixels, its whole work) and the scan worker's round trip. A minute of scanning SHALL stay at a few dozen lines.
+
+#### Scenario: Stuck scan readable from the log
+- **WHEN** a video scan stalls and the user shares the log
+- **THEN** the log shows the last snapshots with the cube read so far and the stall's reason
+
+#### Scenario: Camera's abilities in the log
+- **WHEN** the user opens the video scan in the phone's browser and shares the log
+- **THEN** the log names the camera and says whether it can focus and measure light at a point and how far its exposure can be lowered
+
+#### Scenario: Where the browser's time goes
+- **WHEN** the user scans in the phone's browser and shares the log
+- **THEN** each snapshot shows the time to make a picture ready, the finder's wait between pictures, the finder's time and the pictures a second
+
+#### Scenario: Where the phone app's time goes
+- **WHEN** the user scans in the phone app and shares the log
+- **THEN** each snapshot shows the time to make a picture ready, the finder's wait between pictures, the finder's time and the pictures a second
+
+#### Scenario: Exposure steps in the log
+- **WHEN** the camera is made darker, locked and later set lighter during a scan, and the user shares the log
+- **THEN** the log has a line for each step and the lock, each with the cube's brightness at that moment
+
+#### Scenario: Where a slow phone's time goes
+- **WHEN** the video scan reads fewer pictures a second than the camera gives in the phone's browser and the user shares the log
+- **THEN** the timing lines show how long a picture's round trip to the finder takes and how much of it is reading the pixels, the finder's work and passing it back and forth

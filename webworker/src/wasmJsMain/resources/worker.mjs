@@ -37,9 +37,13 @@ export function workerListen(find, scanned, scanFaces, command) {
         self.postMessage({ scan: scanFaces(e.data.scanFaces, e.data.at) });
         return;
       }
+      // `scan-timing`: the pixels' time (drawing the bitmap and reading it back) and the whole work, for the log.
+      const t0 = performance.now();
       const p = pixels(e.data);
+      const t1 = performance.now();
       const faces = find(p.width, p.height, new Int8Array(p.data.buffer, p.data.byteOffset, p.data.length));
-      self.postMessage({ faces, scan: scanned(), at: performance.now() });
+      const t2 = performance.now();
+      self.postMessage({ faces, scan: scanned(), at: t2, pix: t1 - t0, work: t2 - t0 });
     } catch (err) {
       self.postMessage({ error: (err && (err.name + ': ' + err.message)) || String(err) });
     }
