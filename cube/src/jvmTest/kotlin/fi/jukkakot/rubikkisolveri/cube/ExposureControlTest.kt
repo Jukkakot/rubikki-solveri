@@ -52,12 +52,12 @@ class ExposureControlTest {
     fun stepsDarkerWhileWashedOut() {
         val c = ExposureControl()
         c.frame(0, face())
-        c.frame(600, face(washedCount = 5))
+        c.frame(600, face(washedCount = 9))
         assertEquals(1, c.settings.darker)
-        c.frame(1_000, face(washedCount = 5))
+        c.frame(1_000, face(washedCount = 9))
         assertEquals(1, c.settings.darker, "waits for the new step")
         c.frame(1_200, face(washedCount = 5))
-        assertEquals(2, c.settings.darker, "a darker step runs past the time limit")
+        assertEquals(2, c.settings.darker, "a darker step that changed the picture runs past the time limit")
         c.frame(1_800, face(washedCount = 1))
         assertEquals(Phase.LOCKED, c.phase)
         assertEquals(2, c.settings.darker)
@@ -69,7 +69,8 @@ class ExposureControlTest {
         c.frame(0, face())
         c.frame(600, face(washedCount = 9))
         assertEquals(1, c.settings.darker)
-        c.frame(1_200, face(washedCount = 9))
+        // The picture never changes: the step is judged after the longer wait.
+        c.frame(1_800, face(washedCount = 9))
         assertEquals(Phase.LOCKED, c.phase)
         assertEquals(1, c.settings.darker)
         // At the darkest step it does not meter again however long it stays washed out.
@@ -240,5 +241,96 @@ class ExposureControlTest {
         // Whole-EV steps: one camera step per controller step.
         assertEquals(1, ExposureSteps.per(1.0))
         assertEquals(2, ExposureSteps.maxDarker(1.0, -2))
+    }
+
+    /** A face whose nine readings are all [c]. */
+    private fun lit(c: Rgb) = FaceReading(List(9) { c }, Point(50.0, 50.0), Point(5.0, 0.0), Point(0.0, 5.0))
+
+    private val bright = Rgb(240, 120, 60)
+    private val dark = Rgb(100, 50, 30)
+
+    /** Steps darker twice on washed faces, each step changing the picture, then locks. */
+    private fun lockedTwoDarker(): ExposureControl {
+        val c = ExposureControl()
+        c.frame(0, face())
+        c.frame(600, face(washedCount = 9))
+        c.frame(1_200, face(washedCount = 6))
+        assertEquals(2, c.settings.darker)
+        val f = c.frame(1_800, lit(bright))
+        assertEquals(ExposureControl.Kind.LOCK, f.event?.kind)
+        assertEquals(240, f.event?.light)
+        return c
+    }
+
+    @Test
+    fun darkAfterTheLockGoesOneStepLighterAndNotDarkerAgain() {
+        val c = lockedTwoDarker()
+        assertNull(c.frame(2_000, lit(dark)).event)
+        assertEquals(Phase.LOCKED, c.phase, "dark for less than a second keeps the lock")
+        val f = c.frame(3_000, lit(dark))
+        assertEquals(ExposureControl.Kind.LIGHTER, f.event?.kind)
+        assertEquals(1, c.settings.darker)
+        assertEquals(Phase.METERING, c.phase)
+        assertFalse(c.settings.lock)
+        // Washed out again: it does not go back to the darker step.
+        c.frame(3_600, face(washedCount = 9))
+        assertEquals(1, c.settings.darker)
+        assertEquals(Phase.LOCKED, c.phase)
+        c.frame(4_000, face(washedCount = 9))
+        c.frame(7_000, face(washedCount = 9))
+        assertEquals(Phase.LOCKED, c.phase, "no re-meter to go darker than the cap")
+        // The torch resets the cap.
+        c.onTorch(true, 8_000)
+        c.frame(8_600, face(washedCount = 9))
+        assertEquals(2, c.settings.darker)
+    }
+
+    @Test
+    fun darkWithoutADarkerStepJustMetersAgain() {
+        val c = ExposureControl()
+        c.frame(0, lit(bright))
+        c.frame(600, lit(bright))
+        assertEquals(Phase.LOCKED, c.phase)
+        c.frame(1_000, lit(dark))
+        val f = c.frame(2_000, lit(dark))
+        assertEquals(ExposureControl.Kind.LIGHTER, f.event?.kind)
+        assertEquals(0, c.settings.darker)
+        assertEquals(Phase.METERING, c.phase)
+    }
+
+    @Test
+    fun shadowThatStillReadsKeepsTheLock() {
+        val c = ExposureControl()
+        c.frame(0, lit(bright))
+        c.frame(600, lit(bright))
+        // Below 2/3 of the lock but not below 150: still readable.
+        c.frame(1_000, lit(Rgb(155, 80, 40)))
+        c.frame(3_000, lit(Rgb(155, 80, 40)))
+        assertEquals(Phase.LOCKED, c.phase)
+        // Dark but a good frame in between breaks the run.
+        c.frame(3_100, lit(dark))
+        c.frame(3_800, lit(bright))
+        c.frame(4_500, lit(dark))
+        assertEquals(Phase.LOCKED, c.phase)
+    }
+
+    @Test
+    fun slowCameraGetsNoExtraStep() {
+        val c = ExposureControl()
+        c.frame(0, face())
+        val step = c.frame(600, face(washedCount = 9)).event
+        assertEquals(ExposureControl.Kind.DARKER, step?.kind)
+        assertEquals(1, c.settings.darker)
+        // The picture has not changed yet: no second step at the usual time.
+        c.frame(1_200, face(washedCount = 9))
+        assertEquals(1, c.settings.darker)
+        // Once it changes (fewer washed out, still too many), the next step.
+        c.frame(1_300, face(washedCount = 6))
+        assertEquals(2, c.settings.darker)
+        // Never changing: the step is judged after the longer wait.
+        c.frame(2_000, face(washedCount = 6))
+        assertEquals(2, c.settings.darker)
+        c.frame(2_500, face(washedCount = 6))
+        assertEquals(3, c.settings.darker)
     }
 }

@@ -341,7 +341,7 @@ fun VideoScanContent(
             val before = exposure.settings
             val frame = exposure.onFrame(f.faces, f.width, f.height, now)
             if (exposure.settings != before) onExposure(exposure.settings)
-            frame.lockedWashed?.let { log.lock(exposure.settings.darker, it) }
+            frame.event?.let { log.exposure(it) }
             log.picture(f, now)
             val stateBefore = state
             val scanned = f.scanned
@@ -535,7 +535,9 @@ private class ScanLogger(private val centres: () -> String) {
         if (at - last >= VideoScanLog.SNAPSHOT_MILLIS) snapshot(now, at, torch, darker)
     }
 
-    fun lock(darker: Int, washed: Double) = event("lock", "darker" to darker, "washed" to (washed * 100).roundToInt())
+    /** A darker or lighter step or the lock, with the cube's brightness then (`scan-camera-pick`). */
+    fun exposure(e: ExposureControl.Event) =
+        event(e.kind.name.lowercase(), "darker" to e.darker, "light" to e.light, "washed" to e.washed?.let { (it * 100).roundToInt() })
 
     fun restart(state: VideoScanState) = event("restart", "reason" to state.stall?.name?.lowercase())
 

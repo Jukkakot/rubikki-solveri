@@ -62,16 +62,19 @@ function watchFrames(video) {
   video.requestVideoFrameCallback(tick);
 }
 
-// Phones have several back cameras and the browser's pick may have no torch, so the first time
-// the other back cameras are tried and the first with a torch is kept. The camera found is
-// remembered, so later scans open it directly without trying the others again.
+// Phones have several back cameras and the browser's pick may be a fixed-focus wide or macro lens
+// without a torch (`scan-camera-pick`: a OnePlus opened `camera 3`, manual focus only, 12 pictures a
+// second). Unless the browser's pick has continuous focus and a torch, the first time every back
+// camera is opened once and the best kept: continuous focus (2) + torch (1), ties to the lowest number
+// in the name. The camera found is remembered, so later scans open it directly.
 
-const CAMERA_KEY = 'camera.device';
+const CAMERA_KEY = 'camera.device.2';
+const OLD_CAMERA_KEY = 'camera.device'; // chosen by torch only: every phone chooses once more
 const FRONT = /front|user|selfie|etu/i;
 
 function openCamera(choice) {
   return navigator.mediaDevices.getUserMedia({
-    video: { ...choice, width: { ideal: 1280 }, height: { ideal: 720 } },
+    video: { ...choice, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
     audio: false,
   });
 }
@@ -106,14 +109,33 @@ function facesUser(stream) {
   try { return (t && t.getSettings && t.getSettings().facingMode) === 'user'; } catch (e) { return false; }
 }
 
-function remember(stream, tried) {
+function remember(stream, tried, backs) {
   const t = trackOf(stream);
-  cam.info = `${(t && t.label) || '?'}; torch=${hasTorch(stream)}; tried=${tried}`;
+  const list = backs && backs.length > 1
+    ? `; backs=${backs.map((b) => `${b.label || '?'}:${b.continuous ? 'c' : 'm'}${b.torch ? 't' : ''}`).join(',')}`
+    : '';
+  cam.info = `${(t && t.label) || '?'}; torch=${hasTorch(stream)}; tried=${tried}${list}`;
   try { localStorage.setItem(CAMERA_KEY, deviceOf(stream)); } catch (e) { /* not remembered */ }
+}
+
+/** What counts in choosing a back camera: continuous focus and a torch. */
+async function backAbilities(stream, order) {
+  const t = trackOf(stream);
+  let modes = [];
+  try { modes = (t && t.getCapabilities && t.getCapabilities().focusMode) || []; } catch (e) { /* none */ }
+  const torch = await torchOf(stream);
+  const continuous = Array.isArray(modes) && modes.includes('continuous');
+  return { id: deviceOf(stream), label: (t && t.label) || '', continuous, torch, score: (continuous ? 2 : 0) + (torch ? 1 : 0), order };
+}
+
+function cameraNumber(label) {
+  const m = /(\d+)/.exec(label || '');
+  return m ? Number(m[1]) : 1000;
 }
 
 async function openBackCamera() {
   let saved = null;
+  try { localStorage.removeItem(OLD_CAMERA_KEY); } catch (e) { /* ignore */ }
   try { saved = localStorage.getItem(CAMERA_KEY); } catch (e) { /* none */ }
   if (saved) {
     try {
@@ -126,11 +148,12 @@ async function openBackCamera() {
     }
   }
   let stream = await openCamera({ facingMode: { ideal: 'environment' } });
-  if (await torchOf(stream) || !navigator.mediaDevices.enumerateDevices) {
+  const firstAbilities = await backAbilities(stream, 0);
+  if (firstAbilities.score === 3 || !navigator.mediaDevices.enumerateDevices) {
     remember(stream, 1);
     return stream;
   }
-  const first = deviceOf(stream);
+  const first = firstAbilities.id;
   let others = [];
   try {
     others = (await navigator.mediaDevices.enumerateDevices())
@@ -142,20 +165,24 @@ async function openBackCamera() {
   }
   // Phones open one camera at a time: close the first while trying the others.
   stopStream(stream);
+  const backs = [firstAbilities];
   let tried = 1;
   for (const d of others) {
     let other;
     try { other = await openCamera({ deviceId: { exact: d.deviceId } }); } catch (e) { continue; }
     tried++;
-    if (!facesUser(other) && await torchOf(other)) {
-      remember(other, tried);
-      return other;
-    }
+    if (!facesUser(other)) backs.push(await backAbilities(other, tried - 1));
     stopStream(other);
   }
-  stream = await openCamera({ deviceId: { exact: first } });
-  remember(stream, tried);
-  return stream;
+  backs.sort((a, b) => b.score - a.score || cameraNumber(a.label) - cameraNumber(b.label) || a.order - b.order);
+  for (const b of [...backs, firstAbilities]) {
+    try {
+      stream = await openCamera({ deviceId: { exact: b.id } });
+      remember(stream, tried, backs);
+      return stream;
+    } catch (e) { /* the next best */ }
+  }
+  throw new DOMException('No back camera opened again', 'NotReadableError');
 }
 
 /** The camera in use, for the log: its name, whether it has a torch and how it was chosen. */
@@ -444,8 +471,11 @@ export function cameraAbilities() {
   const c = compensation();
   const modes = focusModes();
   const lock = Array.isArray(caps.exposureMode) && caps.exposureMode.includes('manual');
+  const t = camTrack();
+  let fps = '?';
+  try { fps = String((t && t.getSettings && t.getSettings().frameRate) || '?'); } catch (e) { /* unknown */ }
   return `focus=${modes.length ? modes.join(',') : 'none'}; compensation=${c ? `${c.min}..${c.max} step ${c.step}` : 'none'}; ` +
-    `point=${supported('pointsOfInterest')}; torch=${!!caps.torch}; lock=${lock}`;
+    `point=${supported('pointsOfInterest')}; torch=${!!caps.torch}; lock=${lock}; fps=${fps}`;
 }
 
 // The video scan's faces are found in a Web Worker (`scan-worker.js`, the webworker module), so the
