@@ -106,7 +106,9 @@ denied, the screen SHALL explain how to allow the camera in the browser's site s
 manual input instead. The torch button SHALL be shown only when the camera supports a torch. When
 the camera supports it, exposure and white balance SHALL be locked at the first capture as on the
 phone; when it does not, the scan SHALL work without the lock and the log SHALL say the lock is not
-supported. In the video scan the browser camera SHALL measure light and focus on the cube and be made
+supported. The lock SHALL hold the exposure the camera had where the browser reports it.
+When the whole picture is clearly darker (below 60 %) shortly after the lock, the lock SHALL be undone
+and not used again on that camera, and the log SHALL say so. In the video scan the browser camera SHALL measure light and focus on the cube and be made
 darker when the stickers wash out, as on the phone, as far as the browser lets the page control the
 camera; what it does not allow SHALL be skipped without harm and named in the log. The camera picture SHALL be shown as sharp and as smooth as the camera delivers it (its
 own resolution, about the camera's frame rate), whatever size the colours are read at, with the
@@ -139,6 +141,10 @@ scan's marks drawn on top in the right places.
 #### Scenario: No torch
 - **WHEN** the camera has no torch the browser can control (e.g. a laptop webcam)
 - **THEN** no torch button is shown
+
+#### Scenario: Lock that darkens the picture
+- **WHEN** the camera is locked in the phone's browser and the picture then turns much darker
+- **THEN** within about a second the camera adjusts by itself again, the next scans on that camera skip the lock, and the log tells the picture's brightness before and after
 
 ### Requirement: Back button in the browser
 The browser's back action (back button, back gesture, Android back) SHALL do what the app's back
