@@ -51,8 +51,11 @@ function watchFrames(video) {
   // A new video frame marks the next grab as fresh; without requestVideoFrameCallback the
   // video's time is compared instead.
   if (!video.requestVideoFrameCallback) return;
+  // One watcher per video: the element is reused for every scan, and each scan used to add another
+  // (the OnePlus log's camFps grew 12 → 69 over six scans, every frame making the next picture six times).
+  const id = (cam.watch = (cam.watch || 0) + 1);
   const tick = () => {
-    if (cam.video !== video) return;
+    if (cam.video !== video || cam.watch !== id) return;
     cam.fresh = true;
     cam.frames++;
     video.requestVideoFrameCallback(tick);
