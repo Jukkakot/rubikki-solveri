@@ -21,14 +21,16 @@ self.addEventListener('activate', (event) => {
   })());
 });
 
-// Pages and scripts: network first (a fresh build when online), the cache when offline.
-// Everything else (wasm, fonts, texts, icons): cache first; their names change with their content
-// or they come with the build's precache.
+// Pages, scripts and the texts (.cvr): network first (a fresh build when online), the cache when offline.
+// The texts must come with the scripts: the code reads each string at a byte offset into a .cvr file whose
+// name stays the same between builds, so new code with an old cached .cvr showed missing or wrong texts.
+// Everything else (wasm, fonts, icons): cache first; their names change with their content or they come
+// with the build's precache.
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET' || new URL(request.url).origin !== location.origin) return;
   const path = new URL(request.url).pathname;
-  const networkFirst = request.mode === 'navigate' || path.endsWith('.js') || path.endsWith('.mjs');
+  const networkFirst = request.mode === 'navigate' || path.endsWith('.js') || path.endsWith('.mjs') || path.endsWith('.cvr');
   event.respondWith(networkFirst ? fromNetwork(request) : fromCache(request));
 });
 
