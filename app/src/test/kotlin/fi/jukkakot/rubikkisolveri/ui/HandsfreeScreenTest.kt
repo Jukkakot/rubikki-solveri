@@ -1,5 +1,8 @@
 package fi.jukkakot.rubikkisolveri.ui
 
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -48,28 +51,48 @@ class HandsfreeScreenTest {
         compose.onNodeWithText("Siirto 2/3").assertIsDisplayed()
     }
 
-    @Test
-    fun playAdvancesAndATouchStopsIt() {
-        solve()
+    /** Opens the automatic mode's panel and starts it; the clock is manual from the start on. */
+    private fun startAuto() {
+        compose.onNodeWithText("Auto").performClick()
+        compose.waitForIdle()
         compose.mainClock.autoAdvance = false
-        // ▶ starts at once, with no ready prompt.
-        compose.onNodeWithContentDescription("Automaattinen").performClick()
-        compose.onNodeWithText("Valmis").assertDoesNotExist()
+        compose.onNodeWithText("Käynnistä").performClick()
+    }
+
+    @Test
+    fun theGuideGoesOneMoveAtATime() {
+        solve()
+        compose.mainClock.advanceTimeBy(20_000)
+        compose.onNodeWithText("Siirto 1/3").assertIsDisplayed()
+        compose.onNodeWithText("Seuraava").performClick()
+        compose.mainClock.advanceTimeBy(20_000)
+        compose.onNodeWithText("Siirto 2/3").assertIsDisplayed()
+    }
+
+    @Test
+    fun autoAdvancesAndATouchStopsIt() {
+        solve()
+        // "Auto" only opens the panel: nothing moves until "Käynnistä".
+        compose.onNodeWithText("Auto").performClick()
+        compose.mainClock.advanceTimeBy(10_000)
+        compose.onNodeWithText("Siirto 1/3").assertExists()
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithText("Käynnistä").performClick()
         compose.mainClock.advanceTimeBy(HandsfreeSpeed.NORMAL.quarterMs + 1_500)
         compose.onNodeWithText("Siirto 2/3").assertIsDisplayed()
-        // A touch anywhere stops it on the same move and brings ▶ back.
+        compose.onNodeWithText("Pysäytä").assertExists()
+        // A touch anywhere stops it on the same move and brings "Seuraava" back.
         compose.onNodeWithTag(HANDSFREE_STOP_TAG).performTouchInput { down(center); up() }
         compose.mainClock.advanceTimeBy(20_000)
         compose.onNodeWithText("Siirto 2/3").assertIsDisplayed()
         compose.onNodeWithTag(HANDSFREE_STOP_TAG).assertDoesNotExist()
-        compose.onNodeWithContentDescription("Automaattinen").assertIsDisplayed()
+        compose.onNodeWithText("Seuraava").assertIsDisplayed()
     }
 
     @Test
     fun theTimeStartsWithTheMove() {
         solve()
-        compose.mainClock.autoAdvance = false
-        compose.onNodeWithContentDescription("Automaattinen").performClick()
+        startAuto()
         // The time runs during the demo (half a second's pause and a 0.3 s turn): the move is done
         // after its own time, not after the demo plus its time (2.9 s).
         var waited = 0L
@@ -81,16 +104,15 @@ class HandsfreeScreenTest {
     }
 
     @Test
-    fun speedFromTheMenu() {
+    fun speedFromThePanel() {
         solve()
-        compose.onNodeWithContentDescription("Valikko").performClick()
-        compose.onNodeWithText("Nopea").performClick()
+        compose.onNodeWithText("Auto").performClick()
+        compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress))
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(HandsfreeSpeed.entries.size - 1f) }
         assertEquals(HandsfreeSpeed.FAST, saved, "the chosen speed is remembered")
-        // Picking a speed does not start the automatic mode.
-        compose.mainClock.advanceTimeBy(10_000)
-        compose.onNodeWithText("Siirto 1/3").assertIsDisplayed()
+        compose.onNodeWithText("1,0 s / siirto").assertExists()
         compose.mainClock.autoAdvance = false
-        compose.onNodeWithContentDescription("Automaattinen").performClick()
+        compose.onNodeWithText("Käynnistä").performClick()
         compose.mainClock.advanceTimeBy(HandsfreeSpeed.FAST.quarterMs + 600)
         compose.onNodeWithText("Siirto 2/3").assertExists()
     }

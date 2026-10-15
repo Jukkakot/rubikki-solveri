@@ -42,6 +42,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Slider
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import kotlin.math.roundToInt
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -269,8 +274,6 @@ fun SolveScreen(
                                 onFollow = { f: Boolean -> follow = f; handsfree = false }.takeIf { shownMethod != SolveMethod.COMBOS },
                                 onCheckColors = onCheckColors,
                                 onToStart = toStart.takeIf { startScreen },
-                                speed = speed.takeIf { canHandsfree && !follow },
-                                onSpeed = { speed = it; onHandsfreeSpeed(it) },
                             )
                         }
                     },
@@ -318,6 +321,8 @@ fun SolveScreen(
                                     shortest = r.steps == null && !practice,
                                     handsfree = if (handsfree) speed else null,
                                     canHandsfree = canHandsfree,
+                                    speed = speed,
+                                    onSpeed = { s -> speed = s; onHandsfreeSpeed(s) },
                                     onHandsfree = { handsfree = true },
                                     onHandsfreeEnd = { handsfree = false },
                                 ) { moves, millis ->
@@ -346,19 +351,9 @@ fun SolveScreen(
 /** Test tag of the layer that stops handsfree on any touch. */
 const val HANDSFREE_STOP_TAG = "handsfree_stop"
 
-/**
- * The guide's ⋮ menu: camera follow (or back to the 3D cube), the colour check, the start screen and,
- * with a [speed], the automatic mode's pace.
- */
+/** The guide's ⋮ menu: camera follow (or back to the 3D cube), the colour check, the start screen. */
 @Composable
-private fun GuideMenu(
-    follow: Boolean,
-    onFollow: ((Boolean) -> Unit)?,
-    onCheckColors: (() -> Unit)?,
-    onToStart: (() -> Unit)?,
-    speed: HandsfreeSpeed? = null,
-    onSpeed: (HandsfreeSpeed) -> Unit = {},
-) {
+private fun GuideMenu(follow: Boolean, onFollow: ((Boolean) -> Unit)?, onCheckColors: (() -> Unit)?, onToStart: (() -> Unit)?) {
     var open by remember { mutableStateOf(false) }
     Box(Modifier.padding(horizontal = 8.dp)) {
         RoundIconButton(onClick = { open = true }) {
@@ -386,32 +381,9 @@ private fun GuideMenu(
                     onClick = { open = false; onToStart() },
                 )
             }
-            if (speed != null) {
-                HorizontalDivider()
-                Text(
-                    stringResource(Res.string.handsfree_menu_speed),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                )
-                for ((s, label) in SPEED_LABELS) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(label)) },
-                        leadingIcon = { RadioButton(selected = s == speed, onClick = null) },
-                        onClick = { open = false; onSpeed(s) },
-                    )
-                }
-            }
         }
     }
 }
-
-/** The automatic mode's speeds with their names, slowest first. */
-private val SPEED_LABELS = listOf(
-    HandsfreeSpeed.SLOW to Res.string.handsfree_slow,
-    HandsfreeSpeed.NORMAL to Res.string.handsfree_normal,
-    HandsfreeSpeed.FAST to Res.string.handsfree_fast,
-)
 
 /**
  * The start screen: how many moves, the target (with a way to change it), the method ([method] null:
@@ -543,6 +515,8 @@ private fun Stepper(
     shortest: Boolean = false,
     handsfree: HandsfreeSpeed? = null,
     canHandsfree: Boolean = false,
+    speed: HandsfreeSpeed = HandsfreeSpeed.NORMAL,
+    onSpeed: (HandsfreeSpeed) -> Unit = {},
     onHandsfree: () -> Unit = {},
     onHandsfreeEnd: () -> Unit = {},
     onFinished: (moves: Int, durationMillis: Long) -> Unit,
@@ -557,6 +531,9 @@ private fun Stepper(
         onHandsfreeWarn = { haptics.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick) },
         onHandsfreeAdvance = { haptics.performHapticFeedback(HapticFeedbackType.Confirm) },
     )
+    // The automatic mode's panel (speed and "Käynnistä"), opened from "Auto".
+    var panel by remember { mutableStateOf(false) }
+    val doneLabel = stringResource(Res.string.solve_done_move)
     val confirm = {
         haptics.performHapticFeedback(HapticFeedbackType.Confirm)
         state.done()
@@ -635,13 +612,41 @@ private fun Stepper(
                 Text(stringResource(Res.string.solve_step, index + 1, moves.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
+        if (running && !state.isFinished) {
+            // The automatic mode runs: say so, at what pace, and how to stop it.
+            Row(
+                Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.tertiaryContainer)
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                val (whole, tenths) = speed.seconds
+                Text(
+                    stringResource(Res.string.handsfree) + " · " + stringResource(Res.string.auto_pace, whole.toString(), tenths.toString()),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    stringResource(Res.string.handsfree_stop_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
+        }
         if (!state.isFinished) {
-            // The move in words, and ↻ to show it again.
+            // The move in words, ↻ to show it again and, where offered, "Auto" for the automatic mode.
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.weight(1f)) { MoveWordsText(state, showNotation) }
                 if (!running) {
                     RoundIconButton(onClick = state::demo, size = 44.dp) {
                         Icon(painterResource(Res.drawable.ic_replay), contentDescription = stringResource(Res.string.solve_show))
+                    }
+                    if (canHandsfree && !follow) {
+                        OutlinedButton(onClick = { panel = true }, contentPadding = PaddingValues(horizontal = 12.dp)) {
+                            Icon(painterResource(Res.drawable.ic_play), contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(stringResource(Res.string.auto_button), modifier = Modifier.padding(start = 4.dp))
+                        }
                     }
                 }
             }
@@ -649,7 +654,7 @@ private fun Stepper(
             Text(finishedText ?: stringResource(Res.string.solve_finished), style = MaterialTheme.typography.headlineSmall)
         }
         if (running && !state.isFinished) {
-            // Handsfree: the time of this move fills; a touch anywhere stops it.
+            // The time of this move fills; a touch anywhere stops it.
             LinearProgressIndicator(
                 progress = { state.handsfreeProgress },
                 modifier = Modifier.fillMaxWidth().height(6.dp),
@@ -661,35 +666,80 @@ private fun Stepper(
             BigButton(onClick = onHome, modifier = Modifier.fillMaxWidth()) { Text(homeLabel ?: stringResource(Res.string.solve_home)) }
             return@FitColumn
         }
-        // A media player: previous, play/pause (handsfree), next (done).
-        val play = canHandsfree && !follow
+        // A small ⏮ and one wide button that always goes one move ("Pysäytä" while the automatic mode runs;
+        // the touch that stops it lands on the layer above everything).
         Row(
             Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             RoundIconButton(onClick = state::back, enabled = index > 0 && !running, size = 56.dp) {
                 Icon(painterResource(Res.drawable.ic_previous), contentDescription = stringResource(Res.string.solve_previous))
             }
-            if (play) {
-                FilledIconButton(onClick = { if (!running) onHandsfree() }, modifier = Modifier.size(64.dp), shape = CircleShape) {
-                    Icon(
-                        painterResource(if (running) Res.drawable.ic_pause else Res.drawable.ic_play),
-                        contentDescription = stringResource(if (running) Res.string.solve_pause else Res.string.handsfree),
-                        modifier = Modifier.size(28.dp),
-                    )
-                }
-                RoundIconButton(onClick = confirm, enabled = !running, size = 56.dp) {
-                    Icon(painterResource(Res.drawable.ic_next), contentDescription = stringResource(Res.string.solve_done_move))
-                }
-            } else {
-                FilledIconButton(onClick = confirm, modifier = Modifier.size(64.dp), shape = CircleShape) {
-                    Icon(painterResource(Res.drawable.ic_next), contentDescription = stringResource(Res.string.solve_done_move), modifier = Modifier.size(28.dp))
+            BigButton(onClick = { if (!running) confirm() }, modifier = Modifier.weight(1f).semantics { contentDescription = doneLabel }) {
+                if (running) {
+                    Icon(painterResource(Res.drawable.ic_pause), contentDescription = null)
+                    Text(stringResource(Res.string.solve_pause))
+                } else {
+                    Text(stringResource(Res.string.solve_next))
+                    Icon(painterResource(Res.drawable.ic_next), contentDescription = null)
                 }
             }
         }
     }
+    if (panel) {
+        AutoPanel(
+            speed = speed,
+            onSpeed = onSpeed,
+            onDismiss = { panel = false },
+            onStart = { panel = false; onHandsfree() },
+        )
+    }
 }
+
+/**
+ * The automatic mode's panel from the bottom: what it does, the pace as a slider of [HandsfreeSpeed]'s steps
+ * (slowest on the left, shown in seconds per move) and "Käynnistä". A moved slider is saved at once.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AutoPanel(speed: HandsfreeSpeed, onSpeed: (HandsfreeSpeed) -> Unit, onDismiss: () -> Unit, onStart: () -> Unit) {
+    val steps = HandsfreeSpeed.entries
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp).testTag(AUTO_PANEL_TAG),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(stringResource(Res.string.auto_title), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(Res.string.auto_text), style = MaterialTheme.typography.bodyMedium)
+            val (whole, tenths) = speed.seconds
+            Text(
+                stringResource(Res.string.auto_pace, whole.toString(), tenths.toString()),
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(Res.string.auto_slow_end), style = MaterialTheme.typography.labelLarge)
+                Slider(
+                    value = steps.indexOf(speed).toFloat(),
+                    onValueChange = { onSpeed(steps[it.roundToInt().coerceIn(0, steps.size - 1)]) },
+                    valueRange = 0f..(steps.size - 1).toFloat(),
+                    steps = steps.size - 2,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(stringResource(Res.string.auto_fast_end), style = MaterialTheme.typography.labelLarge)
+            }
+            BigButton(onClick = onStart, modifier = Modifier.fillMaxWidth()) {
+                Icon(painterResource(Res.drawable.ic_play), contentDescription = null)
+                Text(stringResource(Res.string.auto_start))
+            }
+        }
+    }
+}
+
+/** Test tag of the automatic mode's panel. */
+const val AUTO_PANEL_TAG = "auto_panel"
 
 private fun stepAt(steps: List<Step>, index: Int): Step {
     var at = 0

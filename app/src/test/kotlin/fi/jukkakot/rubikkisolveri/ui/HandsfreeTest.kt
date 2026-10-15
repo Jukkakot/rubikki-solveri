@@ -47,7 +47,10 @@ class HandsfreeTest {
     fun waitsPerSpeedAndHalfTurnsGetMore() {
         val quarter = Notation.parse("R")[0]
         val half = Notation.parse("R2")[0]
-        assertEquals(listOf(3_600L, 2_100L, 1_000L), HandsfreeSpeed.entries.map { it.waitMs(quarter) })
+        // Slowest first (the slider's order), and a saved old name still reads back.
+        assertEquals(listOf(5_000L, 3_600L, 2_100L, 1_500L, 1_000L), HandsfreeSpeed.entries.map { it.waitMs(quarter) })
+        assertEquals(HandsfreeSpeed.FAST, HandsfreeSpeed.fromName("FAST"))
+        assertEquals(2L to 1L, HandsfreeSpeed.NORMAL.seconds)
         HandsfreeSpeed.entries.forEach { assertTrue(it.waitMs(half) > it.waitMs(quarter), "$it half turn") }
         assertEquals(HandsfreeSpeed.NORMAL, HandsfreeSpeed.fromName(null))
     }

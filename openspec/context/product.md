@@ -93,7 +93,8 @@ method stage by stage so you learn to solve it yourself.
   for less; what is left decides the rest.
 - **Choices once, before the guide:** target and method are chosen on a start screen, then a hold
   step shows the cube with its front and top centre pieces ringed until "Olen valmis"; the guide itself is a media player
-  (previous, play/pause autoplay, next), always manual until ▶ (pace in its menu, user 2026-10-14).
+  (previous and a wide "Seuraava"), always manual; autoplay sits behind a small "Auto" button whose panel
+  holds the pace (user 2026-10-15: a big ▶ invited new users into autoplay).
 
 ## Later ideas
 

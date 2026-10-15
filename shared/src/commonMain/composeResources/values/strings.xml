@@ -89,10 +89,6 @@
     <string name="solve_show">Näytä</string>
     <string name="solve_tap_hint">Napauta kuutiota = tein sen · raahaa = käännä</string>
     <string name="handsfree">Automaattinen</string>
-    <string name="handsfree_speed">Tahti</string>
-    <string name="handsfree_slow">Hidas</string>
-    <string name="handsfree_normal">Normaali</string>
-    <string name="handsfree_fast">Nopea</string>
     <string name="handsfree_stop_hint">Kosketa näyttöä pysäyttääksesi</string>
     <string name="solve_previous">Edellinen</string>
     <string name="solve_finished">Valmis! Kuutio on ratkaistu.</string>
@@ -372,5 +368,12 @@
     <string name="hold_ready">Olen valmis</string>
     <string name="hold_centre">Sivun värin kertoo sen keskipala (renkaassa).</string>
     <string name="hold_picture">Kuutio otteessa, etu-, oikea ja yläkeskipala renkaissa</string>
-    <string name="handsfree_menu_speed">Automaattisen tahti</string>
+    <string name="solve_next">Seuraava</string>
+    <string name="auto_button">Auto</string>
+    <string name="auto_title">Automaattinen eteneminen</string>
+    <string name="auto_text">Siirrot vaihtuvat itsestään valitulla tahdilla. Kosketa näyttöä, niin se pysähtyy.</string>
+    <string name="auto_start">Käynnistä</string>
+    <string name="auto_pace">%1$s,%2$s s / siirto</string>
+    <string name="auto_slow_end">Hidas</string>
+    <string name="auto_fast_end">Nopea</string>
 </resources>

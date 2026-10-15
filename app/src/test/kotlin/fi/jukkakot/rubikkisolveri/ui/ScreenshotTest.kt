@@ -148,6 +148,11 @@ class ScreenshotTest {
     }
 
     @Test
+    fun solveAutoPanel() = shot("solve-auto-panel", waitForText = "Siirto 1/", then = { compose.onNodeWithText("Auto").performClick() }) {
+        SolveScreen(Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {}, planner = INLINE_PLANNER)
+    }
+
+    @Test
     fun solveHold() = shot("solve-hold", waitForText = "Aloita", then = { compose.onNodeWithText("Aloita").performClick() }) {
         SolveScreen(
             Cube.solved().apply("R U R' F2 D L' B U2"), onBack = {}, onHome = {}, planner = INLINE_PLANNER,

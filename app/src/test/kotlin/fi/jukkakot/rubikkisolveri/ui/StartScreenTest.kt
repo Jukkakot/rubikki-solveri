@@ -71,7 +71,7 @@ class StartScreenTest {
         compose.onNodeWithText("Olen valmis").performClick()
         compose.mainClock.advanceTimeBy(20_000)
         compose.onNodeWithText("Siirto 1/2").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Automaattinen").assertIsDisplayed()
+        compose.onNodeWithText("Auto").assertIsDisplayed()
     }
 
     @Test
