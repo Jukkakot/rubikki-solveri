@@ -43,7 +43,7 @@ private const val TURN_MS = 1_200
 private const val REVEAL_MS = 300
 
 /**
- * [cube] turning into the guide's holding view, then pulsing rings around the front and top centre pieces:
+ * [cube] turning into the guide's holding view, then pulsing rings around the front, right and top centre pieces:
  * the pieces that name the sides. The rings lie in the faces' planes (ellipses in perspective). With
  * animations off the cube is in the hold at once and nothing pulses.
  */
@@ -79,6 +79,7 @@ fun HoldingCube(cube: Cube, modifier: Modifier = Modifier, description: String? 
             if (a > 0f) {
                 centreRing(V3(0f, 0f, 1f), V3(1f, 0f, 0f), V3(0f, 1f, 0f), a)
                 centreRing(V3(0f, 1f, 0f), V3(1f, 0f, 0f), V3(0f, 0f, -1f), a)
+                centreRing(V3(1f, 0f, 0f), V3(0f, 0f, -1f), V3(0f, 1f, 0f), a)
             }
         }
     }

@@ -464,14 +464,16 @@ private fun HoldPane(cube: Cube, onReady: () -> Unit) {
             stringResource(
                 Res.string.hold_where,
                 stringResource(colorName(cube.centre(Face.F))),
+                stringResource(colorName(cube.centre(Face.R))),
                 stringResource(colorName(cube.centre(Face.U))),
-            ),
+            ).replaceFirstChar { it.uppercase() },
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
+        // Why the picture is turned a little, and what the rings mean.
         Text(
-            stringResource(Res.string.hold_centre),
+            stringResource(Res.string.hold_turn_hint) + "\n" + stringResource(Res.string.hold_centre),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

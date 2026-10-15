@@ -366,9 +366,10 @@
     <string name="combo_next_move">Next move</string>
     <string name="combo_done">I did it</string>
     <string name="hold_title">Hold the cube like this</string>
-    <string name="hold_where">Centre towards you: %1$s. On top: %2$s.</string>
+    <string name="hold_where">%1$s at the front, %2$s on the right, %3$s on top.</string>
+    <string name="hold_turn_hint">Turn the cube a little so you see the right side.</string>
     <string name="hold_ready">I'm ready</string>
     <string name="hold_centre">A side's colour is the colour of its centre piece (ringed).</string>
-    <string name="hold_picture">The cube in the hold, front and top centre pieces ringed</string>
+    <string name="hold_picture">The cube in the hold, front, right and top centre pieces ringed</string>
     <string name="handsfree_menu_speed">Autoplay pace</string>
 </resources>

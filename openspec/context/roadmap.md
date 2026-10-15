@@ -101,6 +101,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 91 | `hold-ready-manual` | done | Before the guide a hold step: the cube in two drawn hands (thumbs on the front), the hold in words, "Olen valmis"; the start screen loses the hold picture and handsfree. The guide always opens manual; autoplay ("Automaattinen") only from ▶, its pace in the ⋮ menu, any touch stops it (user 2026-10-14). Phone check pending: do the hands read right |
 | 92 | `hold-centre-rings` | done | Hold step redrawn from the mockups (user's pick K6): the cube turns into the hold, then the user's own arms from below with thumbs on the front, pulsing rings on the front and top centre pieces, "Sivun värin kertoo sen keskipala" (user 2026-10-14). Phone check pending |
 | 93 | `hold-no-hands` | done | The user meant only K from the mockups: the hold step's hands removed, the cube alone and bigger, turning into the hold, rings on the front and top centre pieces (user 2026-10-15). Phone check pending |
+| 94 | `hold-three-centres` | done | Hold step rings and names the right side too: "Vihreä edessä, punainen oikealla, valkoinen ylhäällä." and "Käännä kuutiota vähän, niin näet oikean sivun." (not "green left": the move words call green the front, orange the left; user 2026-10-15). Phone check pending |
 
 ## Backlog
 
