@@ -100,6 +100,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 90 | `scan-page-light` | done | OnePlus timing (18:56): the page drew 11–17 frames/s and every picture waited for it. The browser no longer copies and reads the guided grid's picture during the video scan (page copies 42 → 14 % of its time), two pictures wait with the finder, and a phone whose page draws under 18 frames/s for 8 s at a pixel ratio above 1.5 draws at 1.5 from the next start (container at ratio 3: 11 → 20–28 frames/s, 16–24 pictures read a second). Phone check pending: the OnePlus's `pageFps` and `dpr` in the timing line |
 | 91 | `hold-ready-manual` | done | Before the guide a hold step: the cube in two drawn hands (thumbs on the front), the hold in words, "Olen valmis"; the start screen loses the hold picture and handsfree. The guide always opens manual; autoplay ("Automaattinen") only from ▶, its pace in the ⋮ menu, any touch stops it (user 2026-10-14). Phone check pending: do the hands read right |
 | 92 | `hold-centre-rings` | done | Hold step redrawn from the mockups (user's pick K6): the cube turns into the hold, then the user's own arms from below with thumbs on the front, pulsing rings on the front and top centre pieces, "Sivun värin kertoo sen keskipala" (user 2026-10-14). Phone check pending |
+| 93 | `hold-no-hands` | done | The user meant only K from the mockups: the hold step's hands removed, the cube alone and bigger, turning into the hold, rings on the front and top centre pieces (user 2026-10-15). Phone check pending |
 
 ## Backlog
 

@@ -47,7 +47,7 @@ class StartScreenTest {
         compose.onNodeWithText("Aloita").performClick()
         // The hold step: the picture with hands, the hold in words, and only "Olen valmis" goes on.
         compose.onNodeWithText("Pidä kuutiota näin").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Kuutio kahdessa kädessä", substring = true).assertIsDisplayed()
+        compose.onNodeWithContentDescription("Kuutio otteessa", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Keskiö sinua kohti: vihreä. Ylhäällä: valkoinen.").assertIsDisplayed()
         compose.onNodeWithText("Sivun värin kertoo sen keskipala", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Olen valmis").performClick()

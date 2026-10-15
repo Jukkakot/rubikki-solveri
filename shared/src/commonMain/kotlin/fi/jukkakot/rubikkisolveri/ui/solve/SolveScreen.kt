@@ -483,8 +483,8 @@ private fun HoldPane(cube: Cube, onReady: () -> Unit) {
     }
 }
 
-/** Width to height of the hold picture: the cube with a hand on each side. */
-private const val HOLD_PICTURE_RATIO = 0.8f
+/** Width to height of the hold picture: the cube alone. */
+private const val HOLD_PICTURE_RATIO = 1f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
