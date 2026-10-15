@@ -4,7 +4,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,7 +20,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
@@ -56,8 +53,6 @@ fun GuideCube(
     description: String? = null,
     mirror: Boolean = false,
     viewState: CubeViewState = remember { CubeViewState(CubeScene.DEFAULT_VIEW) },
-    onTap: (() -> Unit)? = null,
-    hint: String? = null,
     marked: Set<Int> = emptySet(),
 ) {
     val animator = state.animator
@@ -96,10 +91,7 @@ fun GuideCube(
     Box(
         modifier.aspectRatio(1.1f, matchHeightConstraintsFirst = true).graphicsLayer {
             translationY = -hop.value * size.height * HOP_HEIGHT
-        }.then(
-            // A tap anywhere on the cube (a drag turns the view instead, and cancels the tap).
-            if (onTap == null) Modifier else Modifier.pointerInput(onTap) { detectTapGestures { onTap() } },
-        ),
+        },
     ) {
         Cube3D(
             colors = colors,
@@ -113,15 +105,6 @@ fun GuideCube(
             mirror = mirror,
             modifier = Modifier.fillMaxSize().testTag(GUIDE_CUBE_TAG),
         )
-        if (hint != null) {
-            Surface(
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(8.dp),
-            ) {
-                Text(hint, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
-            }
-        }
         if (!animator.isInstant) Confetti(state.celebrations, Modifier.matchParentSize())
         if (!viewState.isAt(CubeScene.DEFAULT_VIEW)) {
             RoundIconButton(

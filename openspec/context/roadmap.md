@@ -103,6 +103,7 @@ the spec phase and then implemented. Status: **done**, **specced**, **planned**.
 | 93 | `hold-no-hands` | done | The user meant only K from the mockups: the hold step's hands removed, the cube alone and bigger, turning into the hold, rings on the front and top centre pieces (user 2026-10-15). Phone check pending |
 | 94 | `hold-three-centres` | done | Hold step rings and names the right side too: "Vihreä edessä, punainen oikealla, valkoinen ylhäällä." and "Käännä kuutiota vähän, niin näet oikean sivun." (not "green left": the move words call green the front, orange the left; user 2026-10-15). Phone check pending |
 | 95 | `auto-panel` | done | Guide controls from the mockups (user's pick D, 2026-10-15): small ⏮ and a wide "Seuraava ⏭"; autoplay behind a small "Auto" button opening a panel with a five-step pace slider (s / move) and "Käynnistä"; a band while it runs; pace out of the ⋮ menu. Phone check pending |
+| 96 | `no-cube-tap` | done | Phone check of the new controls: tapping the guide cube no longer confirms a move and its hint is gone; "Seuraava" does it (user 2026-10-15) |
 
 ## Backlog
 

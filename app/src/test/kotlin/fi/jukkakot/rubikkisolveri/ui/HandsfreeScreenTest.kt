@@ -45,10 +45,12 @@ class HandsfreeScreenTest {
     }
 
     @Test
-    fun tapOnTheCubeConfirms() {
+    fun tapOnTheCubeDoesNotConfirm() {
         solve()
         compose.onNodeWithTag(GUIDE_CUBE_TAG).performClick()
-        compose.onNodeWithText("Siirto 2/3").assertIsDisplayed()
+        compose.mainClock.advanceTimeBy(5_000)
+        compose.onNodeWithText("Siirto 1/3").assertIsDisplayed()
+        assertTrue(compose.onAllNodesWithText("Napauta kuutiota", substring = true).fetchSemanticsNodes().isEmpty(), "no tap hint")
     }
 
     /** Opens the automatic mode's panel and starts it; the clock is manual from the start on. */

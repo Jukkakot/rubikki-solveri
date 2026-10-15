@@ -366,9 +366,8 @@ yellow cross, yellow edges, yellow corners into place, yellow corners turned.
   the holding view (top left/right, sides up/down, back by its top row, front clockwise), whole-cube
   turns by centres. Other texts use the same layer/direction words.
 - Haptics: `Confirm` on done, `SegmentTick` at the end of each demo.
-- Hands-free (shortest solution only, `Stepper(shortest = true)` in `SolveScreen`; not learn,
-  practice, scramble or camera follow): a tap on `GuideCube` (`onTap`) is done, with a hint chip
-  until the first confirm. Shown as "Automaattinen"/"Autoplay"; the guide always opens manual; a small "Auto" button beside the
+- Hands-free (shortest solution only, `canHandsfree` in `SolveScreen`; not learn,
+  practice, scramble or camera follow; the tap-the-cube confirm and its hint were removed in `no-cube-tap`, 2026-10-15). Shown as "Automaattinen"/"Autoplay"; the guide always opens manual; a small "Auto" button beside the
   move words opens `AutoPanel` (bottom sheet: what it does, a five-step pace slider over `HandsfreeSpeed` in
   s / move, "Käynnistä"), and a band says it runs (`auto-panel`, 2026-10-15: a big ▶ was pressed for "next"); `StepperState.handsfreeStep` counts `HandsfreeSpeed.waitMs` from when
   the move appears while the demo plays (warning tick before the end) and confirms once the time is

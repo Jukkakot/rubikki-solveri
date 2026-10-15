@@ -317,8 +317,6 @@ fun SolveScreen(
                             } else key(shownMethod, target) {
                                 Stepper(
                                     cube, r, showNotation, onHome, follow, { follow = false }, followPanel, finished, homeLabel,
-                                    // Tap to confirm: only the shortest solution (also to a target).
-                                    shortest = r.steps == null && !practice,
                                     handsfree = if (handsfree) speed else null,
                                     canHandsfree = canHandsfree,
                                     speed = speed,
@@ -512,7 +510,6 @@ private fun Stepper(
     followPanel: @Composable (state: StepperState) -> Unit,
     finishedText: String?,
     homeLabel: String?,
-    shortest: Boolean = false,
     handsfree: HandsfreeSpeed? = null,
     canHandsfree: Boolean = false,
     speed: HandsfreeSpeed = HandsfreeSpeed.NORMAL,
@@ -538,9 +535,6 @@ private fun Stepper(
         haptics.performHapticFeedback(HapticFeedbackType.Confirm)
         state.done()
     }
-    // The tap hint stays until the first move of the solve is confirmed.
-    var confirmedOnce by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(state.index) { if (state.index > 0) confirmedOnce = true }
     val index = state.index
     val now = state.cubeAt(index)
     val startedAt = remember { elapsedMillis() }
@@ -592,13 +586,7 @@ private fun Stepper(
                     followPanel(state)
                 }
             } else {
-                val tap = shortest && !state.isFinished
-                GuideCube(
-                    state,
-                    mirror = true,
-                    onTap = confirm.takeIf { tap },
-                    hint = stringResource(Res.string.solve_tap_hint).takeIf { tap && !running && !confirmedOnce },
-                )
+                GuideCube(state, mirror = true)
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

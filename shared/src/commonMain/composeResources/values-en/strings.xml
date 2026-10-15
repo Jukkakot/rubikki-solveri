@@ -86,7 +86,6 @@
     <string name="solve_step">Move %1$d/%2$d</string>
     <string name="solve_done_move">Done</string>
     <string name="solve_show">Show</string>
-    <string name="solve_tap_hint">Tap the cube = done · drag = turn it</string>
     <string name="handsfree">Autoplay</string>
     <string name="handsfree_stop_hint">Touch the screen to stop</string>
     <string name="solve_previous">Previous</string>
