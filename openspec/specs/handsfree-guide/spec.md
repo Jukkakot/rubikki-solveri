@@ -1,29 +1,10 @@
 # handsfree-guide Specification
 
 ## Purpose
-Lets the user follow the shortest solution without taking a hand off the cube to aim at a button:
-a tap on the cube confirms a move, and a handsfree mode advances by itself at a chosen speed.
+Lets the user follow the shortest solution without pressing a button for every move:
+an automatic mode (handsfree) advances by itself at a chosen speed.
 
 ## Requirements
-
-### Requirement: Tap the cube to confirm
-In the shortest-solution guide (also when solving to a target), a tap anywhere on the 3D cube
-SHALL count as "Tein sen", with the same vibration and step change. A drag SHALL keep turning the
-view and SHALL NOT confirm. Back and "Näytä" SHALL stay buttons. Until the first move of a solve
-has been confirmed, a hint on the cube SHALL tell that a tap confirms and a drag turns the view.
-The learn method, practice and the timer's scramble SHALL keep the button only.
-
-#### Scenario: Tap confirms
-- **WHEN** the user taps the cube while a move is presented
-- **THEN** the phone vibrates and the next move appears, as with "Tein sen"
-
-#### Scenario: Drag does not confirm
-- **WHEN** the user drags the cube
-- **THEN** the view turns and the move stays the same
-
-#### Scenario: Hint until the first move
-- **WHEN** a solve starts in the shortest-solution guide
-- **THEN** the hint is shown on the cube, and it is gone once the first move is confirmed
 
 ### Requirement: Start handsfree
 Handsfree (shown to the user as "Automaattinen", English "Autoplay") SHALL be offered in the
